@@ -111,7 +111,7 @@ def _resolve_user_id(requested: Optional[str], current: User) -> str:
 
 @app.get("/")
 def root():
-    return RedirectResponse(url="/docs")
+    return RedirectResponse(url="/demo")
 
 
 @app.get("/health")
