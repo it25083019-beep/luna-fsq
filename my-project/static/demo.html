@@ -233,7 +233,7 @@
         </div>
       </form>
       <p class="err" id="authError"></p>
-      <p class="hint">デモ用: 管理者アカウントでログインするか、新規登録してください。</p>
+      <p class="hint">メールとパスワード（6文字以上）で新規登録するか、登録済みアカウントでログインしてください。</p>
     </section>
 
     <section id="chatPanel" class="chat-wrap hidden">
@@ -296,3 +296,207 @@
         const sec = detail.retry_after_seconds;
         if (res.status === 429 || detail.code === "quota_exceeded") {
           return sec ? (msg + "（約" + sec + "秒後に再試行できます）") : msg;
+        }
+        return msg;
+      }
+      if (typeof detail === "string") {
+        if (res.status === 429 || /429|RESOURCE_EXHAUSTED|quota/i.test(detail)) {
+          return "AIの利用上限に達しました。1〜2分待ってからもう一度送ってください。";
+        }
+        return detail;
+      }
+      return res.statusText || "リクエストに失敗しました";
+    }
+
+    async function api(path, opts = {}) {
+      const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
+      if (token) headers["Authorization"] = "Bearer " + token;
+      const res = await fetch(path, Object.assign({}, opts, { headers }));
+      let data = null;
+      try { data = await res.json(); } catch (_) { data = null; }
+      if (!res.ok) {
+        throw new Error(formatApiError(res, data));
+      }
+      return data;
+    }
+
+    function showAuth() {
+      authPanel.classList.remove("hidden");
+      chatPanel.classList.add("hidden");
+      modeBadge.classList.add("hidden");
+    }
+
+    function showChat() {
+      authPanel.classList.add("hidden");
+      chatPanel.classList.remove("hidden");
+    }
+
+    function renderChips(list) {
+      chipsEl.innerHTML = "";
+      (list || []).forEach((label, i) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "chip";
+        btn.textContent = label;
+        btn.style.animationDelay = (i * 0.04) + "s";
+        btn.addEventListener("click", () => {
+          if (label.includes("自分で入力")) {
+            messageEl.focus();
+            return;
+          }
+          sendMessage(label);
+        });
+        chipsEl.appendChild(btn);
+      });
+    }
+
+    function applyChatResponse(data) {
+      const box = document.getElementById("dialogueBox");
+      box.style.animation = "none";
+      void box.offsetWidth;
+      box.style.animation = "";
+      dialogueText.textContent = data.dialogue || "";
+      renderChips(data.suggested_replies || []);
+      refreshBrainBadge();
+    }
+
+    async function refreshBrainBadge() {
+      try {
+        const brain = await api("/brain/me");
+        modeBadge.textContent = brain.mode || "—";
+        modeBadge.classList.remove("hidden");
+      } catch (_) {
+        modeBadge.classList.add("hidden");
+      }
+    }
+
+    async function startChat() {
+      setBusy(true);
+      chatError.textContent = "";
+      try {
+        const data = await api("/chat/start", {
+          method: "POST",
+          body: JSON.stringify({ message: "" }),
+        });
+        applyChatResponse(data);
+      } catch (e) {
+        chatError.textContent = e.message || String(e);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function sendMessage(text) {
+      const msg = (text || "").trim();
+      if (!msg || busy) return;
+      setBusy(true);
+      chatError.textContent = "";
+      messageEl.value = "";
+      try {
+        const data = await api("/chat", {
+          method: "POST",
+          body: JSON.stringify({ message: msg }),
+        });
+        applyChatResponse(data);
+      } catch (e) {
+        chatError.textContent = e.message || String(e);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    toggleMode.addEventListener("click", () => {
+      registerMode = !registerMode;
+      authTitle.textContent = registerMode ? "新規登録" : "ログイン";
+      authSubmit.textContent = registerMode ? "登録して開始" : "ログイン";
+      toggleMode.textContent = registerMode ? "ログインはこちら" : "新規登録はこちら";
+      authError.textContent = "";
+    });
+
+    authForm.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      authError.textContent = "";
+      setBusy(true);
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      try {
+        const path = registerMode ? "/auth/register" : "/auth/login";
+        const data = await api(path, {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        });
+        token = data.access_token;
+        localStorage.setItem(TOKEN_KEY, token);
+        showChat();
+        await startChat();
+      } catch (e) {
+        authError.textContent = e.message || String(e);
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    sendBtn.addEventListener("click", () => sendMessage(messageEl.value));
+    messageEl.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        sendMessage(messageEl.value);
+      }
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      token = "";
+      localStorage.removeItem(TOKEN_KEY);
+      dialogueText.textContent = "…";
+      chipsEl.innerHTML = "";
+      showAuth();
+    });
+
+    if (SpeechRecognition) {
+      let recognizing = false;
+      const recog = new SpeechRecognition();
+      recog.lang = "ja-JP";
+      recog.interimResults = false;
+      recog.maxAlternatives = 1;
+      micBtn.addEventListener("click", () => {
+        if (busy) return;
+        chatError.textContent = "";
+        if (recognizing) {
+          recog.stop();
+          return;
+        }
+        recognizing = true;
+        micBtn.textContent = "⏹";
+        try { recog.start(); } catch (_) { recognizing = false; micBtn.textContent = "🎤"; }
+      });
+      recog.onresult = (ev) => {
+        const transcript = ev.results[0][0].transcript;
+        messageEl.value = transcript;
+      };
+      recog.onerror = () => {
+        chatError.textContent = "音声認識に失敗しました。テキストで入力してください。";
+      };
+      recog.onend = () => {
+        recognizing = false;
+        micBtn.textContent = "🎤";
+      };
+    }
+
+    (async function boot() {
+      if (!token) {
+        showAuth();
+        return;
+      }
+      try {
+        await api("/auth/me");
+        showChat();
+        await startChat();
+      } catch (_) {
+        token = "";
+        localStorage.removeItem(TOKEN_KEY);
+        showAuth();
+      }
+    })();
+  </script>
+</body>
+</html>
