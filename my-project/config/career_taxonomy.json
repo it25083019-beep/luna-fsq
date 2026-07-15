@@ -1,0 +1,536 @@
+{
+  "version": "1.0",
+  "design": {
+    "principle": "Never enumerate all jobs/hobbies. Map any free-text into axes + clusters, then suggest.",
+    "fallback": "If unknown, use exploration cluster + top axis matches; AI may refine labels only."
+  },
+  "personality_axes": [
+    {
+      "id": "analytic",
+      "label_ja": "分析・論理",
+      "keywords": [
+        "論理",
+        "分析",
+        "数学",
+        "データ",
+        "計算",
+        "論理的",
+        "パズル",
+        "math",
+        "logic",
+        "data",
+        "気象",
+        "天気",
+        "予報",
+        "研究",
+        "実験",
+        "観察"
+      ]
+    },
+    {
+      "id": "creative",
+      "label_ja": "創造・表現",
+      "keywords": [
+        "絵",
+        "デザイン",
+        "音楽",
+        "創作",
+        "イラスト",
+        "映像",
+        "物語",
+        "美術",
+        "art",
+        "design",
+        "music",
+        "creative"
+      ]
+    },
+    {
+      "id": "helping",
+      "label_ja": "人と支える",
+      "keywords": [
+        "助ける",
+        "介護",
+        "看護",
+        "相談",
+        "ボランティア",
+        "教育",
+        "教える",
+        "care",
+        "help",
+        "teach"
+      ]
+    },
+    {
+      "id": "social",
+      "label_ja": "社交・伝える",
+      "keywords": [
+        "話す",
+        "営業",
+        "イベント",
+        "SNS",
+        "プレゼン",
+        "チーム",
+        "社交",
+        "sales",
+        "present"
+      ]
+    },
+    {
+      "id": "hands_on",
+      "label_ja": "手を動かす",
+      "keywords": [
+        "工作",
+        "料理",
+        "DIY",
+        "機械",
+        "実験",
+        "スポーツ",
+        "制作",
+        "craft",
+        "build",
+        "cook",
+        "sport"
+      ]
+    },
+    {
+      "id": "organizer",
+      "label_ja": "計画・整理",
+      "keywords": [
+        "計画",
+        "整理",
+        "管理",
+        "スケジュール",
+        "事務",
+        "リーダー",
+        "organize",
+        "plan",
+        "manage"
+      ]
+    },
+    {
+      "id": "explore",
+      "label_ja": "探索・冒険",
+      "keywords": [
+        "旅行",
+        "自然",
+        "ゲーム",
+        "冒険",
+        "未知",
+        "curious",
+        "explore",
+        "travel",
+        "outdoors",
+        "気象",
+        "自然現象",
+        "観測"
+      ]
+    },
+    {
+      "id": "stable",
+      "label_ja": "安定・誠実",
+      "keywords": [
+        "安定",
+        "公務員",
+        "資格",
+        "コツコツ",
+        "規則",
+        "steady"
+      ]
+    }
+  ],
+  "subjects": [
+    {
+      "id": "math",
+      "label_ja": "数学",
+      "axes": [
+        "analytic"
+      ],
+      "keywords": [
+        "数学",
+        "数I",
+        "数A",
+        "math"
+      ]
+    },
+    {
+      "id": "science",
+      "label_ja": "理科・科学",
+      "axes": [
+        "analytic",
+        "hands_on"
+      ],
+      "keywords": [
+        "物理",
+        "化学",
+        "生物",
+        "地学",
+        "理科",
+        "science",
+        "気象",
+        "天気",
+        "天文",
+        "地学"
+      ]
+    },
+    {
+      "id": "cs",
+      "label_ja": "情報・PC",
+      "axes": [
+        "analytic",
+        "creative"
+      ],
+      "keywords": [
+        "情報",
+        "プログラミング",
+        "PC",
+        "IT",
+        "coding",
+        "computer"
+      ]
+    },
+    {
+      "id": "japanese",
+      "label_ja": "国語",
+      "axes": [
+        "creative",
+        "social"
+      ],
+      "keywords": [
+        "国語",
+        "現代文",
+        "古典",
+        "作文"
+      ]
+    },
+    {
+      "id": "english",
+      "label_ja": "英語",
+      "axes": [
+        "social",
+        "explore"
+      ],
+      "keywords": [
+        "英語",
+        "TOEIC",
+        "英会話",
+        "english"
+      ]
+    },
+    {
+      "id": "society",
+      "label_ja": "社会",
+      "axes": [
+        "social",
+        "organizer",
+        "stable"
+      ],
+      "keywords": [
+        "歴史",
+        "地理",
+        "政治",
+        "経済",
+        "公民",
+        "社会"
+      ]
+    },
+    {
+      "id": "art",
+      "label_ja": "芸術",
+      "axes": [
+        "creative"
+      ],
+      "keywords": [
+        "美術",
+        "音楽",
+        "書道",
+        "arts"
+      ]
+    },
+    {
+      "id": "pe",
+      "label_ja": "体育",
+      "axes": [
+        "hands_on",
+        "social"
+      ],
+      "keywords": [
+        "体育",
+        "保健",
+        "スポーツ"
+      ]
+    },
+    {
+      "id": "home_eco",
+      "label_ja": "家庭科",
+      "axes": [
+        "hands_on",
+        "helping"
+      ],
+      "keywords": [
+        "家庭科",
+        "料理",
+        "被服"
+      ]
+    }
+  ],
+  "rpg_classes": [
+    {
+      "id": "swordsman",
+      "label_ja": "剣士",
+      "axes": [
+        "hands_on",
+        "stable",
+        "social"
+      ]
+    },
+    {
+      "id": "archer",
+      "label_ja": "弓使い",
+      "axes": [
+        "analytic",
+        "organizer",
+        "explore"
+      ]
+    },
+    {
+      "id": "mage",
+      "label_ja": "魔法使い",
+      "axes": [
+        "analytic",
+        "creative"
+      ]
+    },
+    {
+      "id": "priest",
+      "label_ja": "牧師",
+      "axes": [
+        "helping",
+        "social",
+        "stable"
+      ]
+    }
+  ],
+  "career_clusters": [
+    {
+      "id": "it_eng",
+      "label_ja": "IT・エンジニア",
+      "axes": [
+        "analytic",
+        "creative"
+      ],
+      "subjects": [
+        "cs",
+        "math",
+        "science"
+      ],
+      "example_jobs": [
+        "エンジニア",
+        "データ分析",
+        "アプリ開発"
+      ],
+      "rpg_class": "mage"
+    },
+    {
+      "id": "design_creative",
+      "label_ja": "デザイン・クリエイティブ",
+      "axes": [
+        "creative",
+        "hands_on"
+      ],
+      "subjects": [
+        "art",
+        "cs"
+      ],
+      "example_jobs": [
+        "デザイナー",
+        "映像",
+        "イラスト"
+      ],
+      "rpg_class": "mage"
+    },
+    {
+      "id": "education",
+      "label_ja": "教育・指導",
+      "axes": [
+        "helping",
+        "social"
+      ],
+      "subjects": [
+        "japanese",
+        "english",
+        "society"
+      ],
+      "example_jobs": [
+        "教員",
+        "塾講師",
+        "研修"
+      ],
+      "rpg_class": "priest"
+    },
+    {
+      "id": "healthcare",
+      "label_ja": "医療・福祉・心理",
+      "axes": [
+        "helping",
+        "stable"
+      ],
+      "subjects": [
+        "science",
+        "home_eco"
+      ],
+      "example_jobs": [
+        "看護師",
+        "介護",
+        "心理職"
+      ],
+      "rpg_class": "priest"
+    },
+    {
+      "id": "business_sales",
+      "label_ja": "ビジネス・営業・マーケ",
+      "axes": [
+        "social",
+        "organizer"
+      ],
+      "subjects": [
+        "society",
+        "english",
+        "math"
+      ],
+      "example_jobs": [
+        "営業",
+        "企画",
+        "マーケ"
+      ],
+      "rpg_class": "swordsman"
+    },
+    {
+      "id": "manufacturing",
+      "label_ja": "ものづくり・技術",
+      "axes": [
+        "hands_on",
+        "analytic"
+      ],
+      "subjects": [
+        "science",
+        "math",
+        "cs"
+      ],
+      "example_jobs": [
+        "製造技術",
+        "機械",
+        "品質"
+      ],
+      "rpg_class": "swordsman"
+    },
+    {
+      "id": "public_service",
+      "label_ja": "公務員・士業・公共",
+      "axes": [
+        "stable",
+        "organizer"
+      ],
+      "subjects": [
+        "society",
+        "japanese"
+      ],
+      "example_jobs": [
+        "公務員",
+        "行政",
+        "士業補助"
+      ],
+      "rpg_class": "archer"
+    },
+    {
+      "id": "research",
+      "label_ja": "研究・学術",
+      "axes": [
+        "analytic",
+        "explore"
+      ],
+      "subjects": [
+        "science",
+        "math",
+        "english"
+      ],
+      "example_jobs": [
+        "研究職",
+        "院進学",
+        "ラボ"
+      ],
+      "rpg_class": "mage"
+    },
+    {
+      "id": "service_hospitality",
+      "label_ja": "サービス・ホスピタリティ",
+      "axes": [
+        "social",
+        "helping"
+      ],
+      "subjects": [
+        "english",
+        "home_eco"
+      ],
+      "example_jobs": [
+        "接客",
+        "観光",
+        "ホテル"
+      ],
+      "rpg_class": "swordsman"
+    },
+    {
+      "id": "media_entertainment",
+      "label_ja": "エンタメ・メディア",
+      "axes": [
+        "creative",
+        "social",
+        "explore"
+      ],
+      "subjects": [
+        "art",
+        "japanese",
+        "english"
+      ],
+      "example_jobs": [
+        "配信",
+        "ゲーム関連",
+        "メディア"
+      ],
+      "rpg_class": "archer"
+    },
+    {
+      "id": "environment_outdoor",
+      "label_ja": "環境・農・アウトドア",
+      "axes": [
+        "explore",
+        "hands_on"
+      ],
+      "subjects": [
+        "science",
+        "pe"
+      ],
+      "example_jobs": [
+        "環境",
+        "農業",
+        "地域活性"
+      ],
+      "rpg_class": "archer"
+    },
+    {
+      "id": "exploration",
+      "label_ja": "探索ルート（まだ決めない）",
+      "axes": [
+        "explore"
+      ],
+      "subjects": [],
+      "example_jobs": [
+        "インターン体験",
+        "課外活動",
+        "短期チャレンジ"
+      ],
+      "rpg_class": "archer",
+      "is_fallback": true
+    }
+  ]
+}

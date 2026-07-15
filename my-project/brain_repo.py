@@ -60,6 +60,24 @@ def default_user_brain(user_id: str) -> Dict[str, Any]:
         },
         "schedule_reminders": [],
         "pending_notification": None,
+        "career_path": {
+            "decided": False,
+            "decided_career": None,
+            "cluster_id": None,
+            "rpg_class": None,
+            "personality_note": None,
+            "hobbies_note": None,
+            "favorite_subjects": [],
+            "last_suggestions": [],
+        },
+        "rpg": {
+            "class_id": None,
+            "region_id": "tutorial_plains",
+            "equipment": [],
+            "quest_log": [],
+            "boss_clears": [],
+            "treasure_finds": [],
+        },
     }
 
 

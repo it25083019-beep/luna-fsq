@@ -83,3 +83,19 @@ class AdminResetPasswordRequest(BaseModel):
 
 class AdminLockRequest(BaseModel):
     locked: bool = True
+
+
+class CareerSuggestRequest(BaseModel):
+    decided_career: Optional[str] = None
+    personality_text: str = ""
+    hobbies_text: str = ""
+    favorite_subjects: list[str] = []
+    subject_grades: Dict[str, float] = {}
+    top_k: int = 3
+    save: bool = True
+
+
+class CareerSelectRequest(BaseModel):
+    cluster_id: str
+    decided_career: Optional[str] = None
+    rpg_class: Optional[str] = None

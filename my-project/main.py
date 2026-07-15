@@ -33,8 +33,11 @@ from schemas import (
     RegisterRequest,
     SetCompanionNameRequest,
     TokenResponse,
+    CareerSuggestRequest,
+    CareerSelectRequest,
 )
 from suggestions import get_suggested_replies
+from career_engine import load_taxonomy, suggest_careers, rpg_class_label
 from store import get_user_state, save_user_state
 from exp_engine import add_exp
 from luna_service import (
@@ -411,5 +414,80 @@ def admin_export(
         "user_count": len(users_out),
         "users": users_out,
         "core_brain": core,
+    }
+
+
+# ----- Career RPG orientation -----
+
+
+@app.get("/career/taxonomy")
+def career_taxonomy(current: User = Depends(get_current_user)):
+    return load_taxonomy()
+
+
+@app.post("/career/suggest")
+def career_suggest(req: CareerSuggestRequest, current: User = Depends(get_current_user)):
+    result = suggest_careers(
+        decided_career=req.decided_career,
+        personality_text=req.personality_text,
+        hobbies_text=req.hobbies_text,
+        favorite_subjects=req.favorite_subjects,
+        subject_grades=req.subject_grades,
+        top_k=req.top_k,
+    )
+    if req.save:
+        state = load_user_brain(current.public_id)
+        cp = state.setdefault("career_path", {})
+        cp["decided"] = bool(req.decided_career and req.decided_career.strip())
+        cp["decided_career"] = (req.decided_career or "").strip() or None
+        cp["personality_note"] = req.personality_text or cp.get("personality_note")
+        cp["hobbies_note"] = req.hobbies_text or cp.get("hobbies_note")
+        cp["favorite_subjects"] = req.favorite_subjects or cp.get("favorite_subjects") or []
+        cp["last_suggestions"] = result.get("suggestions", [])
+        if result.get("mode") == "decided" and result.get("suggestions"):
+            top = result["suggestions"][0]
+            cp["cluster_id"] = top.get("cluster_id")
+            cp["rpg_class"] = top.get("rpg_class")
+            rpg = state.setdefault("rpg", {})
+            rpg["class_id"] = top.get("rpg_class")
+        save_user_brain(current.public_id, state)
+        result["saved"] = True
+        result["rpg_class_label_ja"] = rpg_class_label(result.get("rpg_class_hint") or "")
+    return result
+
+
+@app.post("/career/select")
+def career_select(req: CareerSelectRequest, current: User = Depends(get_current_user)):
+    state = load_user_brain(current.public_id)
+    cp = state.setdefault("career_path", {})
+    tax = load_taxonomy()
+    cluster = next((c for c in tax["career_clusters"] if c["id"] == req.cluster_id), None)
+    if not cluster:
+        raise HTTPException(status_code=400, detail="Unknown cluster_id")
+    cp["cluster_id"] = req.cluster_id
+    if req.decided_career:
+        cp["decided"] = True
+        cp["decided_career"] = req.decided_career.strip()
+    else:
+        cp["decided"] = False
+    class_id = req.rpg_class or cluster.get("rpg_class")
+    cp["rpg_class"] = class_id
+    rpg = state.setdefault("rpg", {})
+    rpg["class_id"] = class_id
+    save_user_brain(current.public_id, state)
+    return {
+        "ok": True,
+        "career_path": cp,
+        "rpg": rpg,
+        "rpg_class_label_ja": rpg_class_label(class_id or ""),
+    }
+
+
+@app.get("/career/me")
+def career_me(current: User = Depends(get_current_user)):
+    state = load_user_brain(current.public_id)
+    return {
+        "career_path": state.get("career_path") or {},
+        "rpg": state.get("rpg") or {},
     }
 
