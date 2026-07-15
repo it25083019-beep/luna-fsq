@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LUNA Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=IBM+Plex+Sans+JP:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #0c1416;
+      --bg1: #122024;
+      --panel: rgba(18, 36, 40, 0.88);
+      --teal: #2ec4b6;
+      --teal-dim: #1a8a80;
+      --amber: #e8b86d;
+      --amber-soft: #c9944a;
+      --text: #e8f0ef;
+      --muted: #8aa3a0;
+      --danger: #d96b6b;
+      --border: rgba(46, 196, 182, 0.28);
+      --chip: rgba(46, 196, 182, 0.12);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans JP", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 15% -10%, rgba(46, 196, 182, 0.18), transparent 55%),
+        radial-gradient(900px 500px at 90% 10%, rgba(232, 184, 109, 0.12), transparent 50%),
+        linear-gradient(165deg, var(--bg0), var(--bg1) 55%, #0a1214);
+    }
+    .shell {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 2.5rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .brand {
+      font-family: "Shippori Mincho", serif;
+      font-size: 1.75rem;
+      letter-spacing: 0.08em;
+      color: var(--amber);
+      text-shadow: 0 0 24px rgba(232, 184, 109, 0.25);
+      animation: fadeUp 0.7s ease both;
+    }
+    .brand span {
+      display: block;
+      font-family: "IBM Plex Sans JP", sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+    .badge {
+      font-size: 0.72rem;
+      padding: 0.35rem 0.7rem;
+      border: 1px solid var(--border);
+      color: var(--teal);
+      background: rgba(46, 196, 182, 0.08);
+      letter-spacing: 0.04em;
+      animation: pulseSoft 2.8s ease-in-out infinite;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      padding: 1.25rem;
+      animation: fadeUp 0.6s ease both;
+    }
+    h2 {
+      font-family: "Shippori Mincho", serif;
+      font-weight: 500;
+      margin: 0 0 0.75rem;
+      font-size: 1.15rem;
+      color: var(--amber);
+    }
+    label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin: 0.7rem 0 0.3rem;
+    }
+    input[type="email"], input[type="password"], input[type="text"] {
+      width: 100%;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.28);
+      color: var(--text);
+      font: inherit;
+      outline: none;
+    }
+    input:focus { border-color: var(--teal); }
+    .row { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
+    button {
+      font: inherit;
+      cursor: pointer;
+      border: 1px solid var(--teal-dim);
+      background: linear-gradient(180deg, rgba(46,196,182,0.22), rgba(46,196,182,0.08));
+      color: var(--text);
+      padding: 0.65rem 1rem;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    button:hover { border-color: var(--teal); transform: translateY(-1px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    button.ghost {
+      background: transparent;
+      border-color: rgba(138, 163, 160, 0.4);
+      color: var(--muted);
+    }
+    button.amber {
+      border-color: var(--amber-soft);
+      background: linear-gradient(180deg, rgba(232,184,109,0.25), rgba(232,184,109,0.08));
+      color: var(--amber);
+    }
+    .err {
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+      min-height: 1.2em;
+    }
+    .linkish {
+      background: none;
+      border: none;
+      color: var(--teal);
+      padding: 0;
+      text-decoration: underline;
+      font-size: 0.9rem;
+    }
+    .chat-wrap { display: flex; flex-direction: column; flex: 1; gap: 0.9rem; }
+    .dialogue {
+      position: relative;
+      padding: 1.15rem 1.2rem 1.3rem;
+      border-left: 3px solid var(--amber);
+      background:
+        linear-gradient(90deg, rgba(232,184,109,0.08), transparent 40%),
+        rgba(0,0,0,0.25);
+      min-height: 5.5rem;
+      animation: dialogueIn 0.45s ease both;
+    }
+    .dialogue .speaker {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      color: var(--amber);
+      margin-bottom: 0.45rem;
+      font-family: "Shippori Mincho", serif;
+    }
+    .dialogue p {
+      margin: 0;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      font-size: 1.02rem;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--chip);
+      color: var(--text);
+      padding: 0.5rem 0.85rem;
+      font-size: 0.88rem;
+      border-radius: 2px;
+      animation: fadeUp 0.4s ease both;
+    }
+    .chip:hover {
+      border-color: var(--amber);
+      background: rgba(232, 184, 109, 0.12);
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin: 0;
+    }
+    .composer {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    @media (max-width: 520px) {
+      .composer { grid-template-columns: 1fr 1fr; }
+      .composer input { grid-column: 1 / -1; }
+    }
+    .hidden { display: none !important; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes dialogueIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes pulseSoft {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(46, 196, 182, 0.15); }
+      50% { box-shadow: 0 0 0 6px rgba(46, 196, 182, 0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">LUNA<span>FSQ companion demo</span></div>
+      <div id="modeBadge" class="badge hidden">—</div>
+    </header>
+
+    <section id="authPanel" class="panel">
+      <h2 id="authTitle">ログイン</h2>
+      <form id="authForm">
+        <label for="email">メール</label>
+        <input id="email" type="email" autocomplete="username" required placeholder="you@example.com" />
+        <label for="password">パスワード</label>
+        <input id="password" type="password" autocomplete="current-password" required minlength="6" />
+        <div class="row">
+          <button type="submit" id="authSubmit" class="amber">ログイン</button>
+          <button type="button" id="toggleMode" class="ghost">新規登録はこちら</button>
+        </div>
+      </form>
+      <p class="err" id="authError"></p>
+      <p class="hint">デモ用: 管理者アカウントでログインするか、新規登録してください。</p>
+    </section>
+
+    <section id="chatPanel" class="chat-wrap hidden">
+      <div class="row" style="justify-content: flex-end;">
+        <button type="button" id="logoutBtn" class="ghost">ログアウト</button>
+      </div>
+      <div class="dialogue" id="dialogueBox">
+        <div class="speaker" id="speakerLabel">COMPANION</div>
+        <p id="dialogueText">…</p>
+      </div>
+      <p class="hint">チップをタップするか、下で自由に入力・音声入力できます。</p>
+      <div class="chips" id="chips"></div>
+      <div class="composer">
+        <input id="message" type="text" placeholder="自分の言葉で答える…" autocomplete="off" />
+        <button type="button" id="micBtn" class="ghost" title="音声入力">🎤</button>
+        <button type="button" id="sendBtn" class="amber">送信</button>
+      </div>
+      <p class="err" id="chatError"></p>
+    </section>
+  </div>
+
+  <script>
+    const TOKEN_KEY = "luna_demo_token";
+    let token = localStorage.getItem(TOKEN_KEY) || "";
+    let registerMode = false;
+    let busy = false;
+
+    const authPanel = document.getElementById("authPanel");
+    const chatPanel = document.getElementById("chatPanel");
+    const authForm = document.getElementById("authForm");
+    const authTitle = document.getElementById("authTitle");
+    const authSubmit = document.getElementById("authSubmit");
+    const toggleMode = document.getElementById("toggleMode");
+    const authError = document.getElementById("authError");
+    const chatError = document.getElementById("chatError");
+    const dialogueText = document.getElementById("dialogueText");
+    const chipsEl = document.getElementById("chips");
+    const messageEl = document.getElementById("message");
+    const sendBtn = document.getElementById("sendBtn");
+    const micBtn = document.getElementById("micBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const modeBadge = document.getElementById("modeBadge");
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      micBtn.classList.add("hidden");
+    }
+
+    function setBusy(v) {
+      busy = v;
+      sendBtn.disabled = v;
+      authSubmit.disabled = v;
+      micBtn.disabled = v;
+    }
+
+    function formatApiError(res, data) {
+      const detail = data && data.detail;
+      if (detail && typeof detail === "object") {
+        const msg = detail.message || detail.code || "エラーが発生しました";
+        const sec = detail.retry_after_seconds;
+        if (res.status === 429 || detail.code === "quota_exceeded") {
+          return sec ? (msg + "（約" + sec + "秒後に再試行できます）") : msg;

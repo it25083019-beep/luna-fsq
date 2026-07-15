@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.env
+**/.env
+*.db
+**/data/*.db
+my-project/brain_data/_debug_save.log
+my-project/brain_data/users/
+.DS_Store
+_test_result.json
+/_*.py
+scripts/_patch_*.py
+scripts/_fix_*.py
+*.bak
+*.bak_*

@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: luna-fsq
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ENV
+        value: production
+      - key: MODEL_NAME
+        value: gemini-2.5-flash
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        value: sqlite:///./data/luna.db
+      - key: ALLOWED_ORIGINS
+        value: "*"
