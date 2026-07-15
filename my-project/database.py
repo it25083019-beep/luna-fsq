@@ -37,6 +37,11 @@ def _resolve_database_url() -> str:
         return url
 
     url = explicit or "sqlite:///./data/luna.db"
+    # Render/Heroku style postgres:// → SQLAlchemy + psycopg3
+    if url.startswith("postgres://"):
+        url = "postgresql+psycopg://" + url[len("postgres://"):]
+    elif url.startswith("postgresql://") and "+psycopg" not in url:
+        url = "postgresql+psycopg://" + url[len("postgresql://"):]
     # SQLAlchemy needs the PyMySQL driver prefix
     if url.startswith("mysql://"):
         url = "mysql+pymysql://" + url[len("mysql://"):]

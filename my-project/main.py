@@ -120,7 +120,13 @@ def health():
         "ok": True,
         "env": os.getenv("ENV", "dev"),
         "model": os.getenv("MODEL_NAME", "gemini-2.5-flash"),
-        "db": "mysql" if "mysql" in os.getenv("DATABASE_URL", "").lower() else "sqlite",
+        "db": (
+            "postgres"
+            if "postgres" in os.getenv("DATABASE_URL", "").lower()
+            else "mysql"
+            if "mysql" in os.getenv("DATABASE_URL", "").lower()
+            else "sqlite"
+        ),
     }
 
 

@@ -11,3 +11,4 @@ python-jose[cryptography]
 email-validator
 pymysql
 cryptography
+psycopg[binary]>=3.1

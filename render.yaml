@@ -1,3 +1,9 @@
+databases:
+  - name: luna-db
+    plan: free
+    databaseName: luna_fsq
+    user: luna
+
 services:
   - type: web
     name: luna-fsq
@@ -18,6 +24,8 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: DATABASE_URL
-        value: sqlite:///./data/luna.db
+        fromDatabase:
+          name: luna-db
+          property: connectionString
       - key: ALLOWED_ORIGINS
         value: "*"
