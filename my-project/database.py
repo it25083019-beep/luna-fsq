@@ -74,7 +74,22 @@ def get_db():
         db.close()
 
 
+def ensure_schema() -> None:
+    """Add columns that create_all will not alter on existing tables."""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(engine)
+    if "users" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("users")}
+    if "is_locked" not in cols:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_locked BOOLEAN DEFAULT FALSE NOT NULL"))
+        print("[DB] added users.is_locked")
+
+
 def init_db() -> None:
     import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    ensure_schema()

@@ -63,3 +63,23 @@ class ChatResponse(BaseModel):
     suggested_replies: list[str] = []
     allow_custom_input: bool = True
     allow_voice_input: bool = True
+
+
+
+class AdminUserOut(BaseModel):
+    user_id: str
+    email: str
+    display_name: Optional[str] = None
+    is_admin: bool = False
+    is_locked: bool = False
+    created_at: Optional[str] = None
+    companion_name: Optional[str] = None
+    profile_complete: bool = False
+
+
+class AdminResetPasswordRequest(BaseModel):
+    new_password: str = Field(min_length=6)
+
+
+class AdminLockRequest(BaseModel):
+    locked: bool = True

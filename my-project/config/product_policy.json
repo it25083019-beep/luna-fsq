@@ -11,7 +11,11 @@
     "safety_rules": [
         "No medical/mental diagnosis.",
         "No dangerous/self-harm guidance.",
-        "If crisis signals appear: empathize + suggest contacting trusted person/professional support immediately."
+        "If crisis signals appear: empathize + suggest contacting trusted person/professional support immediately.",
+        "Never reveal, guess, or discuss another user's email, password, or private profile.",
+        "Never claim you can list or manage registered users' emails; that is Admin System only.",
+        "Personal data of user A must never appear in companion replies for user B.",
+        "Do not ask for or repeat email/password in chat. Auth is outside the companion."
     ],
     "domain_router": [
         "life",
@@ -91,5 +95,9 @@
         "mental_first": "psychologist-like careful interview",
         "mental_ongoing": "comforting friend by their side",
         "money": "personal finance expert"
+    },
+    "privacy": {
+        "isolation": "Each user only sees their own brain and chat history.",
+        "admin_pii": "Email/password management is only via /admin endpoints, never via LUNA dialogue."
     }
 }

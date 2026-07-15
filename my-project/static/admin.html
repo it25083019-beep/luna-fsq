@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LUNA Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600&family=Shippori+Mincho:wght@600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0e1418; --panel: #162126; --text: #e8f0ef; --muted: #8aa3a0;
+      --teal: #2ec4b6; --amber: #e8b86d; --danger: #d96b6b; --border: rgba(46,196,182,.28);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; font-family: "IBM Plex Sans JP", sans-serif; color: var(--text);
+      background: linear-gradient(165deg, #0c1214, #122024 50%, #0a1012);
+    }
+    .shell { max-width: 960px; margin: 0 auto; padding: 1.25rem; }
+    h1 { font-family: "Shippori Mincho", serif; color: var(--amber); font-weight: 600; margin: 0 0 .25rem; }
+    .sub { color: var(--muted); font-size: .85rem; margin-bottom: 1rem; }
+    .panel { background: var(--panel); border: 1px solid var(--border); padding: 1rem; margin-bottom: 1rem; }
+    label { display:block; font-size:.75rem; color:var(--muted); margin:.5rem 0 .25rem; }
+    input { width:100%; padding:.6rem .7rem; background:rgba(0,0,0,.28); border:1px solid var(--border); color:var(--text); font:inherit; }
+    button { font:inherit; cursor:pointer; border:1px solid var(--teal); background:rgba(46,196,182,.15); color:var(--text); padding:.55rem .9rem; }
+    button.danger { border-color: var(--danger); background: rgba(217,107,107,.15); color:#f0c0c0; }
+    button.ghost { border-color: var(--muted); background: transparent; color: var(--muted); }
+    .row { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.75rem; }
+    .err { color: var(--danger); min-height:1.2em; font-size:.85rem; }
+    table { width:100%; border-collapse: collapse; font-size:.88rem; }
+    th, td { text-align:left; padding:.55rem .4rem; border-bottom:1px solid rgba(255,255,255,.08); vertical-align: top; }
+    th { color: var(--muted); font-weight:500; }
+    .badge { display:inline-block; padding:.1rem .4rem; border:1px solid var(--border); font-size:.7rem; color:var(--teal); }
+    .badge.lock { color: var(--danger); border-color: rgba(217,107,107,.4); }
+    .hidden { display:none !important; }
+    a { color: var(--teal); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h1>LUNA Admin</h1>
+    <p class="sub">ユーザー一覧 / パスワード再設定 / ロック / バックアップ</p>
+
+    <section id="loginPanel" class="panel">
+      <label>メール</label>
+      <input id="email" type="email" placeholder="admin@..." />
+      <label>パスワード</label>
+      <input id="password" type="password" />
+      <div class="row">
+        <button id="loginBtn" type="button">ログイン</button>
+        <a href="/demo">Demoへ</a>
+      </div>
+      <p class="err" id="loginErr"></p>
+    </section>
+
+    <section id="dashPanel" class="panel hidden">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div id="who" class="sub"></div>
+        <div class="row">
+          <button id="refreshBtn" type="button">更新</button>
+          <button id="exportBtn" type="button">バックアップJSON</button>
+          <button id="logoutBtn" class="ghost" type="button">ログアウト</button>
+        </div>
+      </div>
+      <p class="err" id="dashErr"></p>
+      <div style="overflow-x:auto; margin-top:.75rem;">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>名前</th>
+              <th>Companion</th>
+              <th>状態</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <script>
+    const KEY = "luna_admin_token";
+    let token = localStorage.getItem(KEY) || "";
+    const loginPanel = document.getElementById("loginPanel");
+    const dashPanel = document.getElementById("dashPanel");
+    const loginErr = document.getElementById("loginErr");
+    const dashErr = document.getElementById("dashErr");
+    const tbody = document.getElementById("tbody");
+    const who = document.getElementById("who");
+
+    async function api(path, opts={}) {
+      const headers = Object.assign({"Content-Type":"application/json"}, opts.headers||{});
+      if (token) headers.Authorization = "Bearer " + token;
+      const res = await fetch(path, Object.assign({}, opts, {headers}));
+      let data = null;
+      try { data = await res.json(); } catch(_) {}
+      if (!res.ok) {
+        const d = data && data.detail;
+        throw new Error(typeof d === "string" ? d : (d && d.message) || res.statusText);
+      }
+      return data;
+    }
+
+    function showDash(v) {
+      loginPanel.classList.toggle("hidden", v);
+      dashPanel.classList.toggle("hidden", !v);
+    }
+
+    async function loadUsers() {
+      dashErr.textContent = "";
+      const users = await api("/admin/users");
+      tbody.innerHTML = "";
+      users.forEach(u => {
+        const tr = document.createElement("tr");
+        const flags = [];
+        if (u.is_admin) flags.push('<span class="badge">ADMIN</span>');
+        if (u.is_locked) flags.push('<span class="badge lock">LOCKED</span>');
+        if (u.profile_complete) flags.push('<span class="badge">PROFILE</span>');
+        tr.innerHTML = `
+          <td>${u.email}<div class="sub">${u.user_id.slice(0,8)}…</div></td>
+          <td>${u.display_name || "—"}</td>
+          <td>${u.companion_name || "—"}</td>
+          <td>${flags.join(" ") || "—"}</td>
+          <td></td>`;
+        const actions = tr.lastElementChild;
+        const reset = document.createElement("button");
+        reset.type = "button";
+        reset.textContent = "Reset PW";
+        reset.addEventListener("click", async () => {
+          const pw = prompt("新しいパスワード（6文字以上）", "");
+          if (!pw || pw.length < 6) return;
+          try {
+            await api("/admin/users/" + u.user_id + "/reset-password", {
+              method: "POST", body: JSON.stringify({ new_password: pw })
+            });
+            alert("パスワードを更新しました");
+          } catch (e) { dashErr.textContent = e.message; }
+        });
+        const lock = document.createElement("button");
+        lock.type = "button";
+        lock.className = u.is_locked ? "" : "danger";
+        lock.textContent = u.is_locked ? "Unlock" : "Lock";
+        lock.addEventListener("click", async () => {
+          try {
+            await api("/admin/users/" + u.user_id + "/lock", {
+              method: "POST", body: JSON.stringify({ locked: !u.is_locked })
+            });
+            await loadUsers();
+          } catch (e) { dashErr.textContent = e.message; }
+        });
+        actions.appendChild(reset);
+        actions.appendChild(document.createTextNode(" "));
+        actions.appendChild(lock);
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      loginErr.textContent = "";
+      try {
+        const data = await api("/auth/login", {
+          method: "POST",
+          body: JSON.stringify({
+            email: document.getElementById("email").value.trim(),
+            password: document.getElementById("password").value,
+          }),
+        });
+        if (!data.is_admin) throw new Error("管理者アカウントのみ");
+        token = data.access_token;
+        localStorage.setItem(KEY, token);
+        who.textContent = data.email;
+        showDash(true);
+        await loadUsers();
+      } catch (e) { loginErr.textContent = e.message; }
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", () => loadUsers().catch(e => dashErr.textContent = e.message));
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      token = ""; localStorage.removeItem(KEY); showDash(false);
+    });
+    document.getElementById("exportBtn").addEventListener("click", async () => {
+      try {
+        const data = await api("/admin/export");
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "luna-backup-" + new Date().toISOString().slice(0,10) + ".json";
+        a.click();
+      } catch (e) { dashErr.textContent = e.message; }
+    });
+
+    (async () => {
+      if (!token) { showDash(false); return; }
+      try {
+        const me = await api("/auth/me");
+        if (!me.is_admin) throw new Error("not admin");
+        who.textContent = me.email;
+        showDash(true);
+        await loadUsers();
+      } catch (_) {
+        token = ""; localStorage.removeItem(KEY); showDash(false);
+      }
+    })();
+  </script>
+</body>
+</html>

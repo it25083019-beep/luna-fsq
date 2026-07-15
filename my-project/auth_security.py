@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from dotenv import load_dotenv
 
-_env_dir = __import__('pathlib').Path(__file__).resolve().parent
-load_dotenv(_env_dir / '.env')
-load_dotenv()  # also CWD
+_env_dir = __import__("pathlib").Path(__file__).resolve().parent
+load_dotenv(_env_dir / ".env")
+load_dotenv()
 
 import os
 from datetime import datetime, timedelta, timezone
@@ -29,7 +29,6 @@ JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", str(60 * 24 * 7)))
 
 
 def hash_password(password: str) -> str:
-    # bcrypt truncates at 72 bytes
     return pwd_context.hash(password[:72] if isinstance(password, str) else password)
 
 
@@ -73,4 +72,17 @@ def get_current_user(
     user = db.query(User).filter(User.public_id == public_id).first()
     if not user:
         raise credentials_exc
+    if getattr(user, "is_locked", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is locked",
+        )
     return user
+
+
+def require_admin(current: User = Depends(get_current_user)) -> User:
+    from luna_service import is_admin
+
+    if current.is_admin or is_admin(current.public_id):
+        return current
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")

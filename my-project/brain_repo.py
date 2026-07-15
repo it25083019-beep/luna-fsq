@@ -239,6 +239,42 @@ def migrate_json_brains_to_db() -> Dict[str, Any]:
     return stats
 
 
+
+def sync_privacy_rules_into_core() -> int:
+    """Merge privacy trained_knowledge from JSON into DB core (idempotent)."""
+    if not CORE_BRAIN_PATH.exists():
+        return 0
+    with open(CORE_BRAIN_PATH, "r", encoding="utf-8") as f:
+        file_data = json.load(f)
+    file_rules = [x for x in file_data.get("trained_knowledge", []) if isinstance(x, str) and x.startswith("PRIVACY:")]
+    if not file_rules:
+        return 0
+    session = SessionLocal()
+    try:
+        row = session.query(CoreBrain).filter(CoreBrain.id == 1).first()
+        if not row:
+            return 0
+        data = _parse_state(row.state_json, default_core_brain())
+        knowledge = list(data.get("trained_knowledge", []))
+        added = 0
+        for rule in file_rules:
+            if rule not in knowledge:
+                knowledge.append(rule)
+                added += 1
+        if added:
+            data["trained_knowledge"] = knowledge
+            if file_data.get("version"):
+                data["version"] = file_data["version"]
+            row.state_json = json.dumps(data, ensure_ascii=False)
+            session.commit()
+        return added
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 def seed_admin_user() -> bool:
     """Create/update admin from ADMIN_EMAIL / ADMIN_PASSWORD env."""
     email = os.getenv("ADMIN_EMAIL", "admin@luna.local").strip().lower()

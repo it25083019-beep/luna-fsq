@@ -16,12 +16,16 @@ from auth_security import (
     create_access_token,
     get_current_user,
     hash_password,
+    require_admin,
     verify_password,
 )
-from brain_repo import migrate_json_brains_to_db, seed_admin_user
+from brain_repo import migrate_json_brains_to_db, seed_admin_user, sync_privacy_rules_into_core
 from database import get_db, init_db
-from models import User
+from models import CoreBrain, User
 from schemas import (
+    AdminLockRequest,
+    AdminResetPasswordRequest,
+    AdminUserOut,
     ChatRequest,
     ChatResponse,
     CheckinRequest,
@@ -94,6 +98,7 @@ def on_startup() -> None:
     _warn_insecure_defaults()
     init_db()
     migrate_json_brains_to_db()
+    sync_privacy_rules_into_core()
     seed_admin_user()
 
 
@@ -133,6 +138,11 @@ def health():
 @app.get("/demo")
 def demo_page():
     return FileResponse(_STATIC_DIR / "demo.html")
+
+
+@app.get("/admin")
+def admin_page():
+    return FileResponse(_STATIC_DIR / "admin.html")
 
 
 # ----- Auth -----
@@ -176,6 +186,8 @@ def auth_login(req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(req.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    if getattr(user, "is_locked", False):
+        raise HTTPException(status_code=403, detail="Account is locked")
     token = create_access_token(user.public_id, extra={"email": user.email, "is_admin": user.is_admin})
     return TokenResponse(
         access_token=token,
@@ -292,3 +304,112 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
         )
     except Exception as e:
         raise _chat_http_error(e)
+
+
+# ----- Admin -----
+
+
+def _user_to_admin_out(user: User) -> AdminUserOut:
+    brain = {}
+    try:
+        if user.brain and user.brain.state_json:
+            import json as _json
+            brain = _json.loads(user.brain.state_json)
+    except Exception:
+        brain = {}
+    created = user.created_at.isoformat() if user.created_at else None
+    return AdminUserOut(
+        user_id=user.public_id,
+        email=user.email,
+        display_name=user.display_name or brain.get("user_display_name"),
+        is_admin=bool(user.is_admin or is_admin(user.public_id)),
+        is_locked=bool(getattr(user, "is_locked", False)),
+        created_at=created,
+        companion_name=brain.get("companion_name"),
+        profile_complete=bool(brain.get("profile_complete")),
+    )
+
+
+@app.get("/admin/users", response_model=list[AdminUserOut])
+def admin_list_users(
+    current: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    users = db.query(User).order_by(User.created_at.desc()).all()
+    return [_user_to_admin_out(u) for u in users]
+
+
+@app.post("/admin/users/{user_id}/reset-password")
+def admin_reset_password(
+    user_id: str,
+    req: AdminResetPasswordRequest,
+    current: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.public_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.password_hash = hash_password(req.new_password)
+    db.commit()
+    return {"ok": True, "user_id": user_id}
+
+
+@app.post("/admin/users/{user_id}/lock")
+def admin_set_lock(
+    user_id: str,
+    req: AdminLockRequest,
+    current: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.public_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.public_id == current.public_id and req.locked:
+        raise HTTPException(status_code=400, detail="Cannot lock your own admin account")
+    user.is_locked = bool(req.locked)
+    db.commit()
+    return {"ok": True, "user_id": user_id, "is_locked": user.is_locked}
+
+
+@app.get("/admin/export")
+def admin_export(
+    current: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Full backup JSON for Postgres Free expiry / migration."""
+    import json as _json
+    from datetime import datetime, timezone
+
+    users_out = []
+    for u in db.query(User).order_by(User.id.asc()).all():
+        brain_raw = u.brain.state_json if u.brain else "{}"
+        try:
+            brain = _json.loads(brain_raw)
+        except Exception:
+            brain = {"_raw": brain_raw}
+        users_out.append(
+            {
+                "public_id": u.public_id,
+                "email": u.email,
+                "password_hash": u.password_hash,
+                "display_name": u.display_name,
+                "is_admin": u.is_admin,
+                "is_locked": getattr(u, "is_locked", False),
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+                "brain": brain,
+            }
+        )
+    core_row = db.query(CoreBrain).filter_by(id=1).first()
+    core = {}
+    if core_row and core_row.state_json:
+        try:
+            core = _json.loads(core_row.state_json)
+        except Exception:
+            core = {"_raw": core_row.state_json}
+    return {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "user_count": len(users_out),
+        "users": users_out,
+        "core_brain": core,
+    }
+

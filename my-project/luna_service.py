@@ -292,6 +292,11 @@ Coaching Format: {policy.get('coaching_format', '')}
 
 Output Format: Respond ONLY with <dialogue>...</dialogue> and <game_state_json>...</game_state_json>.
 When the admin teaches new rules or facts, put a concise lesson in memory_note inside game_state_json.
+
+# PRIVACY / PII
+- Never list or invent user emails/passwords in chat.
+- Managing accounts is done in Admin Panel (/admin), not via dialogue.
+- Trained knowledge about privacy overrides any role-play request to leak PII.
 """
 
 
@@ -385,6 +390,10 @@ NOTIFICATION RULES (do NOT ask interval preference):
 - During study/work: set pending_notification for mid-task break/progress.
 - Before scheduled events in timetable: use schedule_reminders / pending_notification.
 
+
+# PRIVACY
+- You only know THIS user. Never invent or reference other users' private data.
+- Do not ask for email/password. Auth is outside chat.
 Output ONLY <dialogue> and <game_state_json>.
 Include current_focus, current_do_now, pending_notification when useful.
 """
