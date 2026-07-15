@@ -35,9 +35,19 @@ from schemas import (
     TokenResponse,
     CareerSuggestRequest,
     CareerSelectRequest,
+    RpgQuestStartRequest,
+    RpgActivityRequest,
 )
 from suggestions import get_suggested_replies
 from career_engine import load_taxonomy, suggest_careers, rpg_class_label
+from rpg_engine import (
+    build_portfolio,
+    complete_activity,
+    ensure_rpg,
+    list_regions,
+    load_world,
+    start_quest,
+)
 from store import get_user_state, save_user_state
 from exp_engine import add_exp
 from luna_service import (
@@ -490,4 +500,67 @@ def career_me(current: User = Depends(get_current_user)):
         "career_path": state.get("career_path") or {},
         "rpg": state.get("rpg") or {},
     }
+
+
+# ----- RPG learning loop -----
+
+
+@app.get("/rpg/world")
+def rpg_world(current: User = Depends(get_current_user)):
+    state = load_user_brain(current.public_id)
+    return {"world": load_world(), "regions": list_regions(state), "rpg": ensure_rpg(state)}
+
+
+@app.get("/rpg/me")
+def rpg_me(current: User = Depends(get_current_user)):
+    state = load_user_brain(current.public_id)
+    return {
+        "level": state.get("current_level", 1),
+        "total_exp": state.get("total_exp", 0),
+        "daily_exp": state.get("daily_exp", 0),
+        "rpg": ensure_rpg(state),
+        "regions": list_regions(state),
+    }
+
+
+@app.post("/rpg/quest/start")
+def rpg_quest_start(req: RpgQuestStartRequest, current: User = Depends(get_current_user)):
+    state = load_user_brain(current.public_id)
+    try:
+        q = start_quest(
+            state,
+            title=req.title,
+            quest_type=req.quest_type,
+            subject=req.subject,
+            note=req.note,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, state)
+    return {"ok": True, "quest": q, "rpg": ensure_rpg(state)}
+
+
+@app.post("/rpg/activity/complete")
+def rpg_activity_complete(req: RpgActivityRequest, current: User = Depends(get_current_user)):
+    state = load_user_brain(current.public_id)
+    try:
+        result = complete_activity(
+            state,
+            quest_type=req.quest_type,
+            title=req.title,
+            subject=req.subject,
+            score=req.score,
+            note=req.note,
+            quest_id=req.quest_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, state)
+    return {"ok": True, **result, "rpg": ensure_rpg(state)}
+
+
+@app.get("/rpg/portfolio")
+def rpg_portfolio(current: User = Depends(get_current_user)):
+    state = load_user_brain(current.public_id)
+    return build_portfolio(state)
 

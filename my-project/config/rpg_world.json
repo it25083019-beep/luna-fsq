@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "regions": [
+    {"id": "tutorial_plains", "label_ja": "始まりの平原", "order": 1, "unlock_level": 1, "theme": "習慣づくり"},
+    {"id": "study_forest", "label_ja": "学習の森", "order": 2, "unlock_level": 2, "theme": "日常学習"},
+    {"id": "exam_hills", "label_ja": "試錬の丘", "order": 3, "unlock_level": 3, "theme": "小テスト"},
+    {"id": "midterm_canyon", "label_ja": "中間の峡谷", "order": 4, "unlock_level": 4, "theme": "中間試験"},
+    {"id": "final_castle", "label_ja": "期末の城", "order": 5, "unlock_level": 5, "theme": "期末ボス"}
+  ],
+  "quest_types": {
+    "homework": {"label_ja": "通常クエスト（課題）", "exp": 12, "log_kind": "quest"},
+    "daily_study": {"label_ja": "日次クエスト（学習）", "exp": 10, "log_kind": "quest"},
+    "pop_quiz": {"label_ja": "宝箱（抜き打ち）", "exp": 18, "log_kind": "treasure"},
+    "unit_test": {"label_ja": "装備ゲット（単元テスト）", "exp": 25, "log_kind": "equipment"},
+    "midterm": {"label_ja": "中ボス", "exp": 40, "log_kind": "boss"},
+    "final_exam": {"label_ja": "ボス討伐（期末）", "exp": 60, "log_kind": "boss"}
+  },
+  "equipment_slots": ["weapon", "armor", "accessory", "artifact"],
+  "portfolio_sections": ["quests", "equipment", "treasures", "bosses", "skills_summary"]
+}

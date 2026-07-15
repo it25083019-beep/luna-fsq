@@ -99,3 +99,19 @@ class CareerSelectRequest(BaseModel):
     cluster_id: str
     decided_career: Optional[str] = None
     rpg_class: Optional[str] = None
+
+
+class RpgQuestStartRequest(BaseModel):
+    title: str
+    quest_type: str = "daily_study"
+    subject: Optional[str] = None
+    note: Optional[str] = None
+
+
+class RpgActivityRequest(BaseModel):
+    title: str
+    quest_type: str = "daily_study"
+    subject: Optional[str] = None
+    score: Optional[float] = None
+    note: Optional[str] = None
+    quest_id: Optional[str] = None

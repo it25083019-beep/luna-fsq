@@ -77,6 +77,7 @@ def default_user_brain(user_id: str) -> Dict[str, Any]:
             "quest_log": [],
             "boss_clears": [],
             "treasure_finds": [],
+            "active_quests": [],
         },
     }
 
