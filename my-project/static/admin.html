@@ -83,7 +83,7 @@
       try { data = await res.json(); } catch(_) {}
       if (!res.ok) {
         const d = data && data.detail;
-        throw new Error(typeof d === "string" ? d : (d && d.message) || res.statusText);
+        throw new Error(LunaAuth.formatApiError(res, data));
       }
       return data;
     }

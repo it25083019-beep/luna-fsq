@@ -145,9 +145,7 @@
       let data = null;
       try { data = await res.json(); } catch (_) {}
       if (!res.ok) {
-        const d = data && data.detail;
-        const msg = (d && d.message) || (typeof d === "string" ? d : res.statusText);
-        throw new Error(msg || "request failed");
+        throw new Error(LunaAuth.formatApiError(res, data));
       }
       return data;
     }

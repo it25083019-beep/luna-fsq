@@ -234,8 +234,6 @@ def get_brain_status(user_id: str) -> Dict[str, Any]:
     core = load_core_brain()
     user = load_user_brain(user_id)
     admin = is_admin(user_id)
-    if not is_admin(user_id):
-        _update_relationship(user, user_text)
     return {
         "user_id": user_id,
         "is_admin": admin,
@@ -792,6 +790,9 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 5) -> s
     # For completed users: if they announce study/work, stash activity notification
     if not is_admin(user_id):
         u = load_user_brain(user_id)
+        if (user_text or "").strip():
+            _update_relationship(u, user_text)
+            save_user_brain(user_id, u)
         if u.get("profile_complete"):
             note = _activity_notification(user_text)
             if note:

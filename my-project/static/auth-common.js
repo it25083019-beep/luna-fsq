@@ -51,5 +51,28 @@
     return true;
   }
 
-  global.LunaAuth = { TOKEN_KEY, getToken, setToken, clearToken, redirectAfterLogin, goLogin, requireLogin };
+  function formatApiError(res, data) {
+    const detail = data && data.detail;
+    if (detail && typeof detail === "object") {
+      const msg = detail.message || detail.code || "エラーが発生しました";
+      const sec = detail.retry_after_seconds;
+      if (res.status === 429 || detail.code === "quota_exceeded") {
+        return sec ? msg + "（約" + sec + "秒後に再試行できます）" : msg;
+      }
+      return msg;
+    }
+    if (typeof detail === "string") return detail;
+    return res.statusText || "リクエストに失敗しました";
+  }
+
+  global.LunaAuth = {
+    TOKEN_KEY,
+    getToken,
+    setToken,
+    clearToken,
+    redirectAfterLogin,
+    goLogin,
+    requireLogin,
+    formatApiError,
+  };
 })(window);

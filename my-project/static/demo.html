@@ -266,22 +266,7 @@
     }
 
     function formatApiError(res, data) {
-      const detail = data && data.detail;
-      if (detail && typeof detail === "object") {
-        const msg = detail.message || detail.code || "エラーが発生しました";
-        const sec = detail.retry_after_seconds;
-        if (res.status === 429 || detail.code === "quota_exceeded") {
-          return sec ? (msg + "（約" + sec + "秒後に再試行できます）") : msg;
-        }
-        return msg;
-      }
-      if (typeof detail === "string") {
-        if (res.status === 429 || /429|RESOURCE_EXHAUSTED|quota/i.test(detail)) {
-          return "AIの利用上限に達しました。1〜2分待ってからもう一度送ってください。";
-        }
-        return detail;
-      }
-      return res.statusText || "リクエストに失敗しました";
+      return LunaAuth.formatApiError(res, data);
     }
 
     async function api(path, opts = {}) {

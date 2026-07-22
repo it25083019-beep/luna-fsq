@@ -98,7 +98,7 @@
       const res = await fetch(path, Object.assign({ headers: { "Content-Type": "application/json" } }, opts));
       let data = null;
       try { data = await res.json(); } catch (_) {}
-      if (!res.ok) throw new Error((data && data.detail) || res.statusText);
+      if (!res.ok) throw new Error(LunaAuth.formatApiError(res, data));
       return data;
     }
 
