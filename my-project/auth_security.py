@@ -7,7 +7,9 @@ _env_dir = __import__("pathlib").Path(__file__).resolve().parent
 load_dotenv(_env_dir / ".env")
 load_dotenv()
 
+import hashlib
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -26,6 +28,7 @@ security = HTTPBearer(auto_error=True)
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-luna-jwt-secret-change-me")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", str(60 * 24 * 7)))
+PASSWORD_RESET_EXPIRE_MINUTES = int(os.getenv("PASSWORD_RESET_EXPIRE_MINUTES", "60"))
 
 
 def hash_password(password: str) -> str:
@@ -37,6 +40,18 @@ def verify_password(plain: str, hashed: str) -> bool:
         return pwd_context.verify(plain[:72] if isinstance(plain, str) else plain, hashed)
     except Exception:
         return False
+
+
+def generate_password_reset_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def hash_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def password_reset_expiry() -> datetime:
+    return datetime.now(timezone.utc) + timedelta(minutes=PASSWORD_RESET_EXPIRE_MINUTES)
 
 
 def create_access_token(subject: str, extra: Optional[dict[str, Any]] = None) -> str:

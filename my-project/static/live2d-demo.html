@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LUNA Live2D Trial</title>
+  <title>LUNA Avatar Trial</title>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600&family=Shippori+Mincho:wght@600&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -16,16 +16,21 @@
     .shell{max-width:1100px;margin:0 auto;padding:1rem;display:grid;gap:1rem}
     header{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
     .brand{font-family:"Shippori Mincho",serif;color:var(--amber);font-size:1.5rem}
-  .brand span{display:block;font-size:.72rem;color:var(--muted);font-family:"IBM Plex Sans JP",sans-serif}
+    .brand span{display:block;font-size:.72rem;color:var(--muted);font-family:"IBM Plex Sans JP",sans-serif}
     .layout{display:grid;grid-template-columns:minmax(280px,1fr) minmax(320px,1.1fr);gap:1rem}
     @media(max-width:860px){.layout{grid-template-columns:1fr}}
     .panel{background:var(--panel);border:1px solid var(--border);padding:1rem}
-    .stage{position:relative;min-height:420px;border-radius:12px;overflow:hidden;background:radial-gradient(circle at 50% 20%,rgba(46,196,182,.15),transparent 55%),#0a1214}
-    #live2dCanvas{width:100%;height:420px;display:block}
+    .stage{position:relative;min-height:420px;border-radius:12px;overflow:hidden;
+      background:radial-gradient(circle at 50% 20%,rgba(46,196,182,.15),transparent 55%),#0a1214;
+      display:flex;align-items:flex-end;justify-content:center;padding-bottom:.5rem}
+    #lunaSprite{max-height:400px;max-width:100%;object-fit:contain;transition:opacity .08s ease}
+    #live2dCanvas{width:100%;height:420px;display:none}
     .ref-card{position:absolute;right:12px;bottom:12px;width:110px;background:rgba(0,0,0,.45);border:1px solid var(--border);border-radius:10px;padding:.4rem;text-align:center}
     .ref-card img{width:72px;height:72px;object-fit:cover;border-radius:8px}
     .ref-card p{margin:.35rem 0 0;font-size:.62rem;color:var(--muted);line-height:1.35}
     .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem}
+    .expr-bar{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.5rem}
+  .expr-bar button{font-size:.78rem;padding:.4rem .55rem}
     button{font:inherit;cursor:pointer;border:1px solid var(--teal);background:rgba(46,196,182,.12);color:var(--text);padding:.55rem .85rem}
     button.ghost{border-color:var(--muted);background:transparent;color:var(--muted)}
     button.amber{border-color:var(--amber);color:var(--amber)}
@@ -44,37 +49,33 @@
 <body>
   <div class="shell">
     <header>
-      <div class="brand">LUNA Live2D<span>試作 — サンプルモデルで動作確認（本番はPSDから制作）</span></div>
+      <div class="brand">LUNA Avatar<span>試作 — 表情スプライト（まばたき・口パク・状況別）／Live2D PSD制作後に差し替え</span></div>
       <div>
         <a href="/demo">通常デモ</a>
         <button type="button" class="ghost" id="logoutBtn">ログアウト</button>
       </div>
     </header>
 
-    <section id="authPanel" class="panel">
-      <h2>ログイン</h2>
-      <label>メール</label><input id="email" type="email" />
-      <label>パスワード</label><input id="password" type="password" />
-      <div class="toolbar"><button type="button" class="amber" id="loginBtn">ログイン</button></div>
-      <p class="err" id="authError"></p>
-    </section>
+    <section id="authPanel" class="panel hidden"></section>
 
-    <div id="mainPanel" class="layout hidden">
+    <div id="mainPanel" class="layout">
       <section class="panel">
-        <div class="stage">
+        <div class="stage" id="stage">
+          <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
           <canvas id="live2dCanvas"></canvas>
           <div class="ref-card" title="LUNAデザイン参考">
             <img src="/static/live2d/luna-reference.png" alt="LUNA ref" />
-            <p>本番モデル<br/>差し替え予定</p>
+            <p>デザイン参考<br/>髪・服色固定</p>
           </div>
         </div>
-        <p class="status" id="live2dStatus">Live2D 読み込み中…</p>
+        <p class="status" id="live2dStatus">LUNA 読み込み中…</p>
         <div class="toolbar">
-          <button type="button" id="motionBtn">👋 モーション</button>
-          <button type="button" id="exprBtn">😊 表情</button>
+          <button type="button" id="waveBtn">👋 手を振る</button>
+          <button type="button" id="cheerBtn">🎉 応援</button>
           <button type="button" class="ghost" id="muteBtn">🔊 音声ON</button>
         </div>
-        <p class="hint">タップで反応。チャット返答時に口パク＋日本語読み上げ（ブラウザTTS）。</p>
+        <div class="expr-bar" id="exprBar"></div>
+        <p class="hint">自動：まばたき（3〜6秒）・返答時口パク・文脈で表情（挨拶→手振り、励まし→応援 など）。タップで笑顔。</p>
       </section>
 
       <section class="panel">
@@ -90,18 +91,14 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.2/dist/browser/pixi.min.js"></script>
-  <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display/dist/cubism4.min.js"></script>
+  <script src="/static/auth-common.js"></script>
+  <script src="/static/live2d/luna-avatar.js"></script>
   <script>
-    const TOKEN_KEY = "luna_demo_token";
-    const MODEL_URL = "https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display/test/assets/haru/haru_greeter_t03.model3.json";
-    let token = localStorage.getItem(TOKEN_KEY) || "";
+    let token = LunaAuth.getToken();
     let busy = false;
     let voiceOn = true;
-    let live2dModel = null;
-    let lipTimer = null;
-    let pixiApp = null;
+    let luna = null;
+    let isFirstChat = true;
 
     const authPanel = document.getElementById("authPanel");
     const mainPanel = document.getElementById("mainPanel");
@@ -110,24 +107,8 @@
     const chipsEl = document.getElementById("chips");
     const messageEl = document.getElementById("message");
     const chatError = document.getElementById("chatError");
-    const authError = document.getElementById("authError");
-
-    function setMouth(v) {
-      if (!live2dModel || !live2dModel.internalModel) return;
-      const core = live2dModel.internalModel.coreModel;
-      const ids = ["ParamMouthOpenY", "PARAM_MOUTH_OPEN_Y", "ParamMouthForm"];
-      ids.forEach((id) => { try { core.setParameterValueById(id, v); } catch (_) {} });
-    }
-
-    function startLipSync() {
-      stopLipSync();
-      lipTimer = setInterval(() => setMouth(0.15 + Math.random() * 0.65), 70);
-    }
-    function stopLipSync() {
-      if (lipTimer) clearInterval(lipTimer);
-      lipTimer = null;
-      setMouth(0);
-    }
+    const lunaSprite = document.getElementById("lunaSprite");
+    const exprBar = document.getElementById("exprBar");
 
     function speakJa(text) {
       return new Promise((resolve) => {
@@ -136,41 +117,25 @@
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "ja-JP";
         u.rate = 1.0;
-        u.onstart = () => startLipSync();
-        u.onend = () => { stopLipSync(); resolve(); };
-        u.onerror = () => { stopLipSync(); resolve(); };
+        u.onstart = () => { if (luna) luna.startLipSync(); };
+        u.onend = () => { if (luna) luna.stopLipSync(); resolve(); };
+        u.onerror = () => { if (luna) luna.stopLipSync(); resolve(); };
         window.speechSynthesis.speak(u);
       });
     }
 
-    async function initLive2D() {
-      try {
-        pixiApp = new PIXI.Application({
-          view: document.getElementById("live2dCanvas"),
-          autoStart: true,
-          resizeTo: document.getElementById("live2dCanvas"),
-          backgroundAlpha: 0,
-        });
-        live2dModel = await PIXI.live2d.Live2DModel.from(MODEL_URL);
-        pixiApp.stage.addChild(live2dModel);
-        const fit = () => {
-          const w = pixiApp.view.clientWidth || 320;
-          const h = pixiApp.view.clientHeight || 420;
-          const s = Math.min(w / live2dModel.width, h / live2dModel.height) * 0.95;
-          live2dModel.scale.set(s);
-          live2dModel.x = (w - live2dModel.width) / 2;
-          live2dModel.y = h - live2dModel.height + 20;
-        };
-        fit();
-        window.addEventListener("resize", fit);
-        live2dModel.on("hit", (areas) => {
-          if (areas.includes("Body") || areas.includes("body")) live2dModel.motion("Tap");
-          if (areas.includes("Head") || areas.includes("head")) live2dModel.expression();
-        });
-        live2dStatus.textContent = "Live2D OK — サンプルHaru（LUNAモデル制作後に差し替え）";
-      } catch (e) {
-        live2dStatus.textContent = "Live2D 読み込み失敗: " + (e.message || e);
-      }
+    async function initLuna() {
+      luna = new LunaAvatar(lunaSprite, live2dStatus);
+      await luna.init();
+      (LunaExpressions || []).forEach((name) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "ghost";
+        b.textContent = name;
+        b.onclick = () => luna.playExpression(name, 2000);
+        exprBar.appendChild(b);
+      });
+      document.getElementById("stage").onclick = () => luna.playExpression("happy", 1800);
     }
 
     async function api(path, opts = {}) {
@@ -203,7 +168,10 @@
       const text = data.dialogue || "";
       dialogueBox.textContent = text;
       renderChips(data.suggested_replies || []);
-      if (live2dModel) try { live2dModel.motion("Idle"); } catch (_) {}
+      if (luna) {
+        luna.reactToText(text, { greeting: isFirstChat, fallback: "happy" });
+        isFirstChat = false;
+      }
       await speakJa(text);
     }
 
@@ -216,6 +184,7 @@
       const msg = (text || "").trim();
       if (!msg || busy) return;
       busy = true; chatError.textContent = ""; messageEl.value = "";
+      if (luna) luna.reactToText(msg, { fallback: "think" });
       try {
         const data = await api("/chat", { method: "POST", body: JSON.stringify({ message: msg }) });
         await applyChatResponse(data);
@@ -223,48 +192,31 @@
       finally { busy = false; }
     }
 
-    document.getElementById("loginBtn").onclick = async () => {
-      authError.textContent = "";
-      try {
-        const data = await api("/auth/login", {
-          method: "POST",
-          body: JSON.stringify({
-            email: document.getElementById("email").value.trim(),
-            password: document.getElementById("password").value,
-          }),
-        });
-        token = data.access_token;
-        localStorage.setItem(TOKEN_KEY, token);
-        authPanel.classList.add("hidden");
-        mainPanel.classList.remove("hidden");
-        await initLive2D();
-        await startChat();
-      } catch (e) { authError.textContent = e.message || String(e); }
-    };
-
     document.getElementById("sendBtn").onclick = () => sendMessage(messageEl.value);
     messageEl.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); sendMessage(messageEl.value); } };
+
     document.getElementById("logoutBtn").onclick = () => {
-      token = ""; localStorage.removeItem(TOKEN_KEY); location.reload();
+      LunaAuth.clearToken();
+      LunaAuth.goLogin("/live2d");
     };
-    document.getElementById("motionBtn").onclick = () => { if (live2dModel) try { live2dModel.motion("Tap"); } catch (_) {} };
-    document.getElementById("exprBtn").onclick = () => { if (live2dModel) try { live2dModel.expression(); } catch (_) {} };
+    document.getElementById("waveBtn").onclick = () => { if (luna) luna.playExpression("wave", 2800); };
+    document.getElementById("cheerBtn").onclick = () => { if (luna) luna.playExpression("cheer", 2600); };
     document.getElementById("muteBtn").onclick = (ev) => {
       voiceOn = !voiceOn;
       ev.target.textContent = voiceOn ? "🔊 音声ON" : "🔇 音声OFF";
-      if (!voiceOn) { window.speechSynthesis.cancel(); stopLipSync(); }
+      if (!voiceOn) { window.speechSynthesis.cancel(); if (luna) luna.stopLipSync(); }
     };
 
     (async () => {
-      if (!token) return;
+      if (!LunaAuth.requireLogin("/live2d")) return;
+      token = LunaAuth.getToken();
       try {
         await api("/auth/me");
-        authPanel.classList.add("hidden");
-        mainPanel.classList.remove("hidden");
-        await initLive2D();
+        await initLuna();
         await startChat();
       } catch (_) {
-        token = ""; localStorage.removeItem(TOKEN_KEY);
+        LunaAuth.clearToken();
+        LunaAuth.goLogin("/live2d");
       }
     })();
   </script>

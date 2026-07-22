@@ -220,23 +220,7 @@
       <div id="modeBadge" class="badge hidden">—</div>
     </header>
 
-    <section id="authPanel" class="panel">
-      <h2 id="authTitle">ログイン</h2>
-      <form id="authForm">
-        <label for="email">メール</label>
-        <input id="email" type="email" autocomplete="username" required placeholder="you@example.com" />
-        <label for="password">パスワード</label>
-        <input id="password" type="password" autocomplete="current-password" required minlength="6" />
-        <div class="row">
-          <button type="submit" id="authSubmit" class="amber">ログイン</button>
-          <button type="button" id="toggleMode" class="ghost">新規登録はこちら</button>
-        </div>
-      </form>
-      <p class="err" id="authError"></p>
-      <p class="hint">メールとパスワード（6文字以上）で新規登録するか、登録済みアカウントでログインしてください。</p>
-    </section>
-
-    <section id="chatPanel" class="chat-wrap hidden">
+    <section id="chatPanel" class="chat-wrap">
       <div class="row" style="justify-content: flex-end;">
         <button type="button" id="logoutBtn" class="ghost">ログアウト</button>
       </div>
@@ -255,19 +239,12 @@
     </section>
   </div>
 
+  <script src="/static/auth-common.js"></script>
   <script>
-    const TOKEN_KEY = "luna_demo_token";
-    let token = localStorage.getItem(TOKEN_KEY) || "";
-    let registerMode = false;
+    let token = LunaAuth.getToken();
     let busy = false;
 
-    const authPanel = document.getElementById("authPanel");
     const chatPanel = document.getElementById("chatPanel");
-    const authForm = document.getElementById("authForm");
-    const authTitle = document.getElementById("authTitle");
-    const authSubmit = document.getElementById("authSubmit");
-    const toggleMode = document.getElementById("toggleMode");
-    const authError = document.getElementById("authError");
     const chatError = document.getElementById("chatError");
     const dialogueText = document.getElementById("dialogueText");
     const chipsEl = document.getElementById("chips");
@@ -285,7 +262,6 @@
     function setBusy(v) {
       busy = v;
       sendBtn.disabled = v;
-      authSubmit.disabled = v;
       micBtn.disabled = v;
     }
 
@@ -318,17 +294,6 @@
         throw new Error(formatApiError(res, data));
       }
       return data;
-    }
-
-    function showAuth() {
-      authPanel.classList.remove("hidden");
-      chatPanel.classList.add("hidden");
-      modeBadge.classList.add("hidden");
-    }
-
-    function showChat() {
-      authPanel.classList.add("hidden");
-      chatPanel.classList.remove("hidden");
     }
 
     function renderChips(list) {
@@ -405,37 +370,6 @@
       }
     }
 
-    toggleMode.addEventListener("click", () => {
-      registerMode = !registerMode;
-      authTitle.textContent = registerMode ? "新規登録" : "ログイン";
-      authSubmit.textContent = registerMode ? "登録して開始" : "ログイン";
-      toggleMode.textContent = registerMode ? "ログインはこちら" : "新規登録はこちら";
-      authError.textContent = "";
-    });
-
-    authForm.addEventListener("submit", async (ev) => {
-      ev.preventDefault();
-      authError.textContent = "";
-      setBusy(true);
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      try {
-        const path = registerMode ? "/auth/register" : "/auth/login";
-        const data = await api(path, {
-          method: "POST",
-          body: JSON.stringify({ email, password }),
-        });
-        token = data.access_token;
-        localStorage.setItem(TOKEN_KEY, token);
-        showChat();
-        await startChat();
-      } catch (e) {
-        authError.textContent = e.message || String(e);
-      } finally {
-        setBusy(false);
-      }
-    });
-
     sendBtn.addEventListener("click", () => sendMessage(messageEl.value));
     messageEl.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") {
@@ -445,11 +379,8 @@
     });
 
     logoutBtn.addEventListener("click", () => {
-      token = "";
-      localStorage.removeItem(TOKEN_KEY);
-      dialogueText.textContent = "…";
-      chipsEl.innerHTML = "";
-      showAuth();
+      LunaAuth.clearToken();
+      LunaAuth.goLogin("/demo");
     });
 
     if (SpeechRecognition) {
@@ -483,18 +414,14 @@
     }
 
     (async function boot() {
-      if (!token) {
-        showAuth();
-        return;
-      }
+      if (!LunaAuth.requireLogin("/demo")) return;
+      token = LunaAuth.getToken();
       try {
         await api("/auth/me");
-        showChat();
         await startChat();
       } catch (_) {
-        token = "";
-        localStorage.removeItem(TOKEN_KEY);
-        showAuth();
+        LunaAuth.clearToken();
+        LunaAuth.goLogin("/demo");
       }
     })();
   </script>

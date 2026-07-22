@@ -40,24 +40,13 @@
     <h1>LUNA Admin</h1>
     <p class="sub">ユーザー一覧 / パスワード再設定 / ロック / バックアップ</p>
 
-    <section id="loginPanel" class="panel">
-      <label>メール</label>
-      <input id="email" type="email" placeholder="admin@..." />
-      <label>パスワード</label>
-      <input id="password" type="password" />
-      <div class="row">
-        <button id="loginBtn" type="button">ログイン</button>
-        <a href="/demo">Demoへ</a>
-      </div>
-      <p class="err" id="loginErr"></p>
-    </section>
-
-    <section id="dashPanel" class="panel hidden">
+    <section id="dashPanel" class="panel">
       <div class="row" style="justify-content:space-between; align-items:center;">
         <div id="who" class="sub"></div>
         <div class="row">
           <button id="refreshBtn" type="button">更新</button>
           <button id="exportBtn" type="button">バックアップJSON</button>
+          <a href="/demo">Demoへ</a>
           <button id="logoutBtn" class="ghost" type="button">ログアウト</button>
         </div>
       </div>
@@ -78,12 +67,10 @@
       </div>
     </section>
   </div>
+  <script src="/static/auth-common.js"></script>
   <script>
-    const KEY = "luna_admin_token";
-    let token = localStorage.getItem(KEY) || "";
-    const loginPanel = document.getElementById("loginPanel");
+    let token = LunaAuth.getToken();
     const dashPanel = document.getElementById("dashPanel");
-    const loginErr = document.getElementById("loginErr");
     const dashErr = document.getElementById("dashErr");
     const tbody = document.getElementById("tbody");
     const who = document.getElementById("who");
@@ -99,11 +86,6 @@
         throw new Error(typeof d === "string" ? d : (d && d.message) || res.statusText);
       }
       return data;
-    }
-
-    function showDash(v) {
-      loginPanel.classList.toggle("hidden", v);
-      dashPanel.classList.toggle("hidden", !v);
     }
 
     async function loadUsers() {
@@ -155,28 +137,10 @@
       });
     }
 
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-      loginErr.textContent = "";
-      try {
-        const data = await api("/auth/login", {
-          method: "POST",
-          body: JSON.stringify({
-            email: document.getElementById("email").value.trim(),
-            password: document.getElementById("password").value,
-          }),
-        });
-        if (!data.is_admin) throw new Error("管理者アカウントのみ");
-        token = data.access_token;
-        localStorage.setItem(KEY, token);
-        who.textContent = data.email;
-        showDash(true);
-        await loadUsers();
-      } catch (e) { loginErr.textContent = e.message; }
-    });
-
     document.getElementById("refreshBtn").addEventListener("click", () => loadUsers().catch(e => dashErr.textContent = e.message));
     document.getElementById("logoutBtn").addEventListener("click", () => {
-      token = ""; localStorage.removeItem(KEY); showDash(false);
+      LunaAuth.clearToken();
+      LunaAuth.goLogin("/admin");
     });
     document.getElementById("exportBtn").addEventListener("click", async () => {
       try {
@@ -190,15 +154,19 @@
     });
 
     (async () => {
-      if (!token) { showDash(false); return; }
+      if (!LunaAuth.requireLogin("/admin")) return;
+      token = LunaAuth.getToken();
       try {
         const me = await api("/auth/me");
-        if (!me.is_admin) throw new Error("not admin");
+        if (!me.is_admin) {
+          window.location.href = "/demo";
+          return;
+        }
         who.textContent = me.email;
-        showDash(true);
         await loadUsers();
       } catch (_) {
-        token = ""; localStorage.removeItem(KEY); showDash(false);
+        LunaAuth.clearToken();
+        LunaAuth.goLogin("/admin");
       }
     })();
   </script>

@@ -33,6 +33,25 @@ class LoginRequest(BaseModel):
         return _normalize_email(v)
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def email_ok(cls, v: str) -> str:
+        return _normalize_email(v)
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=20)
+    new_password: str = Field(min_length=6)
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+    reset_url: Optional[str] = None
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LUNA — ログイン</title>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=IBM+Plex+Sans+JP:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0:#0c1416; --bg1:#122024; --panel:rgba(18,36,40,.88); --teal:#2ec4b6;
+      --teal-dim:#1a8a80; --amber:#e8b86d; --text:#e8f0ef; --muted:#8aa3a0;
+      --danger:#d96b6b; --border:rgba(46,196,182,.28); --shadow:0 18px 50px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;font-family:"IBM Plex Sans JP",sans-serif;color:var(--text);
+      background:radial-gradient(1200px 600px at 15% -10%,rgba(46,196,182,.18),transparent 55%),
+      linear-gradient(165deg,var(--bg0),var(--bg1) 55%,#0a1214)}
+    .shell{max-width:480px;margin:0 auto;padding:1.5rem 1rem}
+    .brand{font-family:"Shippori Mincho",serif;font-size:1.75rem;color:var(--amber);margin-bottom:1rem}
+    .brand span{display:block;font-size:.72rem;color:var(--muted);font-family:"IBM Plex Sans JP",sans-serif;margin-top:.2rem}
+    .panel{background:var(--panel);border:1px solid var(--border);box-shadow:var(--shadow);padding:1.25rem}
+    h2{font-family:"Shippori Mincho",serif;font-weight:500;margin:0 0 .75rem;font-size:1.15rem;color:var(--amber)}
+    label{display:block;font-size:.78rem;color:var(--muted);margin:.7rem 0 .3rem}
+    input{width:100%;padding:.7rem .8rem;border:1px solid var(--border);background:rgba(0,0,0,.28);color:var(--text);font:inherit}
+    input:focus{border-color:var(--teal);outline:none}
+    .row{display:flex;gap:.6rem;margin-top:1rem;flex-wrap:wrap}
+    button{font:inherit;cursor:pointer;border:1px solid var(--teal-dim);background:rgba(46,196,182,.12);color:var(--text);padding:.65rem 1rem}
+    button.ghost{background:transparent;border-color:rgba(138,163,160,.4);color:var(--muted)}
+    button.amber{border-color:#c9944a;background:rgba(232,184,109,.15);color:var(--amber)}
+    button.linkish{background:none;border:none;color:var(--teal);padding:0;text-decoration:underline;font-size:.9rem}
+    .err{color:var(--danger);font-size:.85rem;margin-top:.75rem;min-height:1.2em}
+    .hint{font-size:.75rem;color:var(--muted);line-height:1.5;margin:.5rem 0 0}
+    .hidden{display:none!important}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="brand">LUNA<span>Future Skill Quest</span></div>
+    <section class="panel">
+      <h2 id="authTitle">ログイン</h2>
+      <form id="authForm">
+        <label for="email">メール</label>
+        <input id="email" type="email" autocomplete="username" required placeholder="you@example.com" />
+        <div id="passwordBlock">
+          <label for="password">パスワード</label>
+          <input id="password" type="password" autocomplete="current-password" required minlength="6" />
+        </div>
+        <div id="resetTokenBlock" class="hidden">
+          <label for="resetToken">再設定トークン</label>
+          <input id="resetToken" type="text" autocomplete="off" />
+          <label for="newPassword">新しいパスワード</label>
+          <input id="newPassword" type="password" autocomplete="new-password" minlength="6" />
+        </div>
+        <div class="row">
+          <button type="submit" id="authSubmit" class="amber">ログイン</button>
+          <button type="button" id="toggleMode" class="ghost">新規登録はこちら</button>
+        </div>
+      </form>
+      <p class="hint">
+        <button type="button" id="forgotBtn" class="linkish">パスワードを忘れた方</button>
+        <span id="backToLoginWrap" class="hidden"> · <button type="button" id="backToLoginBtn" class="linkish">ログインに戻る</button></span>
+      </p>
+      <p class="err" id="authError"></p>
+      <p class="hint" id="authHint">管理者・ユーザー共通のログイン画面です。アカウント種別は自動判定されます。</p>
+      <p class="hint hidden" id="resetDevLink"></p>
+    </section>
+  </div>
+  <script src="/static/auth-common.js"></script>
+  <script>
+    let registerMode = false, forgotMode = false, resetMode = false, busy = false;
+    const authForm = document.getElementById("authForm");
+    const authTitle = document.getElementById("authTitle");
+    const authSubmit = document.getElementById("authSubmit");
+    const authError = document.getElementById("authError");
+    const authHint = document.getElementById("authHint");
+    const resetDevLink = document.getElementById("resetDevLink");
+
+    function setAuthMode(mode) {
+      forgotMode = mode === "forgot";
+      resetMode = mode === "reset";
+      registerMode = mode === "register";
+      const login = !forgotMode && !resetMode && !registerMode;
+      authTitle.textContent = forgotMode ? "パスワード再設定" : resetMode ? "新しいパスワード" : registerMode ? "新規登録" : "ログイン";
+      authSubmit.textContent = forgotMode ? "送信" : resetMode ? "更新" : registerMode ? "登録して開始" : "ログイン";
+      document.getElementById("toggleMode").classList.toggle("hidden", forgotMode || resetMode);
+      document.getElementById("forgotBtn").classList.toggle("hidden", forgotMode || resetMode);
+      document.getElementById("backToLoginWrap").classList.toggle("hidden", login);
+      document.getElementById("passwordBlock").classList.toggle("hidden", forgotMode || resetMode);
+      document.getElementById("resetTokenBlock").classList.toggle("hidden", !resetMode);
+      document.getElementById("password").required = login || registerMode;
+      document.getElementById("resetToken").required = resetMode;
+      document.getElementById("newPassword").required = resetMode;
+      authError.textContent = "";
+      resetDevLink.classList.add("hidden");
+    }
+
+    async function api(path, opts = {}) {
+      const res = await fetch(path, Object.assign({ headers: { "Content-Type": "application/json" } }, opts));
+      let data = null;
+      try { data = await res.json(); } catch (_) {}
+      if (!res.ok) throw new Error((data && data.detail) || res.statusText);
+      return data;
+    }
+
+    document.getElementById("toggleMode").onclick = () => setAuthMode(registerMode ? "login" : "register");
+    document.getElementById("forgotBtn").onclick = () => setAuthMode("forgot");
+    document.getElementById("backToLoginBtn").onclick = () => setAuthMode("login");
+
+    authForm.onsubmit = async (ev) => {
+      ev.preventDefault();
+      if (busy) return;
+      busy = true;
+      authSubmit.disabled = true;
+      authError.textContent = "";
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      try {
+        if (forgotMode) {
+          const data = await api("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) });
+          authError.style.color = "var(--teal)";
+          authError.textContent = data.message || "送信しました";
+          if (data.reset_url) {
+            resetDevLink.classList.remove("hidden");
+            resetDevLink.innerHTML = '開発用: <a href="' + data.reset_url + '">再設定リンク</a>';
+          }
+          setAuthMode("reset");
+          return;
+        }
+        if (resetMode) {
+          const tokenVal = document.getElementById("resetToken").value.trim() || new URLSearchParams(location.search).get("reset") || "";
+          await api("/auth/reset-password", { method: "POST", body: JSON.stringify({ token: tokenVal, new_password: document.getElementById("newPassword").value }) });
+          history.replaceState({}, "", "/login");
+          setAuthMode("login");
+          authError.style.color = "var(--teal)";
+          authError.textContent = "パスワードを更新しました。ログインしてください。";
+          return;
+        }
+        const path = registerMode ? "/auth/register" : "/auth/login";
+        const data = await api(path, { method: "POST", body: JSON.stringify({ email, password }) });
+        LunaAuth.redirectAfterLogin(data);
+      } catch (e) {
+        authError.style.color = "var(--danger)";
+        authError.textContent = e.message || String(e);
+      } finally {
+        busy = false;
+        authSubmit.disabled = false;
+      }
+    };
+
+    (async function boot() {
+      const resetFromUrl = new URLSearchParams(location.search).get("reset");
+      if (resetFromUrl) {
+        setAuthMode("reset");
+        document.getElementById("resetToken").value = resetFromUrl;
+        return;
+      }
+      const token = LunaAuth.getToken();
+      if (!token) return;
+      try {
+        const res = await fetch("/auth/me", { headers: { Authorization: "Bearer " + token } });
+        if (!res.ok) { LunaAuth.clearToken(); return; }
+        const me = await res.json();
+        LunaAuth.redirectAfterLogin({ access_token: token, is_admin: me.is_admin });
+      } catch (_) {
+        LunaAuth.clearToken();
+      }
+    })();
+  </script>
+</body>
+</html>

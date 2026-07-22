@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import os
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,14 +15,18 @@ from sqlalchemy.orm import Session
 
 from auth_security import (
     create_access_token,
+    generate_password_reset_token,
     get_current_user,
     hash_password,
+    hash_reset_token,
+    password_reset_expiry,
     require_admin,
     verify_password,
 )
 from brain_repo import migrate_json_brains_to_db, seed_admin_user, sync_privacy_rules_into_core
 from database import get_db, init_db
-from models import CoreBrain, User
+from models import CoreBrain, PasswordResetToken, User
+from password_reset_email import send_password_reset_email
 from schemas import (
     AdminLockRequest,
     AdminResetPasswordRequest,
@@ -29,8 +34,11 @@ from schemas import (
     ChatRequest,
     ChatResponse,
     CheckinRequest,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     LoginRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     SetCompanionNameRequest,
     TokenResponse,
     CareerSuggestRequest,
@@ -89,7 +97,7 @@ def _warn_insecure_defaults() -> None:
     if os.getenv("ENV", "dev").lower() in {"prod", "production"} and insecure:
         raise RuntimeError("Refusing to start in production: " + "; ".join(insecure))
     for item in insecure:
-        print(f"[WARN] {item} — change before sharing with others")
+        print(f"[WARN] {item} - change before sharing with others")
 
 
 def _chat_http_error(exc: Exception) -> HTTPException:
@@ -113,6 +121,8 @@ def on_startup() -> None:
     migrate_json_brains_to_db()
     sync_privacy_rules_into_core()
     seed_admin_user()
+    admin_email = os.getenv("ADMIN_EMAIL", "admin@luna.local").strip().lower()
+    print(f"[AUTH] Admin login email: {admin_email} (password from ADMIN_PASSWORD env)")
 
 
 def _resolve_user_id(requested: Optional[str], current: User) -> str:
@@ -129,7 +139,12 @@ def _resolve_user_id(requested: Optional[str], current: User) -> str:
 
 @app.get("/")
 def root():
-    return RedirectResponse(url="/demo")
+    return RedirectResponse(url="/login")
+
+
+@app.get("/login")
+def login_page():
+    return FileResponse(_STATIC_DIR / "login.html")
 
 
 @app.get("/health")
@@ -224,6 +239,72 @@ def auth_me(current: User = Depends(get_current_user)):
         "display_name": current.display_name,
         "is_admin": current.is_admin or is_admin(current.public_id),
     }
+
+
+@app.post("/auth/forgot-password", response_model=ForgotPasswordResponse)
+def auth_forgot_password(
+    req: ForgotPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Request a password reset link (email if SMTP configured; dev may return link)."""
+    generic = "登録済みの場合、パスワード再設定用の案内を送信しました。メールをご確認ください。"
+    email = req.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if not user or user.is_admin or getattr(user, "is_locked", False):
+        return ForgotPasswordResponse(message=generic)
+
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.used_at.is_(None),
+    ).update({PasswordResetToken.used_at: datetime.now(timezone.utc)})
+    db.commit()
+
+    raw_token = generate_password_reset_token()
+    db.add(
+        PasswordResetToken(
+            user_id=user.id,
+            token_hash=hash_reset_token(raw_token),
+            expires_at=password_reset_expiry(),
+        )
+    )
+    db.commit()
+
+    base = (os.getenv("APP_BASE_URL") or str(request.base_url)).rstrip("/")
+    reset_url = f"{base}/login?reset={raw_token}"
+    sent = send_password_reset_email(user.email, reset_url)
+    dev_mode = os.getenv("ENV", "dev").lower() not in {"prod", "production"}
+    return ForgotPasswordResponse(
+        message=generic,
+        reset_url=reset_url if dev_mode and not sent else None,
+    )
+
+
+@app.post("/auth/reset-password")
+def auth_reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+    token_hash = hash_reset_token(req.token.strip())
+    now = datetime.now(timezone.utc)
+    row = (
+        db.query(PasswordResetToken)
+        .filter(
+            PasswordResetToken.token_hash == token_hash,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.expires_at > now,
+        )
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    user = db.query(User).filter(User.id == row.user_id).first()
+    if not user or user.is_admin:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    if getattr(user, "is_locked", False):
+        raise HTTPException(status_code=403, detail="Account is locked")
+
+    user.password_hash = hash_password(req.new_password)
+    row.used_at = now
+    db.commit()
+    return {"message": "Password updated. You can log in now."}
 
 
 # ----- Me routes (token) -----

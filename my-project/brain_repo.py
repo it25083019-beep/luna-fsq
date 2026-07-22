@@ -301,6 +301,7 @@ def seed_admin_user() -> bool:
     """Create/update admin from ADMIN_EMAIL / ADMIN_PASSWORD env."""
     email = os.getenv("ADMIN_EMAIL", "admin@luna.local").strip().lower()
     password = os.getenv("ADMIN_PASSWORD", "admin123456")
+    sync_password = os.getenv("ADMIN_SYNC_PASSWORD", "").strip().lower() in {"1", "true", "yes"}
     public_id = "admin_root"
     session = SessionLocal()
     try:
@@ -323,7 +324,8 @@ def seed_admin_user() -> bool:
             # Keep admin_root id for ADMIN_USER_IDS compatibility
             user.public_id = public_id
             user.email = email
-            user.password_hash = hash_password(password)
+            if sync_password:
+                user.password_hash = hash_password(password)
             user.is_admin = True
             if not user.display_name:
                 user.display_name = "Admin"
