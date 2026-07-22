@@ -158,6 +158,11 @@ def admin_page():
     return FileResponse(_STATIC_DIR / "admin.html")
 
 
+@app.get("/live2d")
+def live2d_demo_page():
+    return FileResponse(_STATIC_DIR / "live2d-demo.html")
+
+
 # ----- Auth -----
 
 
