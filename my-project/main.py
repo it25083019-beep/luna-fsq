@@ -178,6 +178,11 @@ def live2d_demo_page():
     return FileResponse(_STATIC_DIR / "live2d-demo.html")
 
 
+@app.get("/luna-3d")
+def luna_3d_page():
+    return FileResponse(_STATIC_DIR / "luna-3d-demo.html")
+
+
 # ----- Auth -----
 
 

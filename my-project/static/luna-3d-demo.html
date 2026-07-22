@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LUNA 3D</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500&family=Shippori+Mincho:wght@600&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#0c1416; --panel:#162126; --text:#e8f0ef; --muted:#8aa3a0; --teal:#2ec4b6; --amber:#e8b86d; --border:rgba(46,196,182,.28); }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;font-family:"IBM Plex Sans JP",sans-serif;color:var(--text);
+      background:linear-gradient(165deg,#0c1416,#122024 55%,#0a1012)}
+    .shell{max-width:1000px;margin:0 auto;padding:1rem}
+  header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem}
+    .brand{font-family:"Shippori Mincho",serif;color:var(--amber);font-size:1.4rem}
+    .brand span{display:block;font-size:.7rem;color:var(--muted);font-family:"IBM Plex Sans JP",sans-serif}
+    .layout{display:grid;grid-template-columns:1fr 280px;gap:1rem}
+    @media(max-width:800px){.layout{grid-template-columns:1fr}}
+    .panel{background:var(--panel);border:1px solid var(--border);padding:1rem}
+    #canvasWrap{position:relative;min-height:480px;border-radius:12px;overflow:hidden;background:#0a1214}
+    canvas{display:block;width:100%;height:480px}
+    .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:1.5rem;text-align:center;background:rgba(10,18,20,.85)}
+    .overlay.hidden{display:none}
+    .refs{display:grid;grid-template-columns:repeat(2,1fr);gap:.4rem;margin-top:.5rem}
+    .refs img{width:100%;border-radius:6px;border:1px solid var(--border);cursor:pointer}
+    .refs img:hover{border-color:var(--teal)}
+    button,a.btn{font:inherit;cursor:pointer;border:1px solid var(--teal);background:rgba(46,196,182,.12);color:var(--text);padding:.5rem .8rem;text-decoration:none;display:inline-block;font-size:.85rem}
+    button.ghost{border-color:var(--muted);background:transparent;color:var(--muted)}
+    .hint{font-size:.75rem;color:var(--muted);line-height:1.5;margin:.5rem 0 0}
+    .status{font-size:.8rem;color:var(--muted);min-height:1.2em;margin-top:.5rem}
+    a{color:var(--teal)}
+    #lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:99;padding:1rem}
+    #lightbox.open{display:flex}
+    #lightbox img{max-width:95%;max-height:95%;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">LUNA 3D<span>静的モデルビューア（.glb）</span></div>
+      <div>
+        <a href="/demo" class="btn ghost">Chat</a>
+        <a href="/live2d" class="btn ghost">Avatar</a>
+        <button type="button" class="ghost" id="logoutBtn">ログアウト</button>
+      </div>
+    </header>
+    <div class="layout">
+      <section class="panel">
+        <div id="canvasWrap">
+          <canvas id="c"></canvas>
+          <div id="placeholder" class="overlay">
+            <div>
+              <p><strong>luna-static.glb</strong> を配置すると3D表示されます。</p>
+              <p class="hint">パス: <code>static/luna-3d/luna-static.glb</code></p>
+              <p class="hint"><a href="/static/luna-3d/references/luna-ref-original.png" target="_blank">参考デザイン</a> · Brief: docs/LUNA_3D_BRIEF.md</p>
+            </div>
+          </div>
+        </div>
+        <p class="status" id="status">読み込み中…</p>
+        <p class="hint">ドラッグで回転 · スクロールでズーム</p>
+      </section>
+      <aside class="panel">
+        <h3 style="margin:0 0 .5rem;font-size:.95rem;color:var(--amber)">参考ターンアラウンド</h3>
+        <p class="hint">3Dモデラー用（クリックで拡大）</p>
+        <div class="refs" id="refs"></div>
+      </aside>
+    </div>
+  </div>
+  <div id="lightbox"><img id="lbImg" alt="" /></div>
+
+  <script src="/static/auth-common.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    const MODEL_URL = "/static/luna-3d/luna-static.glb";
+    const REFS = [
+      ["original", "/static/luna-3d/references/luna-ref-original.png"],
+      ["front", "/static/luna-3d/references/luna-ref-front.png"],
+      ["side L", "/static/luna-3d/references/luna-ref-side-left.png"],
+      ["side R", "/static/luna-3d/references/luna-ref-side-right.png"],
+      ["back", "/static/luna-3d/references/luna-ref-back.png"],
+      ["3/4 L", "/static/luna-3d/references/luna-ref-3quarter-left.png"],
+      ["3/4 R", "/static/luna-3d/references/luna-ref-3quarter-right.png"],
+      ["details", "/static/luna-3d/references/luna-ref-details.png"],
+    ];
+
+    let token = LunaAuth.getToken();
+    const statusEl = document.getElementById("status");
+    const placeholder = document.getElementById("placeholder");
+    const refsEl = document.getElementById("refs");
+    const lb = document.getElementById("lightbox");
+    const lbImg = document.getElementById("lbImg");
+
+    REFS.forEach(([label, src]) => {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = label;
+      img.title = label;
+      img.loading = "lazy";
+      img.onclick = () => { lbImg.src = src; lb.classList.add("open"); };
+      refsEl.appendChild(img);
+    });
+    lb.onclick = () => lb.classList.remove("open");
+
+    document.getElementById("logoutBtn").onclick = () => {
+      LunaAuth.clearToken();
+      LunaAuth.goLogin("/luna-3d");
+    };
+
+    function initThree() {
+      const canvas = document.getElementById("c");
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputEncoding = THREE.sRGBEncoding;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+      camera.position.set(0, 1.2, 2.8);
+
+      const controls = new THREE.OrbitControls(camera, canvas);
+      controls.target.set(0, 0.9, 0);
+      controls.enableDamping = true;
+      controls.update();
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+      const key = new THREE.DirectionalLight(0xfff5e8, 0.9);
+      key.position.set(2, 4, 3);
+      scene.add(key);
+      const fill = new THREE.DirectionalLight(0xc8e8ff, 0.35);
+      fill.position.set(-2, 1, -1);
+      scene.add(fill);
+
+      const grid = new THREE.GridHelper(4, 8, 0x2ec4b6, 0x1a3030);
+      grid.position.y = 0;
+      scene.add(grid);
+
+      let model = null;
+
+      function resize() {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight || 480;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+      resize();
+      window.addEventListener("resize", resize);
+
+      function frame() {
+        requestAnimationFrame(frame);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      frame();
+
+      const loader = new THREE.GLTFLoader();
+      loader.load(
+        MODEL_URL,
+        (gltf) => {
+          placeholder.classList.add("hidden");
+          model = gltf.scene;
+          const box = new THREE.Box3().setFromObject(model);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+          model.position.sub(center);
+          model.position.y += size.y / 2;
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = 1.6 / maxDim;
+          model.scale.setScalar(scale);
+          scene.add(model);
+          statusEl.textContent = "3D model OK — " + MODEL_URL;
+        },
+        undefined,
+        () => {
+          statusEl.textContent = "GLB未配置 — 参考画像を右側で確認（モデラー納品待ち）";
+        }
+      );
+    }
+
+    (async () => {
+      if (!LunaAuth.requireLogin("/luna-3d")) return;
+      token = LunaAuth.getToken();
+      try {
+        await fetch("/auth/me", { headers: { Authorization: "Bearer " + token } });
+        initThree();
+      } catch (_) {
+        LunaAuth.clearToken();
+        LunaAuth.goLogin("/luna-3d");
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -34,7 +34,7 @@
       global.location.href = "/admin";
       return;
     }
-    const safeNext = ["/demo", "/live2d"].includes(next) ? next : "/demo";
+    const safeNext = ["/demo", "/live2d", "/luna-3d"].includes(next) ? next : "/demo";
     global.location.href = safeNext;
   }
 
