@@ -42,6 +42,9 @@ def default_user_brain(user_id: str) -> Dict[str, Any]:
         "trained_knowledge": [],
         "profile_intake_step": 0,
         "profile_complete": False,
+        "relationship_level": 1,
+        "chat_turn_count": 0,
+        "user_speech_style": "polite",
         "life_profile": {
             "gender": None,
             "health_sleep": None,

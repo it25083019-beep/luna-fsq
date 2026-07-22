@@ -234,6 +234,8 @@ def get_brain_status(user_id: str) -> Dict[str, Any]:
     core = load_core_brain()
     user = load_user_brain(user_id)
     admin = is_admin(user_id)
+    if not is_admin(user_id):
+        _update_relationship(user, user_text)
     return {
         "user_id": user_id,
         "is_admin": admin,
@@ -369,7 +371,8 @@ Output Format: ONLY <dialogue>...</dialogue> and <game_state_json>...</game_stat
 # ROLE: Personal Life Operating Companion
 Your name is {companion}. Address the user as {who}.
 
-SPEECH: Strict 丁寧語 (です/ます). Max 2 short sentences. No casual tone.
+{_speech_style_block(user)}
+- Max 2 short sentences in <dialogue>.
 
 ROLE SWITCH:
 - Health topics: careful like a professional clinician intake (no diagnosis/prescription).
@@ -445,6 +448,77 @@ def _normalize_gender(raw: str) -> str:
     if t in ("女", "女性", "おんな"):
         return "female"
     return raw.strip()
+
+
+
+def _detect_user_speech_style(text: str) -> str:
+    """Rough detect: polite / casual / mixed from user message."""
+    t = (text or "").strip()
+    if not t:
+        return "polite"
+    casual_hits = len(re.findall(r"(だよ|だね|じゃん|かな\?|っす|やん|まじ|w+|www|！{2,}|タメ|おっけー|うん|ええ)", t))
+    polite_hits = len(re.findall(r"(です|ます|ございます|いたします|ください|お願い|恐れ入ります)", t))
+    if casual_hits >= 2 and casual_hits > polite_hits:
+        return "casual"
+    if casual_hits >= 1 and polite_hits >= 1:
+        return "mixed"
+    if polite_hits >= 1:
+        return "polite"
+    return "mixed"
+
+
+def _relationship_level(user: Dict[str, Any]) -> int:
+    try:
+        return max(1, min(3, int(user.get("relationship_level") or 1)))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _update_relationship(user: Dict[str, Any], user_text: str) -> None:
+    """Increase familiarity over time; mirror user tone. Admin excluded by caller."""
+    user.setdefault("chat_turn_count", 0)
+    user["chat_turn_count"] = int(user.get("chat_turn_count") or 0) + 1
+    turns = user["chat_turn_count"]
+    style = _detect_user_speech_style(user_text)
+    prev = user.get("user_speech_style") or "polite"
+    if style == "casual" or (style == "mixed" and prev != "polite"):
+        user["user_speech_style"] = style
+    elif style == "mixed":
+        user["user_speech_style"] = "mixed"
+    else:
+        user["user_speech_style"] = prev if prev != "casual" else "mixed"
+
+    level = 1
+    if user.get("profile_complete") and turns >= 8:
+        level = 2
+    if turns >= 25 or int(user.get("streak") or 0) >= 5:
+        level = max(level, 2)
+    if turns >= 50 and user.get("user_speech_style") in ("casual", "mixed"):
+        level = 3
+    if turns >= 80:
+        level = 3
+    user["relationship_level"] = level
+
+
+def _speech_style_block(user: Dict[str, Any]) -> str:
+    level = _relationship_level(user)
+    style = user.get("user_speech_style") or "polite"
+    if level == 1:
+        return (
+            "SPEECH (relationship=NEW): Warm 丁寧語（です・ます）. Natural and soft, NOT stiff business keigo. "
+            "Avoid excessive 敬語・堅い表現. Max 2 short sentences. Sound like a kind companion, not a call center."
+        )
+    if level == 2:
+        return (
+            "SPEECH (relationship=FAMILIAR): Still polite base, but softer and closer. "
+            "You may use gentle endings (〜ね、〜よ、〜かな). Mirror the user's energy lightly. "
+            f"User style hint: {style}. No rude slang, no commands."
+        )
+    return (
+        "SPEECH (relationship=CLOSE): Friendly close tone. If user is casual, you may use light casual Japanese "
+        "(〜だね、〜しよう、〜かも) while staying supportive. Avoid heavy keigo chains. "
+        f"Match user style: {style}. Never insult, never baby-talk unless user prefers it."
+    )
 
 
 def _honorific(user: Dict[str, Any]) -> str:
@@ -566,7 +640,15 @@ def start_user_greeting(user_id: str) -> str:
     user.setdefault("profile_complete", False)
 
     if user.get("user_display_name") and user.get("companion_name") and user.get("profile_complete"):
-        dialogue = f"{_honorific(user)}、おかえりなさい。私は{user['companion_name']}です。本日の体調はいかがですか。"
+        lv = _relationship_level(user)
+        cname = user['companion_name']
+        who = _honorific(user)
+        if lv >= 3:
+            dialogue = f"{who}、おかえり。{cname}だよ。今日の調子はどう？"
+        elif lv >= 2:
+            dialogue = f"{who}、おかえりなさい。{cname}です。今日の体調はどうですか？"
+        else:
+            dialogue = f"{who}、おかえりなさい。私は{cname}です。本日の体調はいかがですか。"
         return _pack_reply(dialogue, {
             "user_display_name": user.get("user_display_name"),
             "companion_name": user.get("companion_name"),
