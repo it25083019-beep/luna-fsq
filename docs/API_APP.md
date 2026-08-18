@@ -3,6 +3,22 @@
 Base URL (production): `https://luna-fsq.onrender.com`  
 Local: `http://127.0.0.1:8006`
 
+**Companion app (2D, mobile):** `/app`  
+**Login:** `/login` (admin → `/admin`, user → `/app`)
+
+## Auth extras
+
+### POST `/auth/forgot-password`
+```json
+{ "email": "user@example.com" }
+```
+Dev may return `reset_url`. Admin accounts are excluded.
+
+### POST `/auth/reset-password`
+```json
+{ "token": "...", "new_password": "secret12" }
+```
+
 All protected routes need header:
 ```
 Authorization: Bearer <access_token>
@@ -88,6 +104,9 @@ UI: `https://luna-fsq.onrender.com/admin`
 ---
 
 ## Flutter / app checklist
+
+Web app (now): `/app`  
+Flutter source: `luna_flutter/` (install Flutter SDK, then `flutter create .`)
 
 1. Store `access_token` securely after login/register  
 2. Attach Bearer on every chat/profile call  

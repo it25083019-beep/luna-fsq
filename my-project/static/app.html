@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c1416" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>LUNA</title>
+  <link rel="manifest" href="/static/manifest-app.json" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600&family=Shippori+Mincho:wght@600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#0c1416; --panel:#162126; --text:#e8f0ef; --muted:#8aa3a0;
+      --teal:#2ec4b6; --amber:#e8b86d; --border:rgba(46,196,182,.28); --danger:#d96b6b;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;font-family:"IBM Plex Sans JP",sans-serif;color:var(--text);
+      background:linear-gradient(180deg,#0c1416,#122024 60%,#0a1214)}
+    .app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:0 0 env(safe-area-inset-bottom)}
+    header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid var(--border)}
+    .brand{font-family:"Shippori Mincho",serif;color:var(--amber);font-size:1.2rem}
+    .stats{display:flex;gap:.4rem;flex-wrap:wrap}
+    .pill{font-size:.68rem;border:1px solid var(--border);padding:.2rem .45rem;color:var(--teal);border-radius:999px}
+    .stage{text-align:center;padding:.4rem 0 0;background:radial-gradient(circle at 50% 20%,rgba(46,196,182,.12),transparent 60%)}
+    #lunaSprite{height:210px;max-width:100%;object-fit:contain}
+    .dialogue{margin:.4rem 1rem .6rem;padding:.85rem 1rem;border-left:3px solid var(--amber);background:rgba(0,0,0,.28);min-height:4.5rem;line-height:1.7;white-space:pre-wrap}
+    .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .5rem}
+    .chip{border:1px solid var(--border);background:rgba(46,196,182,.1);color:var(--text);padding:.45rem .7rem;font:inherit;font-size:.85rem;cursor:pointer}
+    .composer{display:grid;grid-template-columns:1fr auto;gap:.4rem;padding:.5rem 1rem 0}
+    input{width:100%;padding:.7rem;border:1px solid var(--border);background:rgba(0,0,0,.28);color:var(--text);font:inherit}
+    button{font:inherit;cursor:pointer;border:1px solid var(--teal);background:rgba(46,196,182,.14);color:var(--text);padding:.65rem .85rem}
+    button.amber{border-color:var(--amber);color:var(--amber);background:rgba(232,184,109,.12)}
+    button.ghost{border-color:var(--muted);background:transparent;color:var(--muted)}
+    .tools{display:flex;gap:.4rem;flex-wrap:wrap;padding:.5rem 1rem 1rem}
+    .err{color:var(--danger);font-size:.82rem;min-height:1.1em;padding:0 1rem}
+    .hidden{display:none!important}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">LUNA</div>
+      <div class="stats">
+        <span class="pill" id="modePill">—</span>
+        <span class="pill" id="expPill">Lv.1</span>
+      </div>
+    </header>
+    <div class="stage">
+      <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
+    </div>
+    <div class="dialogue" id="dialogue">…</div>
+    <div class="chips" id="chips"></div>
+    <div class="composer">
+      <input id="message" type="text" placeholder="自分の言葉で答える…" autocomplete="off" />
+      <button type="button" class="amber" id="sendBtn">送信</button>
+    </div>
+    <p class="err" id="err"></p>
+    <div class="tools">
+      <button type="button" class="ghost" id="morningBtn">朝のチェックイン</button>
+      <button type="button" class="ghost" id="eveningBtn">夜のチェックイン</button>
+      <a href="/admin" id="adminLink" class="hidden" style="color:var(--teal);align-self:center;font-size:.85rem">Admin</a>
+      <button type="button" class="ghost" id="logoutBtn">ログアウト</button>
+    </div>
+  </div>
+  <script src="/static/auth-common.js"></script>
+  <script src="/static/live2d/luna-avatar.js"></script>
+  <script>
+    let token = LunaAuth.getToken();
+    let busy = false;
+    let luna = null;
+    let first = true;
+    const dialogueEl = document.getElementById("dialogue");
+    const chipsEl = document.getElementById("chips");
+    const errEl = document.getElementById("err");
+    const messageEl = document.getElementById("message");
+    const sendBtn = document.getElementById("sendBtn");
+
+    async function api(path, opts = {}) {
+      const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
+      if (token) headers.Authorization = "Bearer " + token;
+      const res = await fetch(path, Object.assign({}, opts, { headers }));
+      let data = null;
+      try { data = await res.json(); } catch (_) {}
+      if (!res.ok) throw new Error(LunaAuth.formatApiError(res, data));
+      return data;
+    }
+
+    function renderChips(list) {
+      chipsEl.innerHTML = "";
+      (list || []).forEach((label) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.textContent = label;
+        b.onclick = () => {
+          if (label.includes("自分で入力")) { messageEl.focus(); return; }
+          sendMessage(label);
+        };
+        chipsEl.appendChild(b);
+      });
+    }
+
+    async function refreshMeta() {
+      try {
+        const [brain, state] = await Promise.all([api("/brain/me"), api("/state/me")]);
+        document.getElementById("modePill").textContent = brain.mode || "—";
+        document.getElementById("expPill").textContent = "Lv." + (state.current_level || 1) + " · EXP " + (state.total_exp || 0);
+      } catch (_) {}
+    }
+
+    async function applyChat(data) {
+      dialogueEl.textContent = data.dialogue || "";
+      renderChips(data.suggested_replies || []);
+      if (luna) luna.reactToText(data.dialogue || "", { greeting: first, fallback: "happy" });
+      first = false;
+      await refreshMeta();
+    }
+
+    async function sendMessage(text) {
+      const msg = (text || "").trim();
+      if (!msg || busy) return;
+      busy = true; sendBtn.disabled = true; errEl.textContent = ""; messageEl.value = "";
+      if (luna) luna.reactToText(msg, { fallback: "think" });
+      try {
+        const data = await api("/chat", { method: "POST", body: JSON.stringify({ message: msg }) });
+        await applyChat(data);
+      } catch (e) { errEl.textContent = e.message || String(e); }
+      finally { busy = false; sendBtn.disabled = false; }
+    }
+
+    sendBtn.onclick = () => sendMessage(messageEl.value);
+    messageEl.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); sendMessage(messageEl.value); } };
+    document.getElementById("logoutBtn").onclick = () => { LunaAuth.clearToken(); LunaAuth.goLogin("/app"); };
+    document.getElementById("morningBtn").onclick = async () => {
+      try {
+        const goal = prompt("今日の目標は？", "") || "";
+        await api("/checkin/morning", { method: "POST", body: JSON.stringify({ goal }) });
+        await sendMessage(goal ? ("今日の目標は「" + goal + "」です。朝のチェックインをお願いします。") : "朝のチェックインをお願いします。");
+      } catch (e) { errEl.textContent = e.message; }
+    };
+    document.getElementById("eveningBtn").onclick = async () => {
+      try {
+        await api("/checkin/evening", { method: "POST", body: JSON.stringify({}) });
+        await sendMessage("夜のチェックインをお願いします。");
+      } catch (e) { errEl.textContent = e.message; }
+    };
+
+    (async () => {
+      if (!LunaAuth.requireLogin("/app")) return;
+      token = LunaAuth.getToken();
+      try {
+        const me = await api("/auth/me");
+        if (me.is_admin) document.getElementById("adminLink").classList.remove("hidden");
+        luna = new LunaAvatar(document.getElementById("lunaSprite"));
+        const data = await api("/chat/start", { method: "POST", body: JSON.stringify({ message: "" }) });
+        await applyChat(data);
+      } catch (_) {
+        LunaAuth.clearToken();
+        LunaAuth.goLogin("/app");
+      }
+    })();
+  </script>
+</body>
+</html>

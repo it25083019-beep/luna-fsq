@@ -163,6 +163,11 @@ def health():
     }
 
 
+@app.get("/app")
+def companion_app_page():
+    return FileResponse(_STATIC_DIR / "app.html")
+
+
 @app.get("/demo")
 def demo_page():
     return FileResponse(_STATIC_DIR / "demo.html")
