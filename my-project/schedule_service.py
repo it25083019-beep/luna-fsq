@@ -76,6 +76,46 @@ def _existing_keys(events: List[Dict[str, Any]]) -> Set[Tuple[str, str]]:
     return {(e.get("date", ""), e.get("title", "")) for e in events}
 
 
+def _purge_legacy_recurring_seeds(user: Dict[str, Any]) -> None:
+    """Remove auto-seeded first-day copies of recurring templates.
+
+    Older versions stored the template start date as a real event. That made the
+    first occurrence behave differently (e.g. stuck as done/strikethrough) while
+    later generated days looked normal. Keep only explicit exceptions.
+    """
+    templates = {t.get("id"): t for t in _recurring_store(user) if t.get("id")}
+    if not templates:
+        return
+    store = _events_store(user)
+    kept: List[Dict[str, Any]] = []
+    changed = False
+    for e in store:
+        rid = e.get("recurrence_id")
+        tpl = templates.get(rid) if rid else None
+        if (
+            tpl
+            and not e.get("exception")
+            and e.get("date") == tpl.get("start_date")
+            and (e.get("title") or "").strip() == (tpl.get("title") or "").strip()
+        ):
+            changed = True
+            continue
+        kept.append(e)
+    if changed:
+        user["life_modules"]["schedule"]["structured"]["events"] = kept
+        user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+
+
+def _cancel_template_date(user: Dict[str, Any], tpl_id: str, event_date: str) -> None:
+    tpl = next((t for t in _recurring_store(user) if t.get("id") == tpl_id), None)
+    if not tpl:
+        return
+    cancelled = tpl.setdefault("cancelled_dates", [])
+    ds = event_date[:10]
+    if ds not in cancelled:
+        cancelled.append(ds)
+
+
 def expand_recurring_templates(
     user: Dict[str, Any],
     *,
@@ -98,8 +138,12 @@ def expand_recurring_templates(
         start = _parse_date(tpl.get("start_date") or today.isoformat())
         time_val = tpl.get("time")
         tpl_id = tpl.get("id") or uuid.uuid4().hex[:12]
+        cancelled = set(tpl.get("cancelled_dates") or [])
 
-        cursor = max(start, today)
+        # Include recent past occurrences so the calendar month stays complete,
+        # but still generate every instance the same way (no stored first-day seed).
+        horizon_start = today - timedelta(days=40)
+        cursor = max(start, horizon_start)
         while cursor <= end:
             match = False
             if recurrence == "monthly":
@@ -132,7 +176,7 @@ def expand_recurring_templates(
             if match:
                 ds = cursor.isoformat()
                 key = (ds, title)
-                if key not in existing:
+                if ds not in cancelled and key not in existing:
                     generated.append(
                         {
                             "id": _virtual_id(tpl_id, ds),
@@ -162,6 +206,7 @@ def expand_recurring_templates(
 
 
 def _all_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> List[Dict[str, Any]]:
+    _purge_legacy_recurring_seeds(user)
     stored = list(_events_store(user))
     today = date.today()
     if on_date:
@@ -229,17 +274,39 @@ def add_recurring_template(
     end_t = _norm_time(event_end_time)
     _check_range(start_t, end_t)
     start = _parse_date(start_date)
+    title_text = title[:200]
+    note_text = (note or "").strip()[:500] or None
+
+    # Reuse an identical active template to avoid spam duplicates.
+    for existing in _recurring_store(user):
+        if not existing.get("active", True):
+            continue
+        if (existing.get("title") or "") != title_text:
+            continue
+        if (existing.get("recurrence") or "weekly") != recurrence:
+            continue
+        if existing.get("time") != start_t or existing.get("end_time") != end_t:
+            continue
+        if (existing.get("note") or None) != note_text:
+            continue
+        if recurrence == "weekly" and int(existing.get("weekday") if existing.get("weekday") is not None else -1) != start.weekday():
+            continue
+        if recurrence == "monthly" and int(existing.get("day_of_month") or -1) != start.day:
+            continue
+        return existing
+
     tpl = {
         "id": uuid.uuid4().hex[:12],
-        "title": title[:200],
+        "title": title_text,
         "start_date": start_date[:10],
         "time": start_t,
         "end_time": end_t,
-        "note": (note or "").strip()[:500] or None,
+        "note": note_text,
         "recurrence": recurrence,
         "weekday": start.weekday(),
         "day_of_month": start.day,
         "active": True,
+        "cancelled_dates": [],
         "created_at": _utcnow_iso(),
     }
     _recurring_store(user).append(tpl)
@@ -257,6 +324,7 @@ def add_event(
     note: Optional[str] = None,
     recurrence: Optional[str] = None,
 ) -> Dict[str, Any]:
+    _purge_legacy_recurring_seeds(user)
     text = (title or "").strip()
     if not text:
         raise ValueError("title is required")
@@ -267,32 +335,45 @@ def add_event(
     start_t = _norm_time(event_time)
     end_t = _norm_time(event_end_time)
     _check_range(start_t, end_t)
+    note_text = (note or "").strip()[:500] or None
+    ds = event_date[:10]
 
-    tpl = None
     if recurrence in ("weekly", "monthly"):
         tpl = add_recurring_template(
             user,
             title=text,
-            start_date=event_date,
+            start_date=ds,
             event_time=start_t,
             event_end_time=end_t,
-            note=note,
+            note=note_text,
             recurrence=recurrence,
         )
+        # Do not store the first day as a real event — all occurrences are generated
+        # the same way so day 1 does not get special done/strikethrough state.
+        return {
+            "id": _virtual_id(tpl["id"], ds),
+            "title": text[:200],
+            "date": ds,
+            "time": start_t,
+            "end_time": end_t,
+            "note": note_text,
+            "done": False,
+            "recurrence_id": tpl["id"],
+            "recurrence": recurrence,
+            "is_generated": True,
+            "created_at": tpl.get("created_at"),
+        }
 
     ev = {
         "id": uuid.uuid4().hex[:12],
         "title": text[:200],
-        "date": event_date[:10],
+        "date": ds,
         "time": start_t,
         "end_time": end_t,
-        "note": (note or "").strip()[:500] or None,
+        "note": note_text,
         "done": False,
         "created_at": _utcnow_iso(),
     }
-    if tpl:
-        ev["recurrence_id"] = tpl["id"]
-        ev["recurrence"] = recurrence
     store = _events_store(user)
     store.append(ev)
     if len(store) > 200:
@@ -313,9 +394,10 @@ def update_event(
     done: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """Update a stored event. Virtual recurring instances are materialized first."""
+    _purge_legacy_recurring_seeds(user)
     parsed = _parse_virtual_id(event_id)
     if parsed:
-        # Materialize as a real editable event (without creating recurrence again)
+        # Materialize as a real editable exception (without creating recurrence again)
         tpl_id, event_date_v = parsed
         tpl = next((t for t in _recurring_store(user) if t.get("id") == tpl_id), None)
         if not tpl:
@@ -331,6 +413,7 @@ def update_event(
             "created_at": _utcnow_iso(),
             "recurrence_id": tpl_id,
             "recurrence": tpl.get("recurrence"),
+            "exception": True,
         }
         _events_store(user).append(ev)
         event_id = ev["id"]
@@ -359,6 +442,8 @@ def update_event(
         if done is not None:
             e["done"] = bool(done)
             e["completed_at"] = _utcnow_iso() if done else None
+        if e.get("recurrence_id"):
+            e["exception"] = True
         e["updated_at"] = _utcnow_iso()
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
         return e
@@ -366,24 +451,32 @@ def update_event(
 
 
 def complete_event(user: Dict[str, Any], event_id: str, done: bool = True) -> Dict[str, Any]:
+    _purge_legacy_recurring_seeds(user)
     parsed = _parse_virtual_id(event_id)
     if parsed:
         tpl_id, event_date = parsed
         tpl = next((t for t in _recurring_store(user) if t.get("id") == tpl_id), None)
         if not tpl:
             raise ValueError("event not found")
-        ev = add_event(
-            user,
-            title=tpl["title"],
-            event_date=event_date,
-            event_time=tpl.get("time"),
-            event_end_time=tpl.get("end_time"),
-            note=tpl.get("note"),
-        )
-        ev["done"] = bool(done)
-        ev["completed_at"] = _utcnow_iso() if done else None
-        ev["recurrence_id"] = tpl_id
-        ev["recurrence"] = tpl.get("recurrence")
+        # Materialize one-day exception only — do not create a new recurring series.
+        ev = {
+            "id": uuid.uuid4().hex[:12],
+            "title": tpl["title"],
+            "date": event_date,
+            "time": tpl.get("time"),
+            "end_time": tpl.get("end_time"),
+            "note": tpl.get("note"),
+            "done": bool(done),
+            "completed_at": _utcnow_iso() if done else None,
+            "created_at": _utcnow_iso(),
+            "recurrence_id": tpl_id,
+            "recurrence": tpl.get("recurrence"),
+            "exception": True,
+        }
+        store = _events_store(user)
+        store.append(ev)
+        if len(store) > 200:
+            del store[:-200]
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
         return ev
 
@@ -391,30 +484,35 @@ def complete_event(user: Dict[str, Any], event_id: str, done: bool = True) -> Di
         if e.get("id") == event_id:
             e["done"] = bool(done)
             e["completed_at"] = _utcnow_iso() if done else None
+            if e.get("recurrence_id"):
+                e["exception"] = True
             user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
             return e
     raise ValueError("event not found")
 
 
 def delete_event(user: Dict[str, Any], event_id: str) -> None:
+    _purge_legacy_recurring_seeds(user)
     parsed = _parse_virtual_id(event_id)
     if parsed:
-        tpl_id, _ = parsed
-        templates = _recurring_store(user)
-        user["life_modules"]["schedule"]["structured"]["recurring_templates"] = [
-            t for t in templates if t.get("id") != tpl_id
+        tpl_id, event_date = parsed
+        # Cancel only this occurrence — keep the rest of the series.
+        _cancel_template_date(user, tpl_id, event_date)
+        store = _events_store(user)
+        user["life_modules"]["schedule"]["structured"]["events"] = [
+            e
+            for e in store
+            if not (e.get("recurrence_id") == tpl_id and e.get("date") == event_date)
         ]
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
         return
+
     store = _events_store(user)
     target = next((e for e in store if e.get("id") == event_id), None)
     user["life_modules"]["schedule"]["structured"]["events"] = [e for e in store if e.get("id") != event_id]
-    if target and target.get("recurrence_id"):
-        rid = target["recurrence_id"]
-        templates = _recurring_store(user)
-        user["life_modules"]["schedule"]["structured"]["recurring_templates"] = [
-            t for t in templates if t.get("id") != rid
-        ]
+    if target and target.get("recurrence_id") and target.get("date"):
+        # Removing a stored recurring exception cancels that date only.
+        _cancel_template_date(user, target["recurrence_id"], target["date"])
     user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
 
 

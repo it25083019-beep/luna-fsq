@@ -516,7 +516,10 @@ def get_home_summary(current: User = Depends(get_current_user)):
 @app.get("/schedule/events")
 def schedule_list(date: Optional[str] = None, current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
-    return list_events(brain, on_date=date)
+    result = list_events(brain, on_date=date)
+    # Persist cleanup of legacy recurring first-day seeds.
+    save_user_brain(current.public_id, brain)
+    return result
 
 
 @app.post("/schedule/events")
