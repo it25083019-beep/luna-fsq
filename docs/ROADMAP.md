@@ -6,7 +6,8 @@ Character: **2D sprites now**. 3D / Live2D later (do not block).
 
 | Surface | Status |
 |---------|--------|
-| Web app `/app` | **5-tab FSQ shell** — Home / Chat / Quest map / Career / My Page (design-demo aligned) |
+| Web app `/app` | **LUNA companion (main)** — large Luna, chat, life modules, settings |
+| FSQ sub-tab | Secondary RPG: class, map, quests, career (Future Skill Quest) |
 | Web `/login` | Shared login + admin App vs Admin picker |
 | Admin `/admin` | User list, reset password (opt-in only) |
 | Theme settings | My Page — FSQ Night default + pastel presets |
@@ -16,8 +17,8 @@ Character: **2D sprites now**. 3D / Live2D later (do not block).
 
 1. https://luna-fsq.onrender.com/login — log in  
 2. Admin: choose **アプリへ** (not forced into admin)  
-3. https://luna-fsq.onrender.com/app — switch bottom tabs  
-4. Chat tab: LUNA dialogue + life modules overlay  
+3. https://luna-fsq.onrender.com/app — **LUNA tab** opens first (companion chat)
+4. Tap **FSQ** tab only for RPG/quest/career sub-mode
 5. My Page: theme, voice, admin link (admin only)
 
 Local: http://127.0.0.1:8006/app

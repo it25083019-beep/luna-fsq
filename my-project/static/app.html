@@ -3,76 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#17115b" />
+  <meta name="theme-color" content="#c9b6e8" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>Future Skill Quest</title>
+  <title>LUNA</title>
   <link rel="manifest" href="/static/manifest-app.json" />
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg0:#10153d; --bg1:#16276a; --bg2:#5b36b8;
-      --card:rgba(255,255,255,.96); --text:#22265a; --muted:#717594;
-      --lilac:#4e7cff; --lilac-deep:#8a5cf6; --pink:#ff6fae; --mint:#32c48d; --amber:#ffc857; --danger:#e07a8a;
-      --shadow:0 12px 32px rgba(28,32,91,.18);
-      --input-bg:#eef0ff; --ghost-bg:#e8eaff; --composer-bg:#fff;
-      --glow-a:rgba(94,140,255,.35); --glow-b:rgba(177,92,255,.28);
+      --bg0:#e8dff7; --bg1:#d4e8f8; --bg2:#f7e6f0;
+      --card:rgba(255,255,255,.88); --text:#4a3b6b; --muted:#8a7aa8;
+      --lilac:#9b7ed9; --lilac-deep:#7b5eb8; --pink:#f0a8c8; --mint:#6ec9b8; --amber:#e8b86d; --danger:#e07a8a;
+      --shadow:0 12px 32px rgba(120,90,180,.14);
+      --input-bg:#f6f1fc; --ghost-bg:#efe8f8; --composer-bg:#fff;
+      --glow-a:rgba(240,168,200,.35); --glow-b:rgba(155,126,217,.28);
       --st1:linear-gradient(160deg,#efe6ff,#fff); --st2:linear-gradient(160deg,#e4f4ff,#fff); --st3:linear-gradient(160deg,#ffe8f2,#fff);
-      --hero-top:#080d34; --hero-mid:#17115b; --nav-bg:rgba(255,255,255,.97);
-      --nav-active:#4e7cff; --nav-idle:#7c819e; --panel-light:#f6f7ff;
+      --nav-bg:rgba(255,255,255,.97); --nav-active:#7b5eb8; --nav-idle:#8a7aa8;
+      --fsq-hero:#17115b; --fsq-panel:#f6f7ff;
       --radius:22px;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;min-height:100%;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text);background:var(--panel-light)}
+    html,body{margin:0;min-height:100%;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text)}
     button,input,textarea{font:inherit}
-    .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--panel-light);position:relative}
-    .screen{flex:1;overflow-y:auto;padding-bottom:calc(76px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+    .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
+    .screen{flex:1;overflow-y:auto;padding-bottom:calc(68px + env(safe-area-inset-bottom))}
     .tab-panel{display:none}
     .tab-panel.active{display:block}
 
-    /* Home hero */
-    .hero-top{background:linear-gradient(180deg,var(--hero-top) 0%,var(--hero-mid) 26%,var(--panel-light) 26%);padding:1rem 1rem 0;color:#fff}
-    .status-row{display:flex;justify-content:space-between;align-items:center;font-size:.72rem;font-weight:700;opacity:.85;margin-bottom:.35rem}
-    .app-title{display:flex;align-items:center;gap:.65rem;margin-bottom:.85rem}
-    .logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#3ed3ff,var(--lilac-deep));display:grid;place-items:center;font-size:1.35rem;box-shadow:0 10px 25px rgba(78,124,255,.35)}
-    .app-title h1{margin:0;font-size:1.15rem;letter-spacing:.03em}
-    .app-title p{margin:.1rem 0 0;font-size:.72rem;opacity:.78}
-    .user-pill{display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:.28rem .55rem;font-size:.68rem;margin-bottom:.65rem}
-    .char-card{border-radius:24px;padding:1rem;background:linear-gradient(135deg,rgba(80,105,255,.95),rgba(137,88,246,.94));box-shadow:0 18px 45px rgba(28,32,91,.38);position:relative;overflow:hidden;margin-bottom:.85rem}
-    .char-card::after{content:"";position:absolute;width:140px;height:140px;right:-50px;top:-50px;background:rgba(255,255,255,.12);border-radius:50%}
-    .badge{display:inline-flex;align-items:center;gap:.25rem;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:.35rem .6rem;font-size:.68rem;font-weight:700}
-    .char-main{display:grid;grid-template-columns:1fr 108px;gap:.65rem;align-items:end;margin-top:.55rem;position:relative;z-index:1}
-    .char-main .role{font-size:1.35rem;font-weight:800;margin:.15rem 0;color:#fff}
-    .char-main .small{font-size:.72rem;color:rgba(255,255,255,.82);line-height:1.45}
-    .char-thumb{width:108px;height:132px;display:flex;align-items:flex-end;justify-content:center}
-    .char-thumb img{height:128px;width:auto;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(0,0,0,.25))}
-    .exp-wrap{margin-top:.65rem;position:relative;z-index:1}
-    .exp-label{display:flex;justify-content:space-between;font-size:.68rem;font-weight:700;color:#fff;margin-bottom:.35rem}
-    .exp-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden}
-    .exp-bar span{display:block;height:100%;width:40%;background:linear-gradient(90deg,#77f1ff,#fff38d);border-radius:inherit;transition:width .3s ease}
-
-    .content{padding:0 .85rem 1rem}
-    .card{background:var(--card);border-radius:20px;padding:.85rem;margin-bottom:.65rem;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.85)}
-    .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:.55rem;font-size:.95rem;font-weight:800;color:var(--text)}
-    .hint{font-size:.68rem;color:var(--muted);font-weight:700}
-    .classes{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem}
-    .class-btn{border:1px solid #e2e5ff;background:#fff;border-radius:14px;padding:.45rem .25rem;text-align:center;font-weight:800;color:#34385f;cursor:pointer;font-size:.62rem}
-    .class-btn.active{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;transform:translateY(-1px)}
-    .class-icon{display:block;font-size:1.2rem;margin-bottom:.15rem}
-    .skill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem}
-    .skill{background:#fff;border-radius:14px;padding:.45rem .25rem;text-align:center;border:1px solid #e6e8ff;font-size:.62rem}
-    .skill .icon{width:38px;height:38px;margin:0 auto .25rem;border-radius:12px;display:grid;place-items:center;font-size:.95rem;color:#fff}
-    .skill strong{display:block;font-size:.68rem}
-    .skill em{font-style:normal;color:var(--muted);font-size:.58rem;font-weight:700}
-    .cta-btn{width:100%;border:none;border-radius:999px;padding:.75rem;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--mint),#1bb874);cursor:pointer;margin-top:.25rem}
-
-    /* Chat tab */
-    .chat-hero{background:linear-gradient(180deg,#0a1628 0%,#122a3a 55%,var(--panel-light) 100%);padding:1rem 1rem 0;color:#fff;position:relative}
-    .chat-hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 80% 20%,rgba(46,196,182,.15),transparent 50%);pointer-events:none}
-    .chat-brand{text-align:center;position:relative;z-index:1;padding:.35rem 0 .5rem}
-    .chat-brand h2{margin:0;font-family:"Zen Maru Gothic",serif;font-size:1.05rem;letter-spacing:.12em}
-    .chat-brand p{margin:.25rem 0 0;font-size:.68rem;opacity:.75}
-    .chat-stage{display:flex;justify-content:center;min-height:200px;align-items:flex-end;position:relative;z-index:1}
-    #lunaSprite{height:min(38vh,240px);width:auto;object-fit:contain;filter:drop-shadow(0 12px 22px rgba(0,0,0,.35));background:transparent}
+    /* ===== LUNA main (default) ===== */
+    #tab-luna{background:
+      radial-gradient(900px 500px at 10% -10%, var(--glow-a), transparent 55%),
+      radial-gradient(800px 480px at 100% 0%, var(--glow-b), transparent 50%),
+      linear-gradient(165deg, var(--bg0), var(--bg1) 45%, var(--bg2))}
+    .luna-header{display:flex;align-items:flex-start;justify-content:space-between;padding:1rem 1.1rem .35rem}
+    .brand{font-family:"Zen Maru Gothic",sans-serif;font-size:1.55rem;font-weight:700;color:var(--lilac-deep);letter-spacing:.04em}
+    .brand span{display:block;font-size:.78rem;font-weight:400;color:var(--muted);margin-top:.15rem}
+    .stats{display:flex;gap:.35rem;flex-wrap:wrap;justify-content:flex-end}
+    .pill{font-size:.68rem;background:var(--card);padding:.28rem .55rem;color:var(--lilac-deep);border-radius:999px;box-shadow:var(--shadow)}
+    .hero{padding:.2rem .8rem 0;min-height:280px}
+    .luna-stage{display:flex;justify-content:center;align-items:flex-end;min-height:280px;cursor:pointer;transform-origin:50% 90%}
+    #lunaSprite{height:min(52vh,360px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 14px 24px rgba(120,90,180,.22));background:transparent}
     .luna-idle{animation:lunaIdle 3.8s ease-in-out infinite}
     @keyframes lunaIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
     .luna-bob{animation:lunaBob .9s ease}
@@ -85,89 +54,108 @@
     @keyframes lunaTalk{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
     .luna-tap-bounce{animation:lunaTap .45s ease}
     @keyframes lunaTap{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
-    .bubble{margin:.5rem 1rem .55rem;background:var(--card);border-radius:18px;padding:.75rem .85rem;box-shadow:var(--shadow);line-height:1.65;white-space:pre-wrap;min-height:3.5rem}
-    .bubble .who{display:inline-block;font-size:.62rem;background:var(--lilac);color:#fff;padding:.1rem .45rem;border-radius:999px;margin-bottom:.35rem}
-    .chips{display:flex;flex-wrap:wrap;gap:.35rem;padding:0 1rem .45rem}
-    .chip{border:none;background:var(--card);color:var(--lilac-deep);padding:.45rem .65rem;font-size:.75rem;cursor:pointer;border-radius:999px;box-shadow:var(--shadow)}
-    .composer-wrap{padding:0 1rem .65rem}
-    .composer{display:flex;align-items:center;gap:.4rem;background:var(--composer-bg);border-radius:999px;padding:.3rem .35rem .3rem .85rem;box-shadow:var(--shadow)}
-    .composer input{flex:1;border:none;background:transparent;color:var(--text);outline:none;padding:.4rem 0}
-    .composer button{border:none;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;border-radius:999px;padding:.5rem .85rem;font-weight:700;cursor:pointer}
-    .chat-tools{display:flex;flex-wrap:wrap;gap:.35rem;padding:0 1rem .5rem}
-    .chat-tools button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.4rem .65rem;border-radius:999px;font-size:.72rem;cursor:pointer}
+    .bubble{margin:-.4rem 1rem .7rem;background:var(--card);border-radius:20px;padding:.85rem 1rem;box-shadow:var(--shadow);line-height:1.7;white-space:pre-wrap;min-height:4rem;position:relative;z-index:2}
+    .bubble::before{content:"";position:absolute;top:-8px;left:18%;width:16px;height:16px;background:var(--card);transform:rotate(45deg);border-radius:3px}
+    .bubble .who{display:inline-block;font-size:.68rem;background:var(--lilac);color:#fff;padding:.12rem .5rem;border-radius:999px;margin-bottom:.4rem}
+    .status-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:0 1rem .75rem}
+    .status-card{background:var(--card);border-radius:16px;padding:.7rem .55rem;text-align:center;box-shadow:var(--shadow);border:none;cursor:pointer;color:var(--text)}
+    .status-card:nth-child(1){background:var(--st1)} .status-card:nth-child(2){background:var(--st2)} .status-card:nth-child(3){background:var(--st3)}
+    .status-card .ico{font-size:1.15rem;margin-bottom:.15rem}
+    .status-card .label{font-size:.72rem;color:var(--muted)}
+    .status-card .val{font-size:.88rem;font-weight:700;color:var(--lilac-deep);margin-top:.15rem}
+    .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .55rem}
+    .chip{border:none;background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;font-size:.82rem;cursor:pointer;border-radius:999px;box-shadow:var(--shadow)}
+    .composer-wrap{padding:.35rem 1rem .5rem}
+    .composer{display:flex;align-items:center;gap:.45rem;background:var(--composer-bg);border-radius:999px;padding:.35rem .4rem .35rem .9rem;box-shadow:var(--shadow)}
+    .composer input{flex:1;border:none;background:transparent;color:var(--text);outline:none;padding:.45rem 0}
+    .composer button{border:none;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;border-radius:999px;padding:.55rem .95rem;font-weight:600;cursor:pointer}
+    .tools{display:flex;gap:.4rem;flex-wrap:wrap;padding:.35rem 1rem 1rem}
+    .tools button{border:none;background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;border-radius:999px;font-size:.8rem;box-shadow:var(--shadow);cursor:pointer}
+    .module-panel,.settings-panel{margin:0 1rem .6rem;padding:.9rem;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);display:none}
+    .module-panel.open,.settings-panel.open{display:block}
+    .module-panel h3,.settings-panel h3{margin:0 0 .3rem;font-size:1rem;color:var(--lilac-deep)}
+    .module-panel .hint,.settings-panel .hint{font-size:.75rem;color:var(--muted);margin:0 0 .5rem;line-height:1.45}
+    .module-panel textarea{width:100%;min-height:3.4rem;padding:.65rem;border:none;background:var(--input-bg);border-radius:14px;resize:vertical}
+    .module-panel .quick{display:flex;flex-wrap:wrap;gap:.35rem;margin:.45rem 0}
+    .module-panel .quick button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.4rem .65rem;border-radius:999px;font-size:.75rem;cursor:pointer}
+    .module-panel .row,.settings-actions{display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
+    .module-panel .row button,.settings-actions button{border:none;border-radius:999px;padding:.55rem .9rem;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep)}
+    .module-panel .row .amber{background:linear-gradient(135deg,var(--mint),var(--lilac-deep));color:#fff;font-weight:600}
+    .theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.4rem}
+    .theme-btn{border:2px solid transparent;background:var(--input-bg);border-radius:14px;padding:.55rem;cursor:pointer;display:flex;align-items:center;gap:.45rem;font-size:.72rem}
+    .theme-btn.active{border-color:var(--lilac)}
+    .theme-swatch{width:2rem;height:2rem;border-radius:10px;background:linear-gradient(135deg,var(--sw0,#ccc),var(--sw1,#999),var(--sw2,#666))}
+    #lunaMainView.hidden{display:none!important}
 
-    /* Map / Quest */
-    .map-hero{padding:1rem 1rem .5rem;background:linear-gradient(180deg,#1a3a2a,#2d5a45 70%,var(--panel-light))}
-    .map-hero h2{margin:0;color:#fff;font-size:1rem}
-    .map-hero p{margin:.25rem 0 0;color:rgba(255,255,255,.75);font-size:.72rem}
-    .map-strip{margin:.65rem 1rem;padding:1rem .75rem;border-radius:20px;background:linear-gradient(180deg,#87c98a,#4a8f5a);min-height:140px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+    /* ===== FSQ secondary tab ===== */
+    #tab-fsq{background:var(--fsq-panel)}
+    .fsq-banner{background:linear-gradient(180deg,var(--fsq-hero) 0%,#2a1f6b 18%,var(--fsq-panel) 18%);padding:1rem 1rem .5rem;color:#fff}
+    .fsq-banner h2{margin:0;font-size:1rem;display:flex;align-items:center;gap:.4rem}
+    .fsq-banner p{margin:.3rem 0 0;font-size:.72rem;opacity:.8}
+    .fsq-subnav{display:flex;gap:.35rem;padding:.65rem 1rem 0;overflow-x:auto}
+    .fsq-subnav button{border:none;background:var(--card);color:var(--muted);padding:.4rem .75rem;border-radius:999px;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:var(--shadow)}
+    .fsq-subnav button.active{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .fsq-section{display:none;padding:0 .85rem 1rem}
+    .fsq-section.active{display:block}
+    .content{padding:0 .85rem 1rem}
+    .card{background:var(--card);border-radius:20px;padding:.85rem;margin-bottom:.65rem;box-shadow:var(--shadow)}
+    .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:.55rem;font-size:.95rem;font-weight:800}
+    .hint{font-size:.68rem;color:var(--muted);font-weight:700}
+    .char-card{border-radius:24px;padding:1rem;background:linear-gradient(135deg,rgba(80,105,255,.95),rgba(137,88,246,.94));box-shadow:0 18px 45px rgba(28,32,91,.38);color:#fff;margin-bottom:.65rem}
+    .badge{display:inline-flex;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:.35rem .6rem;font-size:.68rem;font-weight:700}
+    .char-main{display:grid;grid-template-columns:1fr 96px;gap:.65rem;align-items:end;margin-top:.55rem}
+    .char-main .role{font-size:1.2rem;font-weight:800;margin:.15rem 0}
+    .char-main .small{font-size:.72rem;opacity:.85;line-height:1.45}
+    .char-thumb img{height:110px;width:auto;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.25))}
+    .exp-label{display:flex;justify-content:space-between;font-size:.68rem;font-weight:700;margin-bottom:.35rem}
+    .exp-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden}
+    .exp-bar span{display:block;height:100%;background:linear-gradient(90deg,#77f1ff,#fff38d);border-radius:inherit;transition:width .3s}
+    .classes{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem}
+    .class-btn{border:1px solid #e2e5ff;background:#fff;border-radius:14px;padding:.45rem .25rem;text-align:center;font-weight:800;font-size:.62rem;cursor:pointer}
+    .class-btn.active{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .class-icon{display:block;font-size:1.2rem;margin-bottom:.15rem}
+    .skill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem}
+    .skill{background:#fff;border-radius:14px;padding:.45rem .25rem;text-align:center;border:1px solid #e6e8ff;font-size:.62rem}
+    .skill .icon{width:38px;height:38px;margin:0 auto .25rem;border-radius:12px;display:grid;place-items:center;color:#fff;font-size:.85rem}
+    .map-strip{margin:.65rem 0;padding:1rem .75rem;border-radius:20px;background:linear-gradient(180deg,#87c98a,#4a8f5a);min-height:130px;box-shadow:var(--shadow)}
     .map-path{position:relative;height:90px}
-    .map-node{position:absolute;text-align:center;font-size:.55rem;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);width:56px;transform:translateX(-50%)}
+    .map-node{position:absolute;text-align:center;font-size:.55rem;font-weight:800;color:#fff;width:56px;transform:translateX(-50%)}
     .map-node .dot{width:14px;height:14px;border-radius:50%;background:#fff;margin:0 auto .2rem;border:2px solid var(--amber)}
-    .map-node.locked .dot{background:#888;border-color:#666;opacity:.6}
+    .map-node.locked .dot{background:#888;opacity:.6}
     .map-node.current .dot{box-shadow:0 0 0 4px rgba(255,200,87,.5);background:var(--amber)}
     .quest-item{display:flex;align-items:center;gap:.55rem;padding:.55rem 0;border-bottom:1px solid #eceeff}
     .quest-item:last-child{border-bottom:none}
     .quest-icon{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:#fff;font-size:.85rem;flex-shrink:0}
-    .quest-text{flex:1;min-width:0}
-    .quest-text strong{display:block;font-size:.82rem}
-    .quest-text span{font-size:.68rem;color:var(--muted);font-weight:700}
-    .quest-actions{display:flex;gap:.3rem;flex-shrink:0}
+    .quest-text{flex:1} .quest-text strong{display:block;font-size:.82rem} .quest-text span{font-size:.68rem;color:var(--muted)}
     .quest-actions button{border:none;border-radius:999px;padding:.35rem .55rem;font-size:.65rem;font-weight:700;cursor:pointer}
     .quest-actions .go{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
     .quest-actions .done{background:var(--ghost-bg);color:var(--lilac-deep)}
-
-    /* Career */
-    .career-hero{padding:1rem;background:linear-gradient(180deg,#f4efe6,#fff8ef);border-bottom:1px solid #eee}
-    .career-hero h2{margin:0;font-size:1rem;color:#5a4030}
-    .career-hero p{margin:.35rem 0 0;font-size:.72rem;color:#8a7560;line-height:1.5}
-    .route-card{border-radius:18px;padding:.75rem;margin-bottom:.55rem;border:1px solid #eee;background:#fff}
-    .route-card.pink{border-left:4px solid var(--pink)}
-    .route-card.blue{border-left:4px solid var(--lilac)}
-    .route-card.green{border-left:4px solid var(--mint)}
-    .route-card h4{margin:0 0 .25rem;font-size:.88rem}
-    .route-card p{margin:0;font-size:.72rem;color:var(--muted);line-height:1.45}
-    .route-card button{margin-top:.45rem;border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.4rem .7rem;border-radius:999px;font-size:.72rem;font-weight:700;cursor:pointer}
     .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.65rem}
     .stat-box{border-radius:14px;padding:.55rem .4rem;text-align:center;color:#fff;font-size:.62rem;font-weight:800}
     .stat-box strong{display:block;font-size:1rem;margin-top:.15rem}
+    .route-card{border-radius:18px;padding:.75rem;margin-bottom:.55rem;border:1px solid #eee;background:#fff}
+    .route-card.pink{border-left:4px solid var(--pink)} .route-card.blue{border-left:4px solid var(--lilac)} .route-card.green{border-left:4px solid var(--mint)}
+    .route-card h4{margin:0 0 .25rem;font-size:.88rem} .route-card p{margin:0;font-size:.72rem;color:var(--muted);line-height:1.45}
+    .route-card button{margin-top:.45rem;border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.4rem .7rem;border-radius:999px;font-size:.72rem;font-weight:700;cursor:pointer}
     .story-box{background:linear-gradient(135deg,#161d53,#4e2eb4);color:#fff;border-radius:16px;padding:.85rem;font-size:.75rem;line-height:1.6}
+    .cta-btn{width:100%;border:none;border-radius:999px;padding:.75rem;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--mint),#1bb874);cursor:pointer;margin-top:.25rem}
 
     /* My page */
     .profile-head{display:flex;align-items:center;gap:.75rem;padding:1rem;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
-    .profile-head img{width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(0,0,0,.2))}
-    .profile-head h2{margin:0;font-size:1rem}
-    .profile-head p{margin:.2rem 0 0;font-size:.72rem;opacity:.85}
-    .life-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.65rem}
-    .life-card{border:none;background:var(--card);border-radius:14px;padding:.55rem .35rem;text-align:center;cursor:pointer;box-shadow:var(--shadow);color:var(--text)}
-    .life-card .ico{font-size:1rem}
-    .life-card .label{font-size:.62rem;color:var(--muted)}
-    .life-card .val{font-size:.72rem;font-weight:800;color:var(--lilac-deep);margin-top:.1rem}
-    .theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.4rem}
-    .theme-btn{border:2px solid transparent;background:var(--input-bg);border-radius:14px;padding:.55rem;cursor:pointer;text-align:left;display:flex;align-items:center;gap:.45rem;font-size:.72rem;color:var(--text)}
-    .theme-btn.active{border-color:var(--lilac)}
-    .theme-swatch{width:2rem;height:2rem;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--sw0,#ccc),var(--sw1,#999),var(--sw2,#666))}
+    .profile-head img{width:64px;height:64px;object-fit:contain}
+    .profile-head h2{margin:0;font-size:1rem} .profile-head p{margin:.2rem 0 0;font-size:.72rem;opacity:.85}
+    .life-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
+    .life-card{border:none;background:var(--card);border-radius:14px;padding:.55rem .35rem;text-align:center;cursor:pointer;box-shadow:var(--shadow)}
     .row-btns{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.45rem}
     .row-btns button{border:none;border-radius:999px;padding:.5rem .8rem;font-size:.75rem;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep);font-weight:700}
     .row-btns button.danger{background:rgba(224,122,138,.15);color:var(--danger)}
 
-    /* Bottom nav */
-    .bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:440px;height:calc(68px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--nav-bg);border-top:1px solid #e7e9fa;display:grid;grid-template-columns:repeat(5,1fr);z-index:50}
-    .nav-item{border:none;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1rem;font-size:.58rem;font-weight:800;color:var(--nav-idle);cursor:pointer;padding:.35rem 0}
-    .nav-item .ico{font-size:1.15rem;line-height:1}
+    .bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:440px;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--nav-bg);border-top:1px solid #e7e9fa;display:grid;grid-template-columns:repeat(3,1fr);z-index:50}
+    .nav-item{border:none;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1rem;font-size:.62rem;font-weight:800;color:var(--nav-idle);cursor:pointer}
+    .nav-item .ico{font-size:1.2rem;line-height:1}
     .nav-item.active{color:var(--nav-active)}
-
-    /* Overlays */
-    .overlay{position:fixed;inset:0;background:rgba(8,13,52,.45);z-index:80;display:none;align-items:flex-end;justify-content:center}
-    .overlay.open{display:flex}
-    .sheet{width:100%;max-width:440px;max-height:85vh;background:var(--card);border-radius:22px 22px 0 0;padding:1rem;overflow-y:auto;box-shadow:0 -8px 32px rgba(0,0,0,.2)}
-    .sheet h3{margin:0 0 .25rem;color:var(--lilac-deep);font-size:.95rem}
-    .sheet textarea{width:100%;min-height:3.2rem;padding:.6rem;border:none;background:var(--input-bg);border-radius:12px;resize:vertical;margin:.45rem 0}
-    .sheet .quick{display:flex;flex-wrap:wrap;gap:.3rem;margin:.35rem 0}
-    .sheet .quick button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.35rem .55rem;border-radius:999px;font-size:.68rem;cursor:pointer}
-    .sheet .baseline{font-size:.75rem;line-height:1.5;max-height:5rem;overflow:auto;white-space:pre-wrap;margin-bottom:.45rem;color:var(--muted)}
-    .err{color:var(--danger);font-size:.78rem;padding:0 1rem;min-height:1em}
-    .ok{color:var(--mint);font-size:.72rem}
+    .err{color:var(--danger);font-size:.82rem;padding:0 1rem;min-height:1em}
+    .ok{color:var(--mint);font-size:.78rem}
     .hidden{display:none!important}
   </style>
   <script src="/static/theme.js"></script>
@@ -176,97 +164,120 @@
 <body>
   <div class="app">
     <div class="screen">
-      <!-- HOME -->
-      <section id="tab-home" class="tab-panel active">
-        <div class="hero-top">
-          <div class="status-row"><span id="clockLabel">—</span><span>LUNA FSQ</span></div>
-          <div class="app-title">
-            <div class="logo">⚔️</div>
-            <div><h1>Future Skill Quest</h1><p>未来の自分を育てるキャリアRPG</p></div>
+      <!-- LUNA MAIN -->
+      <section id="tab-luna" class="tab-panel active">
+        <header class="luna-header">
+          <div class="brand">LUNA<span id="greetingSub">今日も一緒にいこうね</span></div>
+          <div class="stats">
+            <span class="pill" id="modePill">—</span>
+            <span class="pill" id="expPill">Lv.1</span>
           </div>
-          <span class="user-pill" id="homeUserPill">冒険者</span>
-          <div class="char-card">
-            <span class="badge" id="homeClassBadge">現在のクラス：—</span>
-            <div class="char-main">
-              <div>
-                <div class="role" id="homeRoleName">LUNA</div>
-                <div class="small" id="homeRoleDesc">学習するとEXPを獲得し、クエストで成長できます。</div>
+        </header>
+        <div id="lunaMainView">
+          <div class="hero">
+            <div class="luna-stage" id="lunaStage">
+              <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
+            </div>
+          </div>
+          <div class="bubble"><span class="who">LUNA</span><div id="dialogue">…</div></div>
+          <div class="status-row">
+            <button type="button" class="status-card" data-life="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">開く</div></button>
+            <button type="button" class="status-card" data-life="health"><div class="ico">💚</div><div class="label">健康</div><div class="val" id="stHealth">開く</div></button>
+            <button type="button" class="status-card" data-life="money"><div class="ico">👛</div><div class="label">お金</div><div class="val" id="stMoney">開く</div></button>
+          </div>
+          <div class="chips" id="chips"></div>
+          <div class="composer-wrap">
+            <div class="composer">
+              <input id="message" type="text" placeholder="LUNAに話しかける…" autocomplete="off" />
+              <button type="button" id="sendBtn">送信</button>
+            </div>
+          </div>
+          <div class="tools">
+            <button type="button" id="settingsBtn">設定</button>
+            <button type="button" id="voiceBtn">🔊 音声ON</button>
+            <button type="button" id="morningBtn">朝</button>
+            <button type="button" id="eveningBtn">夜</button>
+          </div>
+        </div>
+        <div id="moduleView" class="module-panel">
+          <h3 id="modTitle">—</h3>
+          <p class="hint" id="modHint"></p>
+          <div class="baseline" id="modBaseline" style="font-size:.8rem;line-height:1.55;max-height:6rem;overflow:auto;white-space:pre-wrap;margin-bottom:.5rem;color:var(--muted)"></div>
+          <div class="quick" id="modQuick"></div>
+          <textarea id="modNote" placeholder="追記…"></textarea>
+          <div class="row">
+            <button type="button" class="amber" id="modSave">追記</button>
+            <button type="button" class="ghost" id="modAsk">AIに相談</button>
+            <button type="button" id="modBack">チャットへ</button>
+          </div>
+          <p class="ok" id="modMsg"></p>
+        </div>
+        <div id="settingsView" class="settings-panel">
+          <h3>一般設定</h3>
+          <p class="hint">色テーマはログイン画面にも反映されます。</p>
+          <div class="theme-grid" id="themeGrid"></div>
+          <div class="settings-actions"><button type="button" id="settingsBack">戻る</button></div>
+        </div>
+      </section>
+
+      <!-- FSQ secondary -->
+      <section id="tab-fsq" class="tab-panel">
+        <div class="fsq-banner">
+          <h2>⚔️ Future Skill Quest</h2>
+          <p>学習をRPG化するサブモード（メインはLUNAチャット）</p>
+        </div>
+        <div class="fsq-subnav">
+          <button type="button" class="fsq-sub active" data-fsq="home">ホーム</button>
+          <button type="button" class="fsq-sub" data-fsq="map">マップ</button>
+          <button type="button" class="fsq-sub" data-fsq="career">進路</button>
+        </div>
+        <div id="fsq-home" class="fsq-section active">
+          <div class="content" style="padding-top:.65rem">
+            <div class="char-card">
+              <span class="badge" id="homeClassBadge">現在のクラス：—</span>
+              <div class="char-main">
+                <div>
+                  <div class="role" id="homeRoleName">冒険者</div>
+                  <div class="small" id="homeRoleDesc">学習するとEXPを獲得できます。</div>
+                  <div class="exp-wrap" style="margin-top:.55rem">
+                    <div class="exp-label"><span id="homeExpLabel">EXP 0 / 100</span><span id="homeLvLabel">Lv.1</span></div>
+                    <div class="exp-bar"><span id="homeExpBar"></span></div>
+                  </div>
+                </div>
+                <div class="char-thumb"><img src="/static/live2d/luna-expressions/luna-happy.png" alt="" /></div>
               </div>
-              <div class="char-thumb"><img id="homeLunaThumb" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" /></div>
             </div>
-            <div class="exp-wrap">
-              <div class="exp-label"><span id="homeExpLabel">EXP 0 / 100</span><span id="homeLvLabel">Lv.1</span></div>
-              <div class="exp-bar"><span id="homeExpBar"></span></div>
+            <div class="card">
+              <div class="section-title"><span>🛡️ クラス選択</span></div>
+              <div class="classes" id="classPicker"></div>
+            </div>
+            <div class="card">
+              <div class="section-title"><span>🌳 スキル</span></div>
+              <div class="skill-grid" id="skillGrid"></div>
             </div>
           </div>
         </div>
-        <div class="content">
-          <div class="card">
-            <div class="section-title"><span>🛡️ クラス選択</span><span class="hint">自分の分身</span></div>
-            <div class="classes" id="classPicker"></div>
-          </div>
-          <div class="card">
-            <div class="section-title"><span>🌳 スキル</span><span class="hint">成長マップ</span></div>
-            <div class="skill-grid" id="skillGrid"></div>
-          </div>
-          <button type="button" class="cta-btn" id="homeQuestCta">学習クエストへ ›</button>
-        </div>
-      </section>
-
-      <!-- CHAT -->
-      <section id="tab-chat" class="tab-panel">
-        <div class="chat-hero">
-          <div class="chat-brand"><h2>✦ LUNA AI COMPANION ✦</h2><p>あなたの味方でいるAIコンパニオン</p></div>
-          <div class="chat-stage" id="lunaStage"><img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" /></div>
-        </div>
-        <div class="bubble"><span class="who">LUNA</span><div id="dialogue">…</div></div>
-        <div class="chips" id="chips"></div>
-        <div class="chat-tools">
-          <button type="button" id="lifeHealthBtn">💚 健康</button>
-          <button type="button" id="lifeMoneyBtn">👛 お金</button>
-          <button type="button" id="lifeScheduleBtn">📅 スケジュール</button>
-          <button type="button" id="morningBtn">朝チェック</button>
-          <button type="button" id="eveningBtn">夜チェック</button>
-        </div>
-        <div class="composer-wrap">
-          <div class="composer">
-            <input id="message" type="text" placeholder="LUNAに話しかける…" autocomplete="off" />
-            <button type="button" id="sendBtn">送信</button>
+        <div id="fsq-map" class="fsq-section">
+          <div class="content" style="padding-top:.65rem">
+            <p class="hint" id="mapRegionLabel" style="margin:0 0 .5rem">現在：始まりの平原</p>
+            <div class="map-strip"><div class="map-path" id="mapPath"></div></div>
+            <div class="card">
+              <div class="section-title"><span>✅ 今日のクエスト</span></div>
+              <div id="questList"></div>
+            </div>
           </div>
         </div>
-      </section>
-
-      <!-- QUEST / MAP -->
-      <section id="tab-quest" class="tab-panel">
-        <div class="map-hero">
-          <h2>🗺️ 学習マップ</h2>
-          <p id="mapRegionLabel">現在のエリア：始まりの平原</p>
-        </div>
-        <div class="map-strip"><div class="map-path" id="mapPath"></div></div>
-        <div class="content">
-          <div class="card">
-            <div class="section-title"><span>✅ 今日のクエスト</span><span class="hint" id="questHint">タップで達成</span></div>
-            <div id="questList"></div>
-            <button type="button" class="cta-btn" id="questChatBtn" style="margin-top:.5rem;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep))">LUNAに相談</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- CAREER -->
-      <section id="tab-career" class="tab-panel">
-        <div class="career-hero">
-          <h2>キミの個性と「好き」からおすすめの進路を見つけよう</h2>
-          <p>性格・強み・好きな科目から、探索ルートを提案します。</p>
-        </div>
-        <div class="content">
-          <div class="stats-row" id="portfolioStats"></div>
-          <div class="card">
-            <div class="section-title"><span>🧭 おすすめの探索ルート</span><button type="button" id="refreshCareerBtn" class="hint" style="border:none;background:none;cursor:pointer;color:var(--lilac)">更新</button></div>
-            <div id="routeList"></div>
-          </div>
-          <div class="card">
-            <div class="section-title"><span>📜 冒険のあらすじ</span></div>
-            <div class="story-box" id="storyBox">読み込み中…</div>
+        <div id="fsq-career" class="fsq-section">
+          <div class="content" style="padding-top:.65rem">
+            <div class="stats-row" id="portfolioStats"></div>
+            <div class="card">
+              <div class="section-title"><span>🧭 探索ルート</span><button type="button" id="refreshCareerBtn" class="hint" style="border:none;background:none;cursor:pointer;color:var(--lilac)">更新</button></div>
+              <div id="routeList"></div>
+            </div>
+            <div class="card">
+              <div class="section-title"><span>📜 冒険のあらすじ</span></div>
+              <div class="story-box" id="storyBox">…</div>
+            </div>
           </div>
         </div>
       </section>
@@ -275,7 +286,7 @@
       <section id="tab-mypage" class="tab-panel">
         <div class="profile-head">
           <img src="/static/live2d/luna-expressions/luna-wave.png" alt="" />
-          <div><h2 id="myName">—</h2><p id="mySub">Lv.1 · EXP 0</p></div>
+          <div><h2 id="myName">—</h2><p id="mySub">Lv.1</p></div>
         </div>
         <div class="content" style="padding-top:.85rem">
           <div class="card">
@@ -286,14 +297,6 @@
               <button type="button" class="life-card" data-life="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="lifeSchedule">開く</div></button>
             </div>
           </div>
-          <div class="card">
-            <div class="section-title"><span>🎨 テーマ</span></div>
-            <div class="theme-grid" id="themeGrid"></div>
-          </div>
-          <div class="card">
-            <div class="section-title"><span>🔊 音声</span></div>
-            <div class="row-btns"><button type="button" id="voiceBtn">音声ON</button></div>
-          </div>
           <div class="row-btns" style="padding:0 .85rem 1rem">
             <button type="button" id="adminLink" class="hidden" onclick="location.href='/admin'">管理画面</button>
             <button type="button" id="logoutBtn" class="danger">ログアウト</button>
@@ -302,29 +305,11 @@
       </section>
     </div>
 
-    <nav class="bottom-nav" aria-label="メイン">
-      <button type="button" class="nav-item active" data-tab="home"><span class="ico">🏠</span>ホーム</button>
-      <button type="button" class="nav-item" data-tab="chat"><span class="ico">💬</span>チャット</button>
-      <button type="button" class="nav-item" data-tab="quest"><span class="ico">⚔️</span>クエスト</button>
-      <button type="button" class="nav-item" data-tab="career"><span class="ico">🧭</span>進路</button>
+    <nav class="bottom-nav">
+      <button type="button" class="nav-item active" data-tab="luna"><span class="ico">💜</span>LUNA</button>
+      <button type="button" class="nav-item" data-tab="fsq"><span class="ico">⚔️</span>FSQ</button>
       <button type="button" class="nav-item" data-tab="mypage"><span class="ico">👤</span>マイページ</button>
     </nav>
-
-    <div class="overlay" id="lifeOverlay">
-      <div class="sheet">
-        <h3 id="modTitle">—</h3>
-        <p class="hint" id="modHint"></p>
-        <div class="baseline" id="modBaseline"></div>
-        <div class="quick" id="modQuick"></div>
-        <textarea id="modNote" placeholder="追記…"></textarea>
-        <div class="row-btns">
-          <button type="button" id="modSave">追記</button>
-          <button type="button" id="modAsk">AIに相談</button>
-          <button type="button" id="modClose">閉じる</button>
-        </div>
-        <p class="ok" id="modMsg"></p>
-      </div>
-    </div>
     <p class="err" id="err"></p>
   </div>
   <script src="/static/auth-common.js"></script>

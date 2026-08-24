@@ -215,7 +215,7 @@
   };
 
   function applyTheme(id) {
-    const theme = THEMES[id] || THEMES.fsq;
+    const theme = THEMES[id] || THEMES.lilac;
     const root = document.documentElement;
     Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
     root.dataset.theme = theme.id;
@@ -232,11 +232,9 @@
     try {
       const saved = localStorage.getItem(KEY);
       if (saved && THEMES[saved]) return saved;
-      // migrate old default lilac → fsq for design-aligned app
-      if (!saved) return "fsq";
-      return saved;
+      return "lilac";
     } catch (_) {
-      return "fsq";
+      return "lilac";
     }
   }
 

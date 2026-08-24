@@ -52,17 +52,18 @@
   let chatStarted = false;
   let firstChat = true;
   let voiceOn = localStorage.getItem("luna_voice") !== "0";
-  let currentTab = "home";
+  let currentTab = "luna";
   let currentModule = "health";
   let stateData = { level: 1, total_exp: 0, companion_name: null, user_display_name: null };
   let rpgData = { class_id: null, region_id: "tutorial_plains", active_quests: [] };
   let regions = [];
-  let careerData = { career_path: {}, rpg: {} };
-  let portfolioData = null;
   let classLabels = {};
   let selectedClass = localStorage.getItem("luna_class") || "swordsman";
 
   const errEl = document.getElementById("err");
+  const lunaMainView = document.getElementById("lunaMainView");
+  const moduleView = document.getElementById("moduleView");
+  const settingsView = document.getElementById("settingsView");
 
   function expForLevel(lv) {
     return Math.max(100, Math.pow(Math.max(1, lv), 2) * 100);
@@ -92,27 +93,55 @@
     errEl.textContent = msg || "";
   }
 
+  function setLunaView(view) {
+    const isMain = view === "main";
+    const isModule = view === "module";
+    const isSettings = view === "settings";
+    lunaMainView.classList.toggle("hidden", !isMain);
+    moduleView.classList.toggle("open", isModule);
+    settingsView.classList.toggle("open", isSettings);
+    if (isModule) loadModule(currentModule);
+  }
+
   function switchTab(name) {
     currentTab = name;
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
     document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
-    const panel = document.getElementById("tab-" + name);
+    document.getElementById("tab-" + name).classList.add("active");
     const nav = document.querySelector('.nav-item[data-tab="' + name + '"]');
-    if (panel) panel.classList.add("active");
     if (nav) nav.classList.add("active");
-    if (name === "chat" && !chatStarted) startChat();
-    if (name === "career") loadCareerTab();
+    if (name === "luna") {
+      setLunaView("main");
+      if (!chatStarted) startChat();
+    }
+    if (name === "fsq") loadFsqTab();
     window.scrollTo(0, 0);
+  }
+
+  function switchFsqSub(name) {
+    document.querySelectorAll(".fsq-sub").forEach((b) => b.classList.toggle("active", b.dataset.fsq === name));
+    document.querySelectorAll(".fsq-section").forEach((s) => s.classList.remove("active"));
+    document.getElementById("fsq-" + name).classList.add("active");
+  }
+
+  function loadFsqTab() {
+    renderHomeHeader();
+    renderClassPicker();
+    renderSkills();
+    renderMap();
+    renderQuests();
+    loadCareerTab();
   }
 
   function renderClassPicker() {
     const el = document.getElementById("classPicker");
+    if (!el) return;
     el.innerHTML = "";
     CLASSES.forEach((c) => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "class-btn" + (c.id === selectedClass ? " active" : "");
-      b.innerHTML = '<span class="class-icon">' + c.icon + '</span><span class="class-label">' + c.label + "</span>";
+      b.innerHTML = '<span class="class-icon">' + c.icon + '</span>' + c.label;
       b.onclick = () => selectClass(c.id);
       el.appendChild(b);
     });
@@ -138,8 +167,7 @@
   }
 
   function findClusterForClass(classId) {
-    const clusters = window._careerClusters || [];
-    return clusters.find((c) => c.rpg_class === classId) || clusters[0];
+    return (window._careerClusters || []).find((c) => c.rpg_class === classId);
   }
 
   function classLabel(id) {
@@ -149,33 +177,36 @@
 
   function renderHomeHeader() {
     const cls = rpgData.class_id || selectedClass;
-    const name = stateData.companion_name || "LUNA";
     const user = stateData.user_display_name || "冒険者";
     const lv = stateData.level || 1;
     const exp = stateData.total_exp || 0;
     const prog = expProgress(exp, lv);
-    document.getElementById("homeUserPill").textContent = user;
-    document.getElementById("homeClassBadge").textContent = "現在のクラス：" + classLabel(cls);
-    document.getElementById("homeRoleName").textContent = name;
-    document.getElementById("homeRoleDesc").textContent = CLASS_DESC[cls] || CLASS_DESC.swordsman;
-    document.getElementById("homeExpLabel").textContent = "EXP " + prog.cur + " / " + prog.need;
-    document.getElementById("homeLvLabel").textContent = "Lv." + lv;
-    document.getElementById("homeExpBar").style.width = prog.pct + "%";
+    const badge = document.getElementById("homeClassBadge");
+    if (badge) badge.textContent = "現在のクラス：" + classLabel(cls);
+    const role = document.getElementById("homeRoleName");
+    if (role) role.textContent = user;
+    const desc = document.getElementById("homeRoleDesc");
+    if (desc) desc.textContent = CLASS_DESC[cls] || CLASS_DESC.swordsman;
+    const expL = document.getElementById("homeExpLabel");
+    if (expL) expL.textContent = "EXP " + prog.cur + " / " + prog.need;
+    const lvL = document.getElementById("homeLvLabel");
+    if (lvL) lvL.textContent = "Lv." + lv;
+    const bar = document.getElementById("homeExpBar");
+    if (bar) bar.style.width = prog.pct + "%";
     document.getElementById("myName").textContent = user;
     document.getElementById("mySub").textContent = "Lv." + lv + " · EXP " + exp;
-    const now = new Date();
-    document.getElementById("clockLabel").textContent =
-      now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
+    document.getElementById("expPill").textContent = "Lv." + lv + " · EXP " + exp;
   }
 
   function renderSkills() {
     const grid = document.getElementById("skillGrid");
+    if (!grid) return;
     const lv = stateData.level || 1;
     grid.innerHTML = "";
     SKILLS.forEach((s, i) => {
       const locked = i > lv + 1;
       const div = document.createElement("div");
-      div.className = "skill" + (locked ? " locked" : "");
+      div.className = "skill";
       div.style.opacity = locked ? ".45" : "1";
       div.innerHTML =
         '<div class="icon" style="background:' +
@@ -184,7 +215,7 @@
         s.icon +
         '</div><strong>' +
         s.label +
-        '</strong><em>Lv.' +
+        '</strong><em style="font-style:normal;color:var(--muted);font-size:.58rem">Lv.' +
         Math.max(1, Math.min(lv, i + 1)) +
         "</em>";
       grid.appendChild(div);
@@ -193,14 +224,17 @@
 
   function renderMap() {
     const path = document.getElementById("mapPath");
+    if (!path) return;
     path.innerHTML = "";
-    const list = regions.length ? regions : [
-      { id: "tutorial_plains", label_ja: "始まりの平原", unlocked: true, current: true },
-      { id: "study_forest", label_ja: "学習の森", unlocked: false },
-      { id: "exam_hills", label_ja: "試練の丘", unlocked: false },
-      { id: "midterm_canyon", label_ja: "中間の峡谷", unlocked: false },
-      { id: "final_castle", label_ja: "期末の城", unlocked: false },
-    ];
+    const list = regions.length
+      ? regions
+      : [
+          { label_ja: "始まりの平原", unlocked: true, current: true },
+          { label_ja: "学習の森", unlocked: false },
+          { label_ja: "試練の丘", unlocked: false },
+          { label_ja: "中間の峡谷", unlocked: false },
+          { label_ja: "期末の城", unlocked: false },
+        ];
     list.forEach((r, i) => {
       const pos = MAP_POSITIONS[i] || MAP_POSITIONS[MAP_POSITIONS.length - 1];
       const node = document.createElement("div");
@@ -211,12 +245,13 @@
       path.appendChild(node);
     });
     const cur = list.find((r) => r.current) || list[0];
-    document.getElementById("mapRegionLabel").textContent =
-      "現在のエリア：" + (cur ? cur.label_ja : "始まりの平原");
+    const lbl = document.getElementById("mapRegionLabel");
+    if (lbl) lbl.textContent = "現在のエリア：" + (cur ? cur.label_ja : "始まりの平原");
   }
 
   function renderQuests() {
     const list = document.getElementById("questList");
+    if (!list) return;
     list.innerHTML = "";
     const active = (rpgData.active_quests || []).slice(0, 5);
     const items = active.length
@@ -245,19 +280,11 @@
         (q.quest_type === "daily_study" ? "10" : "12") +
         " EXP</span></div><div class="quest-actions"></div>";
       const actions = row.querySelector(".quest-actions");
-      if (!q.active) {
-        const start = document.createElement("button");
-        start.className = "go";
-        start.textContent = "開始";
-        start.onclick = () => startQuest(q);
-        actions.appendChild(start);
-      } else {
-        const done = document.createElement("button");
-        done.className = "done";
-        done.textContent = "達成";
-        done.onclick = () => completeQuest(q);
-        actions.appendChild(done);
-      }
+      const btn = document.createElement("button");
+      btn.className = q.active ? "done" : "go";
+      btn.textContent = q.active ? "達成" : "開始";
+      btn.onclick = () => (q.active ? completeQuest(q) : startQuest(q));
+      actions.appendChild(btn);
       list.appendChild(row);
     });
   }
@@ -266,11 +293,7 @@
     try {
       await api("/rpg/quest/start", {
         method: "POST",
-        body: JSON.stringify({
-          title: q.title,
-          quest_type: q.quest_type,
-          subject: q.subject,
-        }),
+        body: JSON.stringify({ title: q.title, quest_type: q.quest_type, subject: q.subject }),
       });
       await refreshCore();
       renderQuests();
@@ -281,7 +304,7 @@
 
   async function completeQuest(q) {
     try {
-      const data = await api("/rpg/activity/complete", {
+      await api("/rpg/activity/complete", {
         method: "POST",
         body: JSON.stringify({
           title: q.title,
@@ -293,7 +316,6 @@
       if (luna) luna.applyEmotion("cheer", 1500);
       await refreshCore();
       renderQuests();
-      if (data.exp_gain) setErr("");
     } catch (e) {
       setErr(e.message);
     }
@@ -308,19 +330,20 @@
           body: JSON.stringify({ personality_text: "", hobbies_text: "", save: false, top_k: 3 }),
         }),
       ]);
-      portfolioData = port;
       renderPortfolioStats(port);
-      document.getElementById("storyBox").textContent = port.story_ja || "冒険は始まったばかりです。";
+      const story = document.getElementById("storyBox");
+      if (story) story.textContent = port.story_ja || "冒険は始まったばかりです。";
       renderRoutes(suggest.suggestions || []);
-    } catch (e) {
-      document.getElementById("storyBox").textContent = "プロフィールを充実させると、あらすじが育ちます。";
-      setErr(e.message);
+    } catch (_) {
+      const story = document.getElementById("storyBox");
+      if (story) story.textContent = "LUNAと話してから、探索ルートを見てみましょう。";
     }
   }
 
   function renderPortfolioStats(port) {
-    const s = port.summary || {};
     const row = document.getElementById("portfolioStats");
+    if (!row) return;
+    const s = port.summary || {};
     row.innerHTML =
       '<div class="stat-box" style="background:linear-gradient(135deg,#c9a227,#8b6914)"><span>クエスト</span><strong>' +
       (s.quests_completed || 0) +
@@ -333,20 +356,20 @@
 
   function renderRoutes(suggestions) {
     const el = document.getElementById("routeList");
+    if (!el) return;
     el.innerHTML = "";
     if (!suggestions.length) {
-      el.innerHTML = '<p class="hint">チャットで自己紹介すると、探索ルートが提案されます。</p>';
+      el.innerHTML = '<p class="hint">LUNAに話すと、進路の候補が出てきます。</p>';
       return;
     }
     suggestions.slice(0, 3).forEach((s, i) => {
-      const color = ROUTE_COLORS[i % ROUTE_COLORS.length];
       const card = document.createElement("div");
-      card.className = "route-card " + color;
+      card.className = "route-card " + ROUTE_COLORS[i % ROUTE_COLORS.length];
       card.innerHTML =
         "<h4>" +
-        (s.cluster_label_ja || s.label_ja || s.cluster_id) +
+        (s.label_ja || s.cluster_id) +
         "</h4><p>" +
-        (s.reason_ja || s.summary_ja || "あなたの特性に近いルートです。") +
+        (s.reason_ja || "") +
         '</p><button type="button">このルートを選ぶ</button>';
       card.querySelector("button").onclick = () => selectRoute(s);
       el.appendChild(card);
@@ -370,7 +393,6 @@
       await refreshCore();
       renderClassPicker();
       loadCareerTab();
-      if (luna) luna.applyEmotion("wave", 1200);
     } catch (e) {
       setErr(e.message);
     }
@@ -394,7 +416,7 @@
   }
 
   function syncVoiceBtn() {
-    document.getElementById("voiceBtn").textContent = voiceOn ? "音声ON（タップでOFF）" : "音声OFF（タップでON）";
+    document.getElementById("voiceBtn").textContent = voiceOn ? "🔊 音声ON" : "🔇 音声OFF";
     try {
       localStorage.setItem("luna_voice", voiceOn ? "1" : "0");
     } catch (_) {}
@@ -465,12 +487,8 @@
 
   function openLife(mod) {
     currentModule = mod;
-    document.getElementById("lifeOverlay").classList.add("open");
-    loadModule(mod);
-  }
-
-  function closeLife() {
-    document.getElementById("lifeOverlay").classList.remove("open");
+    switchTab("luna");
+    setLunaView("module");
   }
 
   async function loadModule(mod) {
@@ -498,6 +516,7 @@
       document.getElementById("modBaseline").textContent = lines.length
         ? lines.join("\n")
         : "まだ情報がありません。";
+      if (luna) luna.applyEmotion(mod === "health" ? "think" : mod === "money" ? "happy" : "wave", 1600);
     } catch (e) {
       setErr(e.message);
     }
@@ -506,24 +525,27 @@
   async function refreshLifeSummary() {
     try {
       const life = await api("/life/modules");
-      const map = { schedule: "lifeSchedule", health: "lifeHealth", money: "lifeMoney" };
       (life.modules || []).forEach((m) => {
-        const el = document.getElementById(map[m.module]);
-        if (!el) return;
+        const stId = m.module === "schedule" ? "stSchedule" : m.module === "health" ? "stHealth" : "stMoney";
+        const lifeId = m.module === "schedule" ? "lifeSchedule" : m.module === "health" ? "lifeHealth" : "lifeMoney";
         const n = (m.notes || []).length;
         const b = Object.keys(m.baseline || {}).length;
-        el.textContent = n || b ? b + "+" + n : "開く";
+        const text = n || b ? b + "+" + n : "開く";
+        [stId, lifeId].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = text;
+        });
       });
     } catch (_) {}
   }
 
   async function refreshCore() {
     try {
-      const [state, rpg, career, tax] = await Promise.all([
+      const [state, rpg, tax, brain] = await Promise.all([
         api("/state/me"),
         api("/rpg/me"),
-        api("/career/me"),
         api("/career/taxonomy"),
+        api("/brain/me"),
       ]);
       stateData = {
         level: state.current_level || rpg.level || 1,
@@ -533,12 +555,12 @@
       };
       rpgData = rpg.rpg || {};
       regions = rpg.regions || [];
-      careerData = career;
       window._careerClusters = tax.career_clusters || [];
       (tax.rpg_classes || []).forEach((c) => {
         classLabels[c.id] = c.label_ja;
       });
       if (rpgData.class_id) selectedClass = rpgData.class_id;
+      document.getElementById("modePill").textContent = brain.mode || "—";
       renderHomeHeader();
       renderSkills();
       renderMap();
@@ -580,25 +602,18 @@
     document.querySelectorAll(".nav-item").forEach((btn) => {
       btn.onclick = () => switchTab(btn.dataset.tab);
     });
-    document.getElementById("homeQuestCta").onclick = () => switchTab("quest");
-    document.getElementById("questChatBtn").onclick = () => {
-      switchTab("chat");
-      sendMessage("今日のクエストについて相談したいです。");
-    };
-    document.getElementById("sendBtn").onclick = () => sendMessage(document.getElementById("message").value);
-    document.getElementById("message").onkeydown = (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        sendMessage(document.getElementById("message").value);
-      }
-    };
-    document.getElementById("lifeHealthBtn").onclick = () => openLife("health");
-    document.getElementById("lifeMoneyBtn").onclick = () => openLife("money");
-    document.getElementById("lifeScheduleBtn").onclick = () => openLife("schedule");
-    document.querySelectorAll(".life-card").forEach((c) => {
+    document.querySelectorAll(".fsq-sub").forEach((btn) => {
+      btn.onclick = () => switchFsqSub(btn.dataset.fsq);
+    });
+    document.querySelectorAll(".status-card, .life-card").forEach((c) => {
       c.onclick = () => openLife(c.dataset.life);
     });
-    document.getElementById("modClose").onclick = closeLife;
+    document.getElementById("modBack").onclick = () => setLunaView("main");
+    document.getElementById("settingsBtn").onclick = () => {
+      renderThemePicker();
+      setLunaView("settings");
+    };
+    document.getElementById("settingsBack").onclick = () => setLunaView("main");
     document.getElementById("modSave").onclick = async () => {
       const note = document.getElementById("modNote").value.trim();
       if (!note) return;
@@ -614,19 +629,24 @@
     document.getElementById("modAsk").onclick = async () => {
       const note = document.getElementById("modNote").value.trim();
       const labels = { health: "健康", money: "お金", schedule: "スケジュール" };
-      closeLife();
-      switchTab("chat");
+      setLunaView("main");
       await sendMessage(
         note
           ? "【" + labels[currentModule] + "】追記：" + note + "。アドバイスをお願いします。"
           : "【" + labels[currentModule] + "】の状況を確認してください。"
       );
     };
+    document.getElementById("sendBtn").onclick = () => sendMessage(document.getElementById("message").value);
+    document.getElementById("message").onkeydown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendMessage(document.getElementById("message").value);
+      }
+    };
     document.getElementById("morningBtn").onclick = async () => {
       try {
         const goal = prompt("今日の目標は？", "") || "";
         await api("/checkin/morning", { method: "POST", body: JSON.stringify({ goal }) });
-        switchTab("chat");
         await sendMessage(goal ? "今日の目標は「" + goal + "」。朝チェックインお願いします。" : "朝チェックインお願いします。");
       } catch (e) {
         setErr(e.message);
@@ -635,7 +655,6 @@
     document.getElementById("eveningBtn").onclick = async () => {
       try {
         await api("/checkin/evening", { method: "POST", body: JSON.stringify({}) });
-        switchTab("chat");
         await sendMessage("夜チェックインお願いします。");
       } catch (e) {
         setErr(e.message);
@@ -654,23 +673,19 @@
       LunaAuth.clearToken();
       LunaAuth.goLogin("/app");
     };
-    document.getElementById("lifeOverlay").onclick = (e) => {
-      if (e.target.id === "lifeOverlay") closeLife();
-    };
   }
 
   async function boot() {
     if (!LunaAuth.requireLogin("/app")) return;
     token = LunaAuth.getToken();
     syncVoiceBtn();
-    renderClassPicker();
-    renderThemePicker();
     bindEvents();
     try {
       const me = await api("/auth/me");
       if (me.is_admin) document.getElementById("adminLink").classList.remove("hidden");
       luna = new LunaAvatar(document.getElementById("lunaSprite"), null, document.getElementById("lunaStage"));
       await refreshCore();
+      await startChat();
     } catch (_) {
       LunaAuth.clearToken();
       LunaAuth.goLogin("/app");
