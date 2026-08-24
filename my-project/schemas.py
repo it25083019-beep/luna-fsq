@@ -144,7 +144,8 @@ class RpgActivityRequest(BaseModel):
 class ScheduleEventCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     date: str = Field(description="YYYY-MM-DD")
-    time: Optional[str] = Field(default=None, max_length=5)
+    time: Optional[str] = Field(default=None, max_length=5, description="start HH:MM")
+    end_time: Optional[str] = Field(default=None, max_length=5, description="end HH:MM")
     note: Optional[str] = Field(default=None, max_length=500)
     recurrence: Optional[str] = Field(default=None, description="weekly or monthly")
 
@@ -152,7 +153,8 @@ class ScheduleEventCreate(BaseModel):
 class ScheduleEventUpdate(BaseModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=200)
     date: Optional[str] = Field(default=None, description="YYYY-MM-DD")
-    time: Optional[str] = Field(default=None, max_length=5)
+    time: Optional[str] = Field(default=None, max_length=5, description="start HH:MM")
+    end_time: Optional[str] = Field(default=None, max_length=5, description="end HH:MM")
     note: Optional[str] = Field(default=None, max_length=500)
     done: Optional[bool] = None
 

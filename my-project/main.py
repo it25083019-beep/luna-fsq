@@ -528,6 +528,7 @@ def schedule_create(req: ScheduleEventCreate, current: User = Depends(get_curren
             title=req.title,
             event_date=req.date,
             event_time=req.time,
+            event_end_time=req.end_time,
             note=req.note,
             recurrence=req.recurrence,
         )
@@ -547,6 +548,7 @@ def schedule_update(event_id: str, req: ScheduleEventUpdate, current: User = Dep
             title=req.title,
             event_date=req.date,
             event_time=req.time,
+            event_end_time=req.end_time,
             note=req.note,
             done=req.done,
         )

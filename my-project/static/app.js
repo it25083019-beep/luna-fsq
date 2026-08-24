@@ -278,6 +278,16 @@
     } catch (_) {}
   }
 
+  function formatTimeRange(ev) {
+    if (!ev) return "終日";
+    const start = ev.time || "";
+    const end = ev.end_time || "";
+    if (start && end) return start + "〜" + end;
+    if (start) return start + "〜";
+    if (end) return "〜" + end;
+    return "終日";
+  }
+
   function renderHomeToday(items) {
     const el = document.getElementById("homeTodayList");
     if (!el) return;
@@ -291,7 +301,7 @@
       row.className = "home-today-item" + (ev.done ? " done" : "");
       row.innerHTML =
         '<span class="t">' +
-        (ev.time || "終日") +
+        (formatTimeRange(ev)) +
         "</span><span style='flex:1'>" +
         ev.title +
         "</span>";
@@ -361,7 +371,7 @@
     items.forEach((ev) => {
       const row = document.createElement("div");
       row.className = "todo-row" + (ev.done ? " done" : "");
-      const time = ev.time ? ev.time + " · " : "";
+      const time = ev.time || ev.end_time ? formatTimeRange(ev) + " · " : "";
       const recur = ev.recurrence
         ? '<span class="recur-tag">' + (ev.recurrence === "monthly" ? "🔁毎月" : "🔁毎週") + "</span>"
         : "";
@@ -391,6 +401,7 @@
     document.getElementById("addTitle").value = ev.title || "";
     document.getElementById("addDate").value = ev.date || selectedDate;
     document.getElementById("addTime").value = ev.time || "";
+    document.getElementById("addEndTime").value = ev.end_time || "";
     document.getElementById("addNote").value = ev.note || "";
     document.getElementById("addRecurrence").value = "";
     document.getElementById("addRecurrence").disabled = true;
@@ -402,6 +413,7 @@
     document.getElementById("editEventId").value = "";
     document.getElementById("addTitle").value = "";
     document.getElementById("addTime").value = "";
+    document.getElementById("addEndTime").value = "";
     document.getElementById("addNote").value = "";
     document.getElementById("addRecurrence").value = "";
     document.getElementById("addRecurrence").disabled = false;
@@ -443,7 +455,7 @@
           " " +
           s.date +
           " " +
-          (s.time || "") +
+          formatTimeRange(s) +
           " " +
           s.title +
           rec +
@@ -502,14 +514,19 @@
     const title = document.getElementById("addTitle").value.trim();
     const date = document.getElementById("addDate").value;
     const time = document.getElementById("addTime").value;
+    const endTime = document.getElementById("addEndTime").value;
     const note = document.getElementById("addNote").value.trim();
     const recurrence = document.getElementById("addRecurrence").value || null;
     if (!title || !date) return;
+    if (time && endTime && endTime <= time) {
+      setErr("終了時間は開始時間より後にしてください。");
+      return;
+    }
     try {
       if (editId) {
         await api("/schedule/events/" + editId, {
           method: "PATCH",
-          body: JSON.stringify({ title, date, time: time || null, note: note || null }),
+          body: JSON.stringify({ title, date, time: time || null, end_time: endTime || null, note: note || null }),
         });
         selectedDate = date;
         resetAddForm(date);
@@ -517,7 +534,14 @@
       } else {
         await api("/schedule/events", {
           method: "POST",
-          body: JSON.stringify({ title, date, time: time || null, note: note || null, recurrence }),
+          body: JSON.stringify({
+            title,
+            date,
+            time: time || null,
+            end_time: endTime || null,
+            note: note || null,
+            recurrence,
+          }),
         });
         selectedDate = date;
         resetAddForm(date);

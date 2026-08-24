@@ -23,6 +23,22 @@ def _parse_date(s: str) -> date:
     return date.fromisoformat(s[:10])
 
 
+def _norm_time(value: Optional[str]) -> Optional[str]:
+    text = (value or "").strip()[:5]
+    if not text:
+        return None
+    try:
+        datetime.strptime(text, "%H:%M")
+    except ValueError as e:
+        raise ValueError("invalid time (HH:MM)") from e
+    return text
+
+
+def _check_range(start: Optional[str], end: Optional[str]) -> None:
+    if start and end and end <= start:
+        raise ValueError("end time must be after start time")
+
+
 def _events_store(user: Dict[str, Any]) -> List[Dict[str, Any]]:
     ensure_life_modules(user)
     row = user["life_modules"]["schedule"]
@@ -122,6 +138,7 @@ def expand_recurring_templates(
                             "title": title,
                             "date": ds,
                             "time": time_val,
+                            "end_time": tpl.get("end_time"),
                             "note": tpl.get("note"),
                             "done": False,
                             "recurrence_id": tpl_id,
@@ -201,17 +218,22 @@ def add_recurring_template(
     title: str,
     start_date: str,
     event_time: Optional[str] = None,
+    event_end_time: Optional[str] = None,
     note: Optional[str] = None,
     recurrence: str = "weekly",
 ) -> Dict[str, Any]:
     if recurrence not in ("weekly", "monthly"):
         raise ValueError("recurrence must be weekly or monthly")
+    start_t = _norm_time(event_time)
+    end_t = _norm_time(event_end_time)
+    _check_range(start_t, end_t)
     start = _parse_date(start_date)
     tpl = {
         "id": uuid.uuid4().hex[:12],
         "title": title[:200],
         "start_date": start_date[:10],
-        "time": (event_time or "").strip()[:5] or None,
+        "time": start_t,
+        "end_time": end_t,
         "note": (note or "").strip()[:500] or None,
         "recurrence": recurrence,
         "weekday": start.weekday(),
@@ -230,6 +252,7 @@ def add_event(
     title: str,
     event_date: str,
     event_time: Optional[str] = None,
+    event_end_time: Optional[str] = None,
     note: Optional[str] = None,
     recurrence: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -240,6 +263,9 @@ def add_event(
         _parse_date(event_date)
     except ValueError as e:
         raise ValueError("invalid date (YYYY-MM-DD)") from e
+    start_t = _norm_time(event_time)
+    end_t = _norm_time(event_end_time)
+    _check_range(start_t, end_t)
 
     tpl = None
     if recurrence in ("weekly", "monthly"):
@@ -247,7 +273,8 @@ def add_event(
             user,
             title=text,
             start_date=event_date,
-            event_time=event_time,
+            event_time=start_t,
+            event_end_time=end_t,
             note=note,
             recurrence=recurrence,
         )
@@ -256,7 +283,8 @@ def add_event(
         "id": uuid.uuid4().hex[:12],
         "title": text[:200],
         "date": event_date[:10],
-        "time": (event_time or "").strip()[:5] or None,
+        "time": start_t,
+        "end_time": end_t,
         "note": (note or "").strip()[:500] or None,
         "done": False,
         "created_at": _utcnow_iso(),
@@ -279,6 +307,7 @@ def update_event(
     title: Optional[str] = None,
     event_date: Optional[str] = None,
     event_time: Optional[str] = None,
+    event_end_time: Optional[str] = None,
     note: Optional[str] = None,
     done: Optional[bool] = None,
 ) -> Dict[str, Any]:
@@ -295,6 +324,7 @@ def update_event(
             "title": tpl["title"],
             "date": event_date_v,
             "time": tpl.get("time"),
+            "end_time": tpl.get("end_time"),
             "note": tpl.get("note"),
             "done": False,
             "created_at": _utcnow_iso(),
@@ -319,7 +349,10 @@ def update_event(
                 raise ValueError("invalid date (YYYY-MM-DD)") from err
             e["date"] = event_date[:10]
         if event_time is not None:
-            e["time"] = (event_time or "").strip()[:5] or None
+            e["time"] = _norm_time(event_time)
+        if event_end_time is not None:
+            e["end_time"] = _norm_time(event_end_time)
+        _check_range(e.get("time"), e.get("end_time"))
         if note is not None:
             e["note"] = (note or "").strip()[:500] or None
         if done is not None:
@@ -343,6 +376,7 @@ def complete_event(user: Dict[str, Any], event_id: str, done: bool = True) -> Di
             title=tpl["title"],
             event_date=event_date,
             event_time=tpl.get("time"),
+            event_end_time=tpl.get("end_time"),
             note=tpl.get("note"),
         )
         ev["done"] = bool(done)
@@ -407,7 +441,9 @@ def suggest_similar(user: Dict[str, Any], limit: int = 5) -> List[Dict[str, Any]
         sample = group[-1]
         title = sample["title"]
         times = [g.get("time") for g in group if g.get("time")]
+        ends = [g.get("end_time") for g in group if g.get("end_time")]
         time_hint = Counter(times).most_common(1)[0][0] if times else sample.get("time")
+        end_hint = Counter(ends).most_common(1)[0][0] if ends else sample.get("end_time")
         dates = [_parse_date(g["date"]) for g in group if g.get("date")]
         if not dates:
             continue
@@ -430,6 +466,7 @@ def suggest_similar(user: Dict[str, Any], limit: int = 5) -> List[Dict[str, Any]
                 "title": title,
                 "date": candidate.isoformat(),
                 "time": time_hint,
+                "end_time": end_hint,
                 "reason_ja": reason,
                 "pattern": "repeat_title",
                 "source": "pattern",
@@ -450,7 +487,7 @@ def suggest_ai(user: Dict[str, Any], limit: int = 5) -> List[Dict[str, Any]]:
     schedule_notes = (user.get("life_modules", {}).get("schedule", {}).get("notes") or [])[-5:]
     payload = {
         "recent_events": [
-            {"title": e.get("title"), "date": e.get("date"), "time": e.get("time"), "done": e.get("done")}
+            {"title": e.get("title"), "date": e.get("date"), "time": e.get("time"), "end_time": e.get("end_time"), "done": e.get("done")}
             for e in recent
         ],
         "life_profile": {
@@ -465,8 +502,8 @@ def suggest_ai(user: Dict[str, Any], limit: int = 5) -> List[Dict[str, Any]]:
         "You are LUNA, a Japanese student life assistant. "
         "Given the user's past schedule entries and profile, propose future schedule items. "
         "Return JSON: {\"suggestions\":[{\"title\":\"...\",\"date\":\"YYYY-MM-DD\","
-        "\"time\":\"HH:MM or null\",\"reason_ja\":\"Japanese explanation\","
-        "\"recurrence\":\"weekly|monthly|null\"}]}. "
+        "\"time\":\"HH:MM start or null\",\"end_time\":\"HH:MM end or null\","
+        "\"reason_ja\":\"Japanese explanation\",\"recurrence\":\"weekly|monthly|null\"}]}. "
         "Dates must be today or later. Max " + str(limit) + " items. Use Japanese titles."
     )
     raw = generate_json_task(system, json.dumps(payload, ensure_ascii=False))
@@ -500,6 +537,7 @@ def suggest_ai(user: Dict[str, Any], limit: int = 5) -> List[Dict[str, Any]]:
                 "title": title[:200],
                 "date": ds,
                 "time": (item.get("time") or "")[:5] or None,
+                "end_time": (item.get("end_time") or "")[:5] or None,
                 "reason_ja": (item.get("reason_ja") or "AIが生活パターンから提案")[:200],
                 "pattern": "ai",
                 "source": "ai",
@@ -543,6 +581,7 @@ def apply_suggestions(
                 title=s["title"],
                 event_date=s["date"],
                 event_time=s.get("time"),
+                event_end_time=s.get("end_time"),
                 recurrence=s.get("recurrence"),
             )
         )
