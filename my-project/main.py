@@ -28,13 +28,15 @@ from database import get_db, init_db
 from models import CoreBrain, PasswordResetToken, User
 from password_reset_email import send_password_reset_email
 from life_modules import MODULE_KEYS, append_module_note, list_modules, summarize_module
+from life_dashboard import health_dashboard, money_dashboard
 from schedule_service import (
     add_event,
+    apply_suggestions,
     complete_event,
     delete_event,
     home_summary,
     list_events,
-    suggest_similar,
+    suggest_combined,
 )
 from schemas import (
     AdminLockRequest,
@@ -443,6 +445,18 @@ def life_modules_list(current: User = Depends(get_current_user)):
     return list_modules(brain)
 
 
+@app.get("/life/health/dashboard")
+def life_health_dashboard(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    return health_dashboard(brain)
+
+
+@app.get("/life/money/dashboard")
+def life_money_dashboard(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    return money_dashboard(brain)
+
+
 @app.get("/life/{module}")
 def life_module_get(module: str, current: User = Depends(get_current_user)):
     if module not in MODULE_KEYS:
@@ -487,7 +501,14 @@ def schedule_list(date: Optional[str] = None, current: User = Depends(get_curren
 def schedule_create(req: ScheduleEventCreate, current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
     try:
-        ev = add_event(brain, title=req.title, event_date=req.date, event_time=req.time, note=req.note)
+        ev = add_event(
+            brain,
+            title=req.title,
+            event_date=req.date,
+            event_time=req.time,
+            note=req.note,
+            recurrence=req.recurrence,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     save_user_brain(current.public_id, brain)
@@ -523,7 +544,7 @@ def schedule_delete(event_id: str, current: User = Depends(get_current_user)):
 @app.get("/schedule/suggestions")
 def schedule_suggestions(current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
-    return {"suggestions": suggest_similar(brain)}
+    return suggest_combined(brain)
 
 
 @app.post("/schedule/suggestions/apply")
@@ -532,13 +553,10 @@ def schedule_apply_suggestions(
     current: User = Depends(get_current_user),
 ):
     brain = load_user_brain(current.public_id)
-    suggestions = suggest_similar(brain)
+    combined = suggest_combined(brain)
+    suggestions = combined["suggestions"]
     to_apply = suggestions if req.apply_all else [suggestions[i] for i in (req.indices or []) if 0 <= i < len(suggestions)]
-    created = []
-    for s in to_apply:
-        created.append(
-            add_event(brain, title=s["title"], event_date=s["date"], event_time=s.get("time"))
-        )
+    created = apply_suggestions(brain, to_apply)
     save_user_brain(current.public_id, brain)
     return {"ok": True, "created": created, "count": len(created)}
 

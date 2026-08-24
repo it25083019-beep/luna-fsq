@@ -146,6 +146,7 @@ class ScheduleEventCreate(BaseModel):
     date: str = Field(description="YYYY-MM-DD")
     time: Optional[str] = Field(default=None, max_length=5)
     note: Optional[str] = Field(default=None, max_length=500)
+    recurrence: Optional[str] = Field(default=None, description="weekly or monthly")
 
 
 class ScheduleEventComplete(BaseModel):

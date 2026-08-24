@@ -901,3 +901,23 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 5) -> s
         retry_after_seconds=retry_after,
         status_code=503,
     ) from last_error
+
+
+def generate_json_task(system_instruction: str, user_prompt: str) -> Optional[Any]:
+    """One-shot JSON completion (no chat history). Returns None on failure."""
+    try:
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.35,
+                response_mime_type="application/json",
+            ),
+        )
+        text = (response.text or "").strip()
+        if not text:
+            return None
+        return json.loads(text)
+    except Exception:
+        return None

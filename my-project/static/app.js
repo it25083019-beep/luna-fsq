@@ -64,6 +64,25 @@
   const lunaMainView = document.getElementById("lunaMainView");
   const settingsView = document.getElementById("settingsView");
   let scheduleSuggestions = [];
+  const chartInstances = {};
+
+  function fmtYen(n) {
+    return "¥" + Number(n || 0).toLocaleString("ja-JP");
+  }
+
+  function destroyChart(key) {
+    if (chartInstances[key]) {
+      chartInstances[key].destroy();
+      delete chartInstances[key];
+    }
+  }
+
+  function makeChart(key, canvasId, config) {
+    destroyChart(key);
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === "undefined") return;
+    chartInstances[key] = new Chart(canvas, config);
+  }
 
   function fmtDateJa(iso) {
     const d = new Date(iso + "T12:00:00");
@@ -237,7 +256,10 @@
       const row = document.createElement("div");
       row.className = "todo-row" + (ev.done ? " done" : "") + (opts?.future ? " future" : "");
       const time = ev.time ? ev.time + " · " : "";
-      row.innerHTML = '<span style="flex:1">' + time + ev.title + "</span>";
+      const recur = ev.recurrence
+        ? '<span class="recur-tag">' + (ev.recurrence === "monthly" ? "🔁毎月" : "🔁毎週") + "</span>"
+        : "";
+      row.innerHTML = '<span style="flex:1">' + time + ev.title + recur + "</span>";
       if (!opts?.readonly) {
         const btn = document.createElement("button");
         btn.textContent = ev.done ? "戻す" : "完了";
@@ -263,16 +285,23 @@
       if (scheduleSuggestions.length) {
         box.style.display = "block";
         list.innerHTML = "";
-        scheduleSuggestions.forEach((s, i) => {
+        const src = sug.source === "ai" ? "（AI提案）" : sug.source === "pattern" ? "（パターン）" : "（AI＋パターン）";
+        box.querySelector("h4").textContent = "✨ 似た予定を提案 " + src;
+        scheduleSuggestions.forEach((s) => {
           const row = document.createElement("div");
           row.className = "suggest-item";
+          const srcTag = s.source === "ai" ? "🤖" : "📊";
+          const rec = s.recurrence ? " · " + (s.recurrence === "monthly" ? "毎月" : "毎週") : "";
           row.innerHTML =
             "<span>" +
+            srcTag +
+            " " +
             s.date +
             " " +
             (s.time || "") +
             " " +
             s.title +
+            rec +
             '<br><small style="color:var(--muted)">' +
             s.reason_ja +
             "</small></span>";
@@ -303,14 +332,16 @@
     const title = document.getElementById("addTitle").value.trim();
     const date = document.getElementById("addDate").value;
     const time = document.getElementById("addTime").value;
+    const recurrence = document.getElementById("addRecurrence").value || null;
     if (!title || !date) return;
     try {
       await api("/schedule/events", {
         method: "POST",
-        body: JSON.stringify({ title, date, time: time || null }),
+        body: JSON.stringify({ title, date, time: time || null, recurrence }),
       });
       document.getElementById("addTitle").value = "";
       document.getElementById("addTime").value = "";
+      document.getElementById("addRecurrence").value = "";
       document.getElementById("addForm").classList.remove("open");
       await loadScheduleView();
     } catch (e) {
@@ -332,26 +363,157 @@
 
   async function loadHealthView() {
     try {
-      const data = await api("/life/health");
-      const st = data.structured || {};
-      if (st.score) document.getElementById("healthSleep").textContent = st.score;
-      if (st.steps) document.getElementById("healthSteps").textContent = st.steps;
-    } catch (_) {}
+      const d = await api("/life/health/dashboard");
+      document.getElementById("healthScoreBig").textContent = d.score;
+      document.getElementById("healthStatus").textContent = d.status_ja || "良好";
+      document.getElementById("healthSleep").textContent = (d.sleep_history || []).slice(-1)[0]?.score || d.score;
+      document.getElementById("healthSteps").textContent = Number(d.steps || 0).toLocaleString("ja-JP");
+      document.getElementById("healthHr").textContent = d.heart_rate;
+      document.getElementById("healthWater").textContent = d.water_glasses + "/" + d.water_goal;
+      document.getElementById("healthMessage").textContent = d.message_ja || "";
+
+      const glassRow = document.getElementById("waterGlasses");
+      if (glassRow) {
+        glassRow.innerHTML = "";
+        for (let i = 0; i < (d.water_goal || 8); i++) {
+          const g = document.createElement("div");
+          g.className = "water-glass" + (i < (d.water_glasses || 0) ? " fill" : "");
+          glassRow.appendChild(g);
+        }
+      }
+
+      const sleepLabels = (d.sleep_history || []).map((x) => x.month);
+      const sleepData = (d.sleep_history || []).map((x) => x.score);
+      makeChart("healthSleep", "healthSleepChart", {
+        type: "line",
+        data: {
+          labels: sleepLabels,
+          datasets: [
+            {
+              data: sleepData,
+              borderColor: "#9b7ed9",
+              backgroundColor: "rgba(155,126,217,.15)",
+              fill: true,
+              tension: 0.35,
+              pointRadius: 3,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { min: 50, max: 100, ticks: { stepSize: 10 } }, x: { grid: { display: false } } },
+        },
+      });
+
+      const stepLabels = (d.steps_history || []).map((x) => x.month);
+      const stepData = (d.steps_history || []).map((x) => x.steps);
+      makeChart("healthSteps", "healthStepsChart", {
+        type: "bar",
+        data: {
+          labels: stepLabels,
+          datasets: [
+            {
+              data: stepData,
+              backgroundColor: ["#b4aee8", "#9b7ed9", "#f0a8c8", "#6ec9b8", "#e8b86d", "#7b5eb8"],
+              borderRadius: 8,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
+        },
+      });
+    } catch (e) {
+      setErr(e.message);
+    }
   }
 
   async function loadMoneyView() {
     try {
-      const data = await api("/life/money");
-      const base = data.baseline || {};
-      const inEl = document.getElementById("moneyIn");
-      const outEl = document.getElementById("moneyOut");
-      if (inEl) inEl.textContent = base.income || base.収入 || "—";
-      if (outEl) outEl.textContent = base.expense || base.支出 || "—";
+      const d = await api("/life/money/dashboard");
+      document.getElementById("moneyIn").textContent = fmtYen(d.income);
+      document.getElementById("moneyOut").textContent = fmtYen(d.expense);
+      document.getElementById("moneyInBar").style.width = (d.income_pct || 0) + "%";
+      document.getElementById("moneyOutBar").style.width = (d.expense_pct || 0) + "%";
+      document.getElementById("moneySavings").textContent = fmtYen(d.savings_total);
+      document.getElementById("moneySavingsPct").textContent = (d.savings_pct || 0) + "%";
+      document.getElementById("moneyMessage").textContent = d.message_ja || "";
+
+      const balLabels = (d.balance_history || []).map((x) => x.month);
+      const balData = (d.balance_history || []).map((x) => x.balance);
+      makeChart("moneyBalance", "moneyBalanceChart", {
+        type: "line",
+        data: {
+          labels: balLabels,
+          datasets: [
+            {
+              data: balData,
+              borderColor: "#497cff",
+              backgroundColor: "rgba(73,124,255,.12)",
+              fill: true,
+              tension: 0.35,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { grid: { display: false } } },
+        },
+      });
+
+      const cats = d.expense_categories || [];
+      makeChart("moneyCategory", "moneyCategoryChart", {
+        type: "bar",
+        data: {
+          labels: cats.map((c) => c.name),
+          datasets: [
+            {
+              data: cats.map((c) => c.amount),
+              backgroundColor: ["#9b7ed9", "#f0a8c8", "#6ec9b8", "#e8b86d", "#497cff"],
+              borderRadius: 8,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
+        },
+      });
+
+      const accEl = document.getElementById("moneyAccounts");
+      if (accEl) {
+        accEl.innerHTML = "";
+        (d.accounts || []).forEach((a) => {
+          const row = document.createElement("div");
+          row.className = "account-row";
+          row.innerHTML =
+            "<span>" +
+            a.name +
+            '</span><div class="bar"><span style="width:' +
+            (a.pct || 0) +
+            '%"></span></div><strong>' +
+            fmtYen(a.amount) +
+            "</strong>";
+          accEl.appendChild(row);
+        });
+      }
+
       const lines = [];
-      Object.entries(base).forEach(([k, v]) => lines.push("・" + k + ": " + v));
-      (data.notes || []).slice(-6).forEach((n) => lines.push("＋ " + n.text));
+      Object.entries(d.baseline || {}).forEach(([k, v]) => lines.push("・" + k + ": " + v));
+      (d.notes || []).forEach((n) => lines.push("＋ " + n.text));
       document.getElementById("moneyNotes").textContent = lines.length ? lines.join("\n") : "追記はLUNAに話すか、メニューから追加できます。";
-    } catch (_) {}
+    } catch (e) {
+      setErr(e.message);
+    }
   }
 
   function renderSkills() {

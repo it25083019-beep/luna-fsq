@@ -207,7 +207,34 @@
     .consult-btn.pink{background:linear-gradient(160deg,#ffe8f2,#fff);color:#6b3f5a}
     .menu-list{padding:1rem;display:flex;flex-direction:column;gap:.45rem}
     .menu-list button{border:none;background:var(--card);padding:.85rem 1rem;border-radius:16px;text-align:left;font-size:.88rem;font-weight:700;color:var(--lilac-deep);box-shadow:var(--shadow);cursor:pointer}
+    .dash-card{margin:0 1rem .75rem;padding:.85rem;background:var(--card);border-radius:18px;box-shadow:var(--shadow)}
+    .dash-card h4{margin:0 0 .5rem;font-size:.82rem;color:var(--lilac-deep)}
+    .health-hero{display:grid;grid-template-columns:88px 1fr;gap:.65rem;align-items:center;margin-bottom:.65rem}
+    .health-hero img{width:88px;height:88px;object-fit:contain;border-radius:18px;background:#fff;padding:.2rem}
+    .score-ring{text-align:center}
+    .score-ring strong{display:block;font-size:2rem;color:var(--lilac-deep);line-height:1}
+    .score-ring span{font-size:.72rem;color:var(--muted)}
+    .chart-box{position:relative;height:150px;margin-top:.25rem}
+    .chart-box.tall{height:170px}
+    .water-row{display:flex;gap:.25rem;justify-content:center;margin:.35rem 0 .15rem}
+    .water-glass{width:1.35rem;height:1.8rem;border-radius:0 0 6px 6px;border:2px solid var(--lilac);background:rgba(155,126,217,.08);position:relative;overflow:hidden}
+    .water-glass.fill::after{content:"";position:absolute;left:0;right:0;bottom:0;height:72%;background:linear-gradient(180deg,#7ec8ff,#4a9fe8)}
+    .money-cards{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.65rem}
+    .money-card{background:var(--card);border-radius:16px;padding:.7rem;box-shadow:var(--shadow)}
+    .money-card .label{font-size:.68rem;color:var(--muted)}
+    .money-card strong{display:block;font-size:1rem;margin:.15rem 0;color:var(--lilac-deep)}
+    .prog{height:6px;border-radius:999px;background:var(--input-bg);overflow:hidden;margin-top:.25rem}
+    .prog span{display:block;height:100%;border-radius:inherit}
+    .prog.in span{background:linear-gradient(90deg,#6ec9b8,#1bb874)}
+    .prog.out span{background:linear-gradient(90deg,#f0a8c8,#e07a8a)}
+    .account-row{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.45rem 0;border-bottom:1px solid rgba(155,126,217,.12);font-size:.78rem}
+    .account-row:last-child{border-bottom:none}
+    .account-row .bar{flex:1;height:5px;background:var(--input-bg);border-radius:999px;overflow:hidden;max-width:5rem}
+    .account-row .bar span{display:block;height:100%;background:linear-gradient(90deg,var(--mint),var(--lilac))}
+    .recur-tag{font-size:.62rem;color:var(--lilac);margin-left:.25rem}
+    .suggest-source{font-size:.65rem;color:var(--muted);margin-left:.35rem}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/static/theme.js"></script>
   <script>LunaTheme.boot();</script>
 </head>
@@ -266,6 +293,12 @@
             <label>タイトル</label><input id="addTitle" type="text" placeholder="例：10:00 - 会議" />
             <label>日付</label><input id="addDate" type="date" />
             <label>時間（任意）</label><input id="addTime" type="time" />
+            <label>繰り返し</label>
+            <select id="addRecurrence" style="width:100%;padding:.55rem .65rem;border:none;background:var(--input-bg);border-radius:12px;margin-bottom:.35rem">
+              <option value="">なし（1回のみ）</option>
+              <option value="weekly">毎週</option>
+              <option value="monthly">毎月</option>
+            </select>
             <div class="row"><button type="button" class="save" id="addSaveBtn">追加</button><button type="button" id="addCancelBtn">キャンセル</button></div>
           </div>
           <div id="todayOpenList"></div>
@@ -278,13 +311,28 @@
       <div id="sub-health" class="subview hidden">
         <div class="subview-head"><button type="button" data-back="health">←</button><h2>ヘルスケア</h2><span style="width:2rem"></span></div>
         <div class="module-hero">
-          <div class="metric-grid">
-            <div class="metric"><span class="hint">睡眠スコア</span><strong id="healthSleep">88</strong></div>
-            <div class="metric"><span class="hint">歩数</span><strong id="healthSteps">—</strong></div>
-            <div class="metric"><span class="hint">心拍</span><strong id="healthHr">72</strong></div>
-            <div class="metric"><span class="hint">水分</span><strong id="healthWater">6/8</strong></div>
+          <div class="dash-card">
+            <div class="health-hero">
+              <img src="/static/live2d/luna-expressions/luna-happy.png" alt="LUNA" />
+              <div class="score-ring"><span id="healthStatus">良好</span><strong id="healthScoreBig">85</strong><span>健康スコア</span></div>
+            </div>
+            <div class="metric-grid">
+              <div class="metric"><span class="hint">睡眠スコア</span><strong id="healthSleep">88</strong></div>
+              <div class="metric"><span class="hint">歩数</span><strong id="healthSteps">—</strong></div>
+              <div class="metric"><span class="hint">心拍</span><strong id="healthHr">72</strong><span style="font-size:.62rem;color:var(--muted)"> bpm</span></div>
+              <div class="metric"><span class="hint">水分</span><strong id="healthWater">6/8</strong></div>
+            </div>
+            <div class="water-row" id="waterGlasses"></div>
           </div>
-          <div class="bubble compact" style="margin:0">今日もバッチリだね！この調子で頑張ろう！</div>
+          <div class="dash-card">
+            <h4>睡眠スコア（推移）</h4>
+            <div class="chart-box"><canvas id="healthSleepChart"></canvas></div>
+          </div>
+          <div class="dash-card">
+            <h4>歩数（月間）</h4>
+            <div class="chart-box tall"><canvas id="healthStepsChart"></canvas></div>
+          </div>
+          <div class="bubble compact" id="healthMessage" style="margin:0">今日もバッチリだね！この調子で頑張ろう！</div>
         </div>
         <p class="hint" style="padding:0 1rem">よくある相談から選ぶ</p>
         <div class="consult-row">
@@ -297,11 +345,32 @@
       <div id="sub-money" class="subview hidden">
         <div class="subview-head"><button type="button" data-back="money">←</button><h2>お金・家計</h2><span style="width:2rem"></span></div>
         <div class="module-hero">
-          <div class="metric-grid">
-            <div class="metric"><span class="hint">今月の収入</span><strong id="moneyIn">—</strong></div>
-            <div class="metric"><span class="hint">今月の支出</span><strong id="moneyOut">—</strong></div>
+          <div class="money-cards">
+            <div class="money-card">
+              <div class="label">収入</div>
+              <strong id="moneyIn">—</strong>
+              <div class="prog in"><span id="moneyInBar" style="width:0%"></span></div>
+            </div>
+            <div class="money-card">
+              <div class="label">支出</div>
+              <strong id="moneyOut">—</strong>
+              <div class="prog out"><span id="moneyOutBar" style="width:0%"></span></div>
+            </div>
           </div>
-          <div class="bubble compact" style="margin:0">今月の予算は大丈夫かな？一緒に家計簿をチェックしよう！</div>
+          <div class="dash-card">
+            <h4>貯蓄合計 <strong id="moneySavings" style="float:right;color:var(--lilac-deep)">—</strong></h4>
+            <div class="hint" style="margin-bottom:.45rem">目標達成率: <span id="moneySavingsPct">—</span></div>
+            <div class="chart-box" style="height:130px"><canvas id="moneyBalanceChart"></canvas></div>
+          </div>
+          <div class="dash-card">
+            <h4>週間支出内訳</h4>
+            <div class="chart-box tall"><canvas id="moneyCategoryChart"></canvas></div>
+          </div>
+          <div class="dash-card">
+            <h4>口座・資産</h4>
+            <div id="moneyAccounts"></div>
+          </div>
+          <div class="bubble compact" id="moneyMessage" style="margin:0">今月の予算は大丈夫かな？一緒に家計簿をチェックしよう！</div>
         </div>
         <div class="sched-section"><h3>メモ・追記</h3><div id="moneyNotes" class="hint" style="line-height:1.6"></div></div>
         <div class="consult-row">
