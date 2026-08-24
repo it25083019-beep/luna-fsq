@@ -553,24 +553,30 @@
     const note = document.getElementById("addNote").value.trim();
     const recurrence = document.getElementById("addRecurrence").value || null;
     if (!title || !date) return;
-    const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
-    if (time && !TIME_RE.test(time)) {
+    // Accept both `8:00` and `08:00`, but normalize to `HH:MM` before saving.
+    const TIME_RE = /^(\d{1,2}):([0-5]\d)$/;
+    function normalizeTime(t) {
+      const m = TIME_RE.exec(t);
+      if (!m) return null;
+      const h = Number(m[1]);
+      if (h < 0 || h > 23) return null;
+      return String(h).padStart(2, "0") + ":" + m[2];
+    }
+    const normTime = time ? normalizeTime(time) : null;
+    if (time && !normTime) {
       setErr("開始時刻はHH:MM（24h）で入力してください。");
       return;
     }
-    if (endTime && !TIME_RE.test(endTime)) {
+    const normEndTime = endTime ? normalizeTime(endTime) : null;
+    if (endTime && !normEndTime) {
       setErr("終了時刻はHH:MM（24h）で入力してください。");
-      return;
-    }
-    if (time && endTime && endTime <= time) {
-      setErr("終了時間は開始時間より後にしてください。");
       return;
     }
     try {
       if (editId) {
         await api("/schedule/events/" + editId, {
           method: "PATCH",
-          body: JSON.stringify({ title, date, time: time || null, end_time: endTime || null, note: note || null }),
+          body: JSON.stringify({ title, date, time: normTime || null, end_time: normEndTime || null, note: note || null }),
         });
         selectedDate = date;
         resetAddForm(date);
@@ -581,8 +587,8 @@
           body: JSON.stringify({
             title,
             date,
-            time: time || null,
-            end_time: endTime || null,
+            time: normTime || null,
+            end_time: normEndTime || null,
             note: note || null,
             recurrence,
           }),

@@ -35,8 +35,9 @@ def _norm_time(value: Optional[str]) -> Optional[str]:
 
 
 def _check_range(start: Optional[str], end: Optional[str]) -> None:
-    if start and end and end <= start:
-        raise ValueError("end time must be after start time")
+    # Allow overnight ranges like 22:00 -> 08:00.
+    # We only validate HH:MM format in _norm_time.
+    return
 
 
 def _events_store(user: Dict[str, Any]) -> List[Dict[str, Any]]:
