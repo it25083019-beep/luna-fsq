@@ -61,6 +61,11 @@ def default_user_brain(user_id: str) -> Dict[str, Any]:
             "time_weekend": None,
             "goals": None,
         },
+        "life_modules": {
+            "health": {"notes": [], "structured": {}, "updated_at": None},
+            "money": {"notes": [], "structured": {}, "updated_at": None},
+            "schedule": {"notes": [], "structured": {}, "updated_at": None},
+        },
         "schedule_reminders": [],
         "pending_notification": None,
         "career_path": {

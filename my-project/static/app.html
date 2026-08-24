@@ -21,18 +21,44 @@
     .brand{font-family:"Shippori Mincho",serif;color:var(--amber);font-size:1.2rem}
     .stats{display:flex;gap:.4rem;flex-wrap:wrap}
     .pill{font-size:.68rem;border:1px solid var(--border);padding:.2rem .45rem;color:var(--teal);border-radius:999px}
-    .stage{text-align:center;padding:.4rem 0 0;background:radial-gradient(circle at 50% 20%,rgba(46,196,182,.12),transparent 60%)}
-    #lunaSprite{height:210px;max-width:100%;object-fit:contain}
-    .dialogue{margin:.4rem 1rem .6rem;padding:.85rem 1rem;border-left:3px solid var(--amber);background:rgba(0,0,0,.28);min-height:4.5rem;line-height:1.7;white-space:pre-wrap}
+    .tabs{display:flex;gap:.35rem;padding:.5rem 1rem 0;flex-wrap:wrap}
+    .tab{font:inherit;font-size:.78rem;padding:.4rem .65rem;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
+    .tab.active{border-color:var(--teal);color:var(--text);background:rgba(46,196,182,.12)}
+    .stage-wrap{text-align:center;padding:.35rem 0 0;background:radial-gradient(circle at 50% 20%,rgba(46,196,182,.12),transparent 60%);min-height:220px}
+    .luna-stage{display:inline-block;transform-origin:50% 90%}
+    #lunaSprite{height:200px;max-width:100%;object-fit:contain;transition:opacity .12s ease}
+    #lunaSprite.luna-fade{animation:lunaFade .18s ease}
+    @keyframes lunaFade{from{opacity:.55;transform:scale(.98)}to{opacity:1;transform:none}}
+    .luna-idle{animation:lunaIdle 3.6s ease-in-out infinite}
+    @keyframes lunaIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+    .luna-bob{animation:lunaBob .9s ease}
+    @keyframes lunaBob{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-8px) rotate(-1.5deg)}70%{transform:translateY(-2px) rotate(1deg)}}
+    .luna-wave-motion{animation:lunaWave 1.2s ease}
+    @keyframes lunaWave{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg) translateX(-4px)}50%{transform:rotate(5deg) translateX(3px)}75%{transform:rotate(-3deg)}}
+    .luna-cheer-motion{animation:lunaCheer .7s ease}
+    @keyframes lunaCheer{0%,100%{transform:scale(1) translateY(0)}40%{transform:scale(1.06) translateY(-10px)}70%{transform:scale(1.02) translateY(-4px)}}
+    .luna-talk-motion{animation:lunaTalk .35s ease-in-out infinite}
+    @keyframes lunaTalk{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+    .luna-tap-bounce{animation:lunaTap .45s ease}
+    @keyframes lunaTap{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+    .dialogue{margin:.4rem 1rem .5rem;padding:.85rem 1rem;border-left:3px solid var(--amber);background:rgba(0,0,0,.28);min-height:4.2rem;line-height:1.7;white-space:pre-wrap}
+    .module-panel{margin:0 1rem .5rem;padding:.75rem;border:1px solid var(--border);background:rgba(0,0,0,.2);display:none}
+    .module-panel.open{display:block}
+    .module-panel h3{margin:0 0 .35rem;font-size:.9rem;color:var(--amber);font-weight:500}
+    .module-panel .hint{font-size:.72rem;color:var(--muted);margin:0 0 .5rem;line-height:1.4}
+    .module-panel .baseline{font-size:.78rem;color:var(--text);line-height:1.5;margin-bottom:.5rem;max-height:5.5rem;overflow:auto}
+    .module-panel textarea{width:100%;min-height:3.2rem;padding:.5rem;border:1px solid var(--border);background:rgba(0,0,0,.28);color:var(--text);font:inherit;resize:vertical}
+    .module-panel .row{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
     .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .5rem}
     .chip{border:1px solid var(--border);background:rgba(46,196,182,.1);color:var(--text);padding:.45rem .7rem;font:inherit;font-size:.85rem;cursor:pointer}
     .composer{display:grid;grid-template-columns:1fr auto;gap:.4rem;padding:.5rem 1rem 0}
     input{width:100%;padding:.7rem;border:1px solid var(--border);background:rgba(0,0,0,.28);color:var(--text);font:inherit}
-    button{font:inherit;cursor:pointer;border:1px solid var(--teal);background:rgba(46,196,182,.14);color:var(--text);padding:.65rem .85rem}
+    button{font:inherit;cursor:pointer;border:1px solid var(--teal);background:rgba(46,196,182,.14);color:var(--text);padding:.55rem .8rem}
     button.amber{border-color:var(--amber);color:var(--amber);background:rgba(232,184,109,.12)}
     button.ghost{border-color:var(--muted);background:transparent;color:var(--muted)}
     .tools{display:flex;gap:.4rem;flex-wrap:wrap;padding:.5rem 1rem 1rem}
     .err{color:var(--danger);font-size:.82rem;min-height:1.1em;padding:0 1rem}
+    .ok{color:var(--teal);font-size:.78rem}
     .hidden{display:none!important}
   </style>
 </head>
@@ -45,19 +71,42 @@
         <span class="pill" id="expPill">Lv.1</span>
       </div>
     </header>
-    <div class="stage">
-      <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
+    <div class="tabs">
+      <button type="button" class="tab active" data-view="chat">チャット</button>
+      <button type="button" class="tab" data-view="health">健康</button>
+      <button type="button" class="tab" data-view="money">お金</button>
+      <button type="button" class="tab" data-view="schedule">スケジュール</button>
     </div>
-    <div class="dialogue" id="dialogue">…</div>
-    <div class="chips" id="chips"></div>
-    <div class="composer">
-      <input id="message" type="text" placeholder="自分の言葉で答える…" autocomplete="off" />
-      <button type="button" class="amber" id="sendBtn">送信</button>
+    <div class="stage-wrap">
+      <div class="luna-stage" id="lunaStage">
+        <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
+      </div>
+    </div>
+    <div id="chatView">
+      <div class="dialogue" id="dialogue">…</div>
+      <div class="chips" id="chips"></div>
+      <div class="composer">
+        <input id="message" type="text" placeholder="自分の言葉で答える…" autocomplete="off" />
+        <button type="button" class="amber" id="sendBtn">送信</button>
+      </div>
+    </div>
+    <div id="moduleView" class="module-panel">
+      <h3 id="modTitle">—</h3>
+      <p class="hint" id="modHint"></p>
+      <div class="baseline" id="modBaseline"></div>
+      <label class="hint" for="modNote">追記（初回質問のあとでもOK）</label>
+      <textarea id="modNote" placeholder="例：時給1200円・週3日 / 欲しいイヤホン1万円 / 水曜3限テスト…"></textarea>
+      <div class="row">
+        <button type="button" class="amber" id="modSave">この項目に追記</button>
+        <button type="button" class="ghost" id="modAsk">AIに相談する</button>
+      </div>
+      <p class="ok" id="modMsg"></p>
     </div>
     <p class="err" id="err"></p>
     <div class="tools">
-      <button type="button" class="ghost" id="morningBtn">朝のチェックイン</button>
-      <button type="button" class="ghost" id="eveningBtn">夜のチェックイン</button>
+      <button type="button" class="ghost" id="voiceBtn">🔊 音声ON</button>
+      <button type="button" class="ghost" id="morningBtn">朝</button>
+      <button type="button" class="ghost" id="eveningBtn">夜</button>
       <a href="/admin" id="adminLink" class="hidden" style="color:var(--teal);align-self:center;font-size:.85rem">Admin</a>
       <button type="button" class="ghost" id="logoutBtn">ログアウト</button>
     </div>
@@ -69,11 +118,15 @@
     let busy = false;
     let luna = null;
     let first = true;
+    let voiceOn = true;
+    let currentModule = "health";
     const dialogueEl = document.getElementById("dialogue");
     const chipsEl = document.getElementById("chips");
     const errEl = document.getElementById("err");
     const messageEl = document.getElementById("message");
     const sendBtn = document.getElementById("sendBtn");
+    const chatView = document.getElementById("chatView");
+    const moduleView = document.getElementById("moduleView");
 
     async function api(path, opts = {}) {
       const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
@@ -83,6 +136,18 @@
       try { data = await res.json(); } catch (_) {}
       if (!res.ok) throw new Error(LunaAuth.formatApiError(res, data));
       return data;
+    }
+
+    function speakJa(text) {
+      if (!voiceOn || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ja-JP";
+      u.rate = 1.0;
+      u.onstart = () => { if (luna) luna.startLipSync(); };
+      u.onend = () => { if (luna) luna.stopLipSync(); };
+      u.onerror = () => { if (luna) luna.stopLipSync(); };
+      window.speechSynthesis.speak(u);
     }
 
     function renderChips(list) {
@@ -111,8 +176,13 @@
     async function applyChat(data) {
       dialogueEl.textContent = data.dialogue || "";
       renderChips(data.suggested_replies || []);
-      if (luna) luna.reactToText(data.dialogue || "", { greeting: first, fallback: "happy" });
+      const emo = data.game_state && data.game_state.emotion;
+      if (luna) {
+        if (emo) luna.applyEmotion(emo);
+        else luna.reactToText(data.dialogue || "", { greeting: first, fallback: "happy" });
+      }
       first = false;
+      speakJa(data.dialogue || "");
       await refreshMeta();
     }
 
@@ -128,19 +198,78 @@
       finally { busy = false; sendBtn.disabled = false; }
     }
 
+    function setView(name) {
+      document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.view === name));
+      const isChat = name === "chat";
+      chatView.classList.toggle("hidden", !isChat);
+      moduleView.classList.toggle("open", !isChat);
+      if (!isChat) {
+        currentModule = name;
+        loadModule(name);
+      }
+    }
+
+    async function loadModule(mod) {
+      document.getElementById("modMsg").textContent = "";
+      document.getElementById("modNote").value = "";
+      try {
+        const data = await api("/life/" + mod);
+        document.getElementById("modTitle").textContent = data.title_ja + "（追記OK）";
+        document.getElementById("modHint").textContent = data.hint_ja + (data.profile_complete ? "" : " ※初回ヒアリング後により使いやすくなります");
+        const lines = [];
+        Object.entries(data.baseline || {}).forEach(([k, v]) => lines.push("・" + k + ": " + v));
+        (data.notes || []).slice(-8).forEach((n) => lines.push("＋ " + n.text));
+        document.getElementById("modBaseline").textContent = lines.length ? lines.join("\n") : "まだ情報がありません。下に追記してください。";
+        if (luna) luna.applyEmotion(mod === "health" ? "think" : mod === "money" ? "happy" : "wave", 1600);
+      } catch (e) { errEl.textContent = e.message; }
+    }
+
+    document.querySelectorAll(".tab").forEach((t) => {
+      t.onclick = () => setView(t.dataset.view);
+    });
+
+    document.getElementById("modSave").onclick = async () => {
+      const note = document.getElementById("modNote").value.trim();
+      if (!note) return;
+      try {
+        await api("/life/" + currentModule, { method: "POST", body: JSON.stringify({ note }) });
+        document.getElementById("modMsg").textContent = "追記しました";
+        await loadModule(currentModule);
+        if (luna) luna.applyEmotion("cheer", 1800);
+      } catch (e) { errEl.textContent = e.message; }
+    };
+
+    document.getElementById("modAsk").onclick = async () => {
+      const note = document.getElementById("modNote").value.trim();
+      const labels = { health: "健康", money: "お金", schedule: "スケジュール" };
+      setView("chat");
+      await sendMessage(
+        note
+          ? ("【" + labels[currentModule] + "】について追記します：" + note + "。アドバイスをお願いします。")
+          : ("【" + labels[currentModule] + "】の状況を確認して、次の一歩を教えてください。")
+      );
+    };
+
     sendBtn.onclick = () => sendMessage(messageEl.value);
     messageEl.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); sendMessage(messageEl.value); } };
     document.getElementById("logoutBtn").onclick = () => { LunaAuth.clearToken(); LunaAuth.goLogin("/app"); };
+    document.getElementById("voiceBtn").onclick = (ev) => {
+      voiceOn = !voiceOn;
+      ev.target.textContent = voiceOn ? "🔊 音声ON" : "🔇 音声OFF";
+      if (!voiceOn) { window.speechSynthesis.cancel(); if (luna) luna.stopLipSync(); }
+    };
     document.getElementById("morningBtn").onclick = async () => {
       try {
         const goal = prompt("今日の目標は？", "") || "";
         await api("/checkin/morning", { method: "POST", body: JSON.stringify({ goal }) });
+        setView("chat");
         await sendMessage(goal ? ("今日の目標は「" + goal + "」です。朝のチェックインをお願いします。") : "朝のチェックインをお願いします。");
       } catch (e) { errEl.textContent = e.message; }
     };
     document.getElementById("eveningBtn").onclick = async () => {
       try {
         await api("/checkin/evening", { method: "POST", body: JSON.stringify({}) });
+        setView("chat");
         await sendMessage("夜のチェックインをお願いします。");
       } catch (e) { errEl.textContent = e.message; }
     };
@@ -151,7 +280,7 @@
       try {
         const me = await api("/auth/me");
         if (me.is_admin) document.getElementById("adminLink").classList.remove("hidden");
-        luna = new LunaAvatar(document.getElementById("lunaSprite"));
+        luna = new LunaAvatar(document.getElementById("lunaSprite"), null, document.getElementById("lunaStage"));
         const data = await api("/chat/start", { method: "POST", body: JSON.stringify({ message: "" }) });
         await applyChat(data);
       } catch (_) {

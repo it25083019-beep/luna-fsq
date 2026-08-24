@@ -104,6 +104,11 @@ class AdminLockRequest(BaseModel):
     locked: bool = True
 
 
+class LifeModuleAppendRequest(BaseModel):
+    note: str = Field(min_length=1, max_length=2000)
+    structured: Optional[Dict[str, Any]] = None
+
+
 class CareerSuggestRequest(BaseModel):
     decided_career: Optional[str] = None
     personality_text: str = ""

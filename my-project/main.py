@@ -27,6 +27,7 @@ from brain_repo import migrate_json_brains_to_db, seed_admin_user, sync_privacy_
 from database import get_db, init_db
 from models import CoreBrain, PasswordResetToken, User
 from password_reset_email import send_password_reset_email
+from life_modules import MODULE_KEYS, append_module_note, list_modules, summarize_module
 from schemas import (
     AdminLockRequest,
     AdminResetPasswordRequest,
@@ -36,6 +37,7 @@ from schemas import (
     CheckinRequest,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
+    LifeModuleAppendRequest,
     LoginRequest,
     RegisterRequest,
     ResetPasswordRequest,
@@ -384,8 +386,11 @@ def chat_start(req: ChatRequest, current: User = Depends(get_current_user)):
             raw = generate_with_retry(uid, req.message or "こんにちは")
         else:
             raw = start_user_greeting(uid)
-        dialogue, _ = parse_ai_reply(raw)
+        dialogue, ai_state = parse_ai_reply(raw)
         state = get_user_state(uid)
+        if isinstance(ai_state, dict) and ai_state.get("emotion"):
+            state = dict(state)
+            state["emotion"] = ai_state["emotion"]
         return ChatResponse(
             dialogue=dialogue,
             game_state=state,
@@ -402,8 +407,11 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
     uid = _resolve_user_id(req.user_id, current)
     try:
         raw = generate_with_retry(uid, req.message)
-        dialogue, _ai_state = parse_ai_reply(raw)
+        dialogue, ai_state = parse_ai_reply(raw)
         state = get_user_state(uid)
+        if isinstance(ai_state, dict) and ai_state.get("emotion"):
+            state = dict(state)
+            state["emotion"] = ai_state["emotion"]
         return ChatResponse(
             dialogue=dialogue,
             game_state=state,
@@ -413,6 +421,40 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
         )
     except Exception as e:
         raise _chat_http_error(e)
+
+
+# ----- Life modules (health / money / schedule) -----
+
+
+@app.get("/life/modules")
+def life_modules_list(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    return list_modules(brain)
+
+
+@app.get("/life/{module}")
+def life_module_get(module: str, current: User = Depends(get_current_user)):
+    if module not in MODULE_KEYS:
+        raise HTTPException(status_code=404, detail="Unknown module")
+    brain = load_user_brain(current.public_id)
+    return summarize_module(brain, module)
+
+
+@app.post("/life/{module}")
+def life_module_append(
+    module: str,
+    req: LifeModuleAppendRequest,
+    current: User = Depends(get_current_user),
+):
+    if module not in MODULE_KEYS:
+        raise HTTPException(status_code=404, detail="Unknown module")
+    brain = load_user_brain(current.public_id)
+    try:
+        summary = append_module_note(brain, module, req.note, req.structured)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "module": summary}
 
 
 # ----- Admin -----

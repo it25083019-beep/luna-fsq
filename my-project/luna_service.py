@@ -172,6 +172,11 @@ def _default_user_brain(user_id: str) -> Dict[str, Any]:
             "time_weekend": None,
             "goals": None,
         },
+        "life_modules": {
+            "health": {"notes": [], "structured": {}, "updated_at": None},
+            "money": {"notes": [], "structured": {}, "updated_at": None},
+            "schedule": {"notes": [], "structured": {}, "updated_at": None},
+        },
         "schedule_reminders": [],
         "pending_notification": None,
     }
@@ -213,6 +218,16 @@ def parse_ai_reply(ai_reply: str) -> Tuple[str, Dict[str, Any]]:
     if dialogue_match:
         dialogue = dialogue_match.group(1).strip()
 
+    # VTuber-style [emotion] tags → expression hint for frontend
+    emo_match = re.match(
+        r"^\[(neutral|joy|happy|sadness|sad|surprise|surprised|think|cheer|wave)\]\s*",
+        dialogue,
+        re.IGNORECASE,
+    )
+    if emo_match:
+        game_state["emotion"] = emo_match.group(1).lower()
+        dialogue = dialogue[emo_match.end() :].strip()
+
     json_match = re.search(
         r"<game_state_json>\s*(.*?)\s*</game_state_json>",
         ai_reply,
@@ -221,11 +236,16 @@ def parse_ai_reply(ai_reply: str) -> Tuple[str, Dict[str, Any]]:
     if json_match:
         raw_json = json_match.group(1).strip()
         try:
-            game_state = json.loads(raw_json)
-            if not isinstance(game_state, dict):
+            parsed = json.loads(raw_json)
+            if isinstance(parsed, dict):
+                # keep emotion from tag if JSON didn't set it
+                if "emotion" in game_state and "emotion" not in parsed:
+                    parsed["emotion"] = game_state["emotion"]
+                game_state = parsed
+            else:
                 game_state = {}
         except json.JSONDecodeError:
-            game_state = {}
+            pass
 
     return dialogue, game_state
 
@@ -364,6 +384,9 @@ Output Format: ONLY <dialogue>...</dialogue> and <game_state_json>...</game_stat
 
     profile = json.dumps(user.get("life_profile", {}), ensure_ascii=False)
     reminders = json.dumps(user.get("schedule_reminders", []), ensure_ascii=False)
+    from life_modules import modules_prompt_block
+
+    modules_block = modules_prompt_block(user)
     who = _honorific(user)
     return f"""
 # ROLE: Personal Life Operating Companion
@@ -378,7 +401,16 @@ ROLE SWITCH:
 - Money topics: like a personal finance advisor (具体・実行可能な次の一歩).
 - Time/goals: planner; propose one clear next action.
 
+THREE LIFE MODULES (first-meeting questions are only a baseline; user can add more later):
+1) 健康 health  2) お金 money  3) スケジュール schedule
+
+{modules_block}
+
 FIVE PILLARS always: 1 health 2 study/future 3 money 4 time 5 goal direction.
+
+EMOTION TAGS (like VTuber emotionMap — put ONE tag at the start of dialogue when fitting):
+[neutral] [joy] [sadness] [surprise] [think] [cheer] [wave] [happy]
+Example: [cheer]よくできました。次は短い休憩を。
 
 USER PROFILE:
 {profile}
@@ -543,22 +575,22 @@ def _role_for_step(key: str) -> str:
     return "caretaker"
 
 
-# Deep first-meeting intake (one question each). Notifications are NOT asked.
+# Deep first-meeting intake (baseline only). User can add more later per module.
 PROFILE_QUESTIONS = [
     ("gender", "はじめに、性別を教えてください。（男性 / 女性）呼び名の整えに使います。"),
-    ("health_sleep", "【健康・医師ヒアリング】平均の睡眠時間と、寝つき・夜更かしの有無を教えてください。"),
-    ("health_body", "【健康】体調で気になる点（疲れ・痛み・食欲・運動不足など）を教えてください。"),
-    ("health_lifestyle", "【健康】食事と運動の習慣を、短く教えてください。"),
-    ("mental_mood", "【こころ・初回カウンセリング】最近の気分を10点中で教えてください。よく出る感情も一言お願いします。"),
-    ("mental_stress", "【こころ】いま一番ストレスになっている出来事や不安を教えてください。"),
-    ("mental_support", "【こころ】落ち込んだ時、どう休むと楽になりますか。話を聞いてほしいタイミングはありますか。"),
-    ("study_future", "【学びと将来】専攻・いま学んでいること・将来なりたい姿を教えてください。"),
-    ("money_income", "【お金・家計】収入源（仕送り・バイト・奨学金など）を教えてください。"),
-    ("money_expense", "【お金】毎月特に意識している支出や、お金で困っている点はありますか。"),
-    ("money_goal", "【お金】1〜3か月の金銭目標（節約・貯金など）があれば教えてください。"),
-    ("time_weekday", "【時間】平日の大まかな時間割（起床・授業・バイト・就寝の時刻）を教えてください。通知の事前リマインドに使います。"),
-    ("time_weekend", "【時間】休日の使い方を短く教えてください。"),
-    ("goals", "【目標】今後1〜3か月でいちばん大切にしたい目標をひとつ教えてください。"),
+    ("health_sleep", "【1/3 健康】平均の睡眠時間と、寝つき・夜更かしの有無を教えてください。（後から追記できます）"),
+    ("health_body", "【1/3 健康】体調で気になる点（疲れ・痛み・食欲・運動不足など）を教えてください。"),
+    ("health_lifestyle", "【1/3 健康】食事と運動の習慣を、短く教えてください。"),
+    ("mental_mood", "【1/3 健康・こころ】最近の気分を10点中で教えてください。よく出る感情も一言お願いします。"),
+    ("mental_stress", "【1/3 健康・こころ】いま一番ストレスになっている出来事や不安を教えてください。"),
+    ("mental_support", "【1/3 健康・こころ】落ち込んだ時、どう休むと楽になりますか。"),
+    ("study_future", "【3/3 スケジュール準備】専攻・いま学んでいること・将来なりたい姿を教えてください。"),
+    ("money_income", "【2/3 お金】収入源（仕送り・バイト時給・奨学金など）を教えてください。（後から追記可）"),
+    ("money_expense", "【2/3 お金】毎月特に意識している支出や、お金で困っている点はありますか。"),
+    ("money_goal", "【2/3 お金】1〜3か月の金銭目標や、欲しいものがあれば教えてください。"),
+    ("time_weekday", "【3/3 スケジュール】平日の大まかな時間割（起床・授業・バイト・就寝）を教えてください。"),
+    ("time_weekend", "【3/3 スケジュール】休日の使い方を短く教えてください。"),
+    ("goals", "【まとめ】今後1〜3か月でいちばん大切にしたい目標をひとつ教えてください。"),
 ]
 
 
@@ -749,8 +781,9 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
                 user["profile_complete"] = True
                 who = _honorific(user)
                 dialogue = (
-                    f"{who}、重要な情報を共有いただきありがとうございます。"
-                    f"健康・こころ・お金・時間・目標に基づき、今後は伴走して支えます。"
+                    f"{who}、初回の基本情報ありがとうございます。"
+                    f"これは入り口だけです。あとから【健康】【お金】【スケジュール】の各項目に追記できます。"
+                    f"生活を一緒に整えていきましょう。"
                 )
                 pending = None
                 if user.get("schedule_reminders"):
