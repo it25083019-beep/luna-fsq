@@ -64,6 +64,10 @@
   const lunaMainView = document.getElementById("lunaMainView");
   const settingsView = document.getElementById("settingsView");
   let scheduleSuggestions = [];
+  let calCursor = new Date();
+  let selectedDate = null;
+  let allScheduleEvents = [];
+  let datesWithEvents = new Set();
   const chartInstances = {};
 
   function fmtYen(n) {
@@ -91,12 +95,24 @@
   }
 
   function todayIso() {
-    return new Date().toISOString().slice(0, 10);
+    const d = new Date();
+    return (
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0")
+    );
   }
 
   function openSubview(name) {
+    closeAllSubviews();
     document.getElementById("sub-" + name).classList.remove("hidden");
-    if (name === "schedule") loadScheduleView();
+    if (name === "schedule") {
+      selectedDate = todayIso();
+      hideSimilarPrompt();
+      loadScheduleView();
+    }
     if (name === "health") loadHealthView();
     if (name === "money") loadMoneyView();
   }
@@ -258,75 +274,201 @@
       document.getElementById("stSchedule").textContent = s.schedule?.label || "予定なし";
       document.getElementById("stHealth").textContent = s.health?.label || "良好";
       document.getElementById("stGoals").textContent = s.goals?.label || "—";
+      renderHomeToday(s.schedule?.today_items || []);
     } catch (_) {}
   }
 
-  function renderTodoList(elId, items, opts) {
-    const el = document.getElementById(elId);
+  function renderHomeToday(items) {
+    const el = document.getElementById("homeTodayList");
     if (!el) return;
     el.innerHTML = "";
     if (!items.length) {
-      el.innerHTML = '<p class="hint">まだありません</p>';
+      el.innerHTML = '<p class="hint">まだ予定はありません。カレンダーから追加できます。</p>';
       return;
     }
     items.forEach((ev) => {
       const row = document.createElement("div");
-      row.className = "todo-row" + (ev.done ? " done" : "") + (opts?.future ? " future" : "");
+      row.className = "home-today-item" + (ev.done ? " done" : "");
+      row.innerHTML =
+        '<span class="t">' +
+        (ev.time || "終日") +
+        "</span><span style='flex:1'>" +
+        ev.title +
+        "</span>";
+      el.appendChild(row);
+    });
+  }
+
+  function eventsForDate(iso) {
+    return allScheduleEvents
+      .filter((e) => e.date === iso)
+      .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
+  }
+
+  function renderCalendar() {
+    const y = calCursor.getFullYear();
+    const m = calCursor.getMonth();
+    const label = document.getElementById("calMonthLabel");
+    if (label) label.textContent = y + "年" + (m + 1) + "月";
+    const grid = document.getElementById("calGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+    const first = new Date(y, m, 1);
+    const startPad = first.getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const today = todayIso();
+    for (let i = 0; i < startPad; i++) {
+      const blank = document.createElement("button");
+      blank.type = "button";
+      blank.className = "cal-day muted";
+      blank.disabled = true;
+      blank.textContent = "";
+      grid.appendChild(blank);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cal-day";
+      if (iso === today) btn.classList.add("today");
+      if (iso === selectedDate) btn.classList.add("selected");
+      if (datesWithEvents.has(iso)) btn.classList.add("has-event");
+      btn.textContent = String(d);
+      btn.onclick = () => selectCalendarDay(iso);
+      grid.appendChild(btn);
+    }
+  }
+
+  function selectCalendarDay(iso) {
+    selectedDate = iso;
+    const dateInput = document.getElementById("addDate");
+    if (dateInput) dateInput.value = iso;
+    renderCalendar();
+    renderDayEvents();
+  }
+
+  function renderDayEvents() {
+    const title = document.getElementById("dayPanelTitle");
+    if (title) title.textContent = fmtDateJa(selectedDate);
+    const el = document.getElementById("dayEventList");
+    if (!el) return;
+    const items = eventsForDate(selectedDate);
+    el.innerHTML = "";
+    if (!items.length) {
+      el.innerHTML = '<p class="hint">この日の予定はまだありません。「＋」で追加できます。</p>';
+      return;
+    }
+    items.forEach((ev) => {
+      const row = document.createElement("div");
+      row.className = "todo-row" + (ev.done ? " done" : "");
       const time = ev.time ? ev.time + " · " : "";
       const recur = ev.recurrence
         ? '<span class="recur-tag">' + (ev.recurrence === "monthly" ? "🔁毎月" : "🔁毎週") + "</span>"
         : "";
       row.innerHTML = '<span style="flex:1">' + time + ev.title + recur + "</span>";
-      if (!opts?.readonly) {
-        const btn = document.createElement("button");
-        btn.textContent = ev.done ? "戻す" : "完了";
-        btn.onclick = () => toggleEventDone(ev.id, !ev.done);
-        row.appendChild(btn);
-      }
+      const acts = document.createElement("div");
+      acts.className = "acts";
+      const doneBtn = document.createElement("button");
+      doneBtn.textContent = ev.done ? "戻す" : "完了";
+      doneBtn.onclick = () => toggleEventDone(ev.id, !ev.done);
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "編集";
+      editBtn.onclick = () => openEditEvent(ev);
+      const delBtn = document.createElement("button");
+      delBtn.className = "danger";
+      delBtn.textContent = "削除";
+      delBtn.onclick = () => deleteScheduleEvent(ev.id);
+      acts.appendChild(doneBtn);
+      acts.appendChild(editBtn);
+      acts.appendChild(delBtn);
+      row.appendChild(acts);
       el.appendChild(row);
     });
+  }
+
+  function openEditEvent(ev) {
+    document.getElementById("editEventId").value = ev.id || "";
+    document.getElementById("addTitle").value = ev.title || "";
+    document.getElementById("addDate").value = ev.date || selectedDate;
+    document.getElementById("addTime").value = ev.time || "";
+    document.getElementById("addNote").value = ev.note || "";
+    document.getElementById("addRecurrence").value = "";
+    document.getElementById("addRecurrence").disabled = true;
+    document.getElementById("addForm").classList.add("open");
+    document.getElementById("addSaveBtn").textContent = "更新";
+  }
+
+  function resetAddForm(keepDate) {
+    document.getElementById("editEventId").value = "";
+    document.getElementById("addTitle").value = "";
+    document.getElementById("addTime").value = "";
+    document.getElementById("addNote").value = "";
+    document.getElementById("addRecurrence").value = "";
+    document.getElementById("addRecurrence").disabled = false;
+    document.getElementById("addDate").value = keepDate || selectedDate || todayIso();
+    document.getElementById("addSaveBtn").textContent = "保存";
+    document.getElementById("addForm").classList.remove("open");
+  }
+
+  function hideSimilarPrompt() {
+    const box = document.getElementById("similarPrompt");
+    if (box) box.classList.remove("open");
+  }
+
+  async function showSimilarPrompt() {
+    try {
+      const sug = await api("/schedule/suggestions");
+      scheduleSuggestions = sug.suggestions || [];
+      const box = document.getElementById("similarPrompt");
+      const list = document.getElementById("suggestList");
+      const hint = document.getElementById("similarHint");
+      if (!box || !list) return;
+      if (!scheduleSuggestions.length) {
+        box.classList.remove("open");
+        return;
+      }
+      if (hint) {
+        hint.textContent =
+          "入力した予定をもとに " + scheduleSuggestions.length + " 件の似たスケジュールを提案します。追加しますか？";
+      }
+      list.innerHTML = "";
+      scheduleSuggestions.forEach((s) => {
+        const row = document.createElement("div");
+        row.className = "suggest-item";
+        const srcTag = s.source === "ai" ? "🤖" : "📊";
+        const rec = s.recurrence ? " · " + (s.recurrence === "monthly" ? "毎月" : "毎週") : "";
+        row.innerHTML =
+          "<span>" +
+          srcTag +
+          " " +
+          s.date +
+          " " +
+          (s.time || "") +
+          " " +
+          s.title +
+          rec +
+          '<br><small style="color:var(--muted)">' +
+          (s.reason_ja || "") +
+          "</small></span>";
+        list.appendChild(row);
+      });
+      box.classList.add("open");
+    } catch (_) {
+      hideSimilarPrompt();
+    }
   }
 
   async function loadScheduleView() {
     try {
       const data = await api("/schedule/events");
-      document.getElementById("schedDateCard").textContent = fmtDateJa(data.today);
-      document.getElementById("addDate").value = data.today;
-      renderTodoList("todayOpenList", data.today_open || []);
-      renderTodoList("pastDoneList", data.past_done || [], { readonly: true });
-      renderTodoList("futureList", data.future || [], { future: true });
-      const sug = await api("/schedule/suggestions");
-      scheduleSuggestions = sug.suggestions || [];
-      const box = document.getElementById("suggestBox");
-      const list = document.getElementById("suggestList");
-      if (scheduleSuggestions.length) {
-        box.style.display = "block";
-        list.innerHTML = "";
-        const src = sug.source === "ai" ? "（AI提案）" : sug.source === "pattern" ? "（パターン）" : "（AI＋パターン）";
-        box.querySelector("h4").textContent = "✨ 似た予定を提案 " + src;
-        scheduleSuggestions.forEach((s) => {
-          const row = document.createElement("div");
-          row.className = "suggest-item";
-          const srcTag = s.source === "ai" ? "🤖" : "📊";
-          const rec = s.recurrence ? " · " + (s.recurrence === "monthly" ? "毎月" : "毎週") : "";
-          row.innerHTML =
-            "<span>" +
-            srcTag +
-            " " +
-            s.date +
-            " " +
-            (s.time || "") +
-            " " +
-            s.title +
-            rec +
-            '<br><small style="color:var(--muted)">' +
-            s.reason_ja +
-            "</small></span>";
-          list.appendChild(row);
-        });
-      } else {
-        box.style.display = "none";
-      }
+      allScheduleEvents = data.events || [];
+      datesWithEvents = new Set(data.dates_with_events || []);
+      if (!selectedDate) selectedDate = data.today || todayIso();
+      const parts = selectedDate.split("-").map(Number);
+      calCursor = new Date(parts[0], parts[1] - 1, 1);
+      document.getElementById("addDate").value = selectedDate;
+      renderCalendar();
+      renderDayEvents();
       await loadHomeSummary();
     } catch (e) {
       setErr(e.message);
@@ -345,22 +487,43 @@
     }
   }
 
+  async function deleteScheduleEvent(id) {
+    if (!confirm("この予定を削除しますか？")) return;
+    try {
+      await api("/schedule/events/" + id, { method: "DELETE" });
+      await loadScheduleView();
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
   async function addScheduleEvent() {
+    const editId = document.getElementById("editEventId").value;
     const title = document.getElementById("addTitle").value.trim();
     const date = document.getElementById("addDate").value;
     const time = document.getElementById("addTime").value;
+    const note = document.getElementById("addNote").value.trim();
     const recurrence = document.getElementById("addRecurrence").value || null;
     if (!title || !date) return;
     try {
-      await api("/schedule/events", {
-        method: "POST",
-        body: JSON.stringify({ title, date, time: time || null, recurrence }),
-      });
-      document.getElementById("addTitle").value = "";
-      document.getElementById("addTime").value = "";
-      document.getElementById("addRecurrence").value = "";
-      document.getElementById("addForm").classList.remove("open");
-      await loadScheduleView();
+      if (editId) {
+        await api("/schedule/events/" + editId, {
+          method: "PATCH",
+          body: JSON.stringify({ title, date, time: time || null, note: note || null }),
+        });
+        selectedDate = date;
+        resetAddForm(date);
+        await loadScheduleView();
+      } else {
+        await api("/schedule/events", {
+          method: "POST",
+          body: JSON.stringify({ title, date, time: time || null, note: note || null, recurrence }),
+        });
+        selectedDate = date;
+        resetAddForm(date);
+        await loadScheduleView();
+        await showSimilarPrompt();
+      }
     } catch (e) {
       setErr(e.message);
     }
@@ -372,6 +535,7 @@
         method: "POST",
         body: JSON.stringify({ apply_all: true }),
       });
+      hideSimilarPrompt();
       await loadScheduleView();
     } catch (e) {
       setErr(e.message);
@@ -388,6 +552,12 @@
       document.getElementById("healthHr").textContent = d.heart_rate;
       document.getElementById("healthWater").textContent = d.water_glasses + "/" + d.water_goal;
       document.getElementById("healthMessage").textContent = d.message_ja || "";
+      const sleepScore = (d.sleep_history || []).slice(-1)[0]?.score || d.score;
+      document.getElementById("editHealthScore").value = d.score;
+      document.getElementById("editHealthSleep").value = sleepScore;
+      document.getElementById("editHealthSteps").value = d.steps;
+      document.getElementById("editHealthHr").value = d.heart_rate;
+      document.getElementById("editHealthWater").value = d.water_glasses;
 
       const glassRow = document.getElementById("waterGlasses");
       if (glassRow) {
@@ -460,6 +630,10 @@
       document.getElementById("moneySavings").textContent = fmtYen(d.savings_total);
       document.getElementById("moneySavingsPct").textContent = (d.savings_pct || 0) + "%";
       document.getElementById("moneyMessage").textContent = d.message_ja || "";
+      document.getElementById("editMoneyIn").value = d.income;
+      document.getElementById("editMoneyOut").value = d.expense;
+      document.getElementById("editMoneySavings").value = d.savings_total;
+      document.getElementById("editMoneyBalance").value = d.current_balance;
 
       const balLabels = (d.balance_history || []).map((x) => x.month);
       const balData = (d.balance_history || []).map((x) => x.balance);
@@ -528,6 +702,80 @@
       Object.entries(d.baseline || {}).forEach(([k, v]) => lines.push("・" + k + ": " + v));
       (d.notes || []).forEach((n) => lines.push("＋ " + n.text));
       document.getElementById("moneyNotes").textContent = lines.length ? lines.join("\n") : "追記はLUNAに話すか、メニューから追加できます。";
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  async function saveHealthMetrics() {
+    try {
+      const sleep = Number(document.getElementById("editHealthSleep").value);
+      const score = Number(document.getElementById("editHealthScore").value);
+      const steps = Number(document.getElementById("editHealthSteps").value);
+      const hr = Number(document.getElementById("editHealthHr").value);
+      const water = Number(document.getElementById("editHealthWater").value);
+      await api("/life/health/dashboard", {
+        method: "PATCH",
+        body: JSON.stringify({
+          structured: {
+            score,
+            steps,
+            heart_rate: hr,
+            water_glasses: water,
+            sleep_history: [
+              { month: "1月", score: Math.max(50, sleep - 8) },
+              { month: "2月", score: Math.max(50, sleep - 5) },
+              { month: "3月", score: Math.max(50, sleep - 3) },
+              { month: "4月", score: Math.max(50, sleep - 1) },
+              { month: "5月", score: sleep },
+              { month: "6月", score: sleep },
+            ],
+            steps_history: [
+              { month: "1月", steps: Math.round(steps * 0.75) },
+              { month: "2月", steps: Math.round(steps * 0.82) },
+              { month: "3月", steps: Math.round(steps * 0.88) },
+              { month: "4月", steps: Math.round(steps * 0.94) },
+              { month: "5月", steps: Math.round(steps * 0.98) },
+              { month: "6月", steps },
+            ],
+          },
+          note: "健康数値を手動更新",
+        }),
+      });
+      await loadHealthView();
+      await loadHomeSummary();
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  async function saveMoneyMetrics() {
+    try {
+      const income = Number(document.getElementById("editMoneyIn").value);
+      const expense = Number(document.getElementById("editMoneyOut").value);
+      const savings = Number(document.getElementById("editMoneySavings").value);
+      const balance = Number(document.getElementById("editMoneyBalance").value);
+      await api("/life/money/dashboard", {
+        method: "PATCH",
+        body: JSON.stringify({
+          structured: {
+            income,
+            expense,
+            savings_total: savings,
+            current_balance: balance,
+            balance_history: [
+              { month: "1月", balance: Math.round(balance * 0.85) },
+              { month: "2月", balance: Math.round(balance * 0.9) },
+              { month: "3月", balance: Math.round(balance * 0.94) },
+              { month: "4月", balance: Math.round(balance * 0.97) },
+              { month: "5月", balance },
+            ],
+          },
+          note: "家計数値を手動更新",
+        }),
+      });
+      await loadMoneyView();
+      await loadHomeSummary();
     } catch (e) {
       setErr(e.message);
     }
@@ -899,10 +1147,27 @@
         if (open) renderThemePicker();
       };
     }
-    document.getElementById("toggleAddBtn").onclick = () => document.getElementById("addForm").classList.add("open");
-    document.getElementById("addCancelBtn").onclick = () => document.getElementById("addForm").classList.remove("open");
+    document.getElementById("toggleAddBtn").onclick = () => {
+      resetAddForm(selectedDate || todayIso());
+      document.getElementById("addForm").classList.add("open");
+    };
+    document.getElementById("addCancelBtn").onclick = () => resetAddForm(selectedDate || todayIso());
     document.getElementById("addSaveBtn").onclick = () => addScheduleEvent();
     document.getElementById("applySuggestBtn").onclick = () => applySuggestions();
+    const dismiss = document.getElementById("dismissSuggestBtn");
+    if (dismiss) dismiss.onclick = () => hideSimilarPrompt();
+    document.getElementById("calPrev").onclick = () => {
+      calCursor.setMonth(calCursor.getMonth() - 1);
+      renderCalendar();
+    };
+    document.getElementById("calNext").onclick = () => {
+      calCursor.setMonth(calCursor.getMonth() + 1);
+      renderCalendar();
+    };
+    const saveHealthBtn = document.getElementById("saveHealthBtn");
+    if (saveHealthBtn) saveHealthBtn.onclick = () => saveHealthMetrics();
+    const saveMoneyBtn = document.getElementById("saveMoneyBtn");
+    if (saveMoneyBtn) saveMoneyBtn.onclick = () => saveMoneyMetrics();
     document.getElementById("sendBtn").onclick = () => sendMessage(document.getElementById("message").value);
     document.getElementById("message").onkeydown = (e) => {
       if (e.key === "Enter") {

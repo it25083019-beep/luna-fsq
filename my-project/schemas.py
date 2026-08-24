@@ -149,6 +149,14 @@ class ScheduleEventCreate(BaseModel):
     recurrence: Optional[str] = Field(default=None, description="weekly or monthly")
 
 
+class ScheduleEventUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    date: Optional[str] = Field(default=None, description="YYYY-MM-DD")
+    time: Optional[str] = Field(default=None, max_length=5)
+    note: Optional[str] = Field(default=None, max_length=500)
+    done: Optional[bool] = None
+
+
 class ScheduleEventComplete(BaseModel):
     done: bool = True
 
@@ -156,3 +164,9 @@ class ScheduleEventComplete(BaseModel):
 class ScheduleApplySuggestions(BaseModel):
     indices: Optional[List[int]] = None
     apply_all: bool = False
+
+
+class LifeDashboardUpdate(BaseModel):
+    """Manual override for health / money structured metrics."""
+    structured: dict = Field(default_factory=dict)
+    note: Optional[str] = Field(default=None, max_length=2000)

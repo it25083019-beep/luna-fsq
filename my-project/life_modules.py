@@ -101,6 +101,31 @@ def append_module_note(
     return summarize_module(user, module)
 
 
+def update_module_structured(
+    user: Dict[str, Any],
+    module: str,
+    structured: Dict[str, Any],
+    note: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Merge structured metrics; optionally append a note."""
+    if module not in MODULE_KEYS:
+        raise ValueError("invalid module")
+    if not isinstance(structured, dict) or not structured:
+        raise ValueError("structured is required")
+    ensure_life_modules(user)
+    row = user["life_modules"][module]
+    row.setdefault("structured", {}).update(structured)
+    text = (note or "").strip()
+    if text:
+        row.setdefault("notes", []).append({"text": text[:2000], "at": _utcnow_iso()})
+        row["notes"] = row["notes"][-40:]
+    else:
+        row.setdefault("notes", []).append({"text": "手動で数値を更新", "at": _utcnow_iso()})
+        row["notes"] = row["notes"][-40:]
+    row["updated_at"] = _utcnow_iso()
+    return summarize_module(user, module)
+
+
 def modules_prompt_block(user: Dict[str, Any]) -> str:
     """Inject into companion system prompt."""
     ensure_life_modules(user)

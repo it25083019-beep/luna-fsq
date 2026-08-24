@@ -181,6 +181,7 @@ def list_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> Dict[
     past_done = past_done[-20:]
     future = future[:30]
     open_count = len([x for x in events if not x.get("done") and (x.get("date") or today_s) >= today_s])
+    dates_with_events = sorted({e.get("date") for e in events if e.get("date")})
     return {
         "today": today_s,
         "past_done": past_done,
@@ -189,6 +190,7 @@ def list_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> Dict[
         "future": future,
         "open_count": open_count,
         "events": events,
+        "dates_with_events": dates_with_events,
         "recurring_templates": _recurring_store(user),
     }
 
@@ -268,6 +270,65 @@ def add_event(
         del store[:-200]
     user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
     return ev
+
+
+def update_event(
+    user: Dict[str, Any],
+    event_id: str,
+    *,
+    title: Optional[str] = None,
+    event_date: Optional[str] = None,
+    event_time: Optional[str] = None,
+    note: Optional[str] = None,
+    done: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """Update a stored event. Virtual recurring instances are materialized first."""
+    parsed = _parse_virtual_id(event_id)
+    if parsed:
+        # Materialize as a real editable event (without creating recurrence again)
+        tpl_id, event_date_v = parsed
+        tpl = next((t for t in _recurring_store(user) if t.get("id") == tpl_id), None)
+        if not tpl:
+            raise ValueError("event not found")
+        ev = {
+            "id": uuid.uuid4().hex[:12],
+            "title": tpl["title"],
+            "date": event_date_v,
+            "time": tpl.get("time"),
+            "note": tpl.get("note"),
+            "done": False,
+            "created_at": _utcnow_iso(),
+            "recurrence_id": tpl_id,
+            "recurrence": tpl.get("recurrence"),
+        }
+        _events_store(user).append(ev)
+        event_id = ev["id"]
+
+    for e in _events_store(user):
+        if e.get("id") != event_id:
+            continue
+        if title is not None:
+            text = title.strip()
+            if not text:
+                raise ValueError("title is required")
+            e["title"] = text[:200]
+        if event_date is not None:
+            try:
+                _parse_date(event_date)
+            except ValueError as err:
+                raise ValueError("invalid date (YYYY-MM-DD)") from err
+            e["date"] = event_date[:10]
+        if event_time is not None:
+            e["time"] = (event_time or "").strip()[:5] or None
+        if note is not None:
+            e["note"] = (note or "").strip()[:500] or None
+        if done is not None:
+            e["done"] = bool(done)
+            e["completed_at"] = _utcnow_iso() if done else None
+        e["updated_at"] = _utcnow_iso()
+        user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+        return e
+    raise ValueError("event not found")
 
 
 def complete_event(user: Dict[str, Any], event_id: str, done: bool = True) -> Dict[str, Any]:
@@ -496,11 +557,16 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
     goals_total = max(int(health.get("goals_total") or 5), 1)
     rpg = user.get("rpg") or {}
     active_quests = len(rpg.get("active_quests") or [])
+    today_items = sorted(
+        (sched.get("today_open") or []) + (sched.get("today_done") or []),
+        key=lambda e: (e.get("time") or "99:99", e.get("title") or ""),
+    )
     return {
         "schedule": {
             "open_count": sched["open_count"],
             "today_open": len(sched["today_open"]),
             "label": str(sched["open_count"]) + "件のToDo" if sched["open_count"] else "予定なし",
+            "today_items": today_items,
         },
         "health": {"score": score, "label": "良好 " + str(score)},
         "goals": {

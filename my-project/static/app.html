@@ -240,6 +240,46 @@
     .account-row .bar span{display:block;height:100%;background:linear-gradient(90deg,var(--mint),var(--lilac))}
     .recur-tag{font-size:.62rem;color:var(--lilac);margin-left:.25rem}
     .suggest-source{font-size:.65rem;color:var(--muted);margin-left:.35rem}
+    .cal-wrap{margin:.75rem 1rem;background:var(--card);border-radius:18px;padding:.75rem;box-shadow:var(--shadow)}
+    .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem}
+    .cal-nav h3{margin:0;font-size:1rem;color:var(--lilac-deep)}
+    .cal-nav button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);width:2rem;height:2rem;border-radius:10px;cursor:pointer;font-weight:800}
+    .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:.15rem;margin-bottom:.25rem;text-align:center;font-size:.62rem;color:var(--muted);font-weight:700}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.2rem}
+    .cal-day{border:none;background:transparent;aspect-ratio:1;border-radius:12px;font-size:.78rem;font-weight:700;color:var(--text);cursor:pointer;position:relative;padding:0}
+    .cal-day.muted{color:#c5bdd6;font-weight:500}
+    .cal-day.today{box-shadow:inset 0 0 0 1.5px var(--lilac)}
+    .cal-day.selected{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .cal-day.has-event::after{content:"";position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--pink)}
+    .cal-day.selected.has-event::after{background:#fff}
+    .day-panel{margin:0 1rem 1rem}
+    .day-panel h3{display:flex;justify-content:space-between;align-items:center;margin:0 0 .45rem;font-size:.88rem;color:var(--lilac-deep)}
+    .day-panel h3 button{border:none;background:var(--lilac);color:#fff;width:1.7rem;height:1.7rem;border-radius:50%;cursor:pointer;font-size:1.05rem;line-height:1}
+    .todo-row .acts{display:flex;gap:.25rem;flex-shrink:0}
+    .todo-row .acts button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.3rem .45rem;border-radius:999px;font-size:.65rem;cursor:pointer}
+    .todo-row .acts .danger{color:var(--danger);background:rgba(224,122,138,.12)}
+    .similar-prompt{margin:0 1rem 1rem;padding:.85rem;background:linear-gradient(135deg,#efe6ff,#fff);border-radius:16px;border:1px dashed var(--lilac);display:none}
+    .similar-prompt.open{display:block}
+    .similar-prompt h4{margin:0 0 .35rem;font-size:.85rem;color:var(--lilac-deep)}
+    .similar-prompt .row{display:flex;gap:.4rem;margin-top:.55rem}
+    .similar-prompt .row button{flex:1;border:none;border-radius:999px;padding:.55rem;font-weight:700;cursor:pointer}
+    .similar-prompt .yes{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .similar-prompt .no{background:var(--ghost-bg);color:var(--lilac-deep)}
+    .home-today{margin:0 1rem .65rem;padding:.75rem;background:var(--card);border-radius:18px;box-shadow:var(--shadow);flex:1;min-height:0}
+    .home-today h3{margin:0 0 .45rem;font-size:.88rem;color:var(--lilac-deep);display:flex;justify-content:space-between;align-items:center}
+    .home-today h3 button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.25rem .55rem;border-radius:999px;font-size:.68rem;font-weight:700;cursor:pointer}
+    .home-today-item{display:flex;align-items:center;gap:.45rem;padding:.4rem 0;border-bottom:1px solid rgba(155,126,217,.12);font-size:.8rem}
+    .home-today-item:last-child{border-bottom:none}
+    .home-today-item.done{opacity:.5;text-decoration:line-through}
+    .home-today-item .t{color:var(--lilac-deep);font-weight:700;min-width:2.6rem}
+    .edit-panel{margin:0 1rem 1rem;padding:.85rem;background:var(--card);border-radius:18px;box-shadow:var(--shadow)}
+    .edit-panel h4{margin:0 0 .45rem;font-size:.82rem;color:var(--lilac-deep)}
+    .edit-panel label{display:block;font-size:.72rem;color:var(--muted);margin:.3rem 0 .1rem}
+    .edit-panel input{width:100%;padding:.5rem .65rem;border:none;background:var(--input-bg);border-radius:12px;margin-bottom:.25rem}
+    .edit-panel .row{display:flex;gap:.4rem;margin-top:.45rem}
+    .edit-panel .row button{flex:1;border:none;border-radius:999px;padding:.5rem;font-weight:700;cursor:pointer}
+    .edit-panel .save{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .edit-panel .ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/static/theme.js"></script>
@@ -267,6 +307,10 @@
             <button type="button" class="status-card" data-open="health"><div class="ico">💚</div><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
             <button type="button" class="status-card" data-open="money"><div class="ico">🎯</div><div class="label">目標</div><div class="val" id="stGoals">—</div></button>
           </div>
+          <div class="home-today">
+            <h3>今日の予定 <button type="button" data-open="schedule">カレンダー</button></h3>
+            <div id="homeTodayList"><p class="hint">まだ予定はありません。カレンダーから追加できます。</p></div>
+          </div>
           <div class="chips" id="chips"></div>
           <div class="composer-voice">
             <button type="button" class="mic" id="voiceBtn" title="音声">🎤</button>
@@ -286,33 +330,45 @@
       <div id="sub-schedule" class="subview hidden">
         <div class="subview-head">
           <button type="button" data-back="schedule">←</button>
-          <h2>スケジュール ToDo</h2>
+          <h2>スケジュール</h2>
           <span style="width:2rem"></span>
         </div>
-        <div class="date-card" id="schedDateCard">—</div>
-        <div class="suggest-box" id="suggestBox" style="display:none">
-          <h4>✨ 似た予定を提案</h4>
-          <div id="suggestList"></div>
-          <button type="button" class="cta-btn" id="applySuggestBtn" style="margin-top:.5rem;font-size:.78rem">提案をすべて追加</button>
+        <div class="cal-wrap">
+          <div class="cal-nav">
+            <button type="button" id="calPrev">‹</button>
+            <h3 id="calMonthLabel">—</h3>
+            <button type="button" id="calNext">›</button>
+          </div>
+          <div class="cal-weekdays"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+          <div class="cal-grid" id="calGrid"></div>
         </div>
-        <div class="sched-section">
-          <h3>今日のToDo（未完了）<button type="button" id="toggleAddBtn">+</button></h3>
+        <div class="day-panel">
+          <h3><span id="dayPanelTitle">選択した日</span><button type="button" id="toggleAddBtn" title="追加">+</button></h3>
           <div class="add-form" id="addForm">
-            <label>タイトル</label><input id="addTitle" type="text" placeholder="例：10:00 - 会議" />
+            <input type="hidden" id="editEventId" value="" />
+            <label>タイトル</label><input id="addTitle" type="text" placeholder="例：会議 / 数学の予習" />
             <label>日付</label><input id="addDate" type="date" />
             <label>時間（任意）</label><input id="addTime" type="time" />
+            <label>メモ（任意）</label><input id="addNote" type="text" placeholder="詳細メモ" />
             <label>繰り返し</label>
             <select id="addRecurrence" style="width:100%;padding:.55rem .65rem;border:none;background:var(--input-bg);border-radius:12px;margin-bottom:.35rem">
               <option value="">なし（1回のみ）</option>
               <option value="weekly">毎週</option>
               <option value="monthly">毎月</option>
             </select>
-            <div class="row"><button type="button" class="save" id="addSaveBtn">追加</button><button type="button" id="addCancelBtn">キャンセル</button></div>
+            <div class="row"><button type="button" class="save" id="addSaveBtn">保存</button><button type="button" id="addCancelBtn">キャンセル</button></div>
           </div>
-          <div id="todayOpenList"></div>
+          <div id="dayEventList"></div>
         </div>
-        <div class="sched-section"><h3>完了したToDo（過去）</h3><div id="pastDoneList"></div></div>
-        <div class="sched-section"><h3>今後のスケジュール</h3><div id="futureList"></div></div>
+        <div class="similar-prompt" id="similarPrompt">
+          <h4>✨ 似た予定も追加しますか？</h4>
+          <p class="hint" id="similarHint" style="margin:0 0 .35rem">入力した予定をもとに、似たスケジュールを提案できます。</p>
+          <div id="suggestList"></div>
+          <div class="row">
+            <button type="button" class="yes" id="applySuggestBtn">はい、追加する</button>
+            <button type="button" class="no" id="dismissSuggestBtn">今はしない</button>
+          </div>
+        </div>
       </div>
 
       <!-- Health subview -->
@@ -341,6 +397,15 @@
             <div class="chart-box tall"><canvas id="healthStepsChart"></canvas></div>
           </div>
           <div class="bubble compact" id="healthMessage" style="margin:0">今日もバッチリだね！この調子で頑張ろう！</div>
+        </div>
+        <div class="edit-panel">
+          <h4>数値を手動で編集</h4>
+          <label>健康スコア</label><input id="editHealthScore" type="number" min="0" max="100" />
+          <label>睡眠スコア</label><input id="editHealthSleep" type="number" min="0" max="100" />
+          <label>歩数</label><input id="editHealthSteps" type="number" min="0" />
+          <label>心拍 (bpm)</label><input id="editHealthHr" type="number" min="30" max="220" />
+          <label>水分（杯）</label><input id="editHealthWater" type="number" min="0" max="20" />
+          <div class="row"><button type="button" class="save" id="saveHealthBtn">保存</button></div>
         </div>
         <p class="hint" style="padding:0 1rem">よくある相談から選ぶ</p>
         <div class="consult-row">
@@ -379,6 +444,14 @@
             <div id="moneyAccounts"></div>
           </div>
           <div class="bubble compact" id="moneyMessage" style="margin:0">今月の予算は大丈夫かな？一緒に家計簿をチェックしよう！</div>
+        </div>
+        <div class="edit-panel">
+          <h4>収支を手動で編集</h4>
+          <label>今月の収入</label><input id="editMoneyIn" type="number" min="0" />
+          <label>今月の支出</label><input id="editMoneyOut" type="number" min="0" />
+          <label>貯蓄合計</label><input id="editMoneySavings" type="number" min="0" />
+          <label>現在の残高</label><input id="editMoneyBalance" type="number" />
+          <div class="row"><button type="button" class="save" id="saveMoneyBtn">保存</button></div>
         </div>
         <div class="sched-section"><h3>メモ・追記</h3><div id="moneyNotes" class="hint" style="line-height:1.6"></div></div>
         <div class="consult-row">

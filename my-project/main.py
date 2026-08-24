@@ -27,7 +27,7 @@ from brain_repo import migrate_json_brains_to_db, seed_admin_user, sync_privacy_
 from database import get_db, init_db
 from models import CoreBrain, PasswordResetToken, User
 from password_reset_email import send_password_reset_email
-from life_modules import MODULE_KEYS, append_module_note, list_modules, summarize_module
+from life_modules import MODULE_KEYS, append_module_note, list_modules, summarize_module, update_module_structured
 from life_dashboard import health_dashboard, money_dashboard
 from schedule_service import (
     add_event,
@@ -37,6 +37,7 @@ from schedule_service import (
     home_summary,
     list_events,
     suggest_combined,
+    update_event,
 )
 from schemas import (
     AdminLockRequest,
@@ -58,8 +59,10 @@ from schemas import (
     RpgQuestStartRequest,
     RpgActivityRequest,
     ScheduleEventCreate,
+    ScheduleEventUpdate,
     ScheduleEventComplete,
     ScheduleApplySuggestions,
+    LifeDashboardUpdate,
 )
 from suggestions import get_suggested_replies
 from career_engine import load_taxonomy, suggest_careers, rpg_class_label
@@ -457,6 +460,25 @@ def life_money_dashboard(current: User = Depends(get_current_user)):
     return money_dashboard(brain)
 
 
+@app.patch("/life/{module}/dashboard")
+def life_dashboard_update(
+    module: str,
+    req: LifeDashboardUpdate,
+    current: User = Depends(get_current_user),
+):
+    if module not in ("health", "money"):
+        raise HTTPException(status_code=404, detail="Unknown module")
+    brain = load_user_brain(current.public_id)
+    try:
+        update_module_structured(brain, module, req.structured, req.note)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    if module == "health":
+        return {"ok": True, "dashboard": health_dashboard(brain)}
+    return {"ok": True, "dashboard": money_dashboard(brain)}
+
+
 @app.get("/life/{module}")
 def life_module_get(module: str, current: User = Depends(get_current_user)):
     if module not in MODULE_KEYS:
@@ -511,6 +533,25 @@ def schedule_create(req: ScheduleEventCreate, current: User = Depends(get_curren
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "event": ev}
+
+
+@app.patch("/schedule/events/{event_id}")
+def schedule_update(event_id: str, req: ScheduleEventUpdate, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        ev = update_event(
+            brain,
+            event_id,
+            title=req.title,
+            event_date=req.date,
+            event_time=req.time,
+            note=req.note,
+            done=req.done,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404 if "not found" in str(e) else 400, detail=str(e))
     save_user_brain(current.public_id, brain)
     return {"ok": True, "event": ev}
 
