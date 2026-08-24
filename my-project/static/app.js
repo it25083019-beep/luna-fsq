@@ -504,6 +504,9 @@
       const data = await api("/schedule/events");
       allScheduleEvents = data.events || [];
       datesWithEvents = new Set(data.dates_with_events || []);
+      const inputDate = document.getElementById("addDate")?.value;
+      // Keep user-selected day stable across refresh.
+      if (!selectedDate && inputDate) selectedDate = inputDate;
       if (!selectedDate) selectedDate = data.today || todayIso();
       const parts = selectedDate.split("-").map(Number);
       calCursor = new Date(parts[0], parts[1] - 1, 1);
