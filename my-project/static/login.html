@@ -12,12 +12,14 @@
       --card:rgba(255,255,255,.92); --text:#4a3b6b; --muted:#8a7aa8;
       --lilac:#9b7ed9; --lilac-deep:#7b5eb8; --mint:#6ec9b8; --danger:#e07a8a;
       --shadow:0 14px 36px rgba(120,90,180,.16);
+      --input-bg:#f6f1fc; --ghost-bg:#efe8f8;
+      --glow-a:rgba(155,126,217,.35); --glow-b:rgba(240,168,200,.3);
     }
     *{box-sizing:border-box}
     body{margin:0;min-height:100vh;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text);
       background:
-        radial-gradient(800px 420px at 80% 10%, rgba(155,126,217,.35), transparent 55%),
-        radial-gradient(700px 400px at 10% 90%, rgba(240,168,200,.3), transparent 50%),
+        radial-gradient(800px 420px at 80% 10%, var(--glow-a), transparent 55%),
+        radial-gradient(700px 400px at 10% 90%, var(--glow-b), transparent 50%),
         linear-gradient(165deg, var(--bg0), var(--bg1) 50%, var(--bg2));
     }
     .shell{max-width:420px;margin:0 auto;padding:1.25rem 1rem 2rem}
@@ -29,17 +31,19 @@
     .panel{background:var(--card);border-radius:28px;padding:1.15rem 1.15rem 1.35rem;box-shadow:var(--shadow)}
     .panel h2{margin:0 0 .85rem;font-size:1.05rem;color:var(--lilac-deep);text-align:center}
     label{display:block;font-size:.75rem;color:var(--muted);margin:.55rem 0 .25rem}
-    input{width:100%;padding:.75rem .9rem;border:none;background:#f6f1fc;color:var(--text);font:inherit;border-radius:14px;outline:none}
-    input:focus{box-shadow:0 0 0 2px rgba(155,126,217,.35)}
+    input{width:100%;padding:.75rem .9rem;border:none;background:var(--input-bg);color:var(--text);font:inherit;border-radius:14px;outline:none}
+    input:focus{box-shadow:0 0 0 2px color-mix(in srgb, var(--lilac) 45%, transparent)}
     .row{display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap;justify-content:center}
     button{font:inherit;cursor:pointer;border:none;border-radius:999px;padding:.7rem 1.15rem}
-    button.primary{background:linear-gradient(135deg,var(--mint),#4db8a8);color:#fff;font-weight:700;min-width:60%}
-    button.ghost{background:#efe8f8;color:var(--lilac-deep)}
+    button.primary{background:linear-gradient(135deg,var(--mint),var(--lilac-deep));color:#fff;font-weight:700;min-width:60%}
+    button.ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
     button.linkish{background:none;color:var(--lilac);padding:.35rem;text-decoration:underline;font-size:.85rem}
     .err{color:var(--danger);font-size:.85rem;margin-top:.75rem;min-height:1.2em;text-align:center}
     .hint{font-size:.75rem;color:var(--muted);line-height:1.5;margin:.55rem 0 0;text-align:center}
     .hidden{display:none!important}
   </style>
+  <script src="/static/theme.js"></script>
+  <script>LunaTheme.boot();</script>
 </head>
 <body>
   <div class="shell">

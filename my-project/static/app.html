@@ -23,13 +23,21 @@
       --amber: #e8b86d;
       --danger: #e07a8a;
       --shadow: 0 12px 32px rgba(120, 90, 180, .14);
+      --input-bg: #f6f1fc;
+      --ghost-bg: #efe8f8;
+      --composer-bg: #ffffff;
+      --glow-a: rgba(240,168,200,.35);
+      --glow-b: rgba(155,126,217,.28);
+      --st1: linear-gradient(160deg,#efe6ff,#fff);
+      --st2: linear-gradient(160deg,#e4f4ff,#fff);
+      --st3: linear-gradient(160deg,#ffe8f2,#fff);
       --radius: 22px;
     }
     *{box-sizing:border-box}
     html,body{margin:0;min-height:100%;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text);
       background:
-        radial-gradient(900px 500px at 10% -10%, rgba(240,168,200,.35), transparent 55%),
-        radial-gradient(800px 480px at 100% 0%, rgba(155,126,217,.28), transparent 50%),
+        radial-gradient(900px 500px at 10% -10%, var(--glow-a), transparent 55%),
+        radial-gradient(800px 480px at 100% 0%, var(--glow-b), transparent 50%),
         linear-gradient(165deg, var(--bg0), var(--bg1) 45%, var(--bg2));
     }
     .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:0 0 env(safe-area-inset-bottom)}
@@ -63,9 +71,9 @@
 
     .status-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:0 1rem .75rem}
     .status-card{background:var(--card);border-radius:16px;padding:.7rem .55rem;text-align:center;box-shadow:var(--shadow);border:none;cursor:pointer;font:inherit;color:var(--text)}
-    .status-card:nth-child(1){background:linear-gradient(160deg,#efe6ff,#fff)}
-    .status-card:nth-child(2){background:linear-gradient(160deg,#e4f4ff,#fff)}
-    .status-card:nth-child(3){background:linear-gradient(160deg,#ffe8f2,#fff)}
+    .status-card:nth-child(1){background:var(--st1)}
+    .status-card:nth-child(2){background:var(--st2)}
+    .status-card:nth-child(3){background:var(--st3)}
     .status-card .ico{font-size:1.15rem;margin-bottom:.15rem}
     .status-card .label{font-size:.72rem;color:var(--muted)}
     .status-card .val{font-size:.88rem;font-weight:700;color:var(--lilac-deep);margin-top:.15rem}
@@ -73,7 +81,7 @@
     .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .55rem}
     .chip{border:none;background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;font:inherit;font-size:.82rem;cursor:pointer;border-radius:999px;box-shadow:var(--shadow)}
     .composer-wrap{padding:.35rem 1rem .5rem}
-    .composer{display:flex;align-items:center;gap:.45rem;background:#fff;border-radius:999px;padding:.35rem .4rem .35rem .9rem;box-shadow:var(--shadow)}
+    .composer{display:flex;align-items:center;gap:.45rem;background:var(--composer-bg);border-radius:999px;padding:.35rem .4rem .35rem .9rem;box-shadow:var(--shadow)}
     .composer input{flex:1;border:none;background:transparent;color:var(--text);font:inherit;outline:none;padding:.45rem 0}
     .composer input::placeholder{color:var(--muted)}
     .composer button{border:none;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;border-radius:999px;padding:.55rem .95rem;font:inherit;font-weight:600;cursor:pointer}
@@ -83,19 +91,36 @@
     .module-panel h3{margin:0 0 .3rem;font-size:1rem;color:var(--lilac-deep)}
     .module-panel .hint{font-size:.75rem;color:var(--muted);margin:0 0 .5rem;line-height:1.45}
     .module-panel .baseline{font-size:.8rem;line-height:1.55;margin-bottom:.5rem;max-height:6rem;overflow:auto;white-space:pre-wrap}
-    .module-panel textarea{width:100%;min-height:3.4rem;padding:.65rem;border:none;background:#f6f1fc;color:var(--text);font:inherit;resize:vertical;border-radius:14px}
+    .module-panel textarea{width:100%;min-height:3.4rem;padding:.65rem;border:none;background:var(--input-bg);color:var(--text);font:inherit;resize:vertical;border-radius:14px}
+    .module-panel .quick{display:flex;flex-wrap:wrap;gap:.35rem;margin:.45rem 0 .15rem}
+    .module-panel .quick button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.4rem .65rem;border-radius:999px;font:inherit;font-size:.75rem;cursor:pointer}
     .module-panel .row{display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
     .module-panel .row button{border:none;border-radius:999px;padding:.55rem .9rem;font:inherit;cursor:pointer}
-    .module-panel .row .amber{background:linear-gradient(135deg,var(--mint),#4db8a8);color:#fff;font-weight:600}
-    .module-panel .row .ghost{background:#efe8f8;color:var(--lilac-deep)}
+    .module-panel .row .amber{background:linear-gradient(135deg,var(--mint),var(--lilac-deep));color:#fff;font-weight:600}
+    .module-panel .row .ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
+
+    .settings-panel{margin:0 1rem .6rem;padding:.9rem;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);display:none}
+    .settings-panel.open{display:block}
+    .settings-panel h3{margin:0 0 .25rem;font-size:1rem;color:var(--lilac-deep)}
+    .settings-panel .hint{font-size:.75rem;color:var(--muted);margin:0 0 .7rem;line-height:1.45}
+    .theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem}
+    .theme-btn{border:2px solid transparent;background:var(--input-bg);border-radius:16px;padding:.65rem .55rem;cursor:pointer;font:inherit;color:var(--text);text-align:left;display:flex;align-items:center;gap:.55rem}
+    .theme-btn.active{border-color:var(--lilac);box-shadow:0 0 0 1px var(--lilac)}
+    .theme-swatch{width:2.2rem;height:2.2rem;border-radius:12px;flex-shrink:0;background:
+      linear-gradient(135deg,var(--sw0,#ccc) 0 33%,var(--sw1,#999) 33% 66%,var(--sw2,#666) 66%)}
+    .theme-btn .name{font-size:.82rem;font-weight:600;color:var(--lilac-deep)}
+    .theme-btn .sub{font-size:.68rem;color:var(--muted);margin-top:.1rem}
+    .settings-actions{display:flex;gap:.4rem;margin-top:.75rem;flex-wrap:wrap}
+    .settings-actions button{border:none;border-radius:999px;padding:.55rem .9rem;font:inherit;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep)}
 
     .tools{display:flex;gap:.4rem;flex-wrap:wrap;padding:.35rem 1rem 1.1rem}
     .tools button,.tools a{border:none;background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;border-radius:999px;font:inherit;font-size:.8rem;text-decoration:none;box-shadow:var(--shadow);cursor:pointer}
     .err{color:var(--danger);font-size:.82rem;min-height:1.1em;padding:0 1rem}
     .ok{color:var(--mint);font-size:.78rem}
     .hidden{display:none!important}
-    #chatView.hidden + .status-row{display:none}
   </style>
+  <script src="/static/theme.js"></script>
+  <script>LunaTheme.boot();</script>
 </head>
 <body>
   <div class="app">
@@ -137,6 +162,7 @@
       <p class="hint" id="modHint"></p>
       <div class="baseline" id="modBaseline"></div>
       <label class="hint" for="modNote">追記（初回のあとでもOK）</label>
+      <div class="quick" id="modQuick"></div>
       <textarea id="modNote" placeholder="例：時給1200円・週3日 / 欲しいもの / テスト日程…"></textarea>
       <div class="row">
         <button type="button" class="amber" id="modSave">この項目に追記</button>
@@ -146,8 +172,22 @@
       <p class="ok" id="modMsg"></p>
     </div>
 
+    <div id="settingsView" class="settings-panel">
+      <h3>一般設定</h3>
+      <p class="hint">アプリの色テーマはここでいつでも変えられます。ログイン画面にも同じ色が反映されます。</p>
+      <div class="theme-grid" id="themeGrid"></div>
+      <p class="hint" style="margin-top:.9rem">音声（ブラウザ読み上げ）</p>
+      <div class="settings-actions" style="margin-top:.35rem">
+        <button type="button" id="settingsVoiceBtn">音声ON</button>
+      </div>
+      <div class="settings-actions">
+        <button type="button" id="settingsBack">チャットへ</button>
+      </div>
+    </div>
+
     <p class="err" id="err"></p>
     <div class="tools">
+      <button type="button" id="settingsBtn">設定</button>
       <button type="button" id="voiceBtn">🔊 音声ON</button>
       <button type="button" id="morningBtn">朝</button>
       <button type="button" id="eveningBtn">夜</button>
@@ -162,8 +202,13 @@
     let busy = false;
     let luna = null;
     let first = true;
-    let voiceOn = true;
+    let voiceOn = localStorage.getItem("luna_voice") !== "0";
     let currentModule = "health";
+    const QUICK = {
+      health: ["睡眠7時間目標", "水を意識する", "少し疲れた", "調子いい"],
+      money: ["時給を記録", "欲しいものメモ", "今月の支出", "貯金目標"],
+      schedule: ["テスト日程", "バイトシフト", "締切あり", "空き時間"],
+    };
     const dialogueEl = document.getElementById("dialogue");
     const chipsEl = document.getElementById("chips");
     const errEl = document.getElementById("err");
@@ -171,6 +216,14 @@
     const sendBtn = document.getElementById("sendBtn");
     const chatView = document.getElementById("chatView");
     const moduleView = document.getElementById("moduleView");
+    const settingsView = document.getElementById("settingsView");
+
+    function syncVoiceButtons() {
+      const label = voiceOn ? "🔊 音声ON" : "🔇 音声OFF";
+      document.getElementById("voiceBtn").textContent = label;
+      document.getElementById("settingsVoiceBtn").textContent = voiceOn ? "音声ON（タップでOFF）" : "音声OFF（タップでON）";
+      try { localStorage.setItem("luna_voice", voiceOn ? "1" : "0"); } catch (_) {}
+    }
 
     async function api(path, opts = {}) {
       const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
@@ -211,9 +264,21 @@
 
     async function refreshMeta() {
       try {
-        const [brain, state] = await Promise.all([api("/brain/me"), api("/state/me")]);
+        const [brain, state, life] = await Promise.all([
+          api("/brain/me"),
+          api("/state/me"),
+          api("/life/modules"),
+        ]);
         document.getElementById("modePill").textContent = brain.mode || "—";
         document.getElementById("expPill").textContent = "Lv." + (state.current_level || 1) + " · EXP " + (state.total_exp || 0);
+        const map = { schedule: "stSchedule", health: "stHealth", money: "stMoney" };
+        (life.modules || []).forEach((m) => {
+          const el = document.getElementById(map[m.module]);
+          if (!el) return;
+          const n = (m.notes || []).length;
+          const b = Object.keys(m.baseline || {}).length;
+          el.textContent = n || b ? (b + "項目 / +" + n) : "開く";
+        });
       } catch (_) {}
     }
 
@@ -244,17 +309,55 @@
 
     function setView(name) {
       const isChat = name === "chat";
+      const isSettings = name === "settings";
+      const isModule = !isChat && !isSettings;
       chatView.classList.toggle("hidden", !isChat);
-      moduleView.classList.toggle("open", !isChat);
-      if (!isChat) {
+      moduleView.classList.toggle("open", isModule);
+      settingsView.classList.toggle("open", isSettings);
+      if (isModule) {
         currentModule = name;
         loadModule(name);
       }
     }
 
+    function renderThemePicker() {
+      const grid = document.getElementById("themeGrid");
+      const cur = LunaTheme.currentTheme();
+      grid.innerHTML = "";
+      Object.values(LunaTheme.THEMES).forEach((t) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "theme-btn" + (t.id === cur ? " active" : "");
+        b.dataset.theme = t.id;
+        const sw = t.swatch || ["#ccc", "#999", "#666"];
+        b.innerHTML =
+          '<span class="theme-swatch" style="--sw0:' + sw[0] + ";--sw1:" + sw[1] + ";--sw2:" + sw[2] + '"></span>' +
+          '<span><div class="name">' + t.label + '</div><div class="sub">' + (t.id === "lilac" ? "デフォルト" : t.id) + "</div></span>";
+        b.onclick = () => {
+          LunaTheme.applyTheme(t.id);
+          renderThemePicker();
+          if (luna) luna.applyEmotion("cheer", 1200);
+        };
+        grid.appendChild(b);
+      });
+    }
+
     async function loadModule(mod) {
       document.getElementById("modMsg").textContent = "";
       document.getElementById("modNote").value = "";
+      const q = document.getElementById("modQuick");
+      q.innerHTML = "";
+      (QUICK[mod] || []).forEach((label) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = label;
+        b.onclick = () => {
+          const ta = document.getElementById("modNote");
+          ta.value = ta.value ? (ta.value + " / " + label) : label;
+          ta.focus();
+        };
+        q.appendChild(b);
+      });
       try {
         const data = await api("/life/" + mod);
         document.getElementById("modTitle").textContent = data.title_ja + "（追記OK）";
@@ -271,6 +374,13 @@
       t.onclick = () => setView(t.dataset.view);
     });
     document.getElementById("modBack").onclick = () => setView("chat");
+    document.getElementById("settingsBtn").onclick = () => { setView("settings"); renderThemePicker(); syncVoiceButtons(); };
+    document.getElementById("settingsBack").onclick = () => setView("chat");
+    document.getElementById("settingsVoiceBtn").onclick = () => {
+      voiceOn = !voiceOn;
+      syncVoiceButtons();
+      if (!voiceOn) { window.speechSynthesis.cancel(); if (luna) luna.stopLipSync(); }
+    };
     document.getElementById("modSave").onclick = async () => {
       const note = document.getElementById("modNote").value.trim();
       if (!note) return;
@@ -295,9 +405,9 @@
     sendBtn.onclick = () => sendMessage(messageEl.value);
     messageEl.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); sendMessage(messageEl.value); } };
     document.getElementById("logoutBtn").onclick = () => { LunaAuth.clearToken(); LunaAuth.goLogin("/app"); };
-    document.getElementById("voiceBtn").onclick = (ev) => {
+    document.getElementById("voiceBtn").onclick = () => {
       voiceOn = !voiceOn;
-      ev.target.textContent = voiceOn ? "🔊 音声ON" : "🔇 音声OFF";
+      syncVoiceButtons();
       if (!voiceOn) { window.speechSynthesis.cancel(); if (luna) luna.stopLipSync(); }
     };
     document.getElementById("morningBtn").onclick = async () => {
@@ -319,6 +429,7 @@
     (async () => {
       if (!LunaAuth.requireLogin("/app")) return;
       token = LunaAuth.getToken();
+      syncVoiceButtons();
       try {
         const me = await api("/auth/me");
         if (me.is_admin) document.getElementById("adminLink").classList.remove("hidden");
