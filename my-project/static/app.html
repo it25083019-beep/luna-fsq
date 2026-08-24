@@ -3,112 +3,156 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0c1416" />
+  <meta name="theme-color" content="#c9b6e8" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>LUNA</title>
   <link rel="manifest" href="/static/manifest-app.json" />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600&family=Shippori+Mincho:wght@600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg:#0c1416; --panel:#162126; --text:#e8f0ef; --muted:#8aa3a0;
-      --teal:#2ec4b6; --amber:#e8b86d; --border:rgba(46,196,182,.28); --danger:#d96b6b;
+      --bg0: #e8dff7;
+      --bg1: #d4e8f8;
+      --bg2: #f7e6f0;
+      --card: rgba(255,255,255,.88);
+      --text: #4a3b6b;
+      --muted: #8a7aa8;
+      --lilac: #9b7ed9;
+      --lilac-deep: #7b5eb8;
+      --pink: #f0a8c8;
+      --mint: #6ec9b8;
+      --amber: #e8b86d;
+      --danger: #e07a8a;
+      --shadow: 0 12px 32px rgba(120, 90, 180, .14);
+      --radius: 22px;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;height:100%;font-family:"IBM Plex Sans JP",sans-serif;color:var(--text);
-      background:linear-gradient(180deg,#0c1416,#122024 60%,#0a1214)}
-    .app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:0 0 env(safe-area-inset-bottom)}
-    header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid var(--border)}
-    .brand{font-family:"Shippori Mincho",serif;color:var(--amber);font-size:1.2rem}
-    .stats{display:flex;gap:.4rem;flex-wrap:wrap}
-    .pill{font-size:.68rem;border:1px solid var(--border);padding:.2rem .45rem;color:var(--teal);border-radius:999px}
-    .tabs{display:flex;gap:.35rem;padding:.5rem 1rem 0;flex-wrap:wrap}
-    .tab{font:inherit;font-size:.78rem;padding:.4rem .65rem;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
-    .tab.active{border-color:var(--teal);color:var(--text);background:rgba(46,196,182,.12)}
-    .stage-wrap{text-align:center;padding:.35rem 0 0;background:radial-gradient(circle at 50% 20%,rgba(46,196,182,.12),transparent 60%);min-height:220px}
-    .luna-stage{display:inline-block;transform-origin:50% 90%}
-    #lunaSprite{height:200px;max-width:100%;object-fit:contain;transition:opacity .12s ease}
+    html,body{margin:0;min-height:100%;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text);
+      background:
+        radial-gradient(900px 500px at 10% -10%, rgba(240,168,200,.35), transparent 55%),
+        radial-gradient(800px 480px at 100% 0%, rgba(155,126,217,.28), transparent 50%),
+        linear-gradient(165deg, var(--bg0), var(--bg1) 45%, var(--bg2));
+    }
+    .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:0 0 env(safe-area-inset-bottom)}
+    header{display:flex;align-items:flex-start;justify-content:space-between;padding:1rem 1.1rem .35rem}
+    .brand{font-family:"Zen Maru Gothic",sans-serif;font-size:1.55rem;font-weight:700;color:var(--lilac-deep);letter-spacing:.04em}
+    .brand span{display:block;font-size:.78rem;font-weight:400;color:var(--muted);margin-top:.15rem}
+    .stats{display:flex;gap:.35rem;flex-wrap:wrap;justify-content:flex-end}
+    .pill{font-size:.68rem;background:var(--card);border:none;padding:.28rem .55rem;color:var(--lilac-deep);border-radius:999px;box-shadow:var(--shadow)}
+
+    .hero{position:relative;padding:.2rem .8rem 0;min-height:300px}
+    .luna-stage{position:relative;z-index:1;display:flex;justify-content:center;align-items:flex-end;min-height:300px;cursor:pointer;transform-origin:50% 90%}
+    #lunaSprite{height:min(52vh, 360px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 14px 24px rgba(120,90,180,.22));transition:opacity .12s ease;background:transparent}
     #lunaSprite.luna-fade{animation:lunaFade .18s ease}
-    @keyframes lunaFade{from{opacity:.55;transform:scale(.98)}to{opacity:1;transform:none}}
-    .luna-idle{animation:lunaIdle 3.6s ease-in-out infinite}
-    @keyframes lunaIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+    @keyframes lunaFade{from{opacity:.6;transform:scale(.98)}to{opacity:1;transform:none}}
+    .luna-idle{animation:lunaIdle 3.8s ease-in-out infinite}
+    @keyframes lunaIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
     .luna-bob{animation:lunaBob .9s ease}
-    @keyframes lunaBob{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-8px) rotate(-1.5deg)}70%{transform:translateY(-2px) rotate(1deg)}}
+    @keyframes lunaBob{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-10px) rotate(-1.5deg)}70%{transform:translateY(-3px) rotate(1deg)}}
     .luna-wave-motion{animation:lunaWave 1.2s ease}
     @keyframes lunaWave{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg) translateX(-4px)}50%{transform:rotate(5deg) translateX(3px)}75%{transform:rotate(-3deg)}}
     .luna-cheer-motion{animation:lunaCheer .7s ease}
-    @keyframes lunaCheer{0%,100%{transform:scale(1) translateY(0)}40%{transform:scale(1.06) translateY(-10px)}70%{transform:scale(1.02) translateY(-4px)}}
+    @keyframes lunaCheer{0%,100%{transform:scale(1) translateY(0)}40%{transform:scale(1.06) translateY(-12px)}70%{transform:scale(1.02) translateY(-4px)}}
     .luna-talk-motion{animation:lunaTalk .35s ease-in-out infinite}
     @keyframes lunaTalk{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
     .luna-tap-bounce{animation:lunaTap .45s ease}
     @keyframes lunaTap{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
-    .dialogue{margin:.4rem 1rem .5rem;padding:.85rem 1rem;border-left:3px solid var(--amber);background:rgba(0,0,0,.28);min-height:4.2rem;line-height:1.7;white-space:pre-wrap}
-    .module-panel{margin:0 1rem .5rem;padding:.75rem;border:1px solid var(--border);background:rgba(0,0,0,.2);display:none}
+
+    .bubble{margin:-.4rem 1rem .7rem;position:relative;z-index:2;background:var(--card);border-radius:20px;padding:.85rem 1rem;box-shadow:var(--shadow);line-height:1.7;white-space:pre-wrap;min-height:4.2rem}
+    .bubble::before{content:"";position:absolute;top:-8px;left:18%;width:16px;height:16px;background:var(--card);transform:rotate(45deg);border-radius:3px}
+    .bubble .who{display:inline-block;font-size:.68rem;background:var(--lilac);color:#fff;padding:.12rem .5rem;border-radius:999px;margin-bottom:.4rem}
+
+    .status-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:0 1rem .75rem}
+    .status-card{background:var(--card);border-radius:16px;padding:.7rem .55rem;text-align:center;box-shadow:var(--shadow);border:none;cursor:pointer;font:inherit;color:var(--text)}
+    .status-card:nth-child(1){background:linear-gradient(160deg,#efe6ff,#fff)}
+    .status-card:nth-child(2){background:linear-gradient(160deg,#e4f4ff,#fff)}
+    .status-card:nth-child(3){background:linear-gradient(160deg,#ffe8f2,#fff)}
+    .status-card .ico{font-size:1.15rem;margin-bottom:.15rem}
+    .status-card .label{font-size:.72rem;color:var(--muted)}
+    .status-card .val{font-size:.88rem;font-weight:700;color:var(--lilac-deep);margin-top:.15rem}
+
+    .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .55rem}
+    .chip{border:none;background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;font:inherit;font-size:.82rem;cursor:pointer;border-radius:999px;box-shadow:var(--shadow)}
+    .composer-wrap{padding:.35rem 1rem .5rem}
+    .composer{display:flex;align-items:center;gap:.45rem;background:#fff;border-radius:999px;padding:.35rem .4rem .35rem .9rem;box-shadow:var(--shadow)}
+    .composer input{flex:1;border:none;background:transparent;color:var(--text);font:inherit;outline:none;padding:.45rem 0}
+    .composer input::placeholder{color:var(--muted)}
+    .composer button{border:none;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;border-radius:999px;padding:.55rem .95rem;font:inherit;font-weight:600;cursor:pointer}
+
+    .module-panel{margin:0 1rem .6rem;padding:.9rem;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);display:none}
     .module-panel.open{display:block}
-    .module-panel h3{margin:0 0 .35rem;font-size:.9rem;color:var(--amber);font-weight:500}
-    .module-panel .hint{font-size:.72rem;color:var(--muted);margin:0 0 .5rem;line-height:1.4}
-    .module-panel .baseline{font-size:.78rem;color:var(--text);line-height:1.5;margin-bottom:.5rem;max-height:5.5rem;overflow:auto}
-    .module-panel textarea{width:100%;min-height:3.2rem;padding:.5rem;border:1px solid var(--border);background:rgba(0,0,0,.28);color:var(--text);font:inherit;resize:vertical}
-    .module-panel .row{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
-    .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .5rem}
-    .chip{border:1px solid var(--border);background:rgba(46,196,182,.1);color:var(--text);padding:.45rem .7rem;font:inherit;font-size:.85rem;cursor:pointer}
-    .composer{display:grid;grid-template-columns:1fr auto;gap:.4rem;padding:.5rem 1rem 0}
-    input{width:100%;padding:.7rem;border:1px solid var(--border);background:rgba(0,0,0,.28);color:var(--text);font:inherit}
-    button{font:inherit;cursor:pointer;border:1px solid var(--teal);background:rgba(46,196,182,.14);color:var(--text);padding:.55rem .8rem}
-    button.amber{border-color:var(--amber);color:var(--amber);background:rgba(232,184,109,.12)}
-    button.ghost{border-color:var(--muted);background:transparent;color:var(--muted)}
-    .tools{display:flex;gap:.4rem;flex-wrap:wrap;padding:.5rem 1rem 1rem}
+    .module-panel h3{margin:0 0 .3rem;font-size:1rem;color:var(--lilac-deep)}
+    .module-panel .hint{font-size:.75rem;color:var(--muted);margin:0 0 .5rem;line-height:1.45}
+    .module-panel .baseline{font-size:.8rem;line-height:1.55;margin-bottom:.5rem;max-height:6rem;overflow:auto;white-space:pre-wrap}
+    .module-panel textarea{width:100%;min-height:3.4rem;padding:.65rem;border:none;background:#f6f1fc;color:var(--text);font:inherit;resize:vertical;border-radius:14px}
+    .module-panel .row{display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
+    .module-panel .row button{border:none;border-radius:999px;padding:.55rem .9rem;font:inherit;cursor:pointer}
+    .module-panel .row .amber{background:linear-gradient(135deg,var(--mint),#4db8a8);color:#fff;font-weight:600}
+    .module-panel .row .ghost{background:#efe8f8;color:var(--lilac-deep)}
+
+    .tools{display:flex;gap:.4rem;flex-wrap:wrap;padding:.35rem 1rem 1.1rem}
+    .tools button,.tools a{border:none;background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;border-radius:999px;font:inherit;font-size:.8rem;text-decoration:none;box-shadow:var(--shadow);cursor:pointer}
     .err{color:var(--danger);font-size:.82rem;min-height:1.1em;padding:0 1rem}
-    .ok{color:var(--teal);font-size:.78rem}
+    .ok{color:var(--mint);font-size:.78rem}
     .hidden{display:none!important}
+    #chatView.hidden + .status-row{display:none}
   </style>
 </head>
 <body>
   <div class="app">
     <header>
-      <div class="brand">LUNA</div>
+      <div class="brand">LUNA<span id="greetingSub">今日も一緒にいこうね</span></div>
       <div class="stats">
         <span class="pill" id="modePill">—</span>
         <span class="pill" id="expPill">Lv.1</span>
       </div>
     </header>
-    <div class="tabs">
-      <button type="button" class="tab active" data-view="chat">チャット</button>
-      <button type="button" class="tab" data-view="health">健康</button>
-      <button type="button" class="tab" data-view="money">お金</button>
-      <button type="button" class="tab" data-view="schedule">スケジュール</button>
-    </div>
-    <div class="stage-wrap">
+
+    <div class="hero">
       <div class="luna-stage" id="lunaStage">
         <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
       </div>
     </div>
+
     <div id="chatView">
-      <div class="dialogue" id="dialogue">…</div>
+      <div class="bubble" id="dialogueBox">
+        <span class="who">LUNA</span>
+        <div id="dialogue">…</div>
+      </div>
+      <div class="status-row">
+        <button type="button" class="status-card" data-view="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">開く</div></button>
+        <button type="button" class="status-card" data-view="health"><div class="ico">💚</div><div class="label">健康</div><div class="val" id="stHealth">開く</div></button>
+        <button type="button" class="status-card" data-view="money"><div class="ico">👛</div><div class="label">お金</div><div class="val" id="stMoney">開く</div></button>
+      </div>
       <div class="chips" id="chips"></div>
-      <div class="composer">
-        <input id="message" type="text" placeholder="自分の言葉で答える…" autocomplete="off" />
-        <button type="button" class="amber" id="sendBtn">送信</button>
+      <div class="composer-wrap">
+        <div class="composer">
+          <input id="message" type="text" placeholder="LUNAに話しかける…" autocomplete="off" />
+          <button type="button" id="sendBtn">送信</button>
+        </div>
       </div>
     </div>
+
     <div id="moduleView" class="module-panel">
       <h3 id="modTitle">—</h3>
       <p class="hint" id="modHint"></p>
       <div class="baseline" id="modBaseline"></div>
-      <label class="hint" for="modNote">追記（初回質問のあとでもOK）</label>
-      <textarea id="modNote" placeholder="例：時給1200円・週3日 / 欲しいイヤホン1万円 / 水曜3限テスト…"></textarea>
+      <label class="hint" for="modNote">追記（初回のあとでもOK）</label>
+      <textarea id="modNote" placeholder="例：時給1200円・週3日 / 欲しいもの / テスト日程…"></textarea>
       <div class="row">
         <button type="button" class="amber" id="modSave">この項目に追記</button>
-        <button type="button" class="ghost" id="modAsk">AIに相談する</button>
+        <button type="button" class="ghost" id="modAsk">AIに相談</button>
+        <button type="button" class="ghost" id="modBack">チャットへ</button>
       </div>
       <p class="ok" id="modMsg"></p>
     </div>
+
     <p class="err" id="err"></p>
     <div class="tools">
-      <button type="button" class="ghost" id="voiceBtn">🔊 音声ON</button>
-      <button type="button" class="ghost" id="morningBtn">朝</button>
-      <button type="button" class="ghost" id="eveningBtn">夜</button>
-      <a href="/admin" id="adminLink" class="hidden" style="color:var(--teal);align-self:center;font-size:.85rem">Admin</a>
-      <button type="button" class="ghost" id="logoutBtn">ログアウト</button>
+      <button type="button" id="voiceBtn">🔊 音声ON</button>
+      <button type="button" id="morningBtn">朝</button>
+      <button type="button" id="eveningBtn">夜</button>
+      <a href="/admin" id="adminLink" class="hidden">Admin</a>
+      <button type="button" id="logoutBtn">ログアウト</button>
     </div>
   </div>
   <script src="/static/auth-common.js"></script>
@@ -199,7 +243,6 @@
     }
 
     function setView(name) {
-      document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.view === name));
       const isChat = name === "chat";
       chatView.classList.toggle("hidden", !isChat);
       moduleView.classList.toggle("open", !isChat);
@@ -215,7 +258,7 @@
       try {
         const data = await api("/life/" + mod);
         document.getElementById("modTitle").textContent = data.title_ja + "（追記OK）";
-        document.getElementById("modHint").textContent = data.hint_ja + (data.profile_complete ? "" : " ※初回ヒアリング後により使いやすくなります");
+        document.getElementById("modHint").textContent = data.hint_ja;
         const lines = [];
         Object.entries(data.baseline || {}).forEach(([k, v]) => lines.push("・" + k + ": " + v));
         (data.notes || []).slice(-8).forEach((n) => lines.push("＋ " + n.text));
@@ -224,10 +267,10 @@
       } catch (e) { errEl.textContent = e.message; }
     }
 
-    document.querySelectorAll(".tab").forEach((t) => {
+    document.querySelectorAll(".status-card").forEach((t) => {
       t.onclick = () => setView(t.dataset.view);
     });
-
+    document.getElementById("modBack").onclick = () => setView("chat");
     document.getElementById("modSave").onclick = async () => {
       const note = document.getElementById("modNote").value.trim();
       if (!note) return;
@@ -238,7 +281,6 @@
         if (luna) luna.applyEmotion("cheer", 1800);
       } catch (e) { errEl.textContent = e.message; }
     };
-
     document.getElementById("modAsk").onclick = async () => {
       const note = document.getElementById("modNote").value.trim();
       const labels = { health: "健康", money: "お金", schedule: "スケジュール" };
