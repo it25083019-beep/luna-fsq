@@ -41,6 +41,10 @@
     .err{color:var(--danger);font-size:.85rem;margin-top:.75rem;min-height:1.2em;text-align:center}
     .hint{font-size:.75rem;color:var(--muted);line-height:1.5;margin:.55rem 0 0;text-align:center}
     .hidden{display:none!important}
+    #destPanel h2{margin-bottom:.35rem}
+    #destPanel .hint{margin-bottom:.85rem}
+    #destPanel .row{margin-top:.65rem}
+    button.admin{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;font-weight:700;min-width:60%}
   </style>
   <script src="/static/theme.js"></script>
   <script>LunaTheme.boot();</script>
@@ -51,7 +55,7 @@
     <div class="hero">
       <img src="/static/live2d/luna-expressions/luna-wave.png" alt="LUNA" id="heroLuna" />
     </div>
-    <section class="panel">
+    <section class="panel" id="authPanel">
       <h2 id="authTitle">LUNAへようこそ</h2>
       <form id="authForm">
         <label for="email">メールアドレス</label>
@@ -78,20 +82,49 @@
         <span id="backToLoginWrap" class="hidden"> · <button type="button" id="backToLoginBtn" class="linkish">ログインに戻る</button></span>
       </p>
       <p class="err" id="authError"></p>
-      <p class="hint" id="authHint">管理者・ユーザー共通。ログイン後に自動で振り分けます。</p>
+      <p class="hint" id="authHint">管理者・ユーザー共通。ログイン後、行き先を選べます（管理者のみ管理画面）。</p>
       <p class="hint hidden" id="resetDevLink"></p>
+    </section>
+
+    <section class="panel hidden" id="destPanel">
+      <h2>どこへ行きますか？</h2>
+      <p class="hint" id="destHint">管理者アカウントです。アプリで話すか、管理画面を開くか選べます。</p>
+      <div class="row">
+        <button type="button" class="primary" id="goAppBtn">アプリへ（LUNA）</button>
+      </div>
+      <div class="row">
+        <button type="button" class="admin" id="goAdminBtn">管理画面へ</button>
+      </div>
+      <div class="row">
+        <button type="button" class="ghost" id="destLogoutBtn">ログアウト</button>
+      </div>
     </section>
   </div>
   <script src="/static/auth-common.js"></script>
   <script>
     let registerMode = false, forgotMode = false, resetMode = false, busy = false;
     const authForm = document.getElementById("authForm");
+    const authPanel = document.getElementById("authPanel");
+    const destPanel = document.getElementById("destPanel");
     const authTitle = document.getElementById("authTitle");
     const authSubmit = document.getElementById("authSubmit");
     const authError = document.getElementById("authError");
     const authHint = document.getElementById("authHint");
     const resetDevLink = document.getElementById("resetDevLink");
     const heroLuna = document.getElementById("heroLuna");
+
+    function showDestinationPicker(email) {
+      authPanel.classList.add("hidden");
+      destPanel.classList.remove("hidden");
+      document.getElementById("destHint").textContent =
+        (email ? email + " — " : "") + "管理者です。アプリで話すか、管理画面を開くか選べます。";
+      heroLuna.src = "/static/live2d/luna-expressions/luna-cheer.png";
+    }
+
+    function finishLogin(data) {
+      const dest = LunaAuth.redirectAfterLogin(data);
+      if (dest === null) showDestinationPicker(data.email || "");
+    }
 
     function setAuthMode(mode) {
       forgotMode = mode === "forgot";
@@ -128,6 +161,14 @@
     document.getElementById("toggleMode").onclick = () => setAuthMode(registerMode ? "login" : "register");
     document.getElementById("forgotBtn").onclick = () => setAuthMode("forgot");
     document.getElementById("backToLoginBtn").onclick = () => setAuthMode("login");
+    document.getElementById("goAppBtn").onclick = () => LunaAuth.goApp();
+    document.getElementById("goAdminBtn").onclick = () => LunaAuth.goAdmin();
+    document.getElementById("destLogoutBtn").onclick = () => {
+      LunaAuth.clearToken();
+      destPanel.classList.add("hidden");
+      authPanel.classList.remove("hidden");
+      setAuthMode("login");
+    };
 
     authForm.onsubmit = async (ev) => {
       ev.preventDefault();
@@ -160,7 +201,7 @@
         }
         const path = registerMode ? "/auth/register" : "/auth/login";
         const data = await api(path, { method: "POST", body: JSON.stringify({ email, password }) });
-        LunaAuth.redirectAfterLogin(data);
+        finishLogin(data);
       } catch (e) {
         authError.style.color = "var(--danger)";
         authError.textContent = e.message || String(e);
@@ -183,7 +224,7 @@
         const res = await fetch("/auth/me", { headers: { Authorization: "Bearer " + token } });
         if (!res.ok) { LunaAuth.clearToken(); return; }
         const me = await res.json();
-        LunaAuth.redirectAfterLogin({ access_token: token, is_admin: me.is_admin });
+        finishLogin({ access_token: token, is_admin: me.is_admin, email: me.email });
       } catch (_) {
         LunaAuth.clearToken();
       }

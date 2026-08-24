@@ -46,7 +46,7 @@
         <div class="row">
           <button id="refreshBtn" type="button">更新</button>
           <button id="exportBtn" type="button">バックアップJSON</button>
-          <a href="/demo">Demoへ</a>
+          <a href="/app">Appへ</a>
           <button id="logoutBtn" class="ghost" type="button">ログアウト</button>
         </div>
       </div>
@@ -159,7 +159,7 @@
       try {
         const me = await api("/auth/me");
         if (!me.is_admin) {
-          window.location.href = "/demo";
+          window.location.href = "/app";
           return;
         }
         who.textContent = me.email;

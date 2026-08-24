@@ -26,17 +26,40 @@
     LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
   }
 
-  function redirectAfterLogin(data) {
+  const ALLOWED_NEXT = ["/app", "/admin", "/demo", "/live2d", "/luna-3d"];
+
+  /** Resolve post-login URL. Admins are not forced into /admin — default is /app. */
+  function resolvePostLoginUrl(data, opts) {
+    const params = new URLSearchParams(global.location.search);
+    const next = (opts && opts.next) || params.get("next") || "";
+    if (ALLOWED_NEXT.includes(next)) return next;
+    return "/app";
+  }
+
+  /**
+   * Save token and navigate.
+   * opts.forceChoice: if true and admin with no explicit next → caller should show picker (returns null).
+   * Returns destination string, or null when admin should pick App vs Admin.
+   */
+  function redirectAfterLogin(data, opts) {
     setToken(data.access_token);
-    const params = new URLSearchParams(location.search);
-    const next = params.get("next") || "";
-    if (data.is_admin) {
-      global.location.href = "/admin";
-      return;
+    const params = new URLSearchParams(global.location.search);
+    const next = (opts && opts.next) || params.get("next") || "";
+    const forceChoice = opts && opts.forceChoice;
+    if (data.is_admin && forceChoice !== false && !ALLOWED_NEXT.includes(next)) {
+      return null;
     }
-    const allowed = ["/app", "/demo", "/live2d", "/luna-3d"];
-    const safeNext = allowed.includes(next) ? next : "/app";
-    global.location.href = safeNext;
+    const dest = resolvePostLoginUrl(data, opts);
+    global.location.href = dest;
+    return dest;
+  }
+
+  function goApp() {
+    global.location.href = "/app";
+  }
+
+  function goAdmin() {
+    global.location.href = "/admin";
   }
 
   function goLogin(nextPath) {
@@ -72,8 +95,12 @@
     setToken,
     clearToken,
     redirectAfterLogin,
+    resolvePostLoginUrl,
+    goApp,
+    goAdmin,
     goLogin,
     requireLogin,
     formatApiError,
+    ALLOWED_NEXT,
   };
 })(window);
