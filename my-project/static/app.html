@@ -201,6 +201,8 @@
     .add-form .row{display:flex;gap:.4rem;margin-top:.45rem}
     .add-form .row button{flex:1;border:none;border-radius:999px;padding:.55rem;cursor:pointer;font-weight:700}
     .add-form .save{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .add-form .danger{background:rgba(224,122,138,.15);color:var(--danger)}
+    .home-today-item button{border:none;background:rgba(224,122,138,.12);color:var(--danger);padding:.25rem .5rem;border-radius:999px;font-size:.65rem;cursor:pointer;flex-shrink:0}
     .suggest-box{margin:0 1rem 1rem;padding:.75rem;background:linear-gradient(135deg,#efe6ff,#fff);border-radius:16px;border:1px dashed var(--lilac)}
     .suggest-box h4{margin:0 0 .35rem;font-size:.82rem;color:var(--lilac-deep)}
     .suggest-item{display:flex;justify-content:space-between;align-items:center;gap:.4rem;font-size:.75rem;padding:.35rem 0;border-bottom:1px solid rgba(155,126,217,.15)}
@@ -360,7 +362,11 @@
               <option value="weekly">毎週</option>
               <option value="monthly">毎月</option>
             </select>
-            <div class="row"><button type="button" class="save" id="addSaveBtn">保存</button><button type="button" id="addCancelBtn">キャンセル</button></div>
+            <div class="row">
+              <button type="button" class="save" id="addSaveBtn">保存</button>
+              <button type="button" id="addCancelBtn">キャンセル</button>
+              <button type="button" class="danger" id="addDeleteBtn" style="display:none">削除</button>
+            </div>
           </div>
           <div id="dayEventList"></div>
         </div>

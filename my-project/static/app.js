@@ -301,10 +301,18 @@
       row.className = "home-today-item" + (ev.done ? " done" : "");
       row.innerHTML =
         '<span class="t">' +
-        (formatTimeRange(ev)) +
+        formatTimeRange(ev) +
         "</span><span style='flex:1'>" +
         ev.title +
         "</span>";
+      const del = document.createElement("button");
+      del.type = "button";
+      del.textContent = "削除";
+      del.onclick = (e) => {
+        e.stopPropagation();
+        deleteScheduleEvent(ev.id);
+      };
+      row.appendChild(del);
       el.appendChild(row);
     });
   }
@@ -407,6 +415,8 @@
     document.getElementById("addRecurrence").disabled = true;
     document.getElementById("addForm").classList.add("open");
     document.getElementById("addSaveBtn").textContent = "更新";
+    const delBtn = document.getElementById("addDeleteBtn");
+    if (delBtn) delBtn.style.display = "block";
   }
 
   function resetAddForm(keepDate) {
@@ -419,6 +429,8 @@
     document.getElementById("addRecurrence").disabled = false;
     document.getElementById("addDate").value = keepDate || selectedDate || todayIso();
     document.getElementById("addSaveBtn").textContent = "保存";
+    const delBtn = document.getElementById("addDeleteBtn");
+    if (delBtn) delBtn.style.display = "none";
     document.getElementById("addForm").classList.remove("open");
   }
 
@@ -500,10 +512,13 @@
   }
 
   async function deleteScheduleEvent(id) {
+    if (!id) return;
     if (!confirm("この予定を削除しますか？")) return;
     try {
       await api("/schedule/events/" + id, { method: "DELETE" });
+      resetAddForm(selectedDate || todayIso());
       await loadScheduleView();
+      await loadHomeSummary();
     } catch (e) {
       setErr(e.message);
     }
@@ -1177,6 +1192,10 @@
     };
     document.getElementById("addCancelBtn").onclick = () => resetAddForm(selectedDate || todayIso());
     document.getElementById("addSaveBtn").onclick = () => addScheduleEvent();
+    const addDeleteBtn = document.getElementById("addDeleteBtn");
+    if (addDeleteBtn) {
+      addDeleteBtn.onclick = () => deleteScheduleEvent(document.getElementById("editEventId").value);
+    }
     document.getElementById("applySuggestBtn").onclick = () => applySuggestions();
     const dismiss = document.getElementById("dismissSuggestBtn");
     if (dismiss) dismiss.onclick = () => hideSimilarPrompt();
