@@ -3,120 +3,171 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#c9b6e8" />
+  <meta name="theme-color" content="#17115b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>LUNA</title>
+  <title>Future Skill Quest</title>
   <link rel="manifest" href="/static/manifest-app.json" />
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg0: #e8dff7;
-      --bg1: #d4e8f8;
-      --bg2: #f7e6f0;
-      --card: rgba(255,255,255,.88);
-      --text: #4a3b6b;
-      --muted: #8a7aa8;
-      --lilac: #9b7ed9;
-      --lilac-deep: #7b5eb8;
-      --pink: #f0a8c8;
-      --mint: #6ec9b8;
-      --amber: #e8b86d;
-      --danger: #e07a8a;
-      --shadow: 0 12px 32px rgba(120, 90, 180, .14);
-      --input-bg: #f6f1fc;
-      --ghost-bg: #efe8f8;
-      --composer-bg: #ffffff;
-      --glow-a: rgba(240,168,200,.35);
-      --glow-b: rgba(155,126,217,.28);
-      --st1: linear-gradient(160deg,#efe6ff,#fff);
-      --st2: linear-gradient(160deg,#e4f4ff,#fff);
-      --st3: linear-gradient(160deg,#ffe8f2,#fff);
-      --radius: 22px;
+      --bg0:#10153d; --bg1:#16276a; --bg2:#5b36b8;
+      --card:rgba(255,255,255,.96); --text:#22265a; --muted:#717594;
+      --lilac:#4e7cff; --lilac-deep:#8a5cf6; --pink:#ff6fae; --mint:#32c48d; --amber:#ffc857; --danger:#e07a8a;
+      --shadow:0 12px 32px rgba(28,32,91,.18);
+      --input-bg:#eef0ff; --ghost-bg:#e8eaff; --composer-bg:#fff;
+      --glow-a:rgba(94,140,255,.35); --glow-b:rgba(177,92,255,.28);
+      --st1:linear-gradient(160deg,#efe6ff,#fff); --st2:linear-gradient(160deg,#e4f4ff,#fff); --st3:linear-gradient(160deg,#ffe8f2,#fff);
+      --hero-top:#080d34; --hero-mid:#17115b; --nav-bg:rgba(255,255,255,.97);
+      --nav-active:#4e7cff; --nav-idle:#7c819e; --panel-light:#f6f7ff;
+      --radius:22px;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;min-height:100%;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text);
-      background:
-        radial-gradient(900px 500px at 10% -10%, var(--glow-a), transparent 55%),
-        radial-gradient(800px 480px at 100% 0%, var(--glow-b), transparent 50%),
-        linear-gradient(165deg, var(--bg0), var(--bg1) 45%, var(--bg2));
-    }
-    .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:0 0 env(safe-area-inset-bottom)}
-    header{display:flex;align-items:flex-start;justify-content:space-between;padding:1rem 1.1rem .35rem}
-    .brand{font-family:"Zen Maru Gothic",sans-serif;font-size:1.55rem;font-weight:700;color:var(--lilac-deep);letter-spacing:.04em}
-    .brand span{display:block;font-size:.78rem;font-weight:400;color:var(--muted);margin-top:.15rem}
-    .stats{display:flex;gap:.35rem;flex-wrap:wrap;justify-content:flex-end}
-    .pill{font-size:.68rem;background:var(--card);border:none;padding:.28rem .55rem;color:var(--lilac-deep);border-radius:999px;box-shadow:var(--shadow)}
+    html,body{margin:0;min-height:100%;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text);background:var(--panel-light)}
+    button,input,textarea{font:inherit}
+    .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--panel-light);position:relative}
+    .screen{flex:1;overflow-y:auto;padding-bottom:calc(76px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
 
-    .hero{position:relative;padding:.2rem .8rem 0;min-height:300px}
-    .luna-stage{position:relative;z-index:1;display:flex;justify-content:center;align-items:flex-end;min-height:300px;cursor:pointer;transform-origin:50% 90%}
-    #lunaSprite{height:min(52vh, 360px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 14px 24px rgba(120,90,180,.22));transition:opacity .12s ease;background:transparent}
-    #lunaSprite.luna-fade{animation:lunaFade .18s ease}
-    @keyframes lunaFade{from{opacity:.6;transform:scale(.98)}to{opacity:1;transform:none}}
+    /* Home hero */
+    .hero-top{background:linear-gradient(180deg,var(--hero-top) 0%,var(--hero-mid) 26%,var(--panel-light) 26%);padding:1rem 1rem 0;color:#fff}
+    .status-row{display:flex;justify-content:space-between;align-items:center;font-size:.72rem;font-weight:700;opacity:.85;margin-bottom:.35rem}
+    .app-title{display:flex;align-items:center;gap:.65rem;margin-bottom:.85rem}
+    .logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#3ed3ff,var(--lilac-deep));display:grid;place-items:center;font-size:1.35rem;box-shadow:0 10px 25px rgba(78,124,255,.35)}
+    .app-title h1{margin:0;font-size:1.15rem;letter-spacing:.03em}
+    .app-title p{margin:.1rem 0 0;font-size:.72rem;opacity:.78}
+    .user-pill{display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:.28rem .55rem;font-size:.68rem;margin-bottom:.65rem}
+    .char-card{border-radius:24px;padding:1rem;background:linear-gradient(135deg,rgba(80,105,255,.95),rgba(137,88,246,.94));box-shadow:0 18px 45px rgba(28,32,91,.38);position:relative;overflow:hidden;margin-bottom:.85rem}
+    .char-card::after{content:"";position:absolute;width:140px;height:140px;right:-50px;top:-50px;background:rgba(255,255,255,.12);border-radius:50%}
+    .badge{display:inline-flex;align-items:center;gap:.25rem;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:.35rem .6rem;font-size:.68rem;font-weight:700}
+    .char-main{display:grid;grid-template-columns:1fr 108px;gap:.65rem;align-items:end;margin-top:.55rem;position:relative;z-index:1}
+    .char-main .role{font-size:1.35rem;font-weight:800;margin:.15rem 0;color:#fff}
+    .char-main .small{font-size:.72rem;color:rgba(255,255,255,.82);line-height:1.45}
+    .char-thumb{width:108px;height:132px;display:flex;align-items:flex-end;justify-content:center}
+    .char-thumb img{height:128px;width:auto;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(0,0,0,.25))}
+    .exp-wrap{margin-top:.65rem;position:relative;z-index:1}
+    .exp-label{display:flex;justify-content:space-between;font-size:.68rem;font-weight:700;color:#fff;margin-bottom:.35rem}
+    .exp-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden}
+    .exp-bar span{display:block;height:100%;width:40%;background:linear-gradient(90deg,#77f1ff,#fff38d);border-radius:inherit;transition:width .3s ease}
+
+    .content{padding:0 .85rem 1rem}
+    .card{background:var(--card);border-radius:20px;padding:.85rem;margin-bottom:.65rem;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.85)}
+    .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:.55rem;font-size:.95rem;font-weight:800;color:var(--text)}
+    .hint{font-size:.68rem;color:var(--muted);font-weight:700}
+    .classes{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem}
+    .class-btn{border:1px solid #e2e5ff;background:#fff;border-radius:14px;padding:.45rem .25rem;text-align:center;font-weight:800;color:#34385f;cursor:pointer;font-size:.62rem}
+    .class-btn.active{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;transform:translateY(-1px)}
+    .class-icon{display:block;font-size:1.2rem;margin-bottom:.15rem}
+    .skill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem}
+    .skill{background:#fff;border-radius:14px;padding:.45rem .25rem;text-align:center;border:1px solid #e6e8ff;font-size:.62rem}
+    .skill .icon{width:38px;height:38px;margin:0 auto .25rem;border-radius:12px;display:grid;place-items:center;font-size:.95rem;color:#fff}
+    .skill strong{display:block;font-size:.68rem}
+    .skill em{font-style:normal;color:var(--muted);font-size:.58rem;font-weight:700}
+    .cta-btn{width:100%;border:none;border-radius:999px;padding:.75rem;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--mint),#1bb874);cursor:pointer;margin-top:.25rem}
+
+    /* Chat tab */
+    .chat-hero{background:linear-gradient(180deg,#0a1628 0%,#122a3a 55%,var(--panel-light) 100%);padding:1rem 1rem 0;color:#fff;position:relative}
+    .chat-hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 80% 20%,rgba(46,196,182,.15),transparent 50%);pointer-events:none}
+    .chat-brand{text-align:center;position:relative;z-index:1;padding:.35rem 0 .5rem}
+    .chat-brand h2{margin:0;font-family:"Zen Maru Gothic",serif;font-size:1.05rem;letter-spacing:.12em}
+    .chat-brand p{margin:.25rem 0 0;font-size:.68rem;opacity:.75}
+    .chat-stage{display:flex;justify-content:center;min-height:200px;align-items:flex-end;position:relative;z-index:1}
+    #lunaSprite{height:min(38vh,240px);width:auto;object-fit:contain;filter:drop-shadow(0 12px 22px rgba(0,0,0,.35));background:transparent}
     .luna-idle{animation:lunaIdle 3.8s ease-in-out infinite}
     @keyframes lunaIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
     .luna-bob{animation:lunaBob .9s ease}
-    @keyframes lunaBob{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-10px) rotate(-1.5deg)}70%{transform:translateY(-3px) rotate(1deg)}}
+    @keyframes lunaBob{0%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}}
     .luna-wave-motion{animation:lunaWave 1.2s ease}
-    @keyframes lunaWave{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg) translateX(-4px)}50%{transform:rotate(5deg) translateX(3px)}75%{transform:rotate(-3deg)}}
+    @keyframes lunaWave{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg) translateX(-4px)}50%{transform:rotate(5deg)}}
     .luna-cheer-motion{animation:lunaCheer .7s ease}
-    @keyframes lunaCheer{0%,100%{transform:scale(1) translateY(0)}40%{transform:scale(1.06) translateY(-12px)}70%{transform:scale(1.02) translateY(-4px)}}
+    @keyframes lunaCheer{0%,100%{transform:scale(1)}40%{transform:scale(1.06) translateY(-10px)}}
     .luna-talk-motion{animation:lunaTalk .35s ease-in-out infinite}
     @keyframes lunaTalk{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
     .luna-tap-bounce{animation:lunaTap .45s ease}
     @keyframes lunaTap{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+    .bubble{margin:.5rem 1rem .55rem;background:var(--card);border-radius:18px;padding:.75rem .85rem;box-shadow:var(--shadow);line-height:1.65;white-space:pre-wrap;min-height:3.5rem}
+    .bubble .who{display:inline-block;font-size:.62rem;background:var(--lilac);color:#fff;padding:.1rem .45rem;border-radius:999px;margin-bottom:.35rem}
+    .chips{display:flex;flex-wrap:wrap;gap:.35rem;padding:0 1rem .45rem}
+    .chip{border:none;background:var(--card);color:var(--lilac-deep);padding:.45rem .65rem;font-size:.75rem;cursor:pointer;border-radius:999px;box-shadow:var(--shadow)}
+    .composer-wrap{padding:0 1rem .65rem}
+    .composer{display:flex;align-items:center;gap:.4rem;background:var(--composer-bg);border-radius:999px;padding:.3rem .35rem .3rem .85rem;box-shadow:var(--shadow)}
+    .composer input{flex:1;border:none;background:transparent;color:var(--text);outline:none;padding:.4rem 0}
+    .composer button{border:none;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;border-radius:999px;padding:.5rem .85rem;font-weight:700;cursor:pointer}
+    .chat-tools{display:flex;flex-wrap:wrap;gap:.35rem;padding:0 1rem .5rem}
+    .chat-tools button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.4rem .65rem;border-radius:999px;font-size:.72rem;cursor:pointer}
 
-    .bubble{margin:-.4rem 1rem .7rem;position:relative;z-index:2;background:var(--card);border-radius:20px;padding:.85rem 1rem;box-shadow:var(--shadow);line-height:1.7;white-space:pre-wrap;min-height:4.2rem}
-    .bubble::before{content:"";position:absolute;top:-8px;left:18%;width:16px;height:16px;background:var(--card);transform:rotate(45deg);border-radius:3px}
-    .bubble .who{display:inline-block;font-size:.68rem;background:var(--lilac);color:#fff;padding:.12rem .5rem;border-radius:999px;margin-bottom:.4rem}
+    /* Map / Quest */
+    .map-hero{padding:1rem 1rem .5rem;background:linear-gradient(180deg,#1a3a2a,#2d5a45 70%,var(--panel-light))}
+    .map-hero h2{margin:0;color:#fff;font-size:1rem}
+    .map-hero p{margin:.25rem 0 0;color:rgba(255,255,255,.75);font-size:.72rem}
+    .map-strip{margin:.65rem 1rem;padding:1rem .75rem;border-radius:20px;background:linear-gradient(180deg,#87c98a,#4a8f5a);min-height:140px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+    .map-path{position:relative;height:90px}
+    .map-node{position:absolute;text-align:center;font-size:.55rem;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);width:56px;transform:translateX(-50%)}
+    .map-node .dot{width:14px;height:14px;border-radius:50%;background:#fff;margin:0 auto .2rem;border:2px solid var(--amber)}
+    .map-node.locked .dot{background:#888;border-color:#666;opacity:.6}
+    .map-node.current .dot{box-shadow:0 0 0 4px rgba(255,200,87,.5);background:var(--amber)}
+    .quest-item{display:flex;align-items:center;gap:.55rem;padding:.55rem 0;border-bottom:1px solid #eceeff}
+    .quest-item:last-child{border-bottom:none}
+    .quest-icon{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:#fff;font-size:.85rem;flex-shrink:0}
+    .quest-text{flex:1;min-width:0}
+    .quest-text strong{display:block;font-size:.82rem}
+    .quest-text span{font-size:.68rem;color:var(--muted);font-weight:700}
+    .quest-actions{display:flex;gap:.3rem;flex-shrink:0}
+    .quest-actions button{border:none;border-radius:999px;padding:.35rem .55rem;font-size:.65rem;font-weight:700;cursor:pointer}
+    .quest-actions .go{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .quest-actions .done{background:var(--ghost-bg);color:var(--lilac-deep)}
 
-    .status-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:0 1rem .75rem}
-    .status-card{background:var(--card);border-radius:16px;padding:.7rem .55rem;text-align:center;box-shadow:var(--shadow);border:none;cursor:pointer;font:inherit;color:var(--text)}
-    .status-card:nth-child(1){background:var(--st1)}
-    .status-card:nth-child(2){background:var(--st2)}
-    .status-card:nth-child(3){background:var(--st3)}
-    .status-card .ico{font-size:1.15rem;margin-bottom:.15rem}
-    .status-card .label{font-size:.72rem;color:var(--muted)}
-    .status-card .val{font-size:.88rem;font-weight:700;color:var(--lilac-deep);margin-top:.15rem}
+    /* Career */
+    .career-hero{padding:1rem;background:linear-gradient(180deg,#f4efe6,#fff8ef);border-bottom:1px solid #eee}
+    .career-hero h2{margin:0;font-size:1rem;color:#5a4030}
+    .career-hero p{margin:.35rem 0 0;font-size:.72rem;color:#8a7560;line-height:1.5}
+    .route-card{border-radius:18px;padding:.75rem;margin-bottom:.55rem;border:1px solid #eee;background:#fff}
+    .route-card.pink{border-left:4px solid var(--pink)}
+    .route-card.blue{border-left:4px solid var(--lilac)}
+    .route-card.green{border-left:4px solid var(--mint)}
+    .route-card h4{margin:0 0 .25rem;font-size:.88rem}
+    .route-card p{margin:0;font-size:.72rem;color:var(--muted);line-height:1.45}
+    .route-card button{margin-top:.45rem;border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.4rem .7rem;border-radius:999px;font-size:.72rem;font-weight:700;cursor:pointer}
+    .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.65rem}
+    .stat-box{border-radius:14px;padding:.55rem .4rem;text-align:center;color:#fff;font-size:.62rem;font-weight:800}
+    .stat-box strong{display:block;font-size:1rem;margin-top:.15rem}
+    .story-box{background:linear-gradient(135deg,#161d53,#4e2eb4);color:#fff;border-radius:16px;padding:.85rem;font-size:.75rem;line-height:1.6}
 
-    .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .55rem}
-    .chip{border:none;background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;font:inherit;font-size:.82rem;cursor:pointer;border-radius:999px;box-shadow:var(--shadow)}
-    .composer-wrap{padding:.35rem 1rem .5rem}
-    .composer{display:flex;align-items:center;gap:.45rem;background:var(--composer-bg);border-radius:999px;padding:.35rem .4rem .35rem .9rem;box-shadow:var(--shadow)}
-    .composer input{flex:1;border:none;background:transparent;color:var(--text);font:inherit;outline:none;padding:.45rem 0}
-    .composer input::placeholder{color:var(--muted)}
-    .composer button{border:none;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;border-radius:999px;padding:.55rem .95rem;font:inherit;font-weight:600;cursor:pointer}
+    /* My page */
+    .profile-head{display:flex;align-items:center;gap:.75rem;padding:1rem;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .profile-head img{width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(0,0,0,.2))}
+    .profile-head h2{margin:0;font-size:1rem}
+    .profile-head p{margin:.2rem 0 0;font-size:.72rem;opacity:.85}
+    .life-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.65rem}
+    .life-card{border:none;background:var(--card);border-radius:14px;padding:.55rem .35rem;text-align:center;cursor:pointer;box-shadow:var(--shadow);color:var(--text)}
+    .life-card .ico{font-size:1rem}
+    .life-card .label{font-size:.62rem;color:var(--muted)}
+    .life-card .val{font-size:.72rem;font-weight:800;color:var(--lilac-deep);margin-top:.1rem}
+    .theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.4rem}
+    .theme-btn{border:2px solid transparent;background:var(--input-bg);border-radius:14px;padding:.55rem;cursor:pointer;text-align:left;display:flex;align-items:center;gap:.45rem;font-size:.72rem;color:var(--text)}
+    .theme-btn.active{border-color:var(--lilac)}
+    .theme-swatch{width:2rem;height:2rem;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--sw0,#ccc),var(--sw1,#999),var(--sw2,#666))}
+    .row-btns{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.45rem}
+    .row-btns button{border:none;border-radius:999px;padding:.5rem .8rem;font-size:.75rem;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep);font-weight:700}
+    .row-btns button.danger{background:rgba(224,122,138,.15);color:var(--danger)}
 
-    .module-panel{margin:0 1rem .6rem;padding:.9rem;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);display:none}
-    .module-panel.open{display:block}
-    .module-panel h3{margin:0 0 .3rem;font-size:1rem;color:var(--lilac-deep)}
-    .module-panel .hint{font-size:.75rem;color:var(--muted);margin:0 0 .5rem;line-height:1.45}
-    .module-panel .baseline{font-size:.8rem;line-height:1.55;margin-bottom:.5rem;max-height:6rem;overflow:auto;white-space:pre-wrap}
-    .module-panel textarea{width:100%;min-height:3.4rem;padding:.65rem;border:none;background:var(--input-bg);color:var(--text);font:inherit;resize:vertical;border-radius:14px}
-    .module-panel .quick{display:flex;flex-wrap:wrap;gap:.35rem;margin:.45rem 0 .15rem}
-    .module-panel .quick button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.4rem .65rem;border-radius:999px;font:inherit;font-size:.75rem;cursor:pointer}
-    .module-panel .row{display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
-    .module-panel .row button{border:none;border-radius:999px;padding:.55rem .9rem;font:inherit;cursor:pointer}
-    .module-panel .row .amber{background:linear-gradient(135deg,var(--mint),var(--lilac-deep));color:#fff;font-weight:600}
-    .module-panel .row .ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
+    /* Bottom nav */
+    .bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:440px;height:calc(68px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--nav-bg);border-top:1px solid #e7e9fa;display:grid;grid-template-columns:repeat(5,1fr);z-index:50}
+    .nav-item{border:none;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1rem;font-size:.58rem;font-weight:800;color:var(--nav-idle);cursor:pointer;padding:.35rem 0}
+    .nav-item .ico{font-size:1.15rem;line-height:1}
+    .nav-item.active{color:var(--nav-active)}
 
-    .settings-panel{margin:0 1rem .6rem;padding:.9rem;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);display:none}
-    .settings-panel.open{display:block}
-    .settings-panel h3{margin:0 0 .25rem;font-size:1rem;color:var(--lilac-deep)}
-    .settings-panel .hint{font-size:.75rem;color:var(--muted);margin:0 0 .7rem;line-height:1.45}
-    .theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem}
-    .theme-btn{border:2px solid transparent;background:var(--input-bg);border-radius:16px;padding:.65rem .55rem;cursor:pointer;font:inherit;color:var(--text);text-align:left;display:flex;align-items:center;gap:.55rem}
-    .theme-btn.active{border-color:var(--lilac);box-shadow:0 0 0 1px var(--lilac)}
-    .theme-swatch{width:2.2rem;height:2.2rem;border-radius:12px;flex-shrink:0;background:
-      linear-gradient(135deg,var(--sw0,#ccc) 0 33%,var(--sw1,#999) 33% 66%,var(--sw2,#666) 66%)}
-    .theme-btn .name{font-size:.82rem;font-weight:600;color:var(--lilac-deep)}
-    .theme-btn .sub{font-size:.68rem;color:var(--muted);margin-top:.1rem}
-    .settings-actions{display:flex;gap:.4rem;margin-top:.75rem;flex-wrap:wrap}
-    .settings-actions button{border:none;border-radius:999px;padding:.55rem .9rem;font:inherit;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep)}
-
-    .tools{display:flex;gap:.4rem;flex-wrap:wrap;padding:.35rem 1rem 1.1rem}
-    .tools button,.tools a{border:none;background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;border-radius:999px;font:inherit;font-size:.8rem;text-decoration:none;box-shadow:var(--shadow);cursor:pointer}
-    .err{color:var(--danger);font-size:.82rem;min-height:1.1em;padding:0 1rem}
-    .ok{color:var(--mint);font-size:.78rem}
+    /* Overlays */
+    .overlay{position:fixed;inset:0;background:rgba(8,13,52,.45);z-index:80;display:none;align-items:flex-end;justify-content:center}
+    .overlay.open{display:flex}
+    .sheet{width:100%;max-width:440px;max-height:85vh;background:var(--card);border-radius:22px 22px 0 0;padding:1rem;overflow-y:auto;box-shadow:0 -8px 32px rgba(0,0,0,.2)}
+    .sheet h3{margin:0 0 .25rem;color:var(--lilac-deep);font-size:.95rem}
+    .sheet textarea{width:100%;min-height:3.2rem;padding:.6rem;border:none;background:var(--input-bg);border-radius:12px;resize:vertical;margin:.45rem 0}
+    .sheet .quick{display:flex;flex-wrap:wrap;gap:.3rem;margin:.35rem 0}
+    .sheet .quick button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.35rem .55rem;border-radius:999px;font-size:.68rem;cursor:pointer}
+    .sheet .baseline{font-size:.75rem;line-height:1.5;max-height:5rem;overflow:auto;white-space:pre-wrap;margin-bottom:.45rem;color:var(--muted)}
+    .err{color:var(--danger);font-size:.78rem;padding:0 1rem;min-height:1em}
+    .ok{color:var(--mint);font-size:.72rem}
     .hidden{display:none!important}
   </style>
   <script src="/static/theme.js"></script>
@@ -124,323 +175,160 @@
 </head>
 <body>
   <div class="app">
-    <header>
-      <div class="brand">LUNA<span id="greetingSub">今日も一緒にいこうね</span></div>
-      <div class="stats">
-        <span class="pill" id="modePill">—</span>
-        <span class="pill" id="expPill">Lv.1</span>
-      </div>
-    </header>
-
-    <div class="hero">
-      <div class="luna-stage" id="lunaStage">
-        <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
-      </div>
-    </div>
-
-    <div id="chatView">
-      <div class="bubble" id="dialogueBox">
-        <span class="who">LUNA</span>
-        <div id="dialogue">…</div>
-      </div>
-      <div class="status-row">
-        <button type="button" class="status-card" data-view="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">開く</div></button>
-        <button type="button" class="status-card" data-view="health"><div class="ico">💚</div><div class="label">健康</div><div class="val" id="stHealth">開く</div></button>
-        <button type="button" class="status-card" data-view="money"><div class="ico">👛</div><div class="label">お金</div><div class="val" id="stMoney">開く</div></button>
-      </div>
-      <div class="chips" id="chips"></div>
-      <div class="composer-wrap">
-        <div class="composer">
-          <input id="message" type="text" placeholder="LUNAに話しかける…" autocomplete="off" />
-          <button type="button" id="sendBtn">送信</button>
+    <div class="screen">
+      <!-- HOME -->
+      <section id="tab-home" class="tab-panel active">
+        <div class="hero-top">
+          <div class="status-row"><span id="clockLabel">—</span><span>LUNA FSQ</span></div>
+          <div class="app-title">
+            <div class="logo">⚔️</div>
+            <div><h1>Future Skill Quest</h1><p>未来の自分を育てるキャリアRPG</p></div>
+          </div>
+          <span class="user-pill" id="homeUserPill">冒険者</span>
+          <div class="char-card">
+            <span class="badge" id="homeClassBadge">現在のクラス：—</span>
+            <div class="char-main">
+              <div>
+                <div class="role" id="homeRoleName">LUNA</div>
+                <div class="small" id="homeRoleDesc">学習するとEXPを獲得し、クエストで成長できます。</div>
+              </div>
+              <div class="char-thumb"><img id="homeLunaThumb" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" /></div>
+            </div>
+            <div class="exp-wrap">
+              <div class="exp-label"><span id="homeExpLabel">EXP 0 / 100</span><span id="homeLvLabel">Lv.1</span></div>
+              <div class="exp-bar"><span id="homeExpBar"></span></div>
+            </div>
+          </div>
         </div>
-      </div>
+        <div class="content">
+          <div class="card">
+            <div class="section-title"><span>🛡️ クラス選択</span><span class="hint">自分の分身</span></div>
+            <div class="classes" id="classPicker"></div>
+          </div>
+          <div class="card">
+            <div class="section-title"><span>🌳 スキル</span><span class="hint">成長マップ</span></div>
+            <div class="skill-grid" id="skillGrid"></div>
+          </div>
+          <button type="button" class="cta-btn" id="homeQuestCta">学習クエストへ ›</button>
+        </div>
+      </section>
+
+      <!-- CHAT -->
+      <section id="tab-chat" class="tab-panel">
+        <div class="chat-hero">
+          <div class="chat-brand"><h2>✦ LUNA AI COMPANION ✦</h2><p>あなたの味方でいるAIコンパニオン</p></div>
+          <div class="chat-stage" id="lunaStage"><img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" /></div>
+        </div>
+        <div class="bubble"><span class="who">LUNA</span><div id="dialogue">…</div></div>
+        <div class="chips" id="chips"></div>
+        <div class="chat-tools">
+          <button type="button" id="lifeHealthBtn">💚 健康</button>
+          <button type="button" id="lifeMoneyBtn">👛 お金</button>
+          <button type="button" id="lifeScheduleBtn">📅 スケジュール</button>
+          <button type="button" id="morningBtn">朝チェック</button>
+          <button type="button" id="eveningBtn">夜チェック</button>
+        </div>
+        <div class="composer-wrap">
+          <div class="composer">
+            <input id="message" type="text" placeholder="LUNAに話しかける…" autocomplete="off" />
+            <button type="button" id="sendBtn">送信</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- QUEST / MAP -->
+      <section id="tab-quest" class="tab-panel">
+        <div class="map-hero">
+          <h2>🗺️ 学習マップ</h2>
+          <p id="mapRegionLabel">現在のエリア：始まりの平原</p>
+        </div>
+        <div class="map-strip"><div class="map-path" id="mapPath"></div></div>
+        <div class="content">
+          <div class="card">
+            <div class="section-title"><span>✅ 今日のクエスト</span><span class="hint" id="questHint">タップで達成</span></div>
+            <div id="questList"></div>
+            <button type="button" class="cta-btn" id="questChatBtn" style="margin-top:.5rem;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep))">LUNAに相談</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- CAREER -->
+      <section id="tab-career" class="tab-panel">
+        <div class="career-hero">
+          <h2>キミの個性と「好き」からおすすめの進路を見つけよう</h2>
+          <p>性格・強み・好きな科目から、探索ルートを提案します。</p>
+        </div>
+        <div class="content">
+          <div class="stats-row" id="portfolioStats"></div>
+          <div class="card">
+            <div class="section-title"><span>🧭 おすすめの探索ルート</span><button type="button" id="refreshCareerBtn" class="hint" style="border:none;background:none;cursor:pointer;color:var(--lilac)">更新</button></div>
+            <div id="routeList"></div>
+          </div>
+          <div class="card">
+            <div class="section-title"><span>📜 冒険のあらすじ</span></div>
+            <div class="story-box" id="storyBox">読み込み中…</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MY PAGE -->
+      <section id="tab-mypage" class="tab-panel">
+        <div class="profile-head">
+          <img src="/static/live2d/luna-expressions/luna-wave.png" alt="" />
+          <div><h2 id="myName">—</h2><p id="mySub">Lv.1 · EXP 0</p></div>
+        </div>
+        <div class="content" style="padding-top:.85rem">
+          <div class="card">
+            <div class="section-title"><span>💚 ライフモジュール</span></div>
+            <div class="life-grid">
+              <button type="button" class="life-card" data-life="health"><div class="ico">💚</div><div class="label">健康</div><div class="val" id="lifeHealth">開く</div></button>
+              <button type="button" class="life-card" data-life="money"><div class="ico">👛</div><div class="label">お金</div><div class="val" id="lifeMoney">開く</div></button>
+              <button type="button" class="life-card" data-life="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="lifeSchedule">開く</div></button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title"><span>🎨 テーマ</span></div>
+            <div class="theme-grid" id="themeGrid"></div>
+          </div>
+          <div class="card">
+            <div class="section-title"><span>🔊 音声</span></div>
+            <div class="row-btns"><button type="button" id="voiceBtn">音声ON</button></div>
+          </div>
+          <div class="row-btns" style="padding:0 .85rem 1rem">
+            <button type="button" id="adminLink" class="hidden" onclick="location.href='/admin'">管理画面</button>
+            <button type="button" id="logoutBtn" class="danger">ログアウト</button>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <div id="moduleView" class="module-panel">
-      <h3 id="modTitle">—</h3>
-      <p class="hint" id="modHint"></p>
-      <div class="baseline" id="modBaseline"></div>
-      <label class="hint" for="modNote">追記（初回のあとでもOK）</label>
-      <div class="quick" id="modQuick"></div>
-      <textarea id="modNote" placeholder="例：時給1200円・週3日 / 欲しいもの / テスト日程…"></textarea>
-      <div class="row">
-        <button type="button" class="amber" id="modSave">この項目に追記</button>
-        <button type="button" class="ghost" id="modAsk">AIに相談</button>
-        <button type="button" class="ghost" id="modBack">チャットへ</button>
-      </div>
-      <p class="ok" id="modMsg"></p>
-    </div>
+    <nav class="bottom-nav" aria-label="メイン">
+      <button type="button" class="nav-item active" data-tab="home"><span class="ico">🏠</span>ホーム</button>
+      <button type="button" class="nav-item" data-tab="chat"><span class="ico">💬</span>チャット</button>
+      <button type="button" class="nav-item" data-tab="quest"><span class="ico">⚔️</span>クエスト</button>
+      <button type="button" class="nav-item" data-tab="career"><span class="ico">🧭</span>進路</button>
+      <button type="button" class="nav-item" data-tab="mypage"><span class="ico">👤</span>マイページ</button>
+    </nav>
 
-    <div id="settingsView" class="settings-panel">
-      <h3>一般設定</h3>
-      <p class="hint">アプリの色テーマはここでいつでも変えられます。ログイン画面にも同じ色が反映されます。</p>
-      <div class="theme-grid" id="themeGrid"></div>
-      <p class="hint" style="margin-top:.9rem">音声（ブラウザ読み上げ）</p>
-      <div class="settings-actions" style="margin-top:.35rem">
-        <button type="button" id="settingsVoiceBtn">音声ON</button>
-      </div>
-      <div class="settings-actions">
-        <button type="button" id="settingsBack">チャットへ</button>
+    <div class="overlay" id="lifeOverlay">
+      <div class="sheet">
+        <h3 id="modTitle">—</h3>
+        <p class="hint" id="modHint"></p>
+        <div class="baseline" id="modBaseline"></div>
+        <div class="quick" id="modQuick"></div>
+        <textarea id="modNote" placeholder="追記…"></textarea>
+        <div class="row-btns">
+          <button type="button" id="modSave">追記</button>
+          <button type="button" id="modAsk">AIに相談</button>
+          <button type="button" id="modClose">閉じる</button>
+        </div>
+        <p class="ok" id="modMsg"></p>
       </div>
     </div>
-
     <p class="err" id="err"></p>
-    <div class="tools">
-      <button type="button" id="settingsBtn">設定</button>
-      <button type="button" id="voiceBtn">🔊 音声ON</button>
-      <button type="button" id="morningBtn">朝</button>
-      <button type="button" id="eveningBtn">夜</button>
-      <a href="/admin" id="adminLink" class="hidden">Admin</a>
-      <button type="button" id="logoutBtn">ログアウト</button>
-    </div>
   </div>
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
-  <script>
-    let token = LunaAuth.getToken();
-    let busy = false;
-    let luna = null;
-    let first = true;
-    let voiceOn = localStorage.getItem("luna_voice") !== "0";
-    let currentModule = "health";
-    const QUICK = {
-      health: ["睡眠7時間目標", "水を意識する", "少し疲れた", "調子いい"],
-      money: ["時給を記録", "欲しいものメモ", "今月の支出", "貯金目標"],
-      schedule: ["テスト日程", "バイトシフト", "締切あり", "空き時間"],
-    };
-    const dialogueEl = document.getElementById("dialogue");
-    const chipsEl = document.getElementById("chips");
-    const errEl = document.getElementById("err");
-    const messageEl = document.getElementById("message");
-    const sendBtn = document.getElementById("sendBtn");
-    const chatView = document.getElementById("chatView");
-    const moduleView = document.getElementById("moduleView");
-    const settingsView = document.getElementById("settingsView");
-
-    function syncVoiceButtons() {
-      const label = voiceOn ? "🔊 音声ON" : "🔇 音声OFF";
-      document.getElementById("voiceBtn").textContent = label;
-      document.getElementById("settingsVoiceBtn").textContent = voiceOn ? "音声ON（タップでOFF）" : "音声OFF（タップでON）";
-      try { localStorage.setItem("luna_voice", voiceOn ? "1" : "0"); } catch (_) {}
-    }
-
-    async function api(path, opts = {}) {
-      const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
-      if (token) headers.Authorization = "Bearer " + token;
-      const res = await fetch(path, Object.assign({}, opts, { headers }));
-      let data = null;
-      try { data = await res.json(); } catch (_) {}
-      if (!res.ok) throw new Error(LunaAuth.formatApiError(res, data));
-      return data;
-    }
-
-    function speakJa(text) {
-      if (!voiceOn || !window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = "ja-JP";
-      u.rate = 1.0;
-      u.onstart = () => { if (luna) luna.startLipSync(); };
-      u.onend = () => { if (luna) luna.stopLipSync(); };
-      u.onerror = () => { if (luna) luna.stopLipSync(); };
-      window.speechSynthesis.speak(u);
-    }
-
-    function renderChips(list) {
-      chipsEl.innerHTML = "";
-      (list || []).forEach((label) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "chip";
-        b.textContent = label;
-        b.onclick = () => {
-          if (label.includes("自分で入力")) { messageEl.focus(); return; }
-          sendMessage(label);
-        };
-        chipsEl.appendChild(b);
-      });
-    }
-
-    async function refreshMeta() {
-      try {
-        const [brain, state, life] = await Promise.all([
-          api("/brain/me"),
-          api("/state/me"),
-          api("/life/modules"),
-        ]);
-        document.getElementById("modePill").textContent = brain.mode || "—";
-        document.getElementById("expPill").textContent = "Lv." + (state.current_level || 1) + " · EXP " + (state.total_exp || 0);
-        const map = { schedule: "stSchedule", health: "stHealth", money: "stMoney" };
-        (life.modules || []).forEach((m) => {
-          const el = document.getElementById(map[m.module]);
-          if (!el) return;
-          const n = (m.notes || []).length;
-          const b = Object.keys(m.baseline || {}).length;
-          el.textContent = n || b ? (b + "項目 / +" + n) : "開く";
-        });
-      } catch (_) {}
-    }
-
-    async function applyChat(data) {
-      dialogueEl.textContent = data.dialogue || "";
-      renderChips(data.suggested_replies || []);
-      const emo = data.game_state && data.game_state.emotion;
-      if (luna) {
-        if (emo) luna.applyEmotion(emo);
-        else luna.reactToText(data.dialogue || "", { greeting: first, fallback: "happy" });
-      }
-      first = false;
-      speakJa(data.dialogue || "");
-      await refreshMeta();
-    }
-
-    async function sendMessage(text) {
-      const msg = (text || "").trim();
-      if (!msg || busy) return;
-      busy = true; sendBtn.disabled = true; errEl.textContent = ""; messageEl.value = "";
-      if (luna) luna.reactToText(msg, { fallback: "think" });
-      try {
-        const data = await api("/chat", { method: "POST", body: JSON.stringify({ message: msg }) });
-        await applyChat(data);
-      } catch (e) { errEl.textContent = e.message || String(e); }
-      finally { busy = false; sendBtn.disabled = false; }
-    }
-
-    function setView(name) {
-      const isChat = name === "chat";
-      const isSettings = name === "settings";
-      const isModule = !isChat && !isSettings;
-      chatView.classList.toggle("hidden", !isChat);
-      moduleView.classList.toggle("open", isModule);
-      settingsView.classList.toggle("open", isSettings);
-      if (isModule) {
-        currentModule = name;
-        loadModule(name);
-      }
-    }
-
-    function renderThemePicker() {
-      const grid = document.getElementById("themeGrid");
-      const cur = LunaTheme.currentTheme();
-      grid.innerHTML = "";
-      Object.values(LunaTheme.THEMES).forEach((t) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "theme-btn" + (t.id === cur ? " active" : "");
-        b.dataset.theme = t.id;
-        const sw = t.swatch || ["#ccc", "#999", "#666"];
-        b.innerHTML =
-          '<span class="theme-swatch" style="--sw0:' + sw[0] + ";--sw1:" + sw[1] + ";--sw2:" + sw[2] + '"></span>' +
-          '<span><div class="name">' + t.label + '</div><div class="sub">' + (t.id === "lilac" ? "デフォルト" : t.id) + "</div></span>";
-        b.onclick = () => {
-          LunaTheme.applyTheme(t.id);
-          renderThemePicker();
-          if (luna) luna.applyEmotion("cheer", 1200);
-        };
-        grid.appendChild(b);
-      });
-    }
-
-    async function loadModule(mod) {
-      document.getElementById("modMsg").textContent = "";
-      document.getElementById("modNote").value = "";
-      const q = document.getElementById("modQuick");
-      q.innerHTML = "";
-      (QUICK[mod] || []).forEach((label) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.textContent = label;
-        b.onclick = () => {
-          const ta = document.getElementById("modNote");
-          ta.value = ta.value ? (ta.value + " / " + label) : label;
-          ta.focus();
-        };
-        q.appendChild(b);
-      });
-      try {
-        const data = await api("/life/" + mod);
-        document.getElementById("modTitle").textContent = data.title_ja + "（追記OK）";
-        document.getElementById("modHint").textContent = data.hint_ja;
-        const lines = [];
-        Object.entries(data.baseline || {}).forEach(([k, v]) => lines.push("・" + k + ": " + v));
-        (data.notes || []).slice(-8).forEach((n) => lines.push("＋ " + n.text));
-        document.getElementById("modBaseline").textContent = lines.length ? lines.join("\n") : "まだ情報がありません。下に追記してください。";
-        if (luna) luna.applyEmotion(mod === "health" ? "think" : mod === "money" ? "happy" : "wave", 1600);
-      } catch (e) { errEl.textContent = e.message; }
-    }
-
-    document.querySelectorAll(".status-card").forEach((t) => {
-      t.onclick = () => setView(t.dataset.view);
-    });
-    document.getElementById("modBack").onclick = () => setView("chat");
-    document.getElementById("settingsBtn").onclick = () => { setView("settings"); renderThemePicker(); syncVoiceButtons(); };
-    document.getElementById("settingsBack").onclick = () => setView("chat");
-    document.getElementById("settingsVoiceBtn").onclick = () => {
-      voiceOn = !voiceOn;
-      syncVoiceButtons();
-      if (!voiceOn) { window.speechSynthesis.cancel(); if (luna) luna.stopLipSync(); }
-    };
-    document.getElementById("modSave").onclick = async () => {
-      const note = document.getElementById("modNote").value.trim();
-      if (!note) return;
-      try {
-        await api("/life/" + currentModule, { method: "POST", body: JSON.stringify({ note }) });
-        document.getElementById("modMsg").textContent = "追記しました";
-        await loadModule(currentModule);
-        if (luna) luna.applyEmotion("cheer", 1800);
-      } catch (e) { errEl.textContent = e.message; }
-    };
-    document.getElementById("modAsk").onclick = async () => {
-      const note = document.getElementById("modNote").value.trim();
-      const labels = { health: "健康", money: "お金", schedule: "スケジュール" };
-      setView("chat");
-      await sendMessage(
-        note
-          ? ("【" + labels[currentModule] + "】について追記します：" + note + "。アドバイスをお願いします。")
-          : ("【" + labels[currentModule] + "】の状況を確認して、次の一歩を教えてください。")
-      );
-    };
-
-    sendBtn.onclick = () => sendMessage(messageEl.value);
-    messageEl.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); sendMessage(messageEl.value); } };
-    document.getElementById("logoutBtn").onclick = () => { LunaAuth.clearToken(); LunaAuth.goLogin("/app"); };
-    document.getElementById("voiceBtn").onclick = () => {
-      voiceOn = !voiceOn;
-      syncVoiceButtons();
-      if (!voiceOn) { window.speechSynthesis.cancel(); if (luna) luna.stopLipSync(); }
-    };
-    document.getElementById("morningBtn").onclick = async () => {
-      try {
-        const goal = prompt("今日の目標は？", "") || "";
-        await api("/checkin/morning", { method: "POST", body: JSON.stringify({ goal }) });
-        setView("chat");
-        await sendMessage(goal ? ("今日の目標は「" + goal + "」です。朝のチェックインをお願いします。") : "朝のチェックインをお願いします。");
-      } catch (e) { errEl.textContent = e.message; }
-    };
-    document.getElementById("eveningBtn").onclick = async () => {
-      try {
-        await api("/checkin/evening", { method: "POST", body: JSON.stringify({}) });
-        setView("chat");
-        await sendMessage("夜のチェックインをお願いします。");
-      } catch (e) { errEl.textContent = e.message; }
-    };
-
-    (async () => {
-      if (!LunaAuth.requireLogin("/app")) return;
-      token = LunaAuth.getToken();
-      syncVoiceButtons();
-      try {
-        const me = await api("/auth/me");
-        if (me.is_admin) document.getElementById("adminLink").classList.remove("hidden");
-        luna = new LunaAvatar(document.getElementById("lunaSprite"), null, document.getElementById("lunaStage"));
-        const data = await api("/chat/start", { method: "POST", body: JSON.stringify({ message: "" }) });
-        await applyChat(data);
-      } catch (_) {
-        LunaAuth.clearToken();
-        LunaAuth.goLogin("/app");
-      }
-    })();
-  </script>
+  <script src="/static/app.js"></script>
 </body>
 </html>

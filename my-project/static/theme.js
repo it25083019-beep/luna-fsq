@@ -1,7 +1,42 @@
-/** Shared theme presets for LUNA login + app (localStorage: luna_theme) */
+/** Shared theme presets for LUNA / FSQ (localStorage: luna_theme) */
 (function (global) {
   const KEY = "luna_theme";
   const THEMES = {
+    fsq: {
+      id: "fsq",
+      label: "FSQナイト",
+      swatch: ["#10153d", "#4e7cff", "#ffc857"],
+      vars: {
+        "--bg0": "#10153d",
+        "--bg1": "#16276a",
+        "--bg2": "#5b36b8",
+        "--card": "rgba(255,255,255,.96)",
+        "--text": "#22265a",
+        "--muted": "#717594",
+        "--lilac": "#4e7cff",
+        "--lilac-deep": "#8a5cf6",
+        "--pink": "#ff6fae",
+        "--mint": "#32c48d",
+        "--amber": "#ffc857",
+        "--danger": "#e07a8a",
+        "--shadow": "0 12px 32px rgba(28,32,91,.18)",
+        "--input-bg": "#eef0ff",
+        "--ghost-bg": "#e8eaff",
+        "--composer-bg": "#ffffff",
+        "--glow-a": "rgba(94,140,255,.35)",
+        "--glow-b": "rgba(177,92,255,.28)",
+        "--st1": "linear-gradient(160deg,#efe6ff,#fff)",
+        "--st2": "linear-gradient(160deg,#e4f4ff,#fff)",
+        "--st3": "linear-gradient(160deg,#ffe8f2,#fff)",
+        "--hero-top": "#080d34",
+        "--hero-mid": "#17115b",
+        "--nav-bg": "rgba(255,255,255,.97)",
+        "--nav-active": "#4e7cff",
+        "--nav-idle": "#7c819e",
+        "--panel-light": "#f6f7ff",
+      },
+      themeColor: "#17115b",
+    },
     lilac: {
       id: "lilac",
       label: "ライラック",
@@ -28,6 +63,12 @@
         "--st1": "linear-gradient(160deg,#efe6ff,#fff)",
         "--st2": "linear-gradient(160deg,#e4f4ff,#fff)",
         "--st3": "linear-gradient(160deg,#ffe8f2,#fff)",
+        "--hero-top": "#6b5a9a",
+        "--hero-mid": "#9b7ed9",
+        "--nav-bg": "rgba(255,255,255,.96)",
+        "--nav-active": "#7b5eb8",
+        "--nav-idle": "#8a7aa8",
+        "--panel-light": "#faf7ff",
       },
       themeColor: "#c9b6e8",
     },
@@ -57,6 +98,12 @@
         "--st1": "linear-gradient(160deg,#dff8f2,#fff)",
         "--st2": "linear-gradient(160deg,#e4f4ff,#fff)",
         "--st3": "linear-gradient(160deg,#eef8e8,#fff)",
+        "--hero-top": "#1a4a44",
+        "--hero-mid": "#3d8f82",
+        "--nav-bg": "rgba(255,255,255,.96)",
+        "--nav-active": "#3d8f82",
+        "--nav-idle": "#6f8f88",
+        "--panel-light": "#f4fbf9",
       },
       themeColor: "#9fd4c8",
     },
@@ -86,6 +133,12 @@
         "--st1": "linear-gradient(160deg,#ffe8df,#fff)",
         "--st2": "linear-gradient(160deg,#ffeef5,#fff)",
         "--st3": "linear-gradient(160deg,#fff3e0,#fff)",
+        "--hero-top": "#6b3f3f",
+        "--hero-mid": "#d47878",
+        "--nav-bg": "rgba(255,255,255,.96)",
+        "--nav-active": "#d47878",
+        "--nav-idle": "#a88888",
+        "--panel-light": "#fff8f5",
       },
       themeColor: "#f0c0b0",
     },
@@ -115,6 +168,12 @@
         "--st1": "linear-gradient(160deg,#e0ecff,#fff)",
         "--st2": "linear-gradient(160deg,#e8f4ff,#fff)",
         "--st3": "linear-gradient(160deg,#eef0ff,#fff)",
+        "--hero-top": "#1e3a5f",
+        "--hero-mid": "#4a86c0",
+        "--nav-bg": "rgba(255,255,255,.96)",
+        "--nav-active": "#4a86c0",
+        "--nav-idle": "#7a92a8",
+        "--panel-light": "#f5f9ff",
       },
       themeColor: "#a8c8f0",
     },
@@ -144,13 +203,19 @@
         "--st1": "linear-gradient(160deg,#1a2e32,#162126)",
         "--st2": "linear-gradient(160deg,#1a2830,#162126)",
         "--st3": "linear-gradient(160deg,#2a2420,#162126)",
+        "--hero-top": "#0c1416",
+        "--hero-mid": "#122024",
+        "--nav-bg": "rgba(14,20,24,.98)",
+        "--nav-active": "#2ec4b6",
+        "--nav-idle": "#8aa3a0",
+        "--panel-light": "#122024",
       },
       themeColor: "#0c1416",
     },
   };
 
   function applyTheme(id) {
-    const theme = THEMES[id] || THEMES.lilac;
+    const theme = THEMES[id] || THEMES.fsq;
     const root = document.documentElement;
     Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
     root.dataset.theme = theme.id;
@@ -165,9 +230,13 @@
 
   function currentTheme() {
     try {
-      return localStorage.getItem(KEY) || "lilac";
+      const saved = localStorage.getItem(KEY);
+      if (saved && THEMES[saved]) return saved;
+      // migrate old default lilac → fsq for design-aligned app
+      if (!saved) return "fsq";
+      return saved;
     } catch (_) {
-      return "lilac";
+      return "fsq";
     }
   }
 

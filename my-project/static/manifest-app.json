@@ -1,10 +1,10 @@
 {
-  "name": "LUNA FSQ",
-  "short_name": "LUNA",
+  "name": "Future Skill Quest",
+  "short_name": "FSQ",
   "start_url": "/app",
   "display": "standalone",
-  "background_color": "#e8dff7",
-  "theme_color": "#c9b6e8",
+  "background_color": "#10153d",
+  "theme_color": "#17115b",
   "icons": [
     {
       "src": "/static/live2d/luna-expressions/luna-neutral.png",

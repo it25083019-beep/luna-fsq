@@ -6,22 +6,30 @@ Character: **2D sprites now**. 3D / Live2D later (do not block).
 
 | Surface | Status |
 |---------|--------|
-| Web app `/app` | Login → 2D LUNA + chat + check-in + life modules |
-| Web `/login` | Shared admin/user gate |
-| Admin `/admin` | User list, reset password |
-| Theme settings | `/app` → 設定 — lilac / mint / peach / sky / night (saved locally, also on login) |
+| Web app `/app` | **5-tab FSQ shell** — Home / Chat / Quest map / Career / My Page (design-demo aligned) |
+| Web `/login` | Shared login + admin App vs Admin picker |
+| Admin `/admin` | User list, reset password (opt-in only) |
+| Theme settings | My Page — FSQ Night default + pastel presets |
 | Flutter `luna_flutter/` | Source ready; needs Flutter SDK install |
+
+## Test flow (Render)
+
+1. https://luna-fsq.onrender.com/login — log in  
+2. Admin: choose **アプリへ** (not forced into admin)  
+3. https://luna-fsq.onrender.com/app — switch bottom tabs  
+4. Chat tab: LUNA dialogue + life modules overlay  
+5. My Page: theme, voice, admin link (admin only)
+
+Local: http://127.0.0.1:8006/app
 
 ## Next
 
-1. Install Flutter SDK → `flutter create .` in `luna_flutter/` → run on phone
-2. SMTP on Render (`SMTP_HOST` …) so forgot-password emails work in production
-3. Push notifications (Flutter + backend)
-4. Deeper life calculators (wage / sleep streak / calendar sync)
-5. Artist Live2D PSD or static `.glb` → drop into existing viewers
+1. Flutter SDK → run `luna_flutter/` on phone  
+2. SMTP on Render for forgot-password email  
+3. Push notifications  
+4. Illustrated map assets (replace CSS map strip)  
+5. Live2D / 3D when art is ready
 
-## URLs
+## Design reference
 
-- Production app: https://luna-fsq.onrender.com/app
-- Login: https://luna-fsq.onrender.com/login
-- Local: http://127.0.0.1:8006/app
+Mockups: [`docs/design-demo/`](design-demo/)
