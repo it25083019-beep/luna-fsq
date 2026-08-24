@@ -554,6 +554,7 @@ def schedule_update(event_id: str, req: ScheduleEventUpdate, current: User = Dep
             event_end_time=req.end_time,
             note=req.note,
             done=req.done,
+            scope=req.scope or "this",
         )
     except ValueError as e:
         raise HTTPException(status_code=404 if "not found" in str(e) else 400, detail=str(e))
@@ -577,12 +578,16 @@ def schedule_complete(
 
 
 @app.delete("/schedule/events/{event_id}")
-def schedule_delete(event_id: str, current: User = Depends(get_current_user)):
+def schedule_delete(
+    event_id: str,
+    scope: str = "this",
+    current: User = Depends(get_current_user),
+):
     brain = load_user_brain(current.public_id)
     try:
-        delete_event(brain, event_id)
+        delete_event(brain, event_id, scope=scope or "this")
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404 if "not found" in str(e) else 400, detail=str(e))
     save_user_brain(current.public_id, brain)
     return {"ok": True}
 

@@ -76,6 +76,17 @@ def _existing_keys(events: List[Dict[str, Any]]) -> Set[Tuple[str, str]]:
     return {(e.get("date", ""), e.get("title", "")) for e in events}
 
 
+def _occupied_recurrence_dates(events: List[Dict[str, Any]]) -> Set[Tuple[str, str]]:
+    """(recurrence_id, date) already covered by a stored exception/event."""
+    out: Set[Tuple[str, str]] = set()
+    for e in events:
+        rid = e.get("recurrence_id")
+        ds = e.get("date")
+        if rid and ds:
+            out.add((rid, ds))
+    return out
+
+
 def _purge_legacy_recurring_seeds(user: Dict[str, Any]) -> None:
     """Remove auto-seeded first-day copies of recurring templates.
 
@@ -214,7 +225,9 @@ def expand_recurring_templates(
     """Materialize upcoming instances from recurring templates."""
     today = today or date.today()
     end = today + timedelta(days=horizon_days)
-    existing = _existing_keys(_events_store(user))
+    stored = _events_store(user)
+    existing = _existing_keys(stored)
+    occupied = _occupied_recurrence_dates(stored)
     generated: List[Dict[str, Any]] = []
 
     for tpl in _recurring_store(user):
@@ -270,7 +283,11 @@ def expand_recurring_templates(
                         cursor += timedelta(days=1)
                         continue
                 key = (ds, title)
-                if ds not in cancelled and key not in existing:
+                if (
+                    ds not in cancelled
+                    and key not in existing
+                    and (tpl_id, ds) not in occupied
+                ):
                     generated.append(
                         {
                             "id": _virtual_id(tpl_id, ds),
@@ -303,6 +320,20 @@ def _all_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> List[
     _purge_legacy_recurring_seeds(user)
     _collapse_duplicate_recurring_series(user)
     stored = list(_events_store(user))
+    # Deduplicate accidental same-day copies (same date + title).
+    deduped: List[Dict[str, Any]] = []
+    seen_keys: Set[Tuple[str, str]] = set()
+    for e in sorted(stored, key=lambda x: (0 if x.get("exception") else 1, x.get("updated_at") or x.get("created_at") or "")):
+        key = (e.get("date") or "", (e.get("title") or "").strip())
+        if key[0] and key[1] and key in seen_keys:
+            continue
+        if key[0] and key[1]:
+            seen_keys.add(key)
+        deduped.append(e)
+    if len(deduped) != len(stored):
+        user["life_modules"]["schedule"]["structured"]["events"] = deduped
+        user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+        stored = deduped
     today = date.today()
     if on_date:
         try:
@@ -478,6 +509,123 @@ def add_event(
     return ev
 
 
+def _resolve_event_template_id(user: Dict[str, Any], event_id: str) -> Optional[str]:
+    parsed = _parse_virtual_id(event_id)
+    if parsed:
+        return parsed[0]
+    for e in _events_store(user):
+        if e.get("id") == event_id and e.get("recurrence_id"):
+            return e.get("recurrence_id")
+    return None
+
+
+def _update_recurring_template(
+    user: Dict[str, Any],
+    tpl_id: str,
+    *,
+    title: Optional[str] = None,
+    event_date: Optional[str] = None,
+    event_time: Optional[str] = None,
+    event_end_time: Optional[str] = None,
+    note: Optional[str] = None,
+) -> Dict[str, Any]:
+    tpl = next((t for t in _recurring_store(user) if t.get("id") == tpl_id), None)
+    if not tpl or not tpl.get("active", True):
+        raise ValueError("event not found")
+
+    if title is not None:
+        text = title.strip()
+        if not text:
+            raise ValueError("title is required")
+        tpl["title"] = text[:200]
+    if event_time is not None:
+        tpl["time"] = _norm_time(event_time)
+    if event_end_time is not None:
+        tpl["end_time"] = _norm_time(event_end_time)
+    _check_range(tpl.get("time"), tpl.get("end_time"))
+    if note is not None:
+        tpl["note"] = (note or "").strip()[:500] or None
+    if event_date is not None:
+        try:
+            start = _parse_date(event_date)
+        except ValueError as err:
+            raise ValueError("invalid date (YYYY-MM-DD)") from err
+        tpl["start_date"] = event_date[:10]
+        tpl["weekday"] = start.weekday()
+        tpl["day_of_month"] = start.day
+        # Series moved — clear one-off cancellations/exceptions tied to old dates.
+        tpl["cancelled_dates"] = []
+
+    # Drop prior one-day exceptions so the updated series regenerates cleanly.
+    store = _events_store(user)
+    user["life_modules"]["schedule"]["structured"]["events"] = [
+        e for e in store if e.get("recurrence_id") != tpl_id
+    ]
+    user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+    ds = tpl.get("start_date") or date.today().isoformat()
+    return {
+        "id": _virtual_id(tpl_id, ds),
+        "title": tpl["title"],
+        "date": ds,
+        "time": tpl.get("time"),
+        "end_time": tpl.get("end_time"),
+        "note": tpl.get("note"),
+        "done": False,
+        "recurrence_id": tpl_id,
+        "recurrence": tpl.get("recurrence"),
+        "is_generated": True,
+        "scope": "all",
+        "created_at": tpl.get("created_at"),
+    }
+
+
+def _find_exception(user: Dict[str, Any], tpl_id: str, event_date: str) -> Optional[Dict[str, Any]]:
+    ds = event_date[:10]
+    for e in _events_store(user):
+        if e.get("recurrence_id") == tpl_id and e.get("date") == ds:
+            return e
+    return None
+
+
+def _materialize_exception(
+    user: Dict[str, Any],
+    tpl: Dict[str, Any],
+    event_date: str,
+    *,
+    done: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """Create or reuse a one-day exception for a recurring template."""
+    tpl_id = tpl["id"]
+    existing = _find_exception(user, tpl_id, event_date)
+    if existing:
+        if done is not None:
+            existing["done"] = bool(done)
+            existing["completed_at"] = _utcnow_iso() if done else None
+        existing["exception"] = True
+        existing["recurrence"] = tpl.get("recurrence")
+        existing["updated_at"] = _utcnow_iso()
+        return existing
+    ev = {
+        "id": uuid.uuid4().hex[:12],
+        "title": tpl["title"],
+        "date": event_date[:10],
+        "time": tpl.get("time"),
+        "end_time": tpl.get("end_time"),
+        "note": tpl.get("note"),
+        "done": bool(done) if done is not None else False,
+        "completed_at": _utcnow_iso() if done else None,
+        "created_at": _utcnow_iso(),
+        "recurrence_id": tpl_id,
+        "recurrence": tpl.get("recurrence"),
+        "exception": True,
+    }
+    store = _events_store(user)
+    store.append(ev)
+    if len(store) > 200:
+        del store[:-200]
+    return ev
+
+
 def update_event(
     user: Dict[str, Any],
     event_id: str,
@@ -488,30 +636,39 @@ def update_event(
     event_end_time: Optional[str] = None,
     note: Optional[str] = None,
     done: Optional[bool] = None,
+    scope: str = "this",
 ) -> Dict[str, Any]:
-    """Update a stored event. Virtual recurring instances are materialized first."""
+    """Update an event.
+
+    scope='this' → only this occurrence (exception).
+    scope='all'  → update the whole recurring series template.
+    """
     _purge_legacy_recurring_seeds(user)
+    scope = (scope or "this").lower()
+    if scope not in ("this", "all"):
+        raise ValueError("scope must be this or all")
+
+    tpl_id = _resolve_event_template_id(user, event_id)
+    if scope == "all":
+        if not tpl_id:
+            raise ValueError("not a recurring event")
+        return _update_recurring_template(
+            user,
+            tpl_id,
+            title=title,
+            event_date=event_date,
+            event_time=event_time,
+            event_end_time=event_end_time,
+            note=note,
+        )
+
     parsed = _parse_virtual_id(event_id)
     if parsed:
-        # Materialize as a real editable exception (without creating recurrence again)
-        tpl_id, event_date_v = parsed
-        tpl = next((t for t in _recurring_store(user) if t.get("id") == tpl_id), None)
+        tpl_id_v, event_date_v = parsed
+        tpl = next((t for t in _recurring_store(user) if t.get("id") == tpl_id_v), None)
         if not tpl:
             raise ValueError("event not found")
-        ev = {
-            "id": uuid.uuid4().hex[:12],
-            "title": tpl["title"],
-            "date": event_date_v,
-            "time": tpl.get("time"),
-            "end_time": tpl.get("end_time"),
-            "note": tpl.get("note"),
-            "done": False,
-            "created_at": _utcnow_iso(),
-            "recurrence_id": tpl_id,
-            "recurrence": tpl.get("recurrence"),
-            "exception": True,
-        }
-        _events_store(user).append(ev)
+        ev = _materialize_exception(user, tpl, event_date_v)
         event_id = ev["id"]
 
     for e in _events_store(user):
@@ -527,7 +684,11 @@ def update_event(
                 _parse_date(event_date)
             except ValueError as err:
                 raise ValueError("invalid date (YYYY-MM-DD)") from err
+            old_date = e.get("date")
             e["date"] = event_date[:10]
+            if e.get("recurrence_id") and old_date and old_date != e["date"]:
+                # Prevent the series from regenerating the old day.
+                _cancel_template_date(user, e["recurrence_id"], old_date)
         if event_time is not None:
             e["time"] = _norm_time(event_time)
         if event_end_time is not None:
@@ -554,25 +715,7 @@ def complete_event(user: Dict[str, Any], event_id: str, done: bool = True) -> Di
         tpl = next((t for t in _recurring_store(user) if t.get("id") == tpl_id), None)
         if not tpl:
             raise ValueError("event not found")
-        # Materialize one-day exception only — do not create a new recurring series.
-        ev = {
-            "id": uuid.uuid4().hex[:12],
-            "title": tpl["title"],
-            "date": event_date,
-            "time": tpl.get("time"),
-            "end_time": tpl.get("end_time"),
-            "note": tpl.get("note"),
-            "done": bool(done),
-            "completed_at": _utcnow_iso() if done else None,
-            "created_at": _utcnow_iso(),
-            "recurrence_id": tpl_id,
-            "recurrence": tpl.get("recurrence"),
-            "exception": True,
-        }
-        store = _events_store(user)
-        store.append(ev)
-        if len(store) > 200:
-            del store[:-200]
+        ev = _materialize_exception(user, tpl, event_date, done=done)
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
         return ev
 
@@ -587,18 +730,43 @@ def complete_event(user: Dict[str, Any], event_id: str, done: bool = True) -> Di
     raise ValueError("event not found")
 
 
-def delete_event(user: Dict[str, Any], event_id: str) -> None:
+def delete_event(user: Dict[str, Any], event_id: str, *, scope: str = "this") -> None:
     _purge_legacy_recurring_seeds(user)
+    scope = (scope or "this").lower()
+    if scope not in ("this", "all"):
+        raise ValueError("scope must be this or all")
+
+    tpl_id = _resolve_event_template_id(user, event_id)
+    if scope == "all":
+        if not tpl_id:
+            # Fall back to deleting the single stored event.
+            store = _events_store(user)
+            user["life_modules"]["schedule"]["structured"]["events"] = [
+                e for e in store if e.get("id") != event_id
+            ]
+            user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+            return
+        templates = _recurring_store(user)
+        for t in templates:
+            if t.get("id") == tpl_id:
+                t["active"] = False
+        store = _events_store(user)
+        user["life_modules"]["schedule"]["structured"]["events"] = [
+            e for e in store if e.get("recurrence_id") != tpl_id
+        ]
+        user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+        return
+
     parsed = _parse_virtual_id(event_id)
     if parsed:
-        tpl_id, event_date = parsed
+        tpl_id_v, event_date = parsed
         # Cancel only this occurrence — keep the rest of the series.
-        _cancel_template_date(user, tpl_id, event_date)
+        _cancel_template_date(user, tpl_id_v, event_date)
         store = _events_store(user)
         user["life_modules"]["schedule"]["structured"]["events"] = [
             e
             for e in store
-            if not (e.get("recurrence_id") == tpl_id and e.get("date") == event_date)
+            if not (e.get("recurrence_id") == tpl_id_v and e.get("date") == event_date)
         ]
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
         return
@@ -819,11 +987,12 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
         (sched.get("today_open") or []) + (sched.get("today_done") or []),
         key=lambda e: (e.get("time") or "99:99", e.get("title") or ""),
     )
+    today_open_n = len(sched.get("today_open") or [])
     return {
         "schedule": {
-            "open_count": sched["open_count"],
-            "today_open": len(sched["today_open"]),
-            "label": str(sched["open_count"]) + "件のToDo" if sched["open_count"] else "予定なし",
+            "open_count": today_open_n,
+            "today_open": today_open_n,
+            "label": ("今日" + str(today_open_n) + "件") if today_open_n else "今日の予定なし",
             "today_items": today_items,
         },
         "health": {"score": score, "label": "良好 " + str(score)},

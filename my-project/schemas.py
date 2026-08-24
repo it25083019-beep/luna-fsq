@@ -157,6 +157,10 @@ class ScheduleEventUpdate(BaseModel):
     end_time: Optional[str] = Field(default=None, max_length=5, description="end HH:MM")
     note: Optional[str] = Field(default=None, max_length=500)
     done: Optional[bool] = None
+    scope: Optional[str] = Field(
+        default="this",
+        description="this = only this occurrence; all = whole recurring series",
+    )
 
 
 class ScheduleEventComplete(BaseModel):

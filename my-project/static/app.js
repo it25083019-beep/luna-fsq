@@ -427,6 +427,7 @@
 
   function openEditEvent(ev) {
     document.getElementById("editEventId").value = ev.id || "";
+    document.getElementById("editRecurrenceId").value = ev.recurrence_id || "";
     document.getElementById("addTitle").value = ev.title || "";
     document.getElementById("addDate").value = ev.date || selectedDate;
     document.getElementById("addTime").value = ev.time || "";
@@ -440,6 +441,7 @@
 
   function resetAddForm(keepDate) {
     document.getElementById("editEventId").value = "";
+    document.getElementById("editRecurrenceId").value = "";
     document.getElementById("addTitle").value = "";
     document.getElementById("addTime").value = "";
     document.getElementById("addEndTime").value = "";
@@ -533,9 +535,28 @@
 
   async function deleteScheduleEvent(id) {
     if (!id) return;
-    if (!confirm("この予定を削除しますか？")) return;
+    const ev = (allScheduleEvents || []).find((e) => e.id === id);
+    const isRecurring = !!(ev && (ev.recurrence_id || ev.recurrence || String(id).startsWith("rec-")));
+    let scope = "this";
+    if (isRecurring) {
+      const delAll = confirm(
+        "繰り返し予定です。\n\n自動で入っているすべての日付も削除しますか？\n\nOK = すべて削除\nキャンセル = この日だけ削除"
+      );
+      // If user cancels the confirm entirely we still need a second confirm for "this day"?
+      // Browser confirm: OK=all, Cancel=this day only — but Cancel also means "don't delete all".
+      // Use a clearer two-step:
+      if (delAll) {
+        if (!confirm("本当にすべての繰り返し予定を削除しますか？")) return;
+        scope = "all";
+      } else {
+        if (!confirm("この日の予定だけ削除しますか？")) return;
+        scope = "this";
+      }
+    } else {
+      if (!confirm("この予定を削除しますか？")) return;
+    }
     try {
-      await api("/schedule/events/" + id, { method: "DELETE" });
+      await api("/schedule/events/" + id + "?scope=" + encodeURIComponent(scope), { method: "DELETE" });
       resetAddForm(selectedDate || todayIso());
       await loadScheduleView();
       await loadHomeSummary();
@@ -574,9 +595,26 @@
     }
     try {
       if (editId) {
+        const recurrenceId = document.getElementById("editRecurrenceId").value;
+        const isRecurring = !!(recurrenceId || String(editId).startsWith("rec-"));
+        let scope = "this";
+        if (isRecurring) {
+          // OK = update whole series, Cancel = this day only
+          const editAll = confirm(
+            "繰り返し予定です。\n\n自動で入っているすべての日付も変更しますか？\n\nOK = すべて変更\nキャンセル = この日だけ変更"
+          );
+          scope = editAll ? "all" : "this";
+        }
         await api("/schedule/events/" + editId, {
           method: "PATCH",
-          body: JSON.stringify({ title, date, time: normTime || null, end_time: normEndTime || null, note: note || null }),
+          body: JSON.stringify({
+            title,
+            date,
+            time: normTime || null,
+            end_time: normEndTime || null,
+            note: note || null,
+            scope,
+          }),
         });
         selectedDate = date;
         resetAddForm(date);
