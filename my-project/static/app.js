@@ -288,19 +288,33 @@
     return "終日";
   }
 
-  function attachSwipeDelete(row, toggleOpen) {
+  function attachSwipeDelete(row, onDelete) {
     let startX = 0;
     let tracking = false;
-    row.addEventListener("touchstart", (e) => {
-      startX = e.touches[0].clientX;
-      tracking = true;
-    }, { passive: true });
+    let locked = false;
+    row.addEventListener(
+      "touchstart",
+      (e) => {
+        startX = e.touches[0].clientX;
+        tracking = true;
+      },
+      { passive: true }
+    );
     row.addEventListener("touchend", (e) => {
       if (!tracking) return;
       const dx = e.changedTouches[0].clientX - startX;
-      if (dx < -36) toggleOpen(true);
-      if (dx > 24) toggleOpen(false);
       tracking = false;
+      // swipe left -> delete (per-item)
+      if (dx < -48 && !locked) {
+        locked = true;
+        try {
+          onDelete && onDelete();
+        } finally {
+          setTimeout(() => {
+            locked = false;
+          }, 900);
+        }
+      }
     });
   }
 
@@ -321,17 +335,8 @@
         "</span><span style='flex:1'>" +
         ev.title +
         "</span>";
-      const del = document.createElement("button");
-      del.type = "button";
-      del.className = "item-delete";
-      del.setAttribute("aria-label", "delete event");
-      del.textContent = "×";
-      del.onclick = (e) => {
-        e.stopPropagation();
-        deleteScheduleEvent(ev.id);
-      };
-      row.appendChild(del);
-      attachSwipeDelete(row, (open) => row.classList.toggle("swiped", open));
+      // swipe left to delete (no delete button)
+      attachSwipeDelete(row, () => deleteScheduleEvent(ev.id));
       el.appendChild(row);
     });
   }
@@ -396,8 +401,6 @@
       return;
     }
     items.forEach((ev) => {
-      const wrap = document.createElement("div");
-      wrap.className = "todo-row-wrap";
       const row = document.createElement("div");
       row.className = "todo-row" + (ev.done ? " done" : "");
       const time = ev.time || ev.end_time ? formatTimeRange(ev) + " · " : "";
@@ -413,18 +416,12 @@
       const editBtn = document.createElement("button");
       editBtn.textContent = "編集";
       editBtn.onclick = () => openEditEvent(ev);
-      const delBtn = document.createElement("button");
-      delBtn.className = "todo-row-delete";
-      delBtn.setAttribute("aria-label", "delete event");
-      delBtn.textContent = "×";
-      delBtn.onclick = () => deleteScheduleEvent(ev.id);
       acts.appendChild(doneBtn);
       acts.appendChild(editBtn);
       row.appendChild(acts);
-      wrap.appendChild(delBtn);
-      wrap.appendChild(row);
-      attachSwipeDelete(row, (open) => row.classList.toggle("swiped", open));
-      el.appendChild(wrap);
+      // swipe left to delete (no delete button)
+      attachSwipeDelete(row, () => deleteScheduleEvent(ev.id));
+      el.appendChild(row);
     });
   }
 
