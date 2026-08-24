@@ -102,7 +102,16 @@
   }
 
   function closeSubview(name) {
-    document.getElementById("sub-" + name).classList.add("hidden");
+    const el = document.getElementById("sub-" + name);
+    if (el) el.classList.add("hidden");
+  }
+
+  function closeAllSubviews() {
+    ["schedule", "health", "money"].forEach(closeSubview);
+  }
+
+  function setNavActive(name) {
+    document.querySelectorAll(".nav-item").forEach((n) => n.classList.toggle("active", n.dataset.nav === name));
   }
 
   function setLunaView(view) {
@@ -142,11 +151,19 @@
 
   function switchTab(name) {
     currentTab = name;
+    setNavActive(name);
+    if (name === "health" || name === "money") {
+      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+      document.getElementById("tab-luna").classList.add("active");
+      closeAllSubviews();
+      openSubview(name);
+      window.scrollTo(0, 0);
+      return;
+    }
+    closeAllSubviews();
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-    document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
-    document.getElementById("tab-" + name).classList.add("active");
-    const nav = document.querySelector('.nav-item[data-tab="' + name + '"]');
-    if (nav) nav.classList.add("active");
+    const panel = document.getElementById("tab-" + name);
+    if (panel) panel.classList.add("active");
     if (name === "luna") {
       setLunaView("main");
       loadHomeSummary();
@@ -838,16 +855,27 @@
 
   function bindEvents() {
     document.querySelectorAll(".nav-item").forEach((btn) => {
-      btn.onclick = () => switchTab(btn.dataset.tab);
+      btn.onclick = () => switchTab(btn.dataset.nav);
     });
     document.querySelectorAll(".fsq-sub").forEach((btn) => {
       btn.onclick = () => switchFsqSub(btn.dataset.fsq);
     });
     document.querySelectorAll("[data-open]").forEach((el) => {
-      el.onclick = () => openSubview(el.dataset.open);
+      el.onclick = () => {
+        const name = el.dataset.open;
+        if (name === "health" || name === "money") switchTab(name);
+        else {
+          setNavActive("luna");
+          openSubview(name);
+        }
+      };
     });
     document.querySelectorAll("[data-back]").forEach((el) => {
-      el.onclick = () => closeSubview(el.dataset.back);
+      el.onclick = () => {
+        closeSubview(el.dataset.back);
+        setNavActive("luna");
+        switchTab("luna");
+      };
     });
     document.querySelectorAll("[data-ask]").forEach((el) => {
       el.onclick = async () => {
