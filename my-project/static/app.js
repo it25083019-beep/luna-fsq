@@ -733,12 +733,6 @@
     window.speechSynthesis.speak(u);
   }
 
-  function syncMiniLuna() {
-    const mini = document.getElementById("homeMiniLuna");
-    const sprite = document.getElementById("lunaSprite");
-    if (mini && sprite && sprite.src) mini.src = sprite.src;
-  }
-
   function syncVoiceBtn() {
     const btn = document.getElementById("voiceBtn");
     if (!btn) return;
@@ -776,7 +770,6 @@
       if (emo) luna.applyEmotion(emo);
       else luna.reactToText(data.dialogue || "", { greeting: firstChat, fallback: "happy" });
     }
-    syncMiniLuna();
     firstChat = false;
     speakJa(data.dialogue || "");
     await refreshCore();
@@ -921,7 +914,7 @@
       LunaAuth.clearToken();
       LunaAuth.goLogin("/app");
     };
-    const mini = document.getElementById("homeMiniLuna");
+    const mini = document.getElementById("lunaStage");
     if (mini) mini.onclick = () => luna && luna.onTap && luna.onTap();
   }
 

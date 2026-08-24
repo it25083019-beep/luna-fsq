@@ -40,7 +40,8 @@
     .stats{display:flex;gap:.35rem;flex-wrap:wrap;justify-content:flex-end}
     .pill{font-size:.68rem;background:var(--card);padding:.28rem .55rem;color:var(--lilac-deep);border-radius:999px;box-shadow:var(--shadow)}
     .hero{padding:.2rem .8rem 0;min-height:280px}
-    .luna-stage{display:flex;justify-content:center;align-items:flex-end;min-height:280px;cursor:pointer;transform-origin:50% 90%}
+    .luna-stage{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%}
+    .hero .luna-stage,.home-hero-luna.luna-stage{min-height:0}
     #lunaSprite{height:min(52vh,360px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 14px 24px rgba(120,90,180,.22));background:transparent}
     .luna-idle{animation:lunaIdle 3.8s ease-in-out infinite}
     @keyframes lunaIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
@@ -63,7 +64,7 @@
     .status-card .ico{font-size:1.15rem;margin-bottom:.15rem}
     .status-card .label{font-size:.72rem;color:var(--muted)}
     .status-card .val{font-size:.88rem;font-weight:700;color:var(--lilac-deep);margin-top:.15rem}
-    .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .55rem}
+    .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .55rem;flex-shrink:0}
     .chip{border:none;background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;font-size:.82rem;cursor:pointer;border-radius:999px;box-shadow:var(--shadow)}
     .composer-wrap{padding:.35rem 1rem .5rem}
     .composer{display:flex;align-items:center;gap:.45rem;background:var(--composer-bg);border-radius:999px;padding:.35rem .4rem .35rem .9rem;box-shadow:var(--shadow)}
@@ -163,13 +164,16 @@
     .home-title-row h1{margin:0;font-family:"Zen Maru Gothic",sans-serif;font-size:1.35rem;color:var(--lilac-deep)}
     .home-title-row p{margin:.2rem 0 0;font-size:.78rem;color:var(--muted)}
     .icon-btn{border:none;background:var(--card);width:2.2rem;height:2.2rem;border-radius:12px;box-shadow:var(--shadow);cursor:pointer;font-size:1rem}
-    .home-intro{display:grid;grid-template-columns:96px 1fr;gap:.65rem;padding:0 1rem .65rem;align-items:start}
-    .home-intro .mini-avatar{width:96px;height:96px;border-radius:20px;object-fit:contain;background:var(--card);box-shadow:var(--shadow);padding:.25rem}
+    #lunaMainView{display:flex;flex-direction:column;min-height:calc(100dvh - 64px - env(safe-area-inset-bottom));padding-bottom:.25rem}
+    .home-hero{display:grid;grid-template-columns:minmax(128px,38%) 1fr;gap:.7rem;padding:0 1rem .55rem;align-items:end}
+    .home-hero-luna{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%}
+    .home-hero-luna #lunaSprite{height:min(42vw,200px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 10px 20px rgba(120,90,180,.2));background:transparent}
     .bubble.compact{margin:0;min-height:auto;font-size:.82rem;line-height:1.55}
+    .bubble.compact::before{left:12%;top:-7px}
     .status-head{display:flex;justify-content:space-between;padding:0 1rem .45rem;font-size:.82rem;font-weight:700;color:var(--lilac-deep)}
     .status-head span:last-child{color:var(--muted);font-weight:600}
     .status-card .sub{font-size:.62rem;color:var(--muted);margin-top:.1rem}
-    .composer-voice{display:flex;align-items:center;gap:.45rem;background:var(--card);margin:0 1rem .75rem;padding:.4rem .5rem;border-radius:999px;box-shadow:var(--shadow)}
+    .composer-voice{display:flex;align-items:center;gap:.45rem;background:var(--card);margin:auto 1rem .5rem;padding:.4rem .5rem;border-radius:999px;box-shadow:var(--shadow);flex-shrink:0}
     .composer-voice .mic{width:2.2rem;height:2.2rem;border:none;border-radius:50%;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;cursor:pointer;font-size:1rem;flex-shrink:0}
     .composer-voice input{flex:1;border:none;background:transparent;outline:none;padding:.4rem 0;font-size:.85rem}
 
@@ -248,8 +252,10 @@
             <div><h1>ホーム</h1><p id="greetingSub">今日も一緒に遊ぼうね</p></div>
             <button type="button" class="icon-btn" id="settingsBtn" title="設定">⚙️</button>
           </div>
-          <div class="home-intro">
-            <img class="mini-avatar" id="homeMiniLuna" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
+          <div class="home-hero">
+            <div class="home-hero-luna luna-stage" id="lunaStage">
+              <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
+            </div>
             <div class="bubble compact"><span class="who">LUNA</span><div id="dialogue">…</div></div>
           </div>
           <div class="status-head"><span>今日のステータス</span><span id="homeDate">—</span></div>
@@ -264,7 +270,6 @@
             <input id="message" type="text" placeholder="LUNAに話しかけて…" autocomplete="off" />
             <button type="button" id="sendBtn" style="border:none;background:none;font-size:1.1rem;cursor:pointer">😊</button>
           </div>
-          <div class="luna-stage hidden" id="lunaStage"><img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="" /></div>
         </div>
         <div id="settingsView" class="settings-panel">
           <h3>一般設定</h3>
