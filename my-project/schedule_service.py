@@ -106,6 +106,95 @@ def _purge_legacy_recurring_seeds(user: Dict[str, Any]) -> None:
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
 
 
+def _title_norm(title: Optional[str]) -> str:
+    return (title or "").strip().lower()
+
+
+def _series_key(tpl: Dict[str, Any]) -> Tuple[str, Optional[str], Optional[str]]:
+    return (_title_norm(tpl.get("title")), tpl.get("time"), tpl.get("end_time"))
+
+
+def _collapse_duplicate_recurring_series(user: Dict[str, Any]) -> None:
+    """Keep one weekly series per title+time; drop date-jump clones.
+
+    Saving 毎週 on Monday then again after the calendar jumped (e.g. to the 24th)
+    used to create a second series: 毎月 on day 24, or 毎週 on Thursday. Those
+    clones made Monday's class show up on the 24th.
+    """
+    templates = _recurring_store(user)
+    groups: Dict[Tuple[str, Optional[str], Optional[str]], List[Dict[str, Any]]] = defaultdict(list)
+    for tpl in templates:
+        if not tpl.get("active", True):
+            continue
+        if not _title_norm(tpl.get("title")):
+            continue
+        groups[_series_key(tpl)].append(tpl)
+
+    changed = False
+    for series in groups.values():
+        weeklies = [t for t in series if (t.get("recurrence") or "weekly") == "weekly"]
+        monthlies = [t for t in series if t.get("recurrence") == "monthly"]
+        if weeklies:
+            weeklies.sort(key=lambda t: t.get("start_date") or "")
+            keep = weeklies[0]
+            for t in weeklies[1:]:
+                t["active"] = False
+                changed = True
+            for t in monthlies:
+                t["active"] = False
+                changed = True
+            keep_weekday = int(
+                keep.get("weekday")
+                if keep.get("weekday") is not None
+                else _parse_date(keep["start_date"]).weekday()
+            )
+            keep["weekday"] = keep_weekday
+        elif len(monthlies) > 1:
+            monthlies.sort(key=lambda t: t.get("start_date") or "")
+            for t in monthlies[1:]:
+                t["active"] = False
+                changed = True
+
+    if changed:
+        user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+
+    templates_by_id = {t.get("id"): t for t in templates if t.get("id") and t.get("active", True)}
+    weekly_by_key = {
+        _series_key(t): t
+        for t in templates
+        if t.get("active", True) and (t.get("recurrence") or "weekly") == "weekly"
+    }
+    store = _events_store(user)
+    kept_events: List[Dict[str, Any]] = []
+    ev_changed = False
+    for e in store:
+        tpl = templates_by_id.get(e.get("recurrence_id")) if e.get("recurrence_id") else None
+        if not tpl:
+            tpl = weekly_by_key.get((_title_norm(e.get("title")), e.get("time"), e.get("end_time")))
+        if (
+            tpl
+            and (tpl.get("recurrence") or "weekly") == "weekly"
+            and not e.get("exception")
+            and e.get("date")
+        ):
+            try:
+                ev_day = _parse_date(e["date"]).weekday()
+            except ValueError:
+                ev_day = None
+            weekday = int(
+                tpl.get("weekday")
+                if tpl.get("weekday") is not None
+                else _parse_date(tpl["start_date"]).weekday()
+            )
+            if ev_day is not None and ev_day != weekday:
+                ev_changed = True
+                continue
+        kept_events.append(e)
+    if ev_changed:
+        user["life_modules"]["schedule"]["structured"]["events"] = kept_events
+        user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+
+
 def _cancel_template_date(user: Dict[str, Any], tpl_id: str, event_date: str) -> None:
     tpl = next((t for t in _recurring_store(user) if t.get("id") == tpl_id), None)
     if not tpl:
@@ -175,6 +264,11 @@ def expand_recurring_templates(
 
             if match:
                 ds = cursor.isoformat()
+                if recurrence != "monthly":
+                    weekday = int(tpl.get("weekday") if tpl.get("weekday") is not None else start.weekday())
+                    if cursor.weekday() != weekday:
+                        cursor += timedelta(days=1)
+                        continue
                 key = (ds, title)
                 if ds not in cancelled and key not in existing:
                     generated.append(
@@ -207,6 +301,7 @@ def expand_recurring_templates(
 
 def _all_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> List[Dict[str, Any]]:
     _purge_legacy_recurring_seeds(user)
+    _collapse_duplicate_recurring_series(user)
     stored = list(_events_store(user))
     today = date.today()
     if on_date:
@@ -277,23 +372,24 @@ def add_recurring_template(
     title_text = title[:200]
     note_text = (note or "").strip()[:500] or None
 
-    # Reuse an identical active template to avoid spam duplicates.
+    # Reuse / collapse the same class (title + time). Never spawn a second
+    # series on another weekday or as 毎月 — that is how the 24th got "đi học".
     for existing in _recurring_store(user):
         if not existing.get("active", True):
             continue
         if (existing.get("title") or "") != title_text:
             continue
-        if (existing.get("recurrence") or "weekly") != recurrence:
-            continue
         if existing.get("time") != start_t or existing.get("end_time") != end_t:
             continue
-        if (existing.get("note") or None) != note_text:
-            continue
-        if recurrence == "weekly" and int(existing.get("weekday") if existing.get("weekday") is not None else -1) != start.weekday():
-            continue
-        if recurrence == "monthly" and int(existing.get("day_of_month") or -1) != start.day:
-            continue
-        return existing
+        existing_rec = existing.get("recurrence") or "weekly"
+        if existing_rec == "weekly":
+            return existing
+        if existing_rec == recurrence:
+            if (existing.get("note") or None) != note_text:
+                continue
+            if recurrence == "monthly" and int(existing.get("day_of_month") or -1) != start.day:
+                continue
+            return existing
 
     tpl = {
         "id": uuid.uuid4().hex[:12],
@@ -673,7 +769,31 @@ def apply_suggestions(
     suggestions: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     created: List[Dict[str, Any]] = []
+    weekly_keys = {
+        _series_key(t)
+        for t in _recurring_store(user)
+        if t.get("active", True) and (t.get("recurrence") or "weekly") == "weekly"
+    }
     for s in suggestions:
+        rec = s.get("recurrence")
+        key = (_title_norm(s.get("title")), s.get("time"), s.get("end_time"))
+        if key in weekly_keys:
+            rec = None
+            try:
+                sug_day = _parse_date(s["date"]).weekday()
+            except (KeyError, ValueError):
+                sug_day = None
+            keep_weekday = None
+            for t in _recurring_store(user):
+                if t.get("active", True) and _series_key(t) == key and (t.get("recurrence") or "weekly") == "weekly":
+                    keep_weekday = int(
+                        t.get("weekday")
+                        if t.get("weekday") is not None
+                        else _parse_date(t["start_date"]).weekday()
+                    )
+                    break
+            if keep_weekday is not None and sug_day is not None and sug_day != keep_weekday:
+                continue
         created.append(
             add_event(
                 user,
@@ -681,7 +801,7 @@ def apply_suggestions(
                 event_date=s["date"],
                 event_time=s.get("time"),
                 event_end_time=s.get("end_time"),
-                recurrence=s.get("recurrence"),
+                recurrence=rec,
             )
         )
     return created
