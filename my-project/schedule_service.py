@@ -320,11 +320,18 @@ def _all_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> List[
     _purge_legacy_recurring_seeds(user)
     _collapse_duplicate_recurring_series(user)
     stored = list(_events_store(user))
-    # Deduplicate accidental same-day copies (same date + title).
+    # Deduplicate accidental duplicates, but don't block the user from
+    # having multiple events on the same day (even with the same title).
     deduped: List[Dict[str, Any]] = []
-    seen_keys: Set[Tuple[str, str]] = set()
+    seen_keys: Set[Tuple[str, str, Optional[str], Optional[str], Optional[str]]] = set()
     for e in sorted(stored, key=lambda x: (0 if x.get("exception") else 1, x.get("updated_at") or x.get("created_at") or "")):
-        key = (e.get("date") or "", (e.get("title") or "").strip())
+        key = (
+            e.get("date") or "",
+            (e.get("title") or "").strip(),
+            e.get("time"),
+            e.get("end_time"),
+            e.get("recurrence_id"),
+        )
         if key[0] and key[1] and key in seen_keys:
             continue
         if key[0] and key[1]:
