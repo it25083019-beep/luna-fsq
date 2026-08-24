@@ -157,6 +157,56 @@
     .err{color:var(--danger);font-size:.82rem;padding:0 1rem;min-height:1em}
     .ok{color:var(--mint);font-size:.78rem}
     .hidden{display:none!important}
+
+    /* Home mockup layout */
+    .home-title-row{display:flex;justify-content:space-between;align-items:flex-start;padding:1rem 1.1rem .25rem}
+    .home-title-row h1{margin:0;font-family:"Zen Maru Gothic",sans-serif;font-size:1.35rem;color:var(--lilac-deep)}
+    .home-title-row p{margin:.2rem 0 0;font-size:.78rem;color:var(--muted)}
+    .icon-btn{border:none;background:var(--card);width:2.2rem;height:2.2rem;border-radius:12px;box-shadow:var(--shadow);cursor:pointer;font-size:1rem}
+    .home-intro{display:grid;grid-template-columns:96px 1fr;gap:.65rem;padding:0 1rem .65rem;align-items:start}
+    .home-intro .mini-avatar{width:96px;height:96px;border-radius:20px;object-fit:contain;background:var(--card);box-shadow:var(--shadow);padding:.25rem}
+    .bubble.compact{margin:0;min-height:auto;font-size:.82rem;line-height:1.55}
+    .status-head{display:flex;justify-content:space-between;padding:0 1rem .45rem;font-size:.82rem;font-weight:700;color:var(--lilac-deep)}
+    .status-head span:last-child{color:var(--muted);font-weight:600}
+    .status-card .sub{font-size:.62rem;color:var(--muted);margin-top:.1rem}
+    .composer-voice{display:flex;align-items:center;gap:.45rem;background:var(--card);margin:0 1rem .75rem;padding:.4rem .5rem;border-radius:999px;box-shadow:var(--shadow)}
+    .composer-voice .mic{width:2.2rem;height:2.2rem;border:none;border-radius:50%;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;cursor:pointer;font-size:1rem;flex-shrink:0}
+    .composer-voice input{flex:1;border:none;background:transparent;outline:none;padding:.4rem 0;font-size:.85rem}
+
+    /* Full-screen subviews (schedule / health / money) */
+    .subview{position:fixed;inset:0;max-width:440px;margin:0 auto;background:linear-gradient(165deg,var(--bg0),var(--bg1) 50%,var(--bg2));z-index:60;overflow-y:auto;padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+    .subview-head{display:flex;align-items:center;gap:.5rem;padding:1rem;background:linear-gradient(135deg,var(--lilac-deep),var(--lilac));color:#fff}
+    .subview-head button{border:none;background:rgba(255,255,255,.2);color:#fff;width:2rem;height:2rem;border-radius:10px;cursor:pointer}
+    .subview-head h2{flex:1;margin:0;font-size:1rem;text-align:center}
+    .date-card{margin:1rem;padding:.85rem;background:var(--card);border-radius:18px;text-align:center;font-weight:800;font-size:1.05rem;box-shadow:var(--shadow)}
+    .sched-section{margin:0 1rem 1rem}
+    .sched-section h3{font-size:.88rem;color:var(--lilac-deep);margin:0 0 .45rem;display:flex;justify-content:space-between;align-items:center}
+    .sched-section h3 button{border:none;background:var(--lilac);color:#fff;width:1.6rem;height:1.6rem;border-radius:50%;cursor:pointer;font-size:1rem;line-height:1}
+    .todo-row{display:flex;align-items:center;gap:.55rem;background:var(--card);border-radius:14px;padding:.65rem .75rem;margin-bottom:.4rem;box-shadow:var(--shadow);font-size:.82rem}
+    .todo-row.done{opacity:.55;text-decoration:line-through}
+    .todo-row.future{background:linear-gradient(135deg,#efe6ff,#fff)}
+    .todo-row button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.3rem .55rem;border-radius:999px;font-size:.68rem;cursor:pointer;flex-shrink:0}
+    .add-form{margin:0 1rem 1rem;padding:.85rem;background:var(--card);border-radius:18px;box-shadow:var(--shadow);display:none}
+    .add-form.open{display:block}
+    .add-form label{display:block;font-size:.72rem;color:var(--muted);margin:.35rem 0 .15rem}
+    .add-form input{width:100%;padding:.55rem .65rem;border:none;background:var(--input-bg);border-radius:12px;margin-bottom:.35rem}
+    .add-form .row{display:flex;gap:.4rem;margin-top:.45rem}
+    .add-form .row button{flex:1;border:none;border-radius:999px;padding:.55rem;cursor:pointer;font-weight:700}
+    .add-form .save{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .suggest-box{margin:0 1rem 1rem;padding:.75rem;background:linear-gradient(135deg,#efe6ff,#fff);border-radius:16px;border:1px dashed var(--lilac)}
+    .suggest-box h4{margin:0 0 .35rem;font-size:.82rem;color:var(--lilac-deep)}
+    .suggest-item{display:flex;justify-content:space-between;align-items:center;gap:.4rem;font-size:.75rem;padding:.35rem 0;border-bottom:1px solid rgba(155,126,217,.15)}
+    .suggest-item:last-child{border-bottom:none}
+    .module-hero{padding:1rem}
+    .metric-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-bottom:.65rem}
+    .metric{background:var(--card);border-radius:16px;padding:.75rem;text-align:center;box-shadow:var(--shadow)}
+    .metric strong{display:block;font-size:1.4rem;color:var(--lilac-deep);margin-top:.2rem}
+    .consult-row{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin:0 1rem 1rem}
+    .consult-btn{border:none;border-radius:16px;padding:.75rem .55rem;text-align:left;font-size:.75rem;font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
+    .consult-btn.blue{background:linear-gradient(160deg,#e4f4ff,#fff);color:#35506b}
+    .consult-btn.pink{background:linear-gradient(160deg,#ffe8f2,#fff);color:#6b3f5a}
+    .menu-list{padding:1rem;display:flex;flex-direction:column;gap:.45rem}
+    .menu-list button{border:none;background:var(--card);padding:.85rem 1rem;border-radius:16px;text-align:left;font-size:.88rem;font-weight:700;color:var(--lilac-deep);box-shadow:var(--shadow);cursor:pointer}
   </style>
   <script src="/static/theme.js"></script>
   <script>LunaTheme.boot();</script>
@@ -164,53 +214,30 @@
 <body>
   <div class="app">
     <div class="screen">
-      <!-- LUNA MAIN -->
+      <!-- LUNA HOME (main) -->
       <section id="tab-luna" class="tab-panel active">
-        <header class="luna-header">
-          <div class="brand">LUNA<span id="greetingSub">今日も一緒にいこうね</span></div>
-          <div class="stats">
-            <span class="pill" id="modePill">—</span>
-            <span class="pill" id="expPill">Lv.1</span>
-          </div>
-        </header>
         <div id="lunaMainView">
-          <div class="hero">
-            <div class="luna-stage" id="lunaStage">
-              <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
-            </div>
+          <div class="home-title-row">
+            <div><h1>ホーム</h1><p id="greetingSub">今日も一緒に遊ぼうね</p></div>
+            <button type="button" class="icon-btn" id="settingsBtn" title="設定">⚙️</button>
           </div>
-          <div class="bubble"><span class="who">LUNA</span><div id="dialogue">…</div></div>
+          <div class="home-intro">
+            <img class="mini-avatar" id="homeMiniLuna" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
+            <div class="bubble compact"><span class="who">LUNA</span><div id="dialogue">…</div></div>
+          </div>
+          <div class="status-head"><span>今日のステータス</span><span id="homeDate">—</span></div>
           <div class="status-row">
-            <button type="button" class="status-card" data-life="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">開く</div></button>
-            <button type="button" class="status-card" data-life="health"><div class="ico">💚</div><div class="label">健康</div><div class="val" id="stHealth">開く</div></button>
-            <button type="button" class="status-card" data-life="money"><div class="ico">👛</div><div class="label">お金</div><div class="val" id="stMoney">開く</div></button>
+            <button type="button" class="status-card" data-open="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
+            <button type="button" class="status-card" data-open="health"><div class="ico">💚</div><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
+            <button type="button" class="status-card" data-open="money"><div class="ico">🎯</div><div class="label">目標</div><div class="val" id="stGoals">—</div></button>
           </div>
           <div class="chips" id="chips"></div>
-          <div class="composer-wrap">
-            <div class="composer">
-              <input id="message" type="text" placeholder="LUNAに話しかける…" autocomplete="off" />
-              <button type="button" id="sendBtn">送信</button>
-            </div>
+          <div class="composer-voice">
+            <button type="button" class="mic" id="voiceBtn" title="音声">🎤</button>
+            <input id="message" type="text" placeholder="LUNAに話しかけて…" autocomplete="off" />
+            <button type="button" id="sendBtn" style="border:none;background:none;font-size:1.1rem;cursor:pointer">😊</button>
           </div>
-          <div class="tools">
-            <button type="button" id="settingsBtn">設定</button>
-            <button type="button" id="voiceBtn">🔊 音声ON</button>
-            <button type="button" id="morningBtn">朝</button>
-            <button type="button" id="eveningBtn">夜</button>
-          </div>
-        </div>
-        <div id="moduleView" class="module-panel">
-          <h3 id="modTitle">—</h3>
-          <p class="hint" id="modHint"></p>
-          <div class="baseline" id="modBaseline" style="font-size:.8rem;line-height:1.55;max-height:6rem;overflow:auto;white-space:pre-wrap;margin-bottom:.5rem;color:var(--muted)"></div>
-          <div class="quick" id="modQuick"></div>
-          <textarea id="modNote" placeholder="追記…"></textarea>
-          <div class="row">
-            <button type="button" class="amber" id="modSave">追記</button>
-            <button type="button" class="ghost" id="modAsk">AIに相談</button>
-            <button type="button" id="modBack">チャットへ</button>
-          </div>
-          <p class="ok" id="modMsg"></p>
+          <div class="luna-stage hidden" id="lunaStage"><img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="" /></div>
         </div>
         <div id="settingsView" class="settings-panel">
           <h3>一般設定</h3>
@@ -219,6 +246,69 @@
           <div class="settings-actions"><button type="button" id="settingsBack">戻る</button></div>
         </div>
       </section>
+
+      <!-- Schedule subview -->
+      <div id="sub-schedule" class="subview hidden">
+        <div class="subview-head">
+          <button type="button" data-back="schedule">←</button>
+          <h2>スケジュール ToDo</h2>
+          <span style="width:2rem"></span>
+        </div>
+        <div class="date-card" id="schedDateCard">—</div>
+        <div class="suggest-box" id="suggestBox" style="display:none">
+          <h4>✨ 似た予定を提案</h4>
+          <div id="suggestList"></div>
+          <button type="button" class="cta-btn" id="applySuggestBtn" style="margin-top:.5rem;font-size:.78rem">提案をすべて追加</button>
+        </div>
+        <div class="sched-section">
+          <h3>今日のToDo（未完了）<button type="button" id="toggleAddBtn">+</button></h3>
+          <div class="add-form" id="addForm">
+            <label>タイトル</label><input id="addTitle" type="text" placeholder="例：10:00 - 会議" />
+            <label>日付</label><input id="addDate" type="date" />
+            <label>時間（任意）</label><input id="addTime" type="time" />
+            <div class="row"><button type="button" class="save" id="addSaveBtn">追加</button><button type="button" id="addCancelBtn">キャンセル</button></div>
+          </div>
+          <div id="todayOpenList"></div>
+        </div>
+        <div class="sched-section"><h3>完了したToDo（過去）</h3><div id="pastDoneList"></div></div>
+        <div class="sched-section"><h3>今後のスケジュール</h3><div id="futureList"></div></div>
+      </div>
+
+      <!-- Health subview -->
+      <div id="sub-health" class="subview hidden">
+        <div class="subview-head"><button type="button" data-back="health">←</button><h2>ヘルスケア</h2><span style="width:2rem"></span></div>
+        <div class="module-hero">
+          <div class="metric-grid">
+            <div class="metric"><span class="hint">睡眠スコア</span><strong id="healthSleep">88</strong></div>
+            <div class="metric"><span class="hint">歩数</span><strong id="healthSteps">—</strong></div>
+            <div class="metric"><span class="hint">心拍</span><strong id="healthHr">72</strong></div>
+            <div class="metric"><span class="hint">水分</span><strong id="healthWater">6/8</strong></div>
+          </div>
+          <div class="bubble compact" style="margin:0">今日もバッチリだね！この調子で頑張ろう！</div>
+        </div>
+        <p class="hint" style="padding:0 1rem">よくある相談から選ぶ</p>
+        <div class="consult-row">
+          <button type="button" class="consult-btn blue" data-ask="体調を相談したい">📘 体調を相談したい</button>
+          <button type="button" class="consult-btn pink" data-ask="おすすめの運動を知りたい">💗 運動を知りたい</button>
+        </div>
+      </div>
+
+      <!-- Money subview -->
+      <div id="sub-money" class="subview hidden">
+        <div class="subview-head"><button type="button" data-back="money">←</button><h2>お金・家計</h2><span style="width:2rem"></span></div>
+        <div class="module-hero">
+          <div class="metric-grid">
+            <div class="metric"><span class="hint">今月の収入</span><strong id="moneyIn">—</strong></div>
+            <div class="metric"><span class="hint">今月の支出</span><strong id="moneyOut">—</strong></div>
+          </div>
+          <div class="bubble compact" style="margin:0">今月の予算は大丈夫かな？一緒に家計簿をチェックしよう！</div>
+        </div>
+        <div class="sched-section"><h3>メモ・追記</h3><div id="moneyNotes" class="hint" style="line-height:1.6"></div></div>
+        <div class="consult-row">
+          <button type="button" class="consult-btn blue" data-ask="今月の支出を整理したい">📊 支出を整理</button>
+          <button type="button" class="consult-btn pink" data-ask="貯金目標について相談したい">👛 貯金目標</button>
+        </div>
+      </div>
 
       <!-- FSQ secondary -->
       <section id="tab-fsq" class="tab-panel">
@@ -282,33 +372,29 @@
         </div>
       </section>
 
-      <!-- MY PAGE -->
+      <!-- MENU -->
       <section id="tab-mypage" class="tab-panel">
-        <div class="profile-head">
-          <img src="/static/live2d/luna-expressions/luna-wave.png" alt="" />
-          <div><h2 id="myName">—</h2><p id="mySub">Lv.1</p></div>
+        <div class="home-title-row"><div><h1>メニュー</h1><p id="myName">—</p></div></div>
+        <div class="menu-list">
+          <button type="button" data-open="schedule">📅 スケジュール・ToDo</button>
+          <button type="button" data-open="health">💚 ヘルスケア</button>
+          <button type="button" data-open="money">👛 お金・家計</button>
+          <button type="button" id="menuThemeBtn">🎨 テーマ設定</button>
+          <button type="button" id="morningBtn">🌅 朝チェックイン</button>
+          <button type="button" id="eveningBtn">🌙 夜チェックイン</button>
+          <button type="button" id="adminLink" class="hidden" onclick="location.href='/admin'">🔧 管理画面</button>
+          <button type="button" id="logoutBtn" class="danger" style="color:var(--danger)">ログアウト</button>
         </div>
-        <div class="content" style="padding-top:.85rem">
-          <div class="card">
-            <div class="section-title"><span>💚 ライフモジュール</span></div>
-            <div class="life-grid">
-              <button type="button" class="life-card" data-life="health"><div class="ico">💚</div><div class="label">健康</div><div class="val" id="lifeHealth">開く</div></button>
-              <button type="button" class="life-card" data-life="money"><div class="ico">👛</div><div class="label">お金</div><div class="val" id="lifeMoney">開く</div></button>
-              <button type="button" class="life-card" data-life="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="lifeSchedule">開く</div></button>
-            </div>
-          </div>
-          <div class="row-btns" style="padding:0 .85rem 1rem">
-            <button type="button" id="adminLink" class="hidden" onclick="location.href='/admin'">管理画面</button>
-            <button type="button" id="logoutBtn" class="danger">ログアウト</button>
-          </div>
+        <div id="menuSettings" class="settings-panel" style="margin:1rem;display:none">
+          <div class="theme-grid" id="themeGridMenu"></div>
         </div>
       </section>
     </div>
 
     <nav class="bottom-nav">
-      <button type="button" class="nav-item active" data-tab="luna"><span class="ico">💜</span>LUNA</button>
       <button type="button" class="nav-item" data-tab="fsq"><span class="ico">⚔️</span>FSQ</button>
-      <button type="button" class="nav-item" data-tab="mypage"><span class="ico">👤</span>マイページ</button>
+      <button type="button" class="nav-item active" data-tab="luna"><span class="ico">🏠</span>ホーム</button>
+      <button type="button" class="nav-item" data-tab="mypage"><span class="ico">☰</span>メニュー</button>
     </nav>
     <p class="err" id="err"></p>
   </div>

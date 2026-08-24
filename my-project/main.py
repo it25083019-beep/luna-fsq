@@ -28,6 +28,14 @@ from database import get_db, init_db
 from models import CoreBrain, PasswordResetToken, User
 from password_reset_email import send_password_reset_email
 from life_modules import MODULE_KEYS, append_module_note, list_modules, summarize_module
+from schedule_service import (
+    add_event,
+    complete_event,
+    delete_event,
+    home_summary,
+    list_events,
+    suggest_similar,
+)
 from schemas import (
     AdminLockRequest,
     AdminResetPasswordRequest,
@@ -47,6 +55,9 @@ from schemas import (
     CareerSelectRequest,
     RpgQuestStartRequest,
     RpgActivityRequest,
+    ScheduleEventCreate,
+    ScheduleEventComplete,
+    ScheduleApplySuggestions,
 )
 from suggestions import get_suggested_replies
 from career_engine import load_taxonomy, suggest_careers, rpg_class_label
@@ -455,6 +466,81 @@ def life_module_append(
         raise HTTPException(status_code=400, detail=str(e))
     save_user_brain(current.public_id, brain)
     return {"ok": True, "module": summary}
+
+
+# ----- Schedule / calendar -----
+
+
+@app.get("/home/summary")
+def get_home_summary(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    return home_summary(brain)
+
+
+@app.get("/schedule/events")
+def schedule_list(date: Optional[str] = None, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    return list_events(brain, on_date=date)
+
+
+@app.post("/schedule/events")
+def schedule_create(req: ScheduleEventCreate, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        ev = add_event(brain, title=req.title, event_date=req.date, event_time=req.time, note=req.note)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "event": ev}
+
+
+@app.post("/schedule/events/{event_id}/complete")
+def schedule_complete(
+    event_id: str,
+    req: ScheduleEventComplete,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    try:
+        ev = complete_event(brain, event_id, done=req.done)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "event": ev}
+
+
+@app.delete("/schedule/events/{event_id}")
+def schedule_delete(event_id: str, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        delete_event(brain, event_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True}
+
+
+@app.get("/schedule/suggestions")
+def schedule_suggestions(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    return {"suggestions": suggest_similar(brain)}
+
+
+@app.post("/schedule/suggestions/apply")
+def schedule_apply_suggestions(
+    req: ScheduleApplySuggestions,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    suggestions = suggest_similar(brain)
+    to_apply = suggestions if req.apply_all else [suggestions[i] for i in (req.indices or []) if 0 <= i < len(suggestions)]
+    created = []
+    for s in to_apply:
+        created.append(
+            add_event(brain, title=s["title"], event_date=s["date"], event_time=s.get("time"))
+        )
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "created": created, "count": len(created)}
 
 
 # ----- Admin -----

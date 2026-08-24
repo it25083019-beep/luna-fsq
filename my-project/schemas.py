@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import re
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -139,3 +139,19 @@ class RpgActivityRequest(BaseModel):
     score: Optional[float] = None
     note: Optional[str] = None
     quest_id: Optional[str] = None
+
+
+class ScheduleEventCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    date: str = Field(description="YYYY-MM-DD")
+    time: Optional[str] = Field(default=None, max_length=5)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+
+class ScheduleEventComplete(BaseModel):
+    done: bool = True
+
+
+class ScheduleApplySuggestions(BaseModel):
+    indices: Optional[List[int]] = None
+    apply_all: bool = False
