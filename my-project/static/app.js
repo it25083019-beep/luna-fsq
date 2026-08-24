@@ -548,11 +548,20 @@
     const editId = document.getElementById("editEventId").value;
     const title = document.getElementById("addTitle").value.trim();
     const date = document.getElementById("addDate").value;
-    const time = document.getElementById("addTime").value;
-    const endTime = document.getElementById("addEndTime").value;
+    const time = (document.getElementById("addTime").value || "").trim();
+    const endTime = (document.getElementById("addEndTime").value || "").trim();
     const note = document.getElementById("addNote").value.trim();
     const recurrence = document.getElementById("addRecurrence").value || null;
     if (!title || !date) return;
+    const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (time && !TIME_RE.test(time)) {
+      setErr("開始時刻はHH:MM（24h）で入力してください。");
+      return;
+    }
+    if (endTime && !TIME_RE.test(endTime)) {
+      setErr("終了時刻はHH:MM（24h）で入力してください。");
+      return;
+    }
     if (time && endTime && endTime <= time) {
       setErr("終了時間は開始時間より後にしてください。");
       return;
