@@ -189,7 +189,9 @@
     .sched-section{margin:0 1rem 1rem}
     .sched-section h3{font-size:.88rem;color:var(--lilac-deep);margin:0 0 .45rem;display:flex;justify-content:space-between;align-items:center}
     .sched-section h3 button{border:none;background:var(--lilac);color:#fff;width:1.6rem;height:1.6rem;border-radius:50%;cursor:pointer;font-size:1rem;line-height:1}
-    .todo-row{display:flex;align-items:center;gap:.55rem;background:var(--card);border-radius:14px;padding:.65rem .75rem;margin-bottom:.4rem;box-shadow:var(--shadow);font-size:.82rem}
+    .todo-row-wrap{position:relative;overflow:hidden;margin-bottom:.4rem;border-radius:14px}
+    .todo-row{display:flex;align-items:center;gap:.55rem;background:var(--card);border-radius:14px;padding:.65rem .75rem;box-shadow:var(--shadow);font-size:.82rem;position:relative;z-index:2;transition:transform .18s ease}
+    .todo-row.swiped{transform:translateX(-52px)}
     .todo-row.done{opacity:.55;text-decoration:line-through}
     .todo-row.future{background:linear-gradient(135deg,#efe6ff,#fff)}
     .todo-row button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.3rem .55rem;border-radius:999px;font-size:.68rem;cursor:pointer;flex-shrink:0}
@@ -202,7 +204,9 @@
     .add-form .row button{flex:1;border:none;border-radius:999px;padding:.55rem;cursor:pointer;font-weight:700}
     .add-form .save{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
     .add-form .danger{background:rgba(224,122,138,.15);color:var(--danger)}
-    .home-today-item button{border:none;background:rgba(224,122,138,.12);color:var(--danger);padding:.25rem .5rem;border-radius:999px;font-size:.65rem;cursor:pointer;flex-shrink:0}
+    .item-delete{border:none;background:rgba(224,122,138,.14);color:var(--danger);width:1.65rem;height:1.65rem;border-radius:999px;font-size:1rem;line-height:1;cursor:pointer;flex-shrink:0;display:grid;place-items:center}
+    .todo-row-delete{position:absolute;top:0;right:0;width:52px;height:100%;border:none;background:rgba(224,122,138,.18);color:var(--danger);font-size:1.2rem;font-weight:800;cursor:pointer;display:grid;place-items:center;border-radius:0 14px 14px 0;z-index:5}
+    .home-today-item.swiped .item-delete{background:rgba(224,122,138,.22);transform:scale(1.05)}
     .suggest-box{margin:0 1rem 1rem;padding:.75rem;background:linear-gradient(135deg,#efe6ff,#fff);border-radius:16px;border:1px dashed var(--lilac)}
     .suggest-box h4{margin:0 0 .35rem;font-size:.82rem;color:var(--lilac-deep)}
     .suggest-item{display:flex;justify-content:space-between;align-items:center;gap:.4rem;font-size:.75rem;padding:.35rem 0;border-bottom:1px solid rgba(155,126,217,.15)}
@@ -365,7 +369,6 @@
             <div class="row">
               <button type="button" class="save" id="addSaveBtn">保存</button>
               <button type="button" id="addCancelBtn">キャンセル</button>
-              <button type="button" class="danger" id="addDeleteBtn" style="display:none">削除</button>
             </div>
           </div>
           <div id="dayEventList"></div>

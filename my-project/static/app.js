@@ -288,6 +288,22 @@
     return "終日";
   }
 
+  function attachSwipeDelete(row, toggleOpen) {
+    let startX = 0;
+    let tracking = false;
+    row.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
+      tracking = true;
+    }, { passive: true });
+    row.addEventListener("touchend", (e) => {
+      if (!tracking) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      if (dx < -36) toggleOpen(true);
+      if (dx > 24) toggleOpen(false);
+      tracking = false;
+    });
+  }
+
   function renderHomeToday(items) {
     const el = document.getElementById("homeTodayList");
     if (!el) return;
@@ -307,12 +323,15 @@
         "</span>";
       const del = document.createElement("button");
       del.type = "button";
-      del.textContent = "削除";
+      del.className = "item-delete";
+      del.setAttribute("aria-label", "delete event");
+      del.textContent = "×";
       del.onclick = (e) => {
         e.stopPropagation();
         deleteScheduleEvent(ev.id);
       };
       row.appendChild(del);
+      attachSwipeDelete(row, (open) => row.classList.toggle("swiped", open));
       el.appendChild(row);
     });
   }
@@ -377,6 +396,8 @@
       return;
     }
     items.forEach((ev) => {
+      const wrap = document.createElement("div");
+      wrap.className = "todo-row-wrap";
       const row = document.createElement("div");
       row.className = "todo-row" + (ev.done ? " done" : "");
       const time = ev.time || ev.end_time ? formatTimeRange(ev) + " · " : "";
@@ -393,14 +414,17 @@
       editBtn.textContent = "編集";
       editBtn.onclick = () => openEditEvent(ev);
       const delBtn = document.createElement("button");
-      delBtn.className = "danger";
-      delBtn.textContent = "削除";
+      delBtn.className = "todo-row-delete";
+      delBtn.setAttribute("aria-label", "delete event");
+      delBtn.textContent = "×";
       delBtn.onclick = () => deleteScheduleEvent(ev.id);
       acts.appendChild(doneBtn);
       acts.appendChild(editBtn);
-      acts.appendChild(delBtn);
       row.appendChild(acts);
-      el.appendChild(row);
+      wrap.appendChild(delBtn);
+      wrap.appendChild(row);
+      attachSwipeDelete(row, (open) => row.classList.toggle("swiped", open));
+      el.appendChild(wrap);
     });
   }
 
@@ -415,8 +439,6 @@
     document.getElementById("addRecurrence").disabled = true;
     document.getElementById("addForm").classList.add("open");
     document.getElementById("addSaveBtn").textContent = "更新";
-    const delBtn = document.getElementById("addDeleteBtn");
-    if (delBtn) delBtn.style.display = "block";
   }
 
   function resetAddForm(keepDate) {
@@ -429,8 +451,6 @@
     document.getElementById("addRecurrence").disabled = false;
     document.getElementById("addDate").value = keepDate || selectedDate || todayIso();
     document.getElementById("addSaveBtn").textContent = "保存";
-    const delBtn = document.getElementById("addDeleteBtn");
-    if (delBtn) delBtn.style.display = "none";
     document.getElementById("addForm").classList.remove("open");
   }
 
@@ -1192,10 +1212,6 @@
     };
     document.getElementById("addCancelBtn").onclick = () => resetAddForm(selectedDate || todayIso());
     document.getElementById("addSaveBtn").onclick = () => addScheduleEvent();
-    const addDeleteBtn = document.getElementById("addDeleteBtn");
-    if (addDeleteBtn) {
-      addDeleteBtn.onclick = () => deleteScheduleEvent(document.getElementById("editEventId").value);
-    }
     document.getElementById("applySuggestBtn").onclick = () => applySuggestions();
     const dismiss = document.getElementById("dismissSuggestBtn");
     if (dismiss) dismiss.onclick = () => hideSimilarPrompt();
