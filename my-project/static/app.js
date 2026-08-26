@@ -45,6 +45,8 @@
   let voiceOn = localStorage.getItem("luna_voice") !== "0";
   let lunaAudio = null;
   let lunaAudioUrl = null;
+  let ttsFailStreak = 0;
+  let speakSeq = 0;
   let currentTab = "luna";
   let currentModule = "health";
   let stateData = { level: 1, total_exp: 0, companion_name: null, user_display_name: null };
@@ -251,7 +253,7 @@
   }
 
   function setErr(msg) {
-    errEl.textContent = msg || "";
+    if (errEl) errEl.textContent = msg || "";
   }
 
   function switchTab(name) {
@@ -1074,7 +1076,16 @@
   async function speakJa(text) {
     const line = (text || "").trim();
     if (!voiceOn || !line) return;
+    const mySeq = ++speakSeq;
     stopLunaSpeech();
+    // After repeated Gemini TTS failures, keep chat snappy with browser voice
+    // without removing the Gemini narrator path.
+    if (ttsFailStreak >= 2) {
+      speakJaBrowserFallback(line);
+      return;
+    }
+    const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 10000) : null;
     try {
       const headers = { "Content-Type": "application/json" };
       if (token) headers.Authorization = "Bearer " + token;
@@ -1082,19 +1093,29 @@
         method: "POST",
         headers,
         body: JSON.stringify({ text: line }),
+        signal: ctrl ? ctrl.signal : undefined,
       });
       if (!res.ok) throw new Error("tts");
       const blob = await res.blob();
+      if (mySeq !== speakSeq) return;
       lunaAudioUrl = URL.createObjectURL(blob);
       lunaAudio = new Audio(lunaAudioUrl);
       lunaAudio.onplay = () => {
         if (luna) luna.startLipSync();
       };
-      lunaAudio.onended = () => stopLunaSpeech();
-      lunaAudio.onerror = () => stopLunaSpeech();
+      lunaAudio.onended = () => {
+        if (mySeq === speakSeq) stopLunaSpeech();
+      };
+      lunaAudio.onerror = () => {
+        if (mySeq === speakSeq) stopLunaSpeech();
+      };
       await lunaAudio.play();
+      ttsFailStreak = 0;
     } catch (_) {
-      speakJaBrowserFallback(line);
+      ttsFailStreak += 1;
+      if (mySeq === speakSeq) speakJaBrowserFallback(line);
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 
@@ -1127,35 +1148,46 @@
     });
   }
 
-  async function applyChat(data) {
-    document.getElementById("dialogue").textContent = data.dialogue || "";
+  function applyChat(data) {
+    const dialogueEl = document.getElementById("dialogue");
+    if (dialogueEl) dialogueEl.textContent = data.dialogue || "";
     renderChips(data.suggested_replies || []);
     const emo = data.game_state && data.game_state.emotion;
-    if (luna) {
-      if (emo) luna.applyEmotion(emo);
-      else luna.reactToText(data.dialogue || "", { greeting: firstChat, fallback: "happy" });
-    }
+    try {
+      if (luna) {
+        if (emo) luna.applyEmotion(emo);
+        else luna.reactToText(data.dialogue || "", { greeting: firstChat, fallback: "happy" });
+      }
+    } catch (_) {}
     firstChat = false;
-    speakJa(data.dialogue || "");
-    await refreshCore();
+    // Voice + core refresh must not block chat replies / busy lock.
+    speakJa(data.dialogue || "").catch(() => {});
+    refreshCore().catch((e) => setErr(e.message || String(e)));
   }
 
   async function sendMessage(text) {
     const msg = (text || "").trim();
     if (!msg || busy) return;
     busy = true;
-    document.getElementById("sendBtn").disabled = true;
+    const sendBtn = document.getElementById("sendBtn");
+    if (sendBtn) sendBtn.disabled = true;
     setErr("");
-    document.getElementById("message").value = "";
-    if (luna) luna.reactToText(msg, { fallback: "think" });
+    const msgEl = document.getElementById("message");
+    if (msgEl) msgEl.value = "";
+    try {
+      if (luna) luna.reactToText(msg, { fallback: "think" });
+    } catch (_) {}
     try {
       const data = await api("/chat", { method: "POST", body: JSON.stringify({ message: msg }) });
-      await applyChat(data);
+      applyChat(data);
     } catch (e) {
       setErr(e.message || String(e));
+      try {
+        if (luna) luna.reactToText("", { fallback: "sad" });
+      } catch (_) {}
     } finally {
       busy = false;
-      document.getElementById("sendBtn").disabled = false;
+      if (sendBtn) sendBtn.disabled = false;
     }
   }
 
@@ -1164,7 +1196,7 @@
     chatStarted = true;
     try {
       const data = await api("/chat/start", { method: "POST", body: JSON.stringify({ message: "" }) });
-      await applyChat(data);
+      applyChat(data);
     } catch (e) {
       setErr(e.message);
       chatStarted = false;
@@ -2027,6 +2059,7 @@
       voiceOn = !voiceOn;
       syncVoiceBtn();
       if (!voiceOn) stopLunaSpeech();
+      else ttsFailStreak = 0;
     };
     document.getElementById("refreshCareerBtn").onclick = () => loadJourney().catch((e) => setErr(e.message));
     const backClass = document.getElementById("backToClassBtn");
