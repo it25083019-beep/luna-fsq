@@ -84,6 +84,10 @@ class ChatResponse(BaseModel):
     allow_voice_input: bool = True
 
 
+class TtsSpeakRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+
+
 
 class AdminUserOut(BaseModel):
     user_id: str

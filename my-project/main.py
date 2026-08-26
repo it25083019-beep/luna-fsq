@@ -9,7 +9,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
@@ -78,6 +78,7 @@ from schemas import (
     JourneySelectRequest,
     JourneyBossChallenge,
     JourneyLessonEnrich,
+    TtsSpeakRequest,
 )
 from suggestions import get_suggested_replies
 from career_engine import load_taxonomy, suggest_careers, rpg_class_label
@@ -104,6 +105,7 @@ from rpg_engine import (
 )
 from store import get_user_state, save_user_state
 from exp_engine import add_exp
+from tts_service import synthesize_speech
 from luna_service import (
     LunaAiError,
     generate_with_retry,
@@ -466,6 +468,18 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
         )
     except Exception as e:
         raise _chat_http_error(e)
+
+
+@app.post("/tts/speak")
+def tts_speak(req: TtsSpeakRequest, current: User = Depends(get_current_user)):
+    del current
+    try:
+        wav = synthesize_speech(req.text)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if not wav:
+        raise HTTPException(status_code=400, detail="empty text")
+    return Response(content=wav, media_type="audio/wav")
 
 
 # ----- Life modules (health / money / schedule) -----

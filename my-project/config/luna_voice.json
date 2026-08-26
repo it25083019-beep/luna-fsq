@@ -1,0 +1,6 @@
+{
+  "reference_audio": "/static/audio/luna-voice-reference.mp3",
+  "model": "gemini-2.5-flash-preview-tts",
+  "voice_name": "Leda",
+  "style_ja": "明るく自然な女性ナレーション（エネルギッシュで優しい）"
+}

@@ -37,6 +37,8 @@
   let chatStarted = false;
   let firstChat = true;
   let voiceOn = localStorage.getItem("luna_voice") !== "0";
+  let lunaAudio = null;
+  let lunaAudioUrl = null;
   let currentTab = "luna";
   let currentModule = "health";
   let stateData = { level: 1, total_exp: 0, companion_name: null, user_display_name: null };
@@ -891,11 +893,37 @@
     }
   }
 
-  function speakJa(text) {
-    if (!voiceOn || !window.speechSynthesis) return;
+  function stopLunaSpeech() {
+    if (lunaAudio) {
+      lunaAudio.pause();
+      lunaAudio = null;
+    }
+    if (lunaAudioUrl) {
+      URL.revokeObjectURL(lunaAudioUrl);
+      lunaAudioUrl = null;
+    }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (luna) luna.stopLipSync();
+  }
+
+  function pickJaBrowserVoice() {
+    if (!window.speechSynthesis) return null;
+    const voices = window.speechSynthesis.getVoices() || [];
+    const prefer = ["Nanami", "Haruka", "Kyoko", "Google 日本語", "Microsoft Ayumi"];
+    for (const name of prefer) {
+      const hit = voices.find((v) => v.name.includes(name));
+      if (hit) return hit;
+    }
+    return voices.find((v) => (v.lang || "").toLowerCase().startsWith("ja")) || null;
+  }
+
+  function speakJaBrowserFallback(text) {
+    if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "ja-JP";
+    const voice = pickJaBrowserVoice();
+    if (voice) u.voice = voice;
     u.onstart = () => {
       if (luna) luna.startLipSync();
     };
@@ -906,6 +934,33 @@
       if (luna) luna.stopLipSync();
     };
     window.speechSynthesis.speak(u);
+  }
+
+  async function speakJa(text) {
+    const line = (text || "").trim();
+    if (!voiceOn || !line) return;
+    stopLunaSpeech();
+    try {
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = "Bearer " + token;
+      const res = await fetch("/tts/speak", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ text: line }),
+      });
+      if (!res.ok) throw new Error("tts");
+      const blob = await res.blob();
+      lunaAudioUrl = URL.createObjectURL(blob);
+      lunaAudio = new Audio(lunaAudioUrl);
+      lunaAudio.onplay = () => {
+        if (luna) luna.startLipSync();
+      };
+      lunaAudio.onended = () => stopLunaSpeech();
+      lunaAudio.onerror = () => stopLunaSpeech();
+      await lunaAudio.play();
+    } catch (_) {
+      speakJaBrowserFallback(line);
+    }
   }
 
   function syncVoiceBtn() {
@@ -1836,10 +1891,7 @@
     document.getElementById("voiceBtn").onclick = () => {
       voiceOn = !voiceOn;
       syncVoiceBtn();
-      if (!voiceOn) {
-        window.speechSynthesis.cancel();
-        if (luna) luna.stopLipSync();
-      }
+      if (!voiceOn) stopLunaSpeech();
     };
     document.getElementById("refreshCareerBtn").onclick = () => loadJourney().catch((e) => setErr(e.message));
     const backClass = document.getElementById("backToClassBtn");
