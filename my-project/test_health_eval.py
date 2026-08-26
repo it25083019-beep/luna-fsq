@@ -33,8 +33,39 @@ def test_evaluate_empty_is_safe():
     print("OK empty evaluate")
 
 
+def test_age_aware_bmi_and_coaching():
+    teen = evaluate_health(
+        {
+            "age": 16,
+            "weight_kg": 70,
+            "height_cm": 165,
+            "target_weight_kg": 60,
+            "sleep_hours": 6,
+            "hobbies": "Osake",
+            "mental_status": "普通",
+            "mental_checked_on": date.today().isoformat(),
+        }
+    )
+    assert teen["exercise_suggestions"], teen
+    assert teen["goal_suggestions"], teen
+    assert any("成長" in g or "減量" in g for g in teen["goal_suggestions"]), teen["goal_suggestions"]
+    senior = evaluate_health(
+        {
+            "age": 70,
+            "weight_kg": 65,
+            "height_cm": 165,
+            "sleep_hours": 8,
+            "mental_status": "元気",
+            "mental_checked_on": date.today().isoformat(),
+        }
+    )
+    assert any("シニア" in x or "散歩" in x for x in senior["exercise_suggestions"]), senior["exercise_suggestions"]
+    print("OK age-aware coaching")
+
+
 def test_evaluate_healthy_profile_high_score():
     s = {
+        "age": 20,
         "weight_kg": 55,
         "height_cm": 165,
         "target_weight_kg": 54,
@@ -53,6 +84,7 @@ def test_evaluate_healthy_profile_high_score():
     assert ev["score"] >= 80, ev
     assert ev["status_ja"] == "良好"
     assert ev["bmi"] is not None
+    assert ev["goal_suggestions"] is not None
     print("OK healthy high score", ev["score"])
 
 
@@ -145,6 +177,7 @@ def test_sanitize_rejects_bad_time_silently():
 if __name__ == "__main__":
     test_evaluate_empty_is_safe()
     test_evaluate_healthy_profile_high_score()
+    test_age_aware_bmi_and_coaching()
     test_evaluate_poor_sleep_lowers()
     test_mental_cadence()
     test_sanitize_and_save_profile()

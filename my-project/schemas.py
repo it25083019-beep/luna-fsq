@@ -185,6 +185,7 @@ class LifeDashboardUpdate(BaseModel):
 
 
 class HealthProfileUpdate(BaseModel):
+    age: Optional[int] = Field(default=None, ge=5, le=120)
     weight_kg: Optional[float] = None
     height_cm: Optional[float] = None
     target_weight_kg: Optional[float] = None

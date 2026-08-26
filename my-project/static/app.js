@@ -199,6 +199,7 @@
   function openSubview(name) {
     closeAllSubviews();
     document.getElementById("sub-" + name).classList.remove("hidden");
+    document.body.classList.add("subview-open");
     if (name === "schedule") {
       selectedDate = todayIso();
       loadScheduleView();
@@ -214,6 +215,7 @@
 
   function closeAllSubviews() {
     ["schedule", "health", "money"].forEach(closeSubview);
+    document.body.classList.remove("subview-open");
   }
 
   function setNavActive(name) {
@@ -727,10 +729,17 @@
   function numOrNull(id) {
     const el = document.getElementById(id);
     if (!el) return null;
-    const t = (el.value || "").trim();
+    const t = (el.value || "").trim().replace(",", ".");
     if (!t) return null;
     const n = Number(t);
     return Number.isFinite(n) ? n : null;
+  }
+
+  function setHealthFormErr(msg) {
+    const el = document.getElementById("healthFormErr");
+    if (el) el.textContent = msg || "";
+    if (msg) setErr(msg);
+    else setErr("");
   }
 
   function strOrNull(id) {
@@ -740,13 +749,36 @@
     return t || null;
   }
 
+  function renderSuggestList(elId, items) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = "";
+    const list = items || [];
+    if (!list.length) {
+      el.classList.add("empty");
+      el.innerHTML = "<li>プロフィールを保存すると提案が出ます。</li>";
+      return;
+    }
+    el.classList.remove("empty");
+    list.forEach((text) => {
+      const li = document.createElement("li");
+      li.textContent = text;
+      el.appendChild(li);
+    });
+  }
+
   function renderHealthDashboard(d) {
     if (!d) return;
     document.getElementById("healthScoreBig").textContent = d.score ?? "—";
     document.getElementById("healthStatus").textContent = d.status_ja || "—";
     document.getElementById("healthMessage").textContent = d.message_ja || "";
     const bmiLine = document.getElementById("healthBmiLine");
-    if (bmiLine) bmiLine.textContent = d.bmi ? "BMI " + d.bmi : "BMI —（身長・体重を入力）";
+    if (bmiLine) {
+      const bits = [];
+      if (d.bmi) bits.push("BMI " + d.bmi);
+      if (d.bmi_range_ja) bits.push(d.bmi_range_ja);
+      bmiLine.textContent = bits.length ? bits.join(" · ") : "BMI —（年齢・身長・体重を入力）";
+    }
     const list = document.getElementById("healthBreakdown");
     if (list) {
       list.innerHTML = "";
@@ -763,7 +795,10 @@
         list.appendChild(li);
       });
     }
+    renderSuggestList("healthGoalSuggest", d.goal_suggestions);
+    renderSuggestList("healthExerciseSuggest", d.exercise_suggestions);
     const p = d.profile || {};
+    setInputVal("editAge", p.age);
     setInputVal("editWeight", p.weight_kg);
     setInputVal("editHeight", p.height_cm);
     setInputVal("editTargetWeight", p.target_weight_kg);
@@ -791,26 +826,38 @@
     const TIME_RE = /^(\d{1,2}):([0-5]\d)$/;
     function normalizeTime(t) {
       if (!t) return null;
-      const m = TIME_RE.exec(t);
+      const raw = String(t).trim();
+      // Allow 24:00 as end-of-day bedtime → 00:00
+      if (raw === "24:00") return "00:00";
+      const m = TIME_RE.exec(raw);
       if (!m) return null;
       const h = Number(m[1]);
       if (h > 23) return null;
       return String(h).padStart(2, "0") + ":" + m[2];
     }
-    const wake = normalizeTime(strOrNull("editWakeTime"));
-    const bed = normalizeTime(strOrNull("editBedtime"));
-    if (strOrNull("editWakeTime") && !wake) {
-      setErr("起床は HH:MM で入力してください");
+    setHealthFormErr("");
+    const wakeRaw = strOrNull("editWakeTime");
+    const bedRaw = strOrNull("editBedtime");
+    const wake = normalizeTime(wakeRaw);
+    const bed = normalizeTime(bedRaw);
+    if (wakeRaw && !wake) {
+      setHealthFormErr("起床は HH:MM（例 07:15）で入力してください");
       return;
     }
-    if (strOrNull("editBedtime") && !bed) {
-      setErr("就寝は HH:MM で入力してください");
+    if (bedRaw && !bed) {
+      setHealthFormErr("就寝は HH:MM（例 23:00 / 24:00）で入力してください");
+      return;
+    }
+    const sleepRaw = (document.getElementById("editSleepHours")?.value || "").trim();
+    if (sleepRaw && numOrNull("editSleepHours") == null) {
+      setHealthFormErr("睡眠時間は数字で入力してください（例 7.5 または 7,5）");
       return;
     }
     try {
       const res = await api("/life/health/profile", {
         method: "PATCH",
         body: JSON.stringify({
+          age: numOrNull("editAge"),
           weight_kg: numOrNull("editWeight"),
           height_cm: numOrNull("editHeight"),
           target_weight_kg: numOrNull("editTargetWeight"),
@@ -826,9 +873,10 @@
         }),
       });
       renderHealthDashboard(res.dashboard || res);
+      setHealthFormErr("");
       await loadHomeSummary();
     } catch (e) {
-      setErr(e.message);
+      setHealthFormErr(e.message);
     }
   }
 
@@ -1352,15 +1400,14 @@
     });
     document.querySelectorAll("[data-back]").forEach((el) => {
       el.onclick = () => {
-        closeSubview(el.dataset.back);
+        closeAllSubviews();
         setNavActive("luna");
         switchTab("luna");
       };
     });
     document.querySelectorAll("[data-ask]").forEach((el) => {
       el.onclick = async () => {
-        closeSubview("health");
-        closeSubview("money");
+        closeAllSubviews();
         switchTab("luna");
         await sendMessage(el.dataset.ask);
       };

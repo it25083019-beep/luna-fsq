@@ -181,7 +181,10 @@
     .composer-voice input{flex:1;border:none;background:transparent;outline:none;padding:.4rem 0;font-size:.85rem}
 
     /* Full-screen subviews (schedule / health / money) */
-    .subview{position:fixed;inset:0;max-width:440px;margin:0 auto;background:linear-gradient(165deg,var(--bg0),var(--bg1) 50%,var(--bg2));z-index:60;overflow-y:auto;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+    .subview{position:fixed;inset:0;max-width:440px;margin:0 auto;background:linear-gradient(165deg,var(--bg0),var(--bg1) 50%,var(--bg2));z-index:75;overflow-y:auto;padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+    body.subview-open .bottom-nav{display:none}
+    .mental-overlay{position:fixed;inset:0;background:rgba(40,30,60,.45);z-index:90;display:none;align-items:flex-end;justify-content:center;padding:1rem;pointer-events:none}
+    .mental-overlay.open{display:flex;pointer-events:auto}
     .subview-head{display:flex;align-items:center;gap:.5rem;padding:1rem;background:linear-gradient(135deg,var(--lilac-deep),var(--lilac));color:#fff}
     .subview-head button{border:none;background:rgba(255,255,255,.2);color:#fff;width:2rem;height:2rem;border-radius:10px;cursor:pointer}
     .subview-head h2{flex:1;margin:0;font-size:1rem;text-align:center}
@@ -295,8 +298,9 @@
     .breakdown-list .k{color:var(--muted)}
     .breakdown-list .v{font-weight:700;color:var(--lilac-deep)}
     .breakdown-list .n{flex:1;color:var(--text);font-size:.7rem}
-    .mental-overlay{position:fixed;inset:0;background:rgba(40,30,60,.45);z-index:80;display:none;align-items:flex-end;justify-content:center;padding:1rem}
-    .mental-overlay.open{display:flex}
+    .suggest-list{margin:.25rem 0 0;padding:0 0 0 1.05rem;font-size:.75rem;line-height:1.5;color:var(--text)}
+    .suggest-list li{margin:.25rem 0}
+    .suggest-list.empty{list-style:none;padding-left:0;color:var(--muted)}
     .mental-card{width:100%;max-width:420px;background:var(--card);border-radius:20px;padding:1rem;box-shadow:var(--shadow)}
     .mental-card h3{margin:0 0 .35rem;font-size:.95rem;color:var(--lilac-deep)}
     .mental-card p{margin:0 0 .65rem;font-size:.78rem;color:var(--muted);line-height:1.45}
@@ -309,6 +313,7 @@
     .home-banner p{margin:0;flex:1;font-size:.78rem;color:var(--text);line-height:1.4}
     .home-banner button{border:none;border-radius:999px;padding:.4rem .7rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;font-size:.72rem;flex-shrink:0}
     .edit-panel .ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
+    .edit-panel .local-err{color:var(--danger);font-size:.75rem;margin:.35rem 0 0;min-height:1em}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/static/theme.js"></script>
@@ -421,9 +426,18 @@
             <div class="bubble compact" id="healthMessage" style="margin:0 0 .45rem">プロフィールを入力すると評価します。</div>
             <ul class="breakdown-list" id="healthBreakdown"></ul>
           </div>
+          <div class="dash-card">
+            <h4>目標の提案</h4>
+            <ul class="suggest-list" id="healthGoalSuggest"></ul>
+          </div>
+          <div class="dash-card">
+            <h4>運動の提案</h4>
+            <ul class="suggest-list" id="healthExerciseSuggest"></ul>
+          </div>
         </div>
         <div class="edit-panel">
           <h4>健康プロフィール</h4>
+          <label>年齢（歳）</label><input id="editAge" type="number" min="5" max="120" step="1" placeholder="例：16" />
           <div class="time-row">
             <div><label>体重 (kg)</label><input id="editWeight" type="number" min="20" max="300" step="0.1" /></div>
             <div><label>身長 (cm)</label><input id="editHeight" type="number" min="50" max="250" step="0.1" /></div>
@@ -432,18 +446,19 @@
             <div><label>目標体重 (kg)</label><input id="editTargetWeight" type="number" min="20" max="300" step="0.1" /></div>
             <div><label>目標身長 (cm)</label><input id="editTargetHeight" type="number" min="50" max="250" step="0.1" /></div>
           </div>
-          <label>睡眠時間（時間/日）</label><input id="editSleepHours" type="number" min="0" max="24" step="0.5" />
+          <label>睡眠時間（時間/日）</label><input id="editSleepHours" type="text" inputmode="decimal" placeholder="例：7.5 / 7,5" />
           <div class="time-row">
             <div><label>起床</label><input id="editWakeTime" type="text" placeholder="HH:MM" inputmode="numeric" /></div>
-            <div><label>就寝</label><input id="editBedtime" type="text" placeholder="HH:MM" inputmode="numeric" /></div>
+            <div><label>就寝</label><input id="editBedtime" type="text" placeholder="HH:MM（24:00可）" inputmode="numeric" /></div>
           </div>
           <label>趣味・好きなこと</label><input id="editHobbies" type="text" placeholder="例：音楽、散歩" />
           <div class="time-row">
-            <div><label>学校 (h)</label><input id="editSchoolHours" type="number" min="0" max="24" step="0.5" /></div>
-            <div><label>自学 (h)</label><input id="editStudyHours" type="number" min="0" max="24" step="0.5" /></div>
+            <div><label>学校 (h)</label><input id="editSchoolHours" type="text" inputmode="decimal" /></div>
+            <div><label>自学 (h)</label><input id="editStudyHours" type="text" inputmode="decimal" /></div>
           </div>
-          <label>リラックス (h/日)</label><input id="editRelaxHours" type="number" min="0" max="24" step="0.5" />
+          <label>リラックス (h/日)</label><input id="editRelaxHours" type="text" inputmode="decimal" />
           <label>運動プラン（任意）</label><textarea id="editExercisePlan" placeholder="例：週3回ジョギング30分"></textarea>
+          <p class="local-err" id="healthFormErr"></p>
           <div class="row"><button type="button" class="save" id="saveHealthBtn">保存して評価</button></div>
         </div>
         <p class="hint" style="padding:0 1rem">よくある相談から選ぶ</p>

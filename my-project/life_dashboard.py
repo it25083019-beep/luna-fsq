@@ -51,6 +51,12 @@ def health_dashboard(user: Dict[str, Any]) -> Dict[str, Any]:
         "breakdown": evaluation["breakdown"],
         "tips_ja": evaluation.get("tips_ja") or [],
         "bmi": evaluation.get("bmi"),
+        "age": evaluation.get("age"),
+        "bmi_range_ja": evaluation.get("bmi_range_ja"),
+        "goal_suggestions": evaluation.get("goal_suggestions") or structured.get("goal_suggestions") or [],
+        "exercise_suggestions": evaluation.get("exercise_suggestions")
+        or structured.get("exercise_suggestions")
+        or [],
         "profile": profile_snapshot(structured),
         "mental_needed": needed,
         "mental_reminder": remind,
