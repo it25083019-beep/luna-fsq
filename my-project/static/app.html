@@ -104,7 +104,7 @@
     .hint{font-size:.68rem;color:var(--muted);font-weight:700}
     .char-card{border-radius:24px;padding:1rem;background:linear-gradient(135deg,rgba(80,105,255,.95),rgba(137,88,246,.94));box-shadow:0 18px 45px rgba(28,32,91,.38);color:#fff;margin-bottom:.65rem}
     .badge{display:inline-flex;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:.35rem .6rem;font-size:.68rem;font-weight:700}
-    .char-main{display:grid;grid-template-columns:1fr 96px;gap:.65rem;align-items:end;margin-top:.55rem}
+    .char-main{display:grid;grid-template-columns:1fr 120px;gap:.65rem;align-items:start;margin-top:.55rem}
     .char-main .role{font-size:1.2rem;font-weight:800;margin:.15rem 0}
     .char-main .small{font-size:.72rem;opacity:.85;line-height:1.45}
     .char-thumb img{height:110px;width:auto;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.25))}
@@ -133,14 +133,33 @@
     .career-pick span{font-size:.62rem;color:var(--muted);line-height:1.35}
     .career-pick .tag{display:inline-block;margin-top:.35rem;font-size:.55rem;font-weight:800;color:var(--lilac-deep);background:#eee8ff;padding:.15rem .4rem;border-radius:999px}
     .career-pick.stub{opacity:.72}
-    .hero-avatar{position:relative;width:88px;height:88px;border-radius:22px;overflow:hidden;background:rgba(255,255,255,.18);flex-shrink:0}
+    .hero-avatar{position:relative;width:108px;height:108px;border-radius:24px;overflow:hidden;background:rgba(255,255,255,.18);flex-shrink:0;border:2px solid rgba(255,255,255,.35)}
     .hero-avatar img{width:100%;height:100%;object-fit:cover;display:block}
-    .hero-avatar.rank-intermediate{box-shadow:0 0 0 3px rgba(255,200,87,.55)}
-    .hero-avatar.rank-veteran{box-shadow:0 0 0 3px rgba(120,200,255,.7)}
-    .hero-avatar.rank-saint{box-shadow:0 0 12px 4px rgba(255,230,120,.85)}
-    .hero-avatar.gear-weapon-sword1::after,.hero-avatar.gear-weapon-pen::after,.hero-avatar.gear-weapon-brush::after{content:"";position:absolute;right:4px;bottom:8px;width:10px;height:28px;background:linear-gradient(#fff,#c9a227);border-radius:2px;opacity:.9}
-    .hero-avatar.gear-armor-hoodie::before,.hero-avatar.gear-armor-cloak::before{content:"";position:absolute;inset:auto 8% 0;height:28%;background:rgba(40,30,90,.35)}
+    .hero-avatar .class-tag{position:absolute;left:6px;top:6px;font-size:.55rem;font-weight:800;background:rgba(20,16,48,.55);color:#fff;padding:.15rem .35rem;border-radius:999px}
+    .hero-avatar.class-swordsman{box-shadow:inset 0 -18px 24px rgba(201,162,39,.35)}
+    .hero-avatar.class-mage{box-shadow:inset 0 -18px 24px rgba(120,90,220,.45)}
+    .hero-avatar.class-archer{box-shadow:inset 0 -18px 24px rgba(60,180,150,.4)}
+    .hero-avatar.rank-intermediate{outline:2px solid rgba(255,200,87,.7)}
+    .hero-avatar.rank-veteran{outline:2px solid rgba(120,200,255,.85)}
+    .hero-avatar.rank-saint{outline:2px solid rgba(255,230,120,.95);box-shadow:0 0 14px rgba(255,230,120,.55)}
+    .hero-avatar.gear-weapon-blade::after,.hero-avatar.gear-weapon-tech::after,.hero-avatar.gear-weapon-pen::after,.hero-avatar.gear-weapon-brush::after,.hero-avatar.gear-weapon-bow::after,.hero-avatar.gear-weapon-staff::after,.hero-avatar.gear-weapon-tome::after{content:"";position:absolute;right:8px;bottom:10px;width:10px;height:34px;border-radius:3px;background:linear-gradient(#fff8,#c9a227);box-shadow:0 0 0 1px rgba(255,255,255,.4)}
+    .hero-avatar.gear-weapon-tech::after{background:linear-gradient(#dff,#497cff)}
+    .hero-avatar.gear-weapon-bow::after{width:18px;height:18px;border-radius:50%;border:2px solid #fff;background:transparent;bottom:14px}
+    .hero-avatar.gear-armor-hoodie::before,.hero-avatar.gear-armor-cloak::before,.hero-avatar.gear-armor-vest::before,.hero-avatar.gear-armor-uniform::before,.hero-avatar.gear-armor-apron::before{content:"";position:absolute;left:10%;right:10%;bottom:0;height:32%;background:rgba(30,24,70,.4)}
+    .hero-avatar.gear-acc-glow{filter:saturate(1.15)}
+    .hero-avatar.gear-artifact{box-shadow:inset 0 0 0 2px rgba(255,210,122,.8)}
+    .gear-panel{display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-top:.65rem}
+    .gear-slot{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:.4rem .5rem;font-size:.62rem}
+    .gear-slot .k{opacity:.75;display:block;margin-bottom:.1rem}
+    .gear-slot .v{font-weight:800}
+    .study-theory{background:#f6f7ff;border:1px solid #e4e8ff;border-radius:14px;padding:.7rem .75rem;margin:.45rem 0 .7rem}
+    .study-theory p{margin:0 0 .45rem;font-size:.74rem;line-height:1.55;color:#3a3f63}
+    .study-theory p:last-child{margin-bottom:0}
+    .study-check{list-style:none;padding:0;margin:0 0 .7rem}
+    .study-check li{font-size:.72rem;padding:.35rem 0 .35rem 1.2rem;position:relative;color:#445;border-bottom:1px dashed #e8eaff}
+    .study-check li::before{content:"☐";position:absolute;left:0;top:.3rem}
     .next-lesson{display:flex;gap:.55rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .next-boss-hint{margin-top:.55rem;padding:.55rem .65rem;border-radius:14px;background:#fff6ef;border:1px solid #ffd7bf;font-size:.72rem;color:#8a4b20}
     .lesson-row,.boss-row{display:flex;gap:.5rem;align-items:flex-start;padding:.55rem 0;border-bottom:1px solid #ecefff}
     .lesson-row:last-child,.boss-row:last-child{border-bottom:none}
     .lesson-row .actions,.boss-row .actions{display:flex;flex-direction:column;gap:.25rem;margin-left:auto}
@@ -568,8 +587,8 @@
       <!-- FSQ secondary -->
       <section id="tab-fsq" class="tab-panel">
         <div class="fsq-banner">
-          <h2>⚔️ Future Skill Quest</h2>
-          <p>クラスと職業を選び、本物の教材で学びながら成長するキャリア旅</p>
+          <h2>📘 Future Skill Quest</h2>
+          <p>職業への長い学習ロードマップ。理論と実践を積み、クラス姿と装備で進捗が見える</p>
         </div>
         <div class="fsq-subnav" id="fsqSubnav">
           <button type="button" class="fsq-sub active" data-fsq="home">ホーム</button>
@@ -597,17 +616,21 @@
               <div class="char-main">
                 <div>
                   <div class="role" id="homeRoleName">冒険者</div>
-                  <div class="small" id="homeRoleDesc">学習するとEXPを獲得できます。</div>
+                  <div class="small" id="homeRoleDesc">長いキャリア学習の進捗がここに表示されます。</div>
                   <div class="exp-wrap" style="margin-top:.55rem">
-                    <div class="exp-label"><span id="homeExpLabel">EXP 0 / 100</span><span id="homeLvLabel">Lv.1</span></div>
+                    <div class="exp-label"><span id="homeExpLabel">学習EXP 0</span><span id="homeLvLabel">Lv.1</span></div>
                     <div class="exp-bar"><span id="homeExpBar"></span></div>
                   </div>
+                  <div class="gear-panel" id="homeGearPanel"></div>
                 </div>
-                <div class="hero-avatar" id="homeAvatarWrap"><img id="homeAvatarImg" src="/static/live2d/luna-expressions/luna-happy.png" alt="" /></div>
+                <div class="hero-avatar" id="homeAvatarWrap">
+                  <span class="class-tag" id="homeAvatarClass">—</span>
+                  <img id="homeAvatarImg" src="/static/live2d/luna-expressions/luna-happy.png" alt="" />
+                </div>
               </div>
             </div>
             <div class="card">
-              <div class="section-title"><span>📘 次のレッスン</span></div>
+              <div class="section-title"><span>📘 次の学習</span></div>
               <div class="next-lesson" id="nextLessonBox"><p class="hint" style="margin:0">進路を選ぶとレッスンが表示されます。</p></div>
             </div>
             <div class="card">
@@ -664,16 +687,20 @@
           <p class="summary" id="studySummary"></p>
           <div class="section-title" style="margin-bottom:.35rem"><span>🎯 ゴール</span></div>
           <ul class="study-goals" id="studyGoals"></ul>
-          <div class="section-title" style="margin-bottom:.35rem"><span>📘 学習ステップ</span></div>
+          <div class="section-title" style="margin-bottom:.35rem"><span>📖 理論</span></div>
+          <div class="study-theory" id="studyTheory"></div>
+          <div class="section-title" style="margin-bottom:.35rem"><span>🛠️ 実践ステップ</span></div>
           <div id="studySteps"></div>
+          <div class="section-title" style="margin:.7rem 0 .35rem"><span>✅ 完了チェック</span></div>
+          <ul class="study-check" id="studyChecklist"></ul>
           <div class="section-title" style="margin:.7rem 0 .35rem"><span>🔗 参考教材</span></div>
           <div class="study-resources" id="studyResources"></div>
           <p class="hint" id="studyPractice" style="margin:0 0 .4rem"></p>
           <p class="hint" id="studyEnrich" style="margin:0 0 .4rem;display:none"></p>
           <div class="study-actions">
-            <button type="button" class="ghost" id="studyEnrichBtn">AIで詳しく</button>
+            <button type="button" class="ghost" id="studyEnrichBtn">AI補足</button>
             <button type="button" class="ghost" id="studyCloseBtn">閉じる</button>
-            <button type="button" class="primary" id="studyCompleteBtn">実践したらクリア</button>
+            <button type="button" class="primary" id="studyCompleteBtn">実践を記録する</button>
           </div>
         </div>
       </div>

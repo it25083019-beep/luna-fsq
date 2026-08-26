@@ -68,13 +68,23 @@ def get_lesson_material(lesson_id: str) -> Dict[str, Any]:
         if row:
             return dict(row)
     return {
-        "summary_ja": "このレッスンの学習メモを読んで、小さな実践をしてからクリアしよう。",
+        "summary_ja": "このレッスンの学習メモを読んで、小さな実践をしてから記録しよう。",
+        "theory_ja": [
+            "まずテーマの基本用語を調べ、自分の言葉で定義する。",
+            "次に、今日の範囲で『何ができればよいか』を1文で書く。",
+        ],
         "goals_ja": ["要点を3つメモする", "今日できる実践を1つ行う"],
         "steps": [
-            {"title_ja": "読む", "body_ja": "タイトルの内容を調べ、わからない言葉を1つ調べる。"},
+            {"title_ja": "理論", "body_ja": "タイトルの内容を調べ、わからない言葉を1つ調べる。"},
             {"title_ja": "実践", "body_ja": "ノートに今日の学びを3行書く。"},
         ],
-        "practice_ja": "3行メモを書いたらクリアできるよ。",
+        "practice_steps": [
+            {"title_ja": "理論", "body_ja": "タイトルの内容を調べ、わからない言葉を1つ調べる。"},
+            {"title_ja": "実践", "body_ja": "ノートに今日の学びを3行書く。"},
+        ],
+        "practice_ja": "3行メモを書いたら学習記録できるよ。",
+        "checklist_ja": ["用語を調べた", "3行メモを書いた"],
+        "estimated_minutes": 30,
         "resources": [],
     }
 
@@ -83,9 +93,13 @@ def _attach_material(lesson: Dict[str, Any]) -> Dict[str, Any]:
     out = dict(lesson)
     mat = get_lesson_material(lesson["id"])
     out["summary_ja"] = mat.get("summary_ja")
+    out["theory_ja"] = mat.get("theory_ja") or []
     out["goals_ja"] = mat.get("goals_ja") or []
     out["steps"] = mat.get("steps") or []
+    out["practice_steps"] = mat.get("practice_steps") or out["steps"]
     out["practice_ja"] = mat.get("practice_ja")
+    out["checklist_ja"] = mat.get("checklist_ja") or []
+    out["estimated_minutes"] = mat.get("estimated_minutes") or 30
     out["resources"] = mat.get("resources") or []
     return out
 
@@ -225,7 +239,7 @@ def _compute_rank(completed_count: int, journey_exp: int) -> Dict[str, Any]:
     return current
 
 
-def _build_appearance(class_id: str, equipped: Dict[str, Any], rank_id: str) -> Dict[str, Any]:
+def _build_appearance(class_id: str, equipped: Dict[str, Any], rank_id: str, inventory: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     app = load_appearance()
     base = (app.get("class_base") or {}).get(class_id) or {
         "sprite": "/static/live2d/luna-expressions/luna-neutral.png",
@@ -237,23 +251,34 @@ def _build_appearance(class_id: str, equipped: Dict[str, Any], rank_id: str) -> 
     aura = (app.get("rank_aura") or {}).get(rank_id) or "rank-novice"
     layers.append(aura)
     tints = []
+    inv_by_id = {str(i.get("id")): i for i in (inventory or [])}
+    equipped_details = []
     for slot, item_id in (equipped or {}).items():
         if not item_id:
             continue
-        # strip career stub prefix for lookup
-        lookup = item_id.split("__")[-1] if "__" in item_id else item_id
-        mod = mods.get(item_id) or mods.get(lookup)
+        lookup = item_id.split("__")[-1] if "__" in str(item_id) else str(item_id)
+        mod = mods.get(str(item_id)) or mods.get(lookup)
         if mod:
             if mod.get("css"):
                 layers.append(mod["css"])
             if mod.get("tint"):
                 tints.append(mod["tint"])
+        meta = inv_by_id.get(str(item_id)) or {}
+        equipped_details.append(
+            {
+                "slot": slot,
+                "item_id": item_id,
+                "label_ja": meta.get("label_ja") or lookup,
+            }
+        )
     return {
         "sprite": base.get("sprite"),
         "css_classes": " ".join(layers),
         "class_label_ja": base.get("label_ja"),
+        "class_id": class_id,
         "rank_id": rank_id,
         "tints": tints,
+        "equipped_details": equipped_details,
     }
 
 
@@ -309,7 +334,12 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
         if b.get("available") and not b.get("cleared"):
             next_boss = b
             break
-    appearance = _build_appearance(j.get("class_id") or "swordsman", j.get("equipped") or {}, j.get("rank_id") or "novice")
+    appearance = _build_appearance(
+        j.get("class_id") or "swordsman",
+        j.get("equipped") or {},
+        j.get("rank_id") or "novice",
+        j.get("inventory") or [],
+    )
     return {
         "selected": bool(j.get("class_id") and j.get("career_id")),
         "class_id": j.get("class_id"),
@@ -453,7 +483,7 @@ def complete_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
     rank = _compute_rank(len(j["completed_lessons"]), j["journey_exp"])
     j["rank_id"] = rank["id"]
     _advance_stage(j, cur)
-    appearance = _build_appearance(j["class_id"], j.get("equipped") or {}, j["rank_id"])
+    appearance = _build_appearance(j["class_id"], j.get("equipped") or {}, j["rank_id"], j.get("inventory") or [])
 
     rpg = ensure_rpg(state)
     if gear:
@@ -583,7 +613,7 @@ def challenge_boss(state: Dict[str, Any], boss_id: str, *, success: bool = True)
         "skills_gained": skills,
         "gear": gear,
         "rank": rank,
-        "appearance": _build_appearance(j["class_id"], j.get("equipped") or {}, j["rank_id"]),
+        "appearance": _build_appearance(j["class_id"], j.get("equipped") or {}, j["rank_id"], j.get("inventory") or []),
         "status": journey_status(state),
         "map": list_journey_map(state),
     }

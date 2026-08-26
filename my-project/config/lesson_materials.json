@@ -2,261 +2,574 @@
   "version": "1.0",
   "materials": {
     "se_l1": {
-      "summary_ja": "エンジニアの成長は「毎日少しずつ」が最強です。完璧な日より、続く日を作ろう。",
+      "summary_ja": "エンジニアキャリアは短距離走ではない。毎日続く学習設計が最初のスキル。",
+      "theory_ja": [
+        "習慣は意志より設計で作る。時間・場所・開始トリガーを決めると続きやすい。",
+        "学習はインプットだけでなく、短いアウトプット（メモ・コード・説明）までを1セットにする。",
+        "最初の目標は完璧ではなく「中断しても再開できる仕組み」を持つこと。"
+      ],
       "goals_ja": [
-        "学習時間をカレンダーに置く",
-        "スマホ通知を1つ減らす",
-        "終わったら1行メモする"
+        "固定の学習枠を作る",
+        "開始トリガーを決める",
+        "1行ログを残す"
       ],
       "steps": [
         {
-          "title_ja": "なぜ30分か",
-          "body_ja": "集中が続く短時間は習慣化しやすい。まずは始めるハードルを下げるのが目的。"
+          "title_ja": "理論の確認",
+          "body_ja": "上の要点を自分の言葉で3行に要約する。"
         },
         {
-          "title_ja": "タイマーの使い方",
-          "body_ja": "ポモドーロ（25分＋5分休）でもOK。途中で止めても「やった」と記録する。"
+          "title_ja": "カレンダー設計",
+          "body_ja": "今後2週間、週5回・各30〜45分の枠を予定に入れる。"
         },
         {
-          "title_ja": "記録の型",
-          "body_ja": "日付 / 学んだこと1行 / 明日やること1行。ノートでもメモアプリでも可。"
+          "title_ja": "開始儀式",
+          "body_ja": "学習開始の固定動作を決める（例: 水を飲む→エディタを開く）。"
+        },
+        {
+          "title_ja": "実践記録",
+          "body_ja": "今日の枠で実際に教材を開き、終了後1行ログを残す。"
         }
       ],
-      "practice_ja": "今日はタイマーをセットして、教材を開くところまでやってみよう。できたらクリア。",
+      "practice_steps": [
+        {
+          "title_ja": "理論の確認",
+          "body_ja": "上の要点を自分の言葉で3行に要約する。"
+        },
+        {
+          "title_ja": "カレンダー設計",
+          "body_ja": "今後2週間、週5回・各30〜45分の枠を予定に入れる。"
+        },
+        {
+          "title_ja": "開始儀式",
+          "body_ja": "学習開始の固定動作を決める（例: 水を飲む→エディタを開く）。"
+        },
+        {
+          "title_ja": "実践記録",
+          "body_ja": "今日の枠で実際に教材を開き、終了後1行ログを残す。"
+        }
+      ],
+      "practice_ja": "今日の枠で実際に教材を開き、終了後1行ログを残す。",
+      "checklist_ja": [
+        "予定に学習枠が入っている",
+        "ログを1回書いた",
+        "翌日の開始場所が決まっている"
+      ],
+      "estimated_minutes": 35,
       "resources": [
         {
-          "title_ja": "ポモドーロ・テクニック概要",
+          "title_ja": "ポモドーロ概要",
           "url": "https://todoist.com/ja/productivity-methods/pomodoro-technique",
           "kind": "article"
         },
         {
-          "title_ja": "MDN 学習エリア",
+          "title_ja": "MDN Learn",
           "url": "https://developer.mozilla.org/ja/docs/Learn",
           "kind": "docs"
         }
       ]
     },
     "se_l2": {
-      "summary_ja": "大きな問題は小さく割ると進む。エンジニアの基本スキル「分解」を身につける。",
+      "summary_ja": "複雑な仕事は分解できる人から速くなる。要件をタスクに落とす訓練。",
+      "theory_ja": [
+        "良い分解は、各タスクが検証可能（できた/できないが分かる）であること。",
+        "タスクは動詞で書く。『ログイン機能』より『メール入力欄を置く』『送信時に検証する』。",
+        "依存関係（これがないと次ができない）を先に見つけると手戻りが減る。"
+      ],
       "goals_ja": [
-        "大きな目標を3〜5個の小タスクにする",
-        "各タスクを30分以内に収める",
-        "依存関係を矢印で書く"
+        "検証可能なタスクに落とす",
+        "依存を可視化する"
       ],
       "steps": [
         {
-          "title_ja": "分解の例",
-          "body_ja": "「Webアプリを作る」→ 画面を描く / HTML骨組み / ボタン動作 / 保存 / 見た目。"
+          "title_ja": "理論",
+          "body_ja": "検証可能なタスクの条件をノートに書く。"
         },
         {
-          "title_ja": "チェックリスト化",
-          "body_ja": "タスクは動詞で書く（調べる・書く・動かす）。曖昧な名詞だけの項目は避ける。"
+          "title_ja": "分解演習",
+          "body_ja": "『家計簿Web』を8個以下のタスクに分解する。"
         },
         {
-          "title_ja": "詰まったとき",
-          "body_ja": "さらに半分に割る。それでも無理なら「調べる」タスクを先に置く。"
+          "title_ja": "依存の矢印",
+          "body_ja": "どのタスクが他に依存するか矢印で示す。"
+        },
+        {
+          "title_ja": "時間見積もり",
+          "body_ja": "各タスクに15/30/60分を仮置きする。"
         }
       ],
-      "practice_ja": "作りたいものか宿題を1つ選び、メモで5個以下に分解して残そう。",
-      "resources": [
+      "practice_steps": [
         {
-          "title_ja": "MDN: 学習への入り口",
-          "url": "https://developer.mozilla.org/ja/docs/Learn",
-          "kind": "docs"
+          "title_ja": "理論",
+          "body_ja": "検証可能なタスクの条件をノートに書く。"
         },
         {
-          "title_ja": "freeCodeCamp 日本語ニュース",
-          "url": "https://www.freecodecamp.org/japanese/news/",
-          "kind": "article"
+          "title_ja": "分解演習",
+          "body_ja": "『家計簿Web』を8個以下のタスクに分解する。"
+        },
+        {
+          "title_ja": "依存の矢印",
+          "body_ja": "どのタスクが他に依存するか矢印で示す。"
+        },
+        {
+          "title_ja": "時間見積もり",
+          "body_ja": "各タスクに15/30/60分を仮置きする。"
+        }
+      ],
+      "practice_ja": "各タスクに15/30/60分を仮置きする。",
+      "checklist_ja": [
+        "タスクが8個以下",
+        "各タスクが動詞で始まる",
+        "依存が書いてある"
+      ],
+      "estimated_minutes": 40,
+      "resources": [
+        {
+          "title_ja": "MDN Learn",
+          "url": "https://developer.mozilla.org/ja/docs/Learn",
+          "kind": "docs"
         }
       ]
     },
     "se_l3": {
-      "summary_ja": "プログラムは「データ（変数）」と「判断（条件）」で動く。コーディングの入口。",
+      "summary_ja": "変数はプログラムの記憶。型を意識するとバグが減る。",
+      "theory_ja": [
+        "変数は名前付きの箱。代入は箱の中身を入れ替える操作。",
+        "文字列・数値・真偽値など、扱うデータの種類（型）で使える操作が変わる。",
+        "命名は『何を表すか』が分かる短さに。a, tmp の多用は後で自分を苦しめる。"
+      ],
       "goals_ja": [
-        "変数に値を入れる意味を説明できる",
-        "if / else で分岐を書ける",
-        "真偽を意識する"
+        "型を説明できる",
+        "意味のある名前を付けられる"
       ],
       "steps": [
         {
-          "title_ja": "変数とは",
-          "body_ja": "箱に名前をつけて値を入れておく仕組み。例: age = 16"
+          "title_ja": "理論メモ",
+          "body_ja": "型を3つ挙げ、例を書く。"
         },
         {
-          "title_ja": "条件分岐",
-          "body_ja": "もし点数 >= 60 なら合格、そうでなければ復習、のように道を分ける。"
+          "title_ja": "手書きトレース",
+          "body_ja": "短いコードの変数の中身変化を表にする。"
         },
         {
-          "title_ja": "手を動かす",
-          "body_ja": "オンラインエディタやブラウザのコンソールで短いコードを実行する。"
+          "title_ja": "実装",
+          "body_ja": "自己紹介オブジェクト（名前・年齢・学習中フラグ）を作る。"
+        },
+        {
+          "title_ja": "説明",
+          "body_ja": "友人に向けて変数とは何かを90秒で説明する原稿を書く。"
         }
       ],
-      "practice_ja": "「所持金が500円以上ならお茶、未満なら水」を if/else で書いて動かそう。",
+      "practice_steps": [
+        {
+          "title_ja": "理論メモ",
+          "body_ja": "型を3つ挙げ、例を書く。"
+        },
+        {
+          "title_ja": "手書きトレース",
+          "body_ja": "短いコードの変数の中身変化を表にする。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "自己紹介オブジェクト（名前・年齢・学習中フラグ）を作る。"
+        },
+        {
+          "title_ja": "説明",
+          "body_ja": "友人に向けて変数とは何かを90秒で説明する原稿を書く。"
+        }
+      ],
+      "practice_ja": "友人に向けて変数とは何かを90秒で説明する原稿を書く。",
+      "checklist_ja": [
+        "トレース表がある",
+        "サンプルコードが動く",
+        "説明原稿がある"
+      ],
+      "estimated_minutes": 45,
       "resources": [
         {
-          "title_ja": "MDN: JavaScript の第一歩",
-          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/First_steps",
+          "title_ja": "MDN: 変数",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/First_steps/Variables",
           "kind": "docs"
         },
         {
-          "title_ja": "MDN: if...else",
-          "url": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Statements/if...else",
+          "title_ja": "MDN: データ型",
+          "url": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Data_structures",
           "kind": "docs"
-        },
-        {
-          "title_ja": "freeCodeCamp: JS",
-          "url": "https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures-v8/",
-          "kind": "course"
         }
       ]
     },
     "se_l4": {
-      "summary_ja": "同じ作業のくり返しはループへ。複数のデータは配列でまとめる。",
+      "summary_ja": "条件分岐は意思決定のコード化。境界値でバグが出やすい。",
+      "theory_ja": [
+        "if/else は『条件が真のとき』の道を選ぶ。",
+        "境界値（ちょうど60点など）を必ずテストケースに含める。",
+        "ネストが深い分岐は、早期returnや表引きで読みやすくできる。"
+      ],
       "goals_ja": [
-        "for / while をざっくり説明できる",
-        "配列の要素を順番に処理できる",
-        "数え間違いに注意する"
+        "分岐を書ける",
+        "境界値を試せる"
       ],
       "steps": [
         {
-          "title_ja": "配列",
-          "body_ja": "関連する値を順番に入れる箱の列。例: scores = [70, 85, 90]"
+          "title_ja": "理論",
+          "body_ja": "真偽値と比較演算を表にまとめる。"
         },
         {
-          "title_ja": "ループ",
-          "body_ja": "配列の各要素に同じ処理をするときに使う。"
+          "title_ja": "実装",
+          "body_ja": "点数から評価（優/良/可/不可）を返す関数を書く。"
         },
         {
-          "title_ja": "よくあるバグ",
-          "body_ja": "i < length と i <= length の間違い。ログで確認する習慣を。"
+          "title_ja": "テスト",
+          "body_ja": "境界値を含む5ケースで手動確認する。"
+        },
+        {
+          "title_ja": "リファクタ",
+          "body_ja": "ネストを浅く書き直す。"
         }
       ],
-      "practice_ja": "1〜10を表示するループ、または名前配列を1つずつ表示するコードを書こう。",
-      "resources": [
+      "practice_steps": [
         {
-          "title_ja": "MDN: ループと反復処理",
-          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/Building_blocks/Looping_code",
-          "kind": "docs"
+          "title_ja": "理論",
+          "body_ja": "真偽値と比較演算を表にまとめる。"
         },
         {
-          "title_ja": "MDN: Array",
-          "url": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array",
+          "title_ja": "実装",
+          "body_ja": "点数から評価（優/良/可/不可）を返す関数を書く。"
+        },
+        {
+          "title_ja": "テスト",
+          "body_ja": "境界値を含む5ケースで手動確認する。"
+        },
+        {
+          "title_ja": "リファクタ",
+          "body_ja": "ネストを浅く書き直す。"
+        }
+      ],
+      "practice_ja": "ネストを浅く書き直す。",
+      "checklist_ja": [
+        "関数がある",
+        "5ケース確認",
+        "読みやすい形に直した"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "MDN: if...else",
+          "url": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Statements/if...else",
           "kind": "docs"
         }
       ]
     },
     "se_l5": {
-      "summary_ja": "週次確認：ここまでの基礎を短い課題でチェックする。復習してから挑もう。",
+      "summary_ja": "週次確認：基礎文法を短い課題で点検する。わからなければ戻って復習。",
+      "theory_ja": [
+        "テストの目的は落とすことではなく、穴を見つけること。",
+        "説明できないコードは、まだ自分のものになっていない。"
+      ],
       "goals_ja": [
-        "変数・条件・ループのミニ課題を解く",
-        "解法を自分の言葉で説明できる",
-        "わからなかった所をメモする"
+        "穴を特定する",
+        "説明できる"
       ],
       "steps": [
         {
-          "title_ja": "準備",
-          "body_ja": "変数・条件・ループのノートを見返す。"
+          "title_ja": "復習",
+          "body_ja": "変数・分岐・ループ・関数のノートを見直す。"
         },
         {
-          "title_ja": "課題例",
-          "body_ja": "配列の合計、最大値、偶数だけ表示などのミニ問題を2問。"
+          "title_ja": "課題",
+          "body_ja": "ミニ問題を3問解く（合計、フィルタ、評価関数）。"
         },
         {
-          "title_ja": "振り返り",
-          "body_ja": "解けた/詰まったを記録。詰まった所が次の学習ポイント。"
+          "title_ja": "説明",
+          "body_ja": "解法を声に出して説明する。"
         }
       ],
-      "practice_ja": "ミニ課題を2問解いてからマップの週次ボスに挑戦しよう。負けても学習進捗は消えない。",
-      "resources": [
+      "practice_steps": [
         {
-          "title_ja": "MDN 学習ハブ",
-          "url": "https://developer.mozilla.org/ja/docs/Learn",
-          "kind": "docs"
+          "title_ja": "復習",
+          "body_ja": "変数・分岐・ループ・関数のノートを見直す。"
         },
         {
-          "title_ja": "Codewars（練習）",
-          "url": "https://www.codewars.com/",
-          "kind": "practice"
+          "title_ja": "課題",
+          "body_ja": "ミニ問題を3問解く（合計、フィルタ、評価関数）。"
+        },
+        {
+          "title_ja": "説明",
+          "body_ja": "解法を声に出して説明する。"
+        }
+      ],
+      "practice_ja": "解法を声に出して説明する。",
+      "checklist_ja": [
+        "3問実施",
+        "弱点メモ1つ"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "freeCodeCamp JS",
+          "url": "https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures-v8/",
+          "kind": "course"
         }
       ]
     },
     "se_l6": {
-      "summary_ja": "バグは敵ではなく手がかり。再現→仮説→確認の手順で潰す。",
+      "summary_ja": "HTMLは見た目ではなく文書の構造。アクセシビリティの土台でもある。",
+      "theory_ja": [
+        "見出し階層（h1-h3）はアウトライン。デザインより先に構造。",
+        "フォームには label を関連付ける。ボタンは button を使う。",
+        "意味のあるタグ（nav, main, section）は支援技術にも効く。"
+      ],
       "goals_ja": [
-        "再現手順を書く",
-        "予想と実際の差を言語化する",
-        "ログで値を確認する"
+        "構造をHTMLで表現できる"
       ],
       "steps": [
         {
-          "title_ja": "再現が半分",
-          "body_ja": "いつ・どの操作・期待・実際を書くと助けを求めやすい。"
+          "title_ja": "理論",
+          "body_ja": "セマンティックHTMLの利点を3つ書く。"
         },
         {
-          "title_ja": "仮説を1つ",
-          "body_ja": "いきなり直さず、原因候補を1つ立てて検証する。"
+          "title_ja": "実装",
+          "body_ja": "自己紹介ページの骨組みをHTMLだけで作る。"
         },
         {
-          "title_ja": "二分法",
-          "body_ja": "怪しい範囲を半分に削る。最近変えた所から疑うのも定石。"
+          "title_ja": "チェック",
+          "body_ja": "見出し階層が飛んでいないか確認する。"
         }
       ],
-      "practice_ja": "わざと間違ったコードを1つ作り、再現手順を3行で書いてから直そう。",
-      "resources": [
+      "practice_steps": [
         {
-          "title_ja": "MDN: 何がうまくいかないのか",
-          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/First_steps/What_went_wrong",
-          "kind": "docs"
+          "title_ja": "理論",
+          "body_ja": "セマンティックHTMLの利点を3つ書く。"
         },
         {
-          "title_ja": "Chrome DevTools",
-          "url": "https://developer.chrome.com/docs/devtools?hl=ja",
+          "title_ja": "実装",
+          "body_ja": "自己紹介ページの骨組みをHTMLだけで作る。"
+        },
+        {
+          "title_ja": "チェック",
+          "body_ja": "見出し階層が飛んでいないか確認する。"
+        }
+      ],
+      "practice_ja": "見出し階層が飛んでいないか確認する。",
+      "checklist_ja": [
+        "ページ骨組み完成",
+        "labelありフォーム"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "MDN: HTML入門",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/HTML/Introduction_to_HTML",
           "kind": "docs"
         }
       ]
     },
     "se_l7": {
-      "summary_ja": "小さなWebアプリ＝HTMLで骨組み、CSSで見た目、JSで動き。まずは動く1画面を作ろう。",
+      "summary_ja": "JSでDOMを操作すると、ページが『アプリ』になる。",
+      "theory_ja": [
+        "DOMはHTMLを木構造として扱うAPI。",
+        "querySelector で要素を取り、textContent や classList で更新する。",
+        "まずは1画面・1操作から。全部自動化しない。"
+      ],
       "goals_ja": [
-        "HTMLで見出し・入力・ボタンを置く",
-        "クリックで文字が変わる/追加される",
-        "構成を自分の言葉で説明できる"
+        "要素を取得して更新できる"
       ],
       "steps": [
         {
-          "title_ja": "設計（5分）",
-          "body_ja": "例: ToDo、打刻メモ、気分ログ、単語帳。機能は1つだけ。"
+          "title_ja": "理論",
+          "body_ja": "DOM操作の流れを図にする。"
         },
         {
-          "title_ja": "HTML骨組み",
-          "body_ja": "input と button と結果表示（ul や p）を用意する。"
+          "title_ja": "実装",
+          "body_ja": "ボタンでカウンタが増えるページを作る。"
         },
         {
-          "title_ja": "JSの動き",
-          "body_ja": "クリックで入力を読み、リスト追加や文字更新。console.log で確認。"
-        },
-        {
-          "title_ja": "仕上げ",
-          "body_ja": "余白とフォントだけ整える。完璧なデザインは後回し。"
+          "title_ja": "拡張",
+          "body_ja": "リセットボタンを追加する。"
         }
       ],
-      "practice_ja": "index.html 1枚、または CodePen で「追加できるメモ」を作ろう。動いたらクリア。",
-      "resources": [
+      "practice_steps": [
         {
-          "title_ja": "MDN: 初めてのウェブサイト",
-          "url": "https://developer.mozilla.org/ja/docs/Learn/Getting_started_with_the_web",
-          "kind": "docs"
+          "title_ja": "理論",
+          "body_ja": "DOM操作の流れを図にする。"
         },
+        {
+          "title_ja": "実装",
+          "body_ja": "ボタンでカウンタが増えるページを作る。"
+        },
+        {
+          "title_ja": "拡張",
+          "body_ja": "リセットボタンを追加する。"
+        }
+      ],
+      "practice_ja": "リセットボタンを追加する。",
+      "checklist_ja": [
+        "カウンタが動く",
+        "リセットがある"
+      ],
+      "estimated_minutes": 55,
+      "resources": [
         {
           "title_ja": "MDN: 文書の操作",
           "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/Client-side_web_APIs/Manipulating_documents",
           "kind": "docs"
+        }
+      ]
+    },
+    "se_l8": {
+      "summary_ja": "月次レビュー：作品を他人に説明できるかが成長の指標。",
+      "theory_ja": [
+        "レビューは攻撃ではなく、次の実験を増やす場。",
+        "『何を作ったか』『なぜその設計か』『次に直す点』の3点セット。"
+      ],
+      "goals_ja": [
+        "説明できる",
+        "改善点を言語化できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "原稿",
+          "body_ja": "3分説明の箇条書きを作る。"
         },
         {
-          "title_ja": "freeCodeCamp: Responsive Web Design",
-          "url": "https://www.freecodecamp.org/learn/2022/responsive-web-design/",
-          "kind": "course"
+          "title_ja": "自己レビュー",
+          "body_ja": "改善点を2つ書く。"
+        },
+        {
+          "title_ja": "次スプリント",
+          "body_ja": "次の2週間の目標を決める。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "原稿",
+          "body_ja": "3分説明の箇条書きを作る。"
+        },
+        {
+          "title_ja": "自己レビュー",
+          "body_ja": "改善点を2つ書く。"
+        },
+        {
+          "title_ja": "次スプリント",
+          "body_ja": "次の2週間の目標を決める。"
+        }
+      ],
+      "practice_ja": "次の2週間の目標を決める。",
+      "checklist_ja": [
+        "原稿あり",
+        "改善2",
+        "次目標あり"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "Qiita",
+          "url": "https://qiita.com/",
+          "kind": "article"
+        }
+      ]
+    },
+    "se_l9": {
+      "summary_ja": "要件が曖昧なまま作ると必ず手戻りする。1文要件から始める。",
+      "theory_ja": [
+        "良い要件は『誰が・何を・どんな結果を得るか』が入る。",
+        "非目標（やらないこと）を書くと範囲が守れる。"
+      ],
+      "goals_ja": [
+        "要件と非目標を書ける"
+      ],
+      "steps": [
+        {
+          "title_ja": "執筆",
+          "body_ja": "作るアプリの要件を1〜3文で書く。"
+        },
+        {
+          "title_ja": "非目標",
+          "body_ja": "やらないことを3つ書く。"
+        },
+        {
+          "title_ja": "受け入れ",
+          "body_ja": "できた判定をチェック形式で書く。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "執筆",
+          "body_ja": "作るアプリの要件を1〜3文で書く。"
+        },
+        {
+          "title_ja": "非目標",
+          "body_ja": "やらないことを3つ書く。"
+        },
+        {
+          "title_ja": "受け入れ",
+          "body_ja": "できた判定をチェック形式で書く。"
+        }
+      ],
+      "practice_ja": "できた判定をチェック形式で書く。",
+      "checklist_ja": [
+        "要件文あり",
+        "非目標3",
+        "受け入れ条件あり"
+      ],
+      "estimated_minutes": 40,
+      "resources": [
+        {
+          "title_ja": "MDN: ソフトウェア設計の入口",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/Server-side/First_steps",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l10": {
+      "summary_ja": "ToDoは定番だが、状態管理・CRUD・UIの総合演習として優秀。",
+      "theory_ja": [
+        "タスクは id, text, done など最小フィールドで始める。",
+        "描画関数とデータ更新を分けるとバグが減る。"
+      ],
+      "goals_ja": [
+        "最小ToDoを完成させる"
+      ],
+      "steps": [
+        {
+          "title_ja": "設計",
+          "body_ja": "データ形を決める。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "追加・完了トグル・表示ができるToDoを作る。"
+        },
+        {
+          "title_ja": "整理",
+          "body_ja": "render() のような描画関数にまとめる。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "設計",
+          "body_ja": "データ形を決める。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "追加・完了トグル・表示ができるToDoを作る。"
+        },
+        {
+          "title_ja": "整理",
+          "body_ja": "render() のような描画関数にまとめる。"
+        }
+      ],
+      "practice_ja": "render() のような描画関数にまとめる。",
+      "checklist_ja": [
+        "追加できる",
+        "完了トグル",
+        "描画分離"
+      ],
+      "estimated_minutes": 70,
+      "resources": [
+        {
+          "title_ja": "MDN: JSガイド",
+          "url": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Guide",
+          "kind": "docs"
         },
         {
           "title_ja": "CodePen",
@@ -265,135 +578,101 @@
         }
       ]
     },
-    "se_l8": {
-      "summary_ja": "月次レビュー：作ったものや学びを説明できるかがポイント。",
-      "goals_ja": [
-        "成果を見ながら説明する",
-        "良かった点・改善点を書く",
-        "次の2週間の目標を決める"
-      ],
-      "steps": [
-        {
-          "title_ja": "観点",
-          "body_ja": "動くか / わかりやすいか / 次に何を足すか。"
-        },
-        {
-          "title_ja": "フィードバック",
-          "body_ja": "否定ではなく次の実験としてメモする。"
-        }
-      ],
-      "practice_ja": "成果を3分で話す箇条書きを書いてから月次ボスへ。",
-      "resources": [
-        {
-          "title_ja": "Qiita（技術メモの例）",
-          "url": "https://qiita.com/",
-          "kind": "article"
-        }
-      ]
-    },
-    "se_l9": {
-      "summary_ja": "Gitは変更の履歴を残す道具。一人でもチームでも必須。",
-      "goals_ja": [
-        "commit の意味を説明できる",
-        "add → commit を一度行う",
-        "良いメッセージの型を知る"
-      ],
-      "steps": [
-        {
-          "title_ja": "なぜGitか",
-          "body_ja": "壊しても戻れる。何を変えたか後から追える。"
-        },
-        {
-          "title_ja": "最小フロー",
-          "body_ja": "変更 → git add → git commit"
-        },
-        {
-          "title_ja": "メッセージ",
-          "body_ja": "何をしたかを短く。例: Add memo list feature"
-        }
-      ],
-      "practice_ja": "GitHub にリポジトリを作り、README を1回コミットしよう（Desktop可）。",
-      "resources": [
-        {
-          "title_ja": "Pro Git（日本語）",
-          "url": "https://git-scm.com/book/ja/v2",
-          "kind": "docs"
-        },
-        {
-          "title_ja": "GitHub Skills",
-          "url": "https://skills.github.com/",
-          "kind": "course"
-        }
-      ]
-    },
-    "se_l10": {
-      "summary_ja": "設計メモは未来の自分への手紙。コードの前に意図を残す。",
-      "goals_ja": [
-        "目的・ユーザー・画面・データ・制約を書く",
-        "曖昧点を質問リストにする"
-      ],
-      "steps": [
-        {
-          "title_ja": "テンプレ",
-          "body_ja": "目的 / 誰向け / 主要画面 / データ / やらないこと。"
-        },
-        {
-          "title_ja": "図",
-          "body_ja": "箱と矢印のラフで十分。綺麗さより共有しやすさ。"
-        }
-      ],
-      "practice_ja": "作りたいアプリの設計メモを半ページ書こう。",
-      "resources": [
-        {
-          "title_ja": "MDN: サーバーサイド第一歩",
-          "url": "https://developer.mozilla.org/ja/docs/Learn/Server-side/First_steps",
-          "kind": "docs"
-        }
-      ]
-    },
     "se_l11": {
-      "summary_ja": "ポートフォリオは作品で語る履歴書。小さくても公開と説明が大事。",
+      "summary_ja": "デバッグは科学実験。再現→仮説→検証。",
+      "theory_ja": [
+        "再現手順がない報告は解けない。",
+        "一度に複数箇所を変えず、仮説を1つずつ潰す。"
+      ],
       "goals_ja": [
-        "作品を公開またはスクショ付きでまとめる",
-        "課題→工夫→学びを書く"
+        "再現票を書ける"
       ],
       "steps": [
         {
-          "title_ja": "載せる内容",
-          "body_ja": "概要、技術、自分でやったこと、リンク。"
+          "title_ja": "再現票",
+          "body_ja": "いつ/操作/期待/実際を書く。"
         },
         {
-          "title_ja": "見せ方",
-          "body_ja": "README や Notion で良い。未完成でも学習成果になる。"
+          "title_ja": "仮説",
+          "body_ja": "原因候補を2つ書く。"
+        },
+        {
+          "title_ja": "検証",
+          "body_ja": "ログで1つずつ確認して直す。"
         }
       ],
-      "practice_ja": "README かドキュメントに作品紹介を書こう。",
+      "practice_steps": [
+        {
+          "title_ja": "再現票",
+          "body_ja": "いつ/操作/期待/実際を書く。"
+        },
+        {
+          "title_ja": "仮説",
+          "body_ja": "原因候補を2つ書く。"
+        },
+        {
+          "title_ja": "検証",
+          "body_ja": "ログで1つずつ確認して直す。"
+        }
+      ],
+      "practice_ja": "ログで1つずつ確認して直す。",
+      "checklist_ja": [
+        "再現票",
+        "仮説2",
+        "修正ログ"
+      ],
+      "estimated_minutes": 50,
       "resources": [
         {
-          "title_ja": "Make a README",
-          "url": "https://www.makeareadme.com/",
-          "kind": "article"
+          "title_ja": "MDN: 何がうまくいかないか",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/First_steps/What_went_wrong",
+          "kind": "docs"
         }
       ]
     },
     "se_l12": {
-      "summary_ja": "最終確認：習慣・分解・実装・デバッグ・Git・設計を統合する。",
+      "summary_ja": "最終試験：ここまでの成果と次の30日を統合して示す。",
+      "theory_ja": [
+        "エンジニアは終わりのない学習職。ここで『完成』ではなく『継続可能』を証明する。"
+      ],
       "goals_ja": [
-        "各ステージを振り返る",
-        "今後30日の学習計画を立てる",
-        "成果物を1つ示す"
+        "継続可能な学習と作品がある"
       ],
       "steps": [
         {
-          "title_ja": "総合確認",
-          "body_ja": "ノートを見返す。"
+          "title_ja": "総復習",
+          "body_ja": "各ステージのノートを見返す。"
+        },
+        {
+          "title_ja": "成果提示",
+          "body_ja": "作品URL/README/説明原稿を揃える。"
         },
         {
           "title_ja": "宣言",
-          "body_ja": "次に作るものと毎週の学習枠を決める。"
+          "body_ja": "次の30日計画を確定する。"
         }
       ],
-      "practice_ja": "30日プラン（週テーマ）を書いてから最終ボスへ。",
+      "practice_steps": [
+        {
+          "title_ja": "総復習",
+          "body_ja": "各ステージのノートを見返す。"
+        },
+        {
+          "title_ja": "成果提示",
+          "body_ja": "作品URL/README/説明原稿を揃える。"
+        },
+        {
+          "title_ja": "宣言",
+          "body_ja": "次の30日計画を確定する。"
+        }
+      ],
+      "practice_ja": "次の30日計画を確定する。",
+      "checklist_ja": [
+        "作品提示",
+        "30日計画",
+        "説明原稿"
+      ],
+      "estimated_minutes": 90,
       "resources": [
         {
           "title_ja": "MDN Learn",
@@ -403,6 +682,11 @@
         {
           "title_ja": "freeCodeCamp",
           "url": "https://www.freecodecamp.org/learn/",
+          "kind": "course"
+        },
+        {
+          "title_ja": "GitHub Skills",
+          "url": "https://skills.github.com/",
           "kind": "course"
         }
       ]
@@ -1391,6 +1675,1898 @@
           "title_ja": "ハローワーク職業検索",
           "url": "https://www.mhlw.go.jp/",
           "kind": "docs"
+        }
+      ]
+    },
+    "se_l1b": {
+      "summary_ja": "振り返りがない学習は同じ場所で迷いやすい。ログの型を固定する。",
+      "theory_ja": [
+        "学習ログの最小単位は『やったこと / 詰まったこと / 次に試すこと』。",
+        "感情（焦り・退屈）も短く書くと、継続の障害が見える。",
+        "週1回、ログを眺めて『繰り返し詰まる点』をテーマ化する。"
+      ],
+      "goals_ja": [
+        "ログ型を固定する",
+        "週次でテーマ化する"
+      ],
+      "steps": [
+        {
+          "title_ja": "テンプレ作成",
+          "body_ja": "ノートに3項目テンプレを作る。"
+        },
+        {
+          "title_ja": "今日の記入",
+          "body_ja": "実際の学習後にテンプレを埋める。"
+        },
+        {
+          "title_ja": "週次テーマ",
+          "body_ja": "直近の詰まりから来週のテーマを1つ決める。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "テンプレ作成",
+          "body_ja": "ノートに3項目テンプレを作る。"
+        },
+        {
+          "title_ja": "今日の記入",
+          "body_ja": "実際の学習後にテンプレを埋める。"
+        },
+        {
+          "title_ja": "週次テーマ",
+          "body_ja": "直近の詰まりから来週のテーマを1つ決める。"
+        }
+      ],
+      "practice_ja": "直近の詰まりから来週のテーマを1つ決める。",
+      "checklist_ja": [
+        "テンプレがある",
+        "今日分を記入した",
+        "次テーマが1つある"
+      ],
+      "estimated_minutes": 30,
+      "resources": [
+        {
+          "title_ja": "エンジニアの学習記録例（Qiita）",
+          "url": "https://qiita.com/",
+          "kind": "article"
+        }
+      ]
+    },
+    "se_l1c": {
+      "summary_ja": "情報源の質が学習速度を決める。一次情報と信頼できる教材を優先する。",
+      "theory_ja": [
+        "一次情報（公式ドキュメント）→ 信頼できる解説 → SNSの断片、の順で当たる。",
+        "古い記事はバージョンに注意。日付と対象バージョンを確認する。",
+        "わからない用語は、使う前に公式の定義を1回読む。"
+      ],
+      "goals_ja": [
+        "一次情報を優先する",
+        "用語を自分の言葉で定義する"
+      ],
+      "steps": [
+        {
+          "title_ja": "比較",
+          "body_ja": "同じトピックを公式とブログで読み、違いを3点書く。"
+        },
+        {
+          "title_ja": "用語ノート",
+          "body_ja": "わからない用語を5つ調べ、自分の定義を書く。"
+        },
+        {
+          "title_ja": "ブックマーク",
+          "body_ja": "よく使う公式ドキュメントをフォルダに入れる。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "比較",
+          "body_ja": "同じトピックを公式とブログで読み、違いを3点書く。"
+        },
+        {
+          "title_ja": "用語ノート",
+          "body_ja": "わからない用語を5つ調べ、自分の定義を書く。"
+        },
+        {
+          "title_ja": "ブックマーク",
+          "body_ja": "よく使う公式ドキュメントをフォルダに入れる。"
+        }
+      ],
+      "practice_ja": "よく使う公式ドキュメントをフォルダに入れる。",
+      "checklist_ja": [
+        "公式リンクを保存した",
+        "用語ノート5語",
+        "比較メモ3点"
+      ],
+      "estimated_minutes": 35,
+      "resources": [
+        {
+          "title_ja": "MDN",
+          "url": "https://developer.mozilla.org/ja/",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "freeCodeCamp",
+          "url": "https://www.freecodecamp.org/learn/",
+          "kind": "course"
+        }
+      ]
+    },
+    "se_l4b": {
+      "summary_ja": "ループは反復作業の自動化。配列とセットで使う。",
+      "theory_ja": [
+        "配列は順序付きのコレクション。インデックスは0から始まることが多い。",
+        "for / for...of / while は用途が違う。終わらないループに注意。",
+        "『何を繰り返すか』『終了条件』『各回の更新』の3点を意識する。"
+      ],
+      "goals_ja": [
+        "配列をループ処理できる",
+        "終了条件を説明できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "理論",
+          "body_ja": "3種のループの使い分けを書く。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "数値配列の合計・平均・最大を出す。"
+        },
+        {
+          "title_ja": "バグ演習",
+          "body_ja": "わざとオフバイワンを作り、発見して直す。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "理論",
+          "body_ja": "3種のループの使い分けを書く。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "数値配列の合計・平均・最大を出す。"
+        },
+        {
+          "title_ja": "バグ演習",
+          "body_ja": "わざとオフバイワンを作り、発見して直す。"
+        }
+      ],
+      "practice_ja": "わざとオフバイワンを作り、発見して直す。",
+      "checklist_ja": [
+        "合計平均最大が動く",
+        "バグ修正ログがある"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "MDN: ループ",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/Building_blocks/Looping_code",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l4c": {
+      "summary_ja": "関数は処理に名前を付けて再利用する単位。",
+      "theory_ja": [
+        "入力（引数）→処理→出力（戻り値）の形で考える。",
+        "副作用（画面を変える・保存する）と計算を分けるとテストしやすい。",
+        "長くなった関数は分割のサイン。"
+      ],
+      "goals_ja": [
+        "関数を定義・呼び出しできる",
+        "副作用を意識できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "設計",
+          "body_ja": "純計算の関数を2つ定義する（例: tax, total）。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "買い物リストの合計を関数で求める。"
+        },
+        {
+          "title_ja": "分割",
+          "body_ja": "100行近くになった処理を関数に分ける演習（仮想でも可）。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "設計",
+          "body_ja": "純計算の関数を2つ定義する（例: tax, total）。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "買い物リストの合計を関数で求める。"
+        },
+        {
+          "title_ja": "分割",
+          "body_ja": "100行近くになった処理を関数に分ける演習（仮想でも可）。"
+        }
+      ],
+      "practice_ja": "100行近くになった処理を関数に分ける演習（仮想でも可）。",
+      "checklist_ja": [
+        "関数が2つ以上",
+        "呼び出し例がある"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "MDN: 関数",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/Building_blocks/Functions",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l4d": {
+      "summary_ja": "関連するデータをひとまとめにする思考がオブジェクト。",
+      "theory_ja": [
+        "オブジェクトはキーと値の組。現実の『もの』をモデル化するのに使う。",
+        "配列 of オブジェクトは実務で非常によく出る形。",
+        "深いネストは読みにくくなるので、最初は浅く保つ。"
+      ],
+      "goals_ja": [
+        "オブジェクトでモデル化できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "モデル化",
+          "body_ja": "『生徒』をオブジェクトで表す。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "生徒配列から平均点を計算する。"
+        },
+        {
+          "title_ja": "変換",
+          "body_ja": "オブジェクトを画面表示用の文字列に整形する。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "モデル化",
+          "body_ja": "『生徒』をオブジェクトで表す。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "生徒配列から平均点を計算する。"
+        },
+        {
+          "title_ja": "変換",
+          "body_ja": "オブジェクトを画面表示用の文字列に整形する。"
+        }
+      ],
+      "practice_ja": "オブジェクトを画面表示用の文字列に整形する。",
+      "checklist_ja": [
+        "生徒モデルがある",
+        "平均計算が動く"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "MDN: オブジェクト入門",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/Objects/Basics",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l6b": {
+      "summary_ja": "CSSは見やすさと余白の設計。まずは箱モデルとフレックスから。",
+      "theory_ja": [
+        "余白（margin/padding）は情報のグルーピング。",
+        "色はコントラストを意識。薄い灰色の文字は読みにくい。",
+        "最初から全部ピクセル指定せず、流れ（通常フロー）を理解する。"
+      ],
+      "goals_ja": [
+        "箱モデルを説明できる",
+        "Flexで並べられる"
+      ],
+      "steps": [
+        {
+          "title_ja": "理論",
+          "body_ja": "marginとpaddingの違いを図で書く。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "カードレイアウトをFlexboxで作る。"
+        },
+        {
+          "title_ja": "改善",
+          "body_ja": "モバイル幅で崩れる点を1つ直す。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "理論",
+          "body_ja": "marginとpaddingの違いを図で書く。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "カードレイアウトをFlexboxで作る。"
+        },
+        {
+          "title_ja": "改善",
+          "body_ja": "モバイル幅で崩れる点を1つ直す。"
+        }
+      ],
+      "practice_ja": "モバイル幅で崩れる点を1つ直す。",
+      "checklist_ja": [
+        "カードUI完成",
+        "差分メモあり"
+      ],
+      "estimated_minutes": 55,
+      "resources": [
+        {
+          "title_ja": "MDN: CSS第一歩",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/CSS/First_steps",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "MDN: Flexbox",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/CSS/CSS_layout/Flexbox",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l6c": {
+      "summary_ja": "レスポンシブは『縮める』ではなく『情報優先度を変えられる』こと。",
+      "theory_ja": [
+        "ビューポートとメディアクエリの基本を押さえる。",
+        "モバイルで必要・デスクトップで追加、の優先度を決める。",
+        "固定幅レイアウトは壊れやすい。相対単位も併用する。"
+      ],
+      "goals_ja": [
+        "優先度を決められる",
+        "ブレークポイントを使える"
+      ],
+      "steps": [
+        {
+          "title_ja": "方針",
+          "body_ja": "スマホ/PCで見せる情報の差を表にする。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "ブレークポイントを1つ入れたレイアウトにする。"
+        },
+        {
+          "title_ja": "実機確認",
+          "body_ja": "ブラウザ幅を変えて確認し、スクショを残す。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "方針",
+          "body_ja": "スマホ/PCで見せる情報の差を表にする。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "ブレークポイントを1つ入れたレイアウトにする。"
+        },
+        {
+          "title_ja": "実機確認",
+          "body_ja": "ブラウザ幅を変えて確認し、スクショを残す。"
+        }
+      ],
+      "practice_ja": "ブラウザ幅を変えて確認し、スクショを残す。",
+      "checklist_ja": [
+        "表がある",
+        "2幅で確認した"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "MDN: レスポンシブ入門",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/CSS/CSS_layout/Responsive_Design",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l7b": {
+      "summary_ja": "イベントはユーザー操作とプログラムをつなぐ接点。",
+      "theory_ja": [
+        "click, submit, input などイベント種別を知る。",
+        "submit では preventDefault が重要。",
+        "入力値の検証はUXと安全性の入口。"
+      ],
+      "goals_ja": [
+        "フォームイベントを扱える"
+      ],
+      "steps": [
+        {
+          "title_ja": "実装",
+          "body_ja": "名前を入力してリストに追加するフォームを作る。"
+        },
+        {
+          "title_ja": "検証",
+          "body_ja": "空文字を拒否する。"
+        },
+        {
+          "title_ja": "削除",
+          "body_ja": "項目削除まで入れる（任意だが推奨）。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "実装",
+          "body_ja": "名前を入力してリストに追加するフォームを作る。"
+        },
+        {
+          "title_ja": "検証",
+          "body_ja": "空文字を拒否する。"
+        },
+        {
+          "title_ja": "削除",
+          "body_ja": "項目削除まで入れる（任意だが推奨）。"
+        }
+      ],
+      "practice_ja": "項目削除まで入れる（任意だが推奨）。",
+      "checklist_ja": [
+        "追加できる",
+        "空を拒否"
+      ],
+      "estimated_minutes": 55,
+      "resources": [
+        {
+          "title_ja": "MDN: イベント入門",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/Building_blocks/Events",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l7c": {
+      "summary_ja": "静的サイトを『完成』まで持っていく経験が次のプロダクト力になる。",
+      "theory_ja": [
+        "完成の定義を先に書く（必須機能3つ）。",
+        "見た目の完璧さより、操作が一貫していること。",
+        "公開前チェックリスト（リンク切れ、見出し、スマホ表示）を通す。"
+      ],
+      "goals_ja": [
+        "完成条件を定義できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "定義",
+          "body_ja": "完成条件を3つ書く。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "自己紹介+リンク+フォームのページを仕上げる。"
+        },
+        {
+          "title_ja": "チェック",
+          "body_ja": "チェックリストを通す。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "定義",
+          "body_ja": "完成条件を3つ書く。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "自己紹介+リンク+フォームのページを仕上げる。"
+        },
+        {
+          "title_ja": "チェック",
+          "body_ja": "チェックリストを通す。"
+        }
+      ],
+      "practice_ja": "チェックリストを通す。",
+      "checklist_ja": [
+        "条件3つ",
+        "チェック通過"
+      ],
+      "estimated_minutes": 60,
+      "resources": [
+        {
+          "title_ja": "MDN: 初めてのウェブサイト",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/Getting_started_with_the_web",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "CodePen",
+          "url": "https://codepen.io/pen/",
+          "kind": "tool"
+        }
+      ]
+    },
+    "se_l9b": {
+      "summary_ja": "画面とデータの対応が見えると実装順が決まる。",
+      "theory_ja": [
+        "各画面で表示する項目と、保存する項目を表にする。",
+        "『入力→保存→再表示』の流れを一文で書く。"
+      ],
+      "goals_ja": [
+        "画面とデータを対応づけられる"
+      ],
+      "steps": [
+        {
+          "title_ja": "表作成",
+          "body_ja": "画面×データ項目の表を作る。"
+        },
+        {
+          "title_ja": "フロー",
+          "body_ja": "追加・編集・削除の流れを書く。"
+        },
+        {
+          "title_ja": "優先",
+          "body_ja": "最初のバージョンに入れる項目を絞る。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "表作成",
+          "body_ja": "画面×データ項目の表を作る。"
+        },
+        {
+          "title_ja": "フロー",
+          "body_ja": "追加・編集・削除の流れを書く。"
+        },
+        {
+          "title_ja": "優先",
+          "body_ja": "最初のバージョンに入れる項目を絞る。"
+        }
+      ],
+      "practice_ja": "最初のバージョンに入れる項目を絞る。",
+      "checklist_ja": [
+        "表がある",
+        "v1範囲が絞られている"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "ワイヤー入門",
+          "url": "https://www.nngroup.com/articles/wireframes-getting-started/",
+          "kind": "article"
+        }
+      ]
+    },
+    "se_l10b": {
+      "summary_ja": "永続化がないアプリは『毎回消える』。localStorageは入門に最適。",
+      "theory_ja": [
+        "JSON.stringify / parse の組でオブジェクトを保存する。",
+        "保存失敗・壊れたデータのフォールバックを考える。"
+      ],
+      "goals_ja": [
+        "永続化できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "実装",
+          "body_ja": "ToDoをlocalStorageへ保存・復元する。"
+        },
+        {
+          "title_ja": "耐性",
+          "body_ja": "壊れたJSONでも落ちないようにする。"
+        },
+        {
+          "title_ja": "確認",
+          "body_ja": "リロード後も残ることを確認する。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "実装",
+          "body_ja": "ToDoをlocalStorageへ保存・復元する。"
+        },
+        {
+          "title_ja": "耐性",
+          "body_ja": "壊れたJSONでも落ちないようにする。"
+        },
+        {
+          "title_ja": "確認",
+          "body_ja": "リロード後も残ることを確認する。"
+        }
+      ],
+      "practice_ja": "リロード後も残ることを確認する。",
+      "checklist_ja": [
+        "リロード耐性あり"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "MDN: Web Storage",
+          "url": "https://developer.mozilla.org/ja/docs/Web/API/Web_Storage_API",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l11b": {
+      "summary_ja": "DevToolsはエンジニアの顕微鏡。",
+      "theory_ja": [
+        "Elements / Console / Network の役割を知る。",
+        "ブレークポイントで『止まる』体験をする。"
+      ],
+      "goals_ja": [
+        "DevToolsの基本を使える"
+      ],
+      "steps": [
+        {
+          "title_ja": "探索",
+          "body_ja": "自分のページでElementsを触る。"
+        },
+        {
+          "title_ja": "Console",
+          "body_ja": "変数をログ出力する。"
+        },
+        {
+          "title_ja": "Network",
+          "body_ja": "適当なページでリクエスト一覧を見る。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "探索",
+          "body_ja": "自分のページでElementsを触る。"
+        },
+        {
+          "title_ja": "Console",
+          "body_ja": "変数をログ出力する。"
+        },
+        {
+          "title_ja": "Network",
+          "body_ja": "適当なページでリクエスト一覧を見る。"
+        }
+      ],
+      "practice_ja": "適当なページでリクエスト一覧を見る。",
+      "checklist_ja": [
+        "3パネルを使ったメモ"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "Chrome DevTools",
+          "url": "https://developer.chrome.com/docs/devtools?hl=ja",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l12a": {
+      "summary_ja": "Gitは履歴という安全網。チームの共通言語。",
+      "theory_ja": [
+        "working tree / staging / commit の三段を理解する。",
+        "小さく頻繁にコミットする方が戻しやすい。"
+      ],
+      "goals_ja": [
+        "基本操作ができる"
+      ],
+      "steps": [
+        {
+          "title_ja": "理論図",
+          "body_ja": "三段を図にする。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "リポジトリを初期化し、2回コミットする。"
+        },
+        {
+          "title_ja": "差分",
+          "body_ja": "git diff / status の見方をメモする。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "理論図",
+          "body_ja": "三段を図にする。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "リポジトリを初期化し、2回コミットする。"
+        },
+        {
+          "title_ja": "差分",
+          "body_ja": "git diff / status の見方をメモする。"
+        }
+      ],
+      "practice_ja": "git diff / status の見方をメモする。",
+      "checklist_ja": [
+        "2コミット以上"
+      ],
+      "estimated_minutes": 55,
+      "resources": [
+        {
+          "title_ja": "Pro Git",
+          "url": "https://git-scm.com/book/ja/v2",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l12b": {
+      "summary_ja": "コミットメッセージは未来の自分と仲間への説明文。",
+      "theory_ja": [
+        "何をしたかを現在形・短く。Whyが必要なら本文へ。",
+        "雑なメッセージは履歴検索を壊す。"
+      ],
+      "goals_ja": [
+        "良いメッセージを書ける"
+      ],
+      "steps": [
+        {
+          "title_ja": "悪い例集め",
+          "body_ja": "悪いメッセージ例を3つ書く。"
+        },
+        {
+          "title_ja": "良い例",
+          "body_ja": "自分の直近変更を良い文に直す。"
+        },
+        {
+          "title_ja": "ルール",
+          "body_ja": "自分用のメッセージ規約を3行作る。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "悪い例集め",
+          "body_ja": "悪いメッセージ例を3つ書く。"
+        },
+        {
+          "title_ja": "良い例",
+          "body_ja": "自分の直近変更を良い文に直す。"
+        },
+        {
+          "title_ja": "ルール",
+          "body_ja": "自分用のメッセージ規約を3行作る。"
+        }
+      ],
+      "practice_ja": "自分用のメッセージ規約を3行作る。",
+      "checklist_ja": [
+        "規約3行"
+      ],
+      "estimated_minutes": 30,
+      "resources": [
+        {
+          "title_ja": "Conventional Commits",
+          "url": "https://www.conventionalcommits.org/ja/v1.0.0/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l12c": {
+      "summary_ja": "公開はフィードバックの入口。小さくても出す。",
+      "theory_ja": [
+        "GitHubは作品の証明にも学習ログにもなる。",
+        "秘密情報（鍵、パスワード）を上げない。"
+      ],
+      "goals_ja": [
+        "公開できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "作成",
+          "body_ja": "リポジトリを作ってpushする。"
+        },
+        {
+          "title_ja": "確認",
+          "body_ja": ".gitignore を置く。"
+        },
+        {
+          "title_ja": "共有",
+          "body_ja": "URLをメモする。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "作成",
+          "body_ja": "リポジトリを作ってpushする。"
+        },
+        {
+          "title_ja": "確認",
+          "body_ja": ".gitignore を置く。"
+        },
+        {
+          "title_ja": "共有",
+          "body_ja": "URLをメモする。"
+        }
+      ],
+      "practice_ja": "URLをメモする。",
+      "checklist_ja": [
+        "remoteあり",
+        "gitignoreあり"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "GitHub Skills",
+          "url": "https://skills.github.com/",
+          "kind": "course"
+        }
+      ]
+    },
+    "se_l12d": {
+      "summary_ja": "READMEは作品の入口ページ。",
+      "theory_ja": [
+        "概要・動かし方・工夫・今後、の順がわかりやすい。",
+        "スクショがあると伝わり方が段違い。"
+      ],
+      "goals_ja": [
+        "他人が動かす手順を書ける"
+      ],
+      "steps": [
+        {
+          "title_ja": "執筆",
+          "body_ja": "READMEを書く。"
+        },
+        {
+          "title_ja": "再現手順",
+          "body_ja": "初見が動かす手順を書く。"
+        },
+        {
+          "title_ja": "見直し",
+          "body_ja": "専門用語に短い説明を足す。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "執筆",
+          "body_ja": "READMEを書く。"
+        },
+        {
+          "title_ja": "再現手順",
+          "body_ja": "初見が動かす手順を書く。"
+        },
+        {
+          "title_ja": "見直し",
+          "body_ja": "専門用語に短い説明を足す。"
+        }
+      ],
+      "practice_ja": "専門用語に短い説明を足す。",
+      "checklist_ja": [
+        "README完成"
+      ],
+      "estimated_minutes": 40,
+      "resources": [
+        {
+          "title_ja": "Make a README",
+          "url": "https://www.makeareadme.com/",
+          "kind": "article"
+        }
+      ]
+    },
+    "se_l13": {
+      "summary_ja": "UIの難しさの本質は状態。画面は状態の投影。",
+      "theory_ja": [
+        "状態（入力中テキスト、一覧、読み込み中）を先に列挙する。",
+        "状態が変わったときだけ描画を更新する発想が後のFW理解につながる。"
+      ],
+      "goals_ja": [
+        "状態を設計できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "列挙",
+          "body_ja": "アプリの状態一覧を書く。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "状態オブジェクトを1つにまとめて描画する。"
+        },
+        {
+          "title_ja": "遷移",
+          "body_ja": "状態が変わる操作を表にする。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "列挙",
+          "body_ja": "アプリの状態一覧を書く。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "状態オブジェクトを1つにまとめて描画する。"
+        },
+        {
+          "title_ja": "遷移",
+          "body_ja": "状態が変わる操作を表にする。"
+        }
+      ],
+      "practice_ja": "状態が変わる操作を表にする。",
+      "checklist_ja": [
+        "状態一覧",
+        "描画が追従"
+      ],
+      "estimated_minutes": 55,
+      "resources": [
+        {
+          "title_ja": "MDN: JSガイド",
+          "url": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Guide",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l13b": {
+      "summary_ja": "非同期は待ち時間のある処理。Promiseとその失敗処理が基本。",
+      "theory_ja": [
+        "同期と非同期の違いを生活の例で説明できると理解が固まる。",
+        "async/await は Promise の上の書き方。"
+      ],
+      "goals_ja": [
+        "非同期の失敗を扱える"
+      ],
+      "steps": [
+        {
+          "title_ja": "理論",
+          "body_ja": "同期/非同期を例で説明する。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "遅延後にメッセージを出す関数を書く。"
+        },
+        {
+          "title_ja": "失敗",
+          "body_ja": "失敗時の表示を入れる。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "理論",
+          "body_ja": "同期/非同期を例で説明する。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "遅延後にメッセージを出す関数を書く。"
+        },
+        {
+          "title_ja": "失敗",
+          "body_ja": "失敗時の表示を入れる。"
+        }
+      ],
+      "practice_ja": "失敗時の表示を入れる。",
+      "checklist_ja": [
+        "成功/失敗の両方確認"
+      ],
+      "estimated_minutes": 55,
+      "resources": [
+        {
+          "title_ja": "MDN: async",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/Asynchronous",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l13c": {
+      "summary_ja": "外部APIはデータの泉。契約（形）を読んでから使う。",
+      "theory_ja": [
+        "fetch で取得し、JSONを画面に写す流れが基本。",
+        "CORSやレート制限など、環境制約があることを知る。"
+      ],
+      "goals_ja": [
+        "APIデータを表示できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "公開API選定",
+          "body_ja": "練習用APIを1つ選ぶ。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "一覧を表示する。"
+        },
+        {
+          "title_ja": "整形",
+          "body_ja": "必要なフィールドだけ出す。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "公開API選定",
+          "body_ja": "練習用APIを1つ選ぶ。"
+        },
+        {
+          "title_ja": "実装",
+          "body_ja": "一覧を表示する。"
+        },
+        {
+          "title_ja": "整形",
+          "body_ja": "必要なフィールドだけ出す。"
+        }
+      ],
+      "practice_ja": "必要なフィールドだけ出す。",
+      "checklist_ja": [
+        "一覧表示成功"
+      ],
+      "estimated_minutes": 60,
+      "resources": [
+        {
+          "title_ja": "MDN: fetch",
+          "url": "https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l13d": {
+      "summary_ja": "ローディングとエラーはプロダクト品質そのもの。",
+      "theory_ja": [
+        "待ち中に何も出ないUIは壊れているように見える。",
+        "エラーは『何が起きたか』『次に何ができるか』を示す。"
+      ],
+      "goals_ja": [
+        "待機と失敗のUIがある"
+      ],
+      "steps": [
+        {
+          "title_ja": "状態追加",
+          "body_ja": "loading / error / success を持つ。"
+        },
+        {
+          "title_ja": "UI",
+          "body_ja": "それぞれの表示を作る。"
+        },
+        {
+          "title_ja": "再試行",
+          "body_ja": "再試行ボタンを付ける。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "状態追加",
+          "body_ja": "loading / error / success を持つ。"
+        },
+        {
+          "title_ja": "UI",
+          "body_ja": "それぞれの表示を作る。"
+        },
+        {
+          "title_ja": "再試行",
+          "body_ja": "再試行ボタンを付ける。"
+        }
+      ],
+      "practice_ja": "再試行ボタンを付ける。",
+      "checklist_ja": [
+        "3状態表示",
+        "再試行可"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "MDN: fetch",
+          "url": "https://developer.mozilla.org/ja/docs/Web/API/Fetch_API/Using_Fetch",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l13e": {
+      "summary_ja": "フロント週次：状態・非同期・表示の総合確認。",
+      "theory_ja": [
+        "穴を見つけるためのチェック。説明できない所は復習対象。"
+      ],
+      "goals_ja": [
+        "弱点を直す"
+      ],
+      "steps": [
+        {
+          "title_ja": "チェックリスト実施",
+          "body_ja": "状態列挙、fetch、エラーUIを自己点検。"
+        },
+        {
+          "title_ja": "ミニ改修",
+          "body_ja": "弱点を1つ直す。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "チェックリスト実施",
+          "body_ja": "状態列挙、fetch、エラーUIを自己点検。"
+        },
+        {
+          "title_ja": "ミニ改修",
+          "body_ja": "弱点を1つ直す。"
+        }
+      ],
+      "practice_ja": "弱点を1つ直す。",
+      "checklist_ja": [
+        "点検メモ",
+        "改修1"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "MDN Learn",
+          "url": "https://developer.mozilla.org/ja/docs/Learn",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l14": {
+      "summary_ja": "クライアントは見せる側、サーバは守り・共有・計算の側、という役割分担。",
+      "theory_ja": [
+        "ブラウザだけでは秘密を守れない、という感覚が重要。",
+        "APIは契約。入力と出力の形を先に決める。"
+      ],
+      "goals_ja": [
+        "役割を説明できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "図解",
+          "body_ja": "クライアント/サーバ/DBの箱図を描く。"
+        },
+        {
+          "title_ja": "責務分け",
+          "body_ja": "自分のアプリ機能をどちら側か振り分ける。"
+        },
+        {
+          "title_ja": "質問リスト",
+          "body_ja": "わからない用語を5つ書く。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "図解",
+          "body_ja": "クライアント/サーバ/DBの箱図を描く。"
+        },
+        {
+          "title_ja": "責務分け",
+          "body_ja": "自分のアプリ機能をどちら側か振り分ける。"
+        },
+        {
+          "title_ja": "質問リスト",
+          "body_ja": "わからない用語を5つ書く。"
+        }
+      ],
+      "practice_ja": "わからない用語を5つ書く。",
+      "checklist_ja": [
+        "箱図",
+        "振り分け表"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "MDN: サーバーサイド第一歩",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/Server-side/First_steps",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l14b": {
+      "summary_ja": "HTTPはWebの共通語。メソッドとステータスを読む。",
+      "theory_ja": [
+        "GETは取得、POSTは作成、など意味がある（厳密さはAPI設計次第）。",
+        "200/400/401/404/500 のニュアンスを知る。"
+      ],
+      "goals_ja": [
+        "HTTPの基本を読める"
+      ],
+      "steps": [
+        {
+          "title_ja": "表",
+          "body_ja": "主要メソッドとステータス表を作る。"
+        },
+        {
+          "title_ja": "観察",
+          "body_ja": "DevTools Networkで実際のリクエストを見る。"
+        },
+        {
+          "title_ja": "設計",
+          "body_ja": "自分のToDo APIのエンドポイント案を書く。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "表",
+          "body_ja": "主要メソッドとステータス表を作る。"
+        },
+        {
+          "title_ja": "観察",
+          "body_ja": "DevTools Networkで実際のリクエストを見る。"
+        },
+        {
+          "title_ja": "設計",
+          "body_ja": "自分のToDo APIのエンドポイント案を書く。"
+        }
+      ],
+      "practice_ja": "自分のToDo APIのエンドポイント案を書く。",
+      "checklist_ja": [
+        "表",
+        "エンドポイント案"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "MDN: HTTP概要",
+          "url": "https://developer.mozilla.org/ja/docs/Web/HTTP/Overview",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l14c": {
+      "summary_ja": "API設計は名前付けと一貫性。完璧な実装より契約が先。",
+      "theory_ja": [
+        "リソース名は名詞、操作はメソッドで表す考え方。",
+        "エラー形式も契約に含める。"
+      ],
+      "goals_ja": [
+        "API契約を書ける"
+      ],
+      "steps": [
+        {
+          "title_ja": "契約書",
+          "body_ja": "ToDo APIのパスと入出力JSONを書く。"
+        },
+        {
+          "title_ja": "エラー",
+          "body_ja": "失敗時のJSON例を書く。"
+        },
+        {
+          "title_ja": "モック",
+          "body_ja": "仮データを返すイメージを文章化（実装は任意）。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "契約書",
+          "body_ja": "ToDo APIのパスと入出力JSONを書く。"
+        },
+        {
+          "title_ja": "エラー",
+          "body_ja": "失敗時のJSON例を書く。"
+        },
+        {
+          "title_ja": "モック",
+          "body_ja": "仮データを返すイメージを文章化（実装は任意）。"
+        }
+      ],
+      "practice_ja": "仮データを返すイメージを文章化（実装は任意）。",
+      "checklist_ja": [
+        "契約書1枚"
+      ],
+      "estimated_minutes": 55,
+      "resources": [
+        {
+          "title_ja": "MDN: HTTP",
+          "url": "https://developer.mozilla.org/ja/docs/Web/HTTP",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l14d": {
+      "summary_ja": "認証は『誰か』を確かめる仕組み。パスワードをそのまま持たない。",
+      "theory_ja": [
+        "認証と認可は違う。",
+        "セッションやトークンのイメージを持つ（詳細実装は次段）。",
+        "秘密情報の取り扱い基本を学ぶ。"
+      ],
+      "goals_ja": [
+        "基本概念を説明できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "用語",
+          "body_ja": "認証/認可/セッションを自分の言葉で定義。"
+        },
+        {
+          "title_ja": "危険例",
+          "body_ja": "やってはいけない例を3つ書く。"
+        },
+        {
+          "title_ja": "設計メモ",
+          "body_ja": "自分のアプリにログインが要るか判断する。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "用語",
+          "body_ja": "認証/認可/セッションを自分の言葉で定義。"
+        },
+        {
+          "title_ja": "危険例",
+          "body_ja": "やってはいけない例を3つ書く。"
+        },
+        {
+          "title_ja": "設計メモ",
+          "body_ja": "自分のアプリにログインが要るか判断する。"
+        }
+      ],
+      "practice_ja": "自分のアプリにログインが要るか判断する。",
+      "checklist_ja": [
+        "定義3",
+        "危険例3"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "MDN: セキュリティ入門",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/Server-side/First_steps/Website_security",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l15": {
+      "summary_ja": "データ設計はアプリの骨格。重複と矛盾を減らす。",
+      "theory_ja": [
+        "同じ情報を複数箇所に持つと更新漏れが起きる。",
+        "エンティティ（ユーザー、タスク等）を見つけて関係を考える。"
+      ],
+      "goals_ja": [
+        "エンティティを抽出できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "エンティティ抽出",
+          "body_ja": "作っているアプリの実体を挙げる。"
+        },
+        {
+          "title_ja": "関係",
+          "body_ja": "1対多などを矢印で描く。"
+        },
+        {
+          "title_ja": "重複探し",
+          "body_ja": "重複しそうな項目を見つける。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "エンティティ抽出",
+          "body_ja": "作っているアプリの実体を挙げる。"
+        },
+        {
+          "title_ja": "関係",
+          "body_ja": "1対多などを矢印で描く。"
+        },
+        {
+          "title_ja": "重複探し",
+          "body_ja": "重複しそうな項目を見つける。"
+        }
+      ],
+      "practice_ja": "重複しそうな項目を見つける。",
+      "checklist_ja": [
+        "図がある"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "DB概念の入門記事",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/Server-side/First_steps",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l15b": {
+      "summary_ja": "CRUDはデータ操作の基本動詞。",
+      "theory_ja": [
+        "Create/Read/Update/Delete を画面操作と対応づける。",
+        "削除は論理削除か物理削除かを後で必ず問われる。"
+      ],
+      "goals_ja": [
+        "CRUDを設計できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "対応表",
+          "body_ja": "画面操作とCRUDを対応づける。"
+        },
+        {
+          "title_ja": "例外",
+          "body_ja": "削除時の確認UIを考える。"
+        },
+        {
+          "title_ja": "権限",
+          "body_ja": "誰がどの操作できるかメモする。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "対応表",
+          "body_ja": "画面操作とCRUDを対応づける。"
+        },
+        {
+          "title_ja": "例外",
+          "body_ja": "削除時の確認UIを考える。"
+        },
+        {
+          "title_ja": "権限",
+          "body_ja": "誰がどの操作できるかメモする。"
+        }
+      ],
+      "practice_ja": "誰がどの操作できるかメモする。",
+      "checklist_ja": [
+        "対応表あり"
+      ],
+      "estimated_minutes": 40,
+      "resources": [
+        {
+          "title_ja": "MDN HTTP",
+          "url": "https://developer.mozilla.org/ja/docs/Web/HTTP",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l15c": {
+      "summary_ja": "どこに保存するかで制約が変わる（ブラウザ/サーバ/DB）。",
+      "theory_ja": [
+        "localStorage・ファイル・DBの違いを比較軸で見る。",
+        "学習段階では『今の目的に足りるか』で選ぶ。"
+      ],
+      "goals_ja": [
+        "保存先を理由付きで選べる"
+      ],
+      "steps": [
+        {
+          "title_ja": "比較表",
+          "body_ja": "3方式を速度/共有/安全性で比較。"
+        },
+        {
+          "title_ja": "選択",
+          "body_ja": "今の作品の保存先を決め理由を書く。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "比較表",
+          "body_ja": "3方式を速度/共有/安全性で比較。"
+        },
+        {
+          "title_ja": "選択",
+          "body_ja": "今の作品の保存先を決め理由を書く。"
+        }
+      ],
+      "practice_ja": "今の作品の保存先を決め理由を書く。",
+      "checklist_ja": [
+        "比較表",
+        "決定理由"
+      ],
+      "estimated_minutes": 40,
+      "resources": [
+        {
+          "title_ja": "Web Storage",
+          "url": "https://developer.mozilla.org/ja/docs/Web/API/Web_Storage_API",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l15d": {
+      "summary_ja": "月次：データ設計をレビューし、矛盾を潰す。",
+      "theory_ja": [
+        "設計は一発正解より反復。"
+      ],
+      "goals_ja": [
+        "設計を説明できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "レビュー",
+          "body_ja": "エンティティ図を見ながら矛盾を2つ探す。"
+        },
+        {
+          "title_ja": "修正",
+          "body_ja": "図を更新する。"
+        },
+        {
+          "title_ja": "説明",
+          "body_ja": "なぜこの形かを5行で書く。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "レビュー",
+          "body_ja": "エンティティ図を見ながら矛盾を2つ探す。"
+        },
+        {
+          "title_ja": "修正",
+          "body_ja": "図を更新する。"
+        },
+        {
+          "title_ja": "説明",
+          "body_ja": "なぜこの形かを5行で書く。"
+        }
+      ],
+      "practice_ja": "なぜこの形かを5行で書く。",
+      "checklist_ja": [
+        "矛盾2修正",
+        "説明5行"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "MDN Learn",
+          "url": "https://developer.mozilla.org/ja/docs/Learn",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l16": {
+      "summary_ja": "Issueは仕事の単位。小さく明確だと進む。",
+      "theory_ja": [
+        "良いIssueは再現/目的/完了条件がある。",
+        "大きすぎるIssueは分割する。"
+      ],
+      "goals_ja": [
+        "良いIssueを書ける"
+      ],
+      "steps": [
+        {
+          "title_ja": "作成",
+          "body_ja": "自分の作品のIssueを3つ書く。"
+        },
+        {
+          "title_ja": "分割",
+          "body_ja": "大きいものを分割する。"
+        },
+        {
+          "title_ja": "優先",
+          "body_ja": "今スプリントの1つを選ぶ。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "作成",
+          "body_ja": "自分の作品のIssueを3つ書く。"
+        },
+        {
+          "title_ja": "分割",
+          "body_ja": "大きいものを分割する。"
+        },
+        {
+          "title_ja": "優先",
+          "body_ja": "今スプリントの1つを選ぶ。"
+        }
+      ],
+      "practice_ja": "今スプリントの1つを選ぶ。",
+      "checklist_ja": [
+        "Issue3"
+      ],
+      "estimated_minutes": 35,
+      "resources": [
+        {
+          "title_ja": "GitHub Issuesガイド",
+          "url": "https://docs.github.com/ja/issues",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l16b": {
+      "summary_ja": "レビューは品質と学びの両方を運ぶコミュニケーション。",
+      "theory_ja": [
+        "指摘は人格ではなく差分へ。",
+        "受け手は『なぜそう書いたか』を短く返せるようにする。"
+      ],
+      "goals_ja": [
+        "レビュー会話ができる"
+      ],
+      "steps": [
+        {
+          "title_ja": "ロールプレイ",
+          "body_ja": "自分のコードに仮想レビューコメントを3つ書く。"
+        },
+        {
+          "title_ja": "返信",
+          "body_ja": "それぞれへの返信を書く。"
+        },
+        {
+          "title_ja": "ルール",
+          "body_ja": "チームならではのレビュールール案を3行。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "ロールプレイ",
+          "body_ja": "自分のコードに仮想レビューコメントを3つ書く。"
+        },
+        {
+          "title_ja": "返信",
+          "body_ja": "それぞれへの返信を書く。"
+        },
+        {
+          "title_ja": "ルール",
+          "body_ja": "チームならではのレビュールール案を3行。"
+        }
+      ],
+      "practice_ja": "チームならではのレビュールール案を3行。",
+      "checklist_ja": [
+        "コメント3",
+        "返信3"
+      ],
+      "estimated_minutes": 40,
+      "resources": [
+        {
+          "title_ja": "Google Eng Practices",
+          "url": "https://google.github.io/eng-practices/review/",
+          "kind": "article"
+        }
+      ]
+    },
+    "se_l16c": {
+      "summary_ja": "仕様は一人で抱えず、短時間で揃える。",
+      "theory_ja": [
+        "認識ずれは実装後より実装前に安く直る。",
+        "決まったこと/未決を分ける。"
+      ],
+      "goals_ja": [
+        "未決を可視化できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "壁打ち",
+          "body_ja": "友人または自分の分身で仕様質問を10分。"
+        },
+        {
+          "title_ja": "議事",
+          "body_ja": "決定と未決をメモ。"
+        },
+        {
+          "title_ja": "反映",
+          "body_ja": "要件文を更新。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "壁打ち",
+          "body_ja": "友人または自分の分身で仕様質問を10分。"
+        },
+        {
+          "title_ja": "議事",
+          "body_ja": "決定と未決をメモ。"
+        },
+        {
+          "title_ja": "反映",
+          "body_ja": "要件文を更新。"
+        }
+      ],
+      "practice_ja": "要件文を更新。",
+      "checklist_ja": [
+        "決定/未決メモ"
+      ],
+      "estimated_minutes": 35,
+      "resources": [
+        {
+          "title_ja": "MDN",
+          "url": "https://developer.mozilla.org/ja/docs/Learn",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l16d": {
+      "summary_ja": "テスト観点は『壊し方の一覧』。",
+      "theory_ja": [
+        "正常系だけでなく異常系・境界値。",
+        "手動でもチェックリストがあれば再実行できる。"
+      ],
+      "goals_ja": [
+        "テスト観点を作れる"
+      ],
+      "steps": [
+        {
+          "title_ja": "観点出し",
+          "body_ja": "自分のアプリのテスト観点を10個。"
+        },
+        {
+          "title_ja": "実施",
+          "body_ja": "5個実行して結果を記録。"
+        },
+        {
+          "title_ja": "回帰",
+          "body_ja": "直した後に再実行する項目を選ぶ。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "観点出し",
+          "body_ja": "自分のアプリのテスト観点を10個。"
+        },
+        {
+          "title_ja": "実施",
+          "body_ja": "5個実行して結果を記録。"
+        },
+        {
+          "title_ja": "回帰",
+          "body_ja": "直した後に再実行する項目を選ぶ。"
+        }
+      ],
+      "practice_ja": "直した後に再実行する項目を選ぶ。",
+      "checklist_ja": [
+        "観点10",
+        "実施5"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "MDN",
+          "url": "https://developer.mozilla.org/ja/docs/Learn",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l17": {
+      "summary_ja": "ポートフォリオは量より『説明できる深さ』。",
+      "theory_ja": [
+        "作品は1〜3個でよい。学習過程が見えると強い。",
+        "未完成でも、学びと次の手が書いてあれば価値がある。"
+      ],
+      "goals_ja": [
+        "作品を説明用に整える"
+      ],
+      "steps": [
+        {
+          "title_ja": "選定",
+          "body_ja": "出す作品を1つ決める。"
+        },
+        {
+          "title_ja": "証拠",
+          "body_ja": "スクショ/URL/技術スタックを揃える。"
+        },
+        {
+          "title_ja": "ストーリー",
+          "body_ja": "課題→工夫→学びを書く。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "選定",
+          "body_ja": "出す作品を1つ決める。"
+        },
+        {
+          "title_ja": "証拠",
+          "body_ja": "スクショ/URL/技術スタックを揃える。"
+        },
+        {
+          "title_ja": "ストーリー",
+          "body_ja": "課題→工夫→学びを書く。"
+        }
+      ],
+      "practice_ja": "課題→工夫→学びを書く。",
+      "checklist_ja": [
+        "作品1",
+        "ストーリー"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "Make a README",
+          "url": "https://www.makeareadme.com/",
+          "kind": "article"
+        }
+      ]
+    },
+    "se_l17b": {
+      "summary_ja": "作品ページは採用・自己紹介の共通資料。",
+      "theory_ja": [
+        "読み手は忙しい。最初の5行で何の作品か分かること。"
+      ],
+      "goals_ja": [
+        "初見に伝わるページがある"
+      ],
+      "steps": [
+        {
+          "title_ja": "ページ作成",
+          "body_ja": "READMEまたはNotionで作品ページを作る。"
+        },
+        {
+          "title_ja": "推敲",
+          "body_ja": "専門用語に短い注釈を足す。"
+        },
+        {
+          "title_ja": "他者確認",
+          "body_ja": "他人に30秒読んでもらい疑問を聞く（可能なら）。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "ページ作成",
+          "body_ja": "READMEまたはNotionで作品ページを作る。"
+        },
+        {
+          "title_ja": "推敲",
+          "body_ja": "専門用語に短い注釈を足す。"
+        },
+        {
+          "title_ja": "他者確認",
+          "body_ja": "他人に30秒読んでもらい疑問を聞く（可能なら）。"
+        }
+      ],
+      "practice_ja": "他人に30秒読んでもらい疑問を聞く（可能なら）。",
+      "checklist_ja": [
+        "作品ページ完成"
+      ],
+      "estimated_minutes": 50,
+      "resources": [
+        {
+          "title_ja": "Qiita",
+          "url": "https://qiita.com/",
+          "kind": "article"
+        }
+      ]
+    },
+    "se_l17c": {
+      "summary_ja": "技術説明は面接でもレビューでも使う基本技能。",
+      "theory_ja": [
+        "結論→理由→具体例の順が聞きやすい。",
+        "『知らない』と言えることも信頼。"
+      ],
+      "goals_ja": [
+        "90秒で説明できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "想定問答",
+          "body_ja": "よくある質問を5つ作り答える。"
+        },
+        {
+          "title_ja": "録音",
+          "body_ja": "1問を90秒で話し、聞き直す。"
+        },
+        {
+          "title_ja": "改善",
+          "body_ja": "詰まった説明を書き直す。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "想定問答",
+          "body_ja": "よくある質問を5つ作り答える。"
+        },
+        {
+          "title_ja": "録音",
+          "body_ja": "1問を90秒で話し、聞き直す。"
+        },
+        {
+          "title_ja": "改善",
+          "body_ja": "詰まった説明を書き直す。"
+        }
+      ],
+      "practice_ja": "詰まった説明を書き直す。",
+      "checklist_ja": [
+        "問答5",
+        "改善1"
+      ],
+      "estimated_minutes": 45,
+      "resources": [
+        {
+          "title_ja": "freeCodeCamp",
+          "url": "https://www.freecodecamp.org/learn/",
+          "kind": "course"
+        }
+      ]
+    },
+    "se_l17d": {
+      "summary_ja": "長いキャリアはロードマップで区切る。30日は丁度よい実験単位。",
+      "theory_ja": [
+        "週テーマを決め、成果物を先に定義する。",
+        "予定は守りやすさ優先。盛らない。"
+      ],
+      "goals_ja": [
+        "実行可能な30日計画"
+      ],
+      "steps": [
+        {
+          "title_ja": "30日計画",
+          "body_ja": "週ごとのテーマと成果物を書く。"
+        },
+        {
+          "title_ja": "計測",
+          "body_ja": "学習時間の記録方法を決める。"
+        },
+        {
+          "title_ja": "緩衝",
+          "body_ja": "休み日を入れる。"
+        }
+      ],
+      "practice_steps": [
+        {
+          "title_ja": "30日計画",
+          "body_ja": "週ごとのテーマと成果物を書く。"
+        },
+        {
+          "title_ja": "計測",
+          "body_ja": "学習時間の記録方法を決める。"
+        },
+        {
+          "title_ja": "緩衝",
+          "body_ja": "休み日を入れる。"
+        }
+      ],
+      "practice_ja": "休み日を入れる。",
+      "checklist_ja": [
+        "計画表あり"
+      ],
+      "estimated_minutes": 40,
+      "resources": [
+        {
+          "title_ja": "MDN Learn",
+          "url": "https://developer.mozilla.org/ja/docs/Learn",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "freeCodeCamp",
+          "url": "https://www.freecodecamp.org/learn/",
+          "kind": "course"
         }
       ]
     }

@@ -7,9 +7,9 @@
   ],
   "ranks": [
     {"id": "novice", "label_ja": "見習い", "min_lessons": 0, "min_exp": 0},
-    {"id": "intermediate", "label_ja": "中級", "min_lessons": 4, "min_exp": 80},
-    {"id": "veteran", "label_ja": "熟練", "min_lessons": 9, "min_exp": 220},
-    {"id": "saint", "label_ja": "聖級", "min_lessons": 14, "min_exp": 400}
+    {"id": "intermediate", "label_ja": "中級", "min_lessons": 6, "min_exp": 120},
+    {"id": "veteran", "label_ja": "熟練", "min_lessons": 18, "min_exp": 400},
+    {"id": "saint", "label_ja": "聖級", "min_lessons": 35, "min_exp": 900}
   ],
   "careers": [
     {

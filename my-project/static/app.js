@@ -414,25 +414,57 @@
     return classLabels[id] || CLASSES.find((c) => c.id === id)?.label || id;
   }
 
+  const GEAR_SLOT_JA = { weapon: "武器", armor: "防具", accessory: "装飾", artifact: "証" };
+
   function applyAppearance(wrap, img, appearance) {
     if (!wrap || !img) return;
     const ap = appearance || {};
     wrap.className = "hero-avatar " + (ap.css_classes || "");
     if (ap.sprite) img.src = ap.sprite;
+    const tag = document.getElementById("homeAvatarClass");
+    if (tag) tag.textContent = ap.class_label_ja || classLabel(ap.class_id) || "—";
+  }
+
+  function renderGearPanel(appearance, inventory) {
+    const panel = document.getElementById("homeGearPanel");
+    if (!panel) return;
+    const details = (appearance && appearance.equipped_details) || [];
+    const slots = ["weapon", "armor", "accessory", "artifact"];
+    const bySlot = {};
+    details.forEach((d) => {
+      bySlot[d.slot] = d;
+    });
+    (inventory || []).forEach((it) => {
+      if (it && it.slot && !bySlot[it.slot]) bySlot[it.slot] = it;
+    });
+    panel.innerHTML = slots
+      .map((slot) => {
+        const row = bySlot[slot];
+        const label = row ? row.label_ja || row.id || "装備中" : "未装備";
+        return (
+          '<div class="gear-slot"><span class="k">' +
+          (GEAR_SLOT_JA[slot] || slot) +
+          '</span><span class="v">' +
+          label +
+          "</span></div>"
+        );
+      })
+      .join("");
   }
 
   function renderHomeHeader() {
     const cls = journeyStatus.class_id || rpgData.class_id || selectedClass;
-    const user = stateData.user_display_name || "冒険者";
+    const user = stateData.user_display_name || "学習者";
     const lv = journeyStatus.level || stateData.level || 1;
     const exp = journeyStatus.total_exp || stateData.total_exp || 0;
     const prog = expProgress(exp, lv);
+    const done = journeyStatus.completed_count || 0;
     const badge = document.getElementById("homeClassBadge");
     if (badge) {
       badge.textContent =
         "クラス：" +
         (journeyStatus.class_ja || classLabel(cls)) +
-        " ／ 進化：" +
+        " ／ 習熟：" +
         (journeyStatus.rank_ja || "見習い");
     }
     const role = document.getElementById("homeRoleName");
@@ -440,11 +472,13 @@
     const desc = document.getElementById("homeRoleDesc");
     if (desc) {
       desc.textContent = journeyStatus.selected
-        ? CLASS_DESC[cls] || "レッスンをクリアして装備とランクを上げよう。"
+        ? "職業学習 " +
+          done +
+          " 単元完了。理論→実践の長い道のりを積み上げよう。"
         : CLASS_DESC[cls] || CLASS_DESC.swordsman;
     }
     const expL = document.getElementById("homeExpLabel");
-    if (expL) expL.textContent = "旅EXP " + (journeyStatus.journey_exp || 0) + " ／ 総EXP " + prog.cur;
+    if (expL) expL.textContent = "学習EXP " + (journeyStatus.journey_exp || 0) + " ／ 通算 " + prog.cur;
     const lvL = document.getElementById("homeLvLabel");
     if (lvL) lvL.textContent = "Lv." + lv;
     const bar = document.getElementById("homeExpBar");
@@ -454,6 +488,7 @@
       document.getElementById("homeAvatarImg"),
       journeyStatus.appearance
     );
+    renderGearPanel(journeyStatus.appearance, journeyStatus.inventory || []);
     const my = document.getElementById("myName");
     if (my) my.textContent = user;
   }
@@ -469,8 +504,8 @@
       p.className = "hint";
       p.style.margin = "0";
       p.textContent = boss
-        ? "学習レッスンは一段落。マップでボスに挑戦しよう。"
-        : "次のレッスンはありません。マップを確認しよう。";
+        ? "いまの単元は一段落。マップの確認テスト（ボス）か、進路タブで復習しよう。"
+        : "次の学習単元を準備中、またはマップを確認しよう。";
       box.appendChild(p);
     } else {
       const left = document.createElement("div");
@@ -482,7 +517,7 @@
         " EXP ・ 教材あり</div>";
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.textContent = "学ぶ";
+      btn.textContent = "開く";
       btn.onclick = () => openStudyLesson(les.id);
       box.appendChild(left);
       box.appendChild(btn);
@@ -508,8 +543,13 @@
         (await api("/journey/lessons/" + encodeURIComponent(lessonId)));
       currentStudyLessonId = lessonId;
       document.getElementById("studyTitle").textContent = les.title_ja || lessonId;
-      document.getElementById("studyExp").textContent = "+" + (les.exp || 0) + " 旅EXP";
-      document.getElementById("studySummary").textContent = les.summary_ja || "";
+            document.getElementById("studySummary").textContent = les.summary_ja || "";
+      document.getElementById("studyExp").textContent =
+        "目安 " +
+        (les.estimated_minutes || 30) +
+        "分 ・ +" +
+        (les.exp || 0) +
+        " 学習EXP";
       const goals = document.getElementById("studyGoals");
       goals.innerHTML = "";
       (les.goals_ja || []).forEach((g) => {
@@ -517,21 +557,38 @@
         li.textContent = g;
         goals.appendChild(li);
       });
+      const theory = document.getElementById("studyTheory");
+      if (theory) {
+        const paras = les.theory_ja || [];
+        theory.innerHTML = paras.length
+          ? paras.map((p) => "<p>" + p + "</p>").join("")
+          : "<p>この単元の要点を下の実践で確認しよう。</p>";
+      }
       const steps = document.getElementById("studySteps");
       steps.innerHTML = "";
-      (les.steps || []).forEach((s, i) => {
+      const practice = les.practice_steps && les.practice_steps.length ? les.practice_steps : les.steps || [];
+      practice.forEach((s, i) => {
         const div = document.createElement("div");
         div.className = "study-step";
         div.innerHTML =
           "<strong>" +
           (i + 1) +
           ". " +
-          (s.title_ja || "ステップ") +
+          (s.title_ja || "実践") +
           "</strong><p>" +
           (s.body_ja || "") +
           "</p>";
         steps.appendChild(div);
       });
+      const checks = document.getElementById("studyChecklist");
+      if (checks) {
+        checks.innerHTML = "";
+        (les.checklist_ja || []).forEach((c) => {
+          const li = document.createElement("li");
+          li.textContent = c;
+          checks.appendChild(li);
+        });
+      }
       const res = document.getElementById("studyResources");
       res.innerHTML = "";
       const resources = les.resources || [];
@@ -620,7 +677,7 @@
       (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
       if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
       if (res.rank) chips.push("進化：" + (res.rank.label_ja || res.rank.id));
-      showRewardModal("レッスン完了！", ["EXP +" + (res.exp_gained || 0), (res.lesson && res.lesson.title_ja) || ""], chips);
+      showRewardModal("学習を記録した！", ["EXP +" + (res.exp_gained || 0), (res.lesson && res.lesson.title_ja) || ""], chips);
       if (luna) luna.applyEmotion("cheer", 1500);
       applyJourneyUi();
       await refreshCore();
@@ -734,7 +791,7 @@
       if (!les.completed && les.available) {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.textContent = "学ぶ";
+        btn.textContent = "開く";
         btn.onclick = () => openStudyLesson(les.id);
         actions.appendChild(btn);
       }

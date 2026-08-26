@@ -79,54 +79,50 @@ def test_learning_not_blocked_by_weekly_boss():
     state = fresh()
     select_journey(state, class_id="swordsman", career_id="software_engineer")
     cur = get_curriculum("software_engineer")
+    # Finish all learning lessons before the first weekly boss
     for les in cur["lessons"]:
-        if les["stage_id"] in ("se_s1", "se_s2") and (les.get("boss_type") or "none") == "none":
-            complete_lesson(state, les["id"])
-            state["daily_exp"] = 0
-    complete_lesson(state, "se_l6")
-    state["daily_exp"] = 0
+        if (les.get("boss_type") or "none") != "none":
+            break
+        complete_lesson(state, les["id"])
+        state["daily_exp"] = 0
     st = journey_status(state)
-    assert st["next_lesson"]["id"] == "se_l7"
-    assert st["next_boss"]["id"] == "se_l5"
-    les = get_lesson(state, "se_l7")
+    assert st["next_boss"] and st["next_boss"]["boss_type"] == "weekly"
+    # Continue to next stage learning even if weekly not cleared
+    nxt = st["next_lesson"]
+    assert nxt, st
+    assert (nxt.get("boss_type") or "none") == "none"
+    les = get_lesson(state, nxt["id"])
     assert les["available"] is True
-    assert les.get("resources")
-    complete_lesson(state, "se_l7")
+    assert les.get("theory_ja") or les.get("resources")
+    complete_lesson(state, nxt["id"])
     print("OK learning path past weekly boss")
 
 
 def test_stage_lock_and_weekly_boss_gate():
     state = fresh()
     select_journey(state, class_id="swordsman", career_id="software_engineer")
-    # Complete stage 1+2 non-boss lessons
     cur = get_curriculum("software_engineer")
+    weekly = next(l for l in cur["lessons"] if l.get("boss_type") == "weekly")
+    # Complete learning lessons in same stage as weekly (and earlier stages)
     for les in cur["lessons"]:
+        if les["id"] == weekly["id"]:
+            break
         if (les.get("boss_type") or "none") != "none":
             continue
-        if les["stage_id"] in ("se_s1", "se_s2"):
-            complete_lesson(state, les["id"])
-            state["daily_exp"] = 0  # bypass daily cap for test
+        complete_lesson(state, les["id"])
+        state["daily_exp"] = 0
 
     bosses = {b["id"]: b for b in list_bosses(state)}
-    assert "se_l5" in bosses
-    # weekly needs half of stage-3 learning lessons
-    assert bosses["se_l5"]["available"] is False or bosses["se_l5"]["boss_type"] == "weekly"
+    assert weekly["id"] in bosses
+    assert bosses[weekly["id"]]["available"] is True
 
-    for les in cur["lessons"]:
-        if les["stage_id"] == "se_s3" and (les.get("boss_type") or "none") == "none":
-            complete_lesson(state, les["id"])
-            state["daily_exp"] = 0
-
-    bosses = {b["id"]: b for b in list_bosses(state)}
-    assert bosses["se_l5"]["available"] is True
-
-    fail = challenge_boss(state, "se_l5", success=False)
+    fail = challenge_boss(state, weekly["id"], success=False)
     assert fail["success"] is False
-    assert "se_l5" not in state["rpg"]["journey"]["boss_clears"]
+    assert weekly["id"] not in state["rpg"]["journey"]["boss_clears"]
 
-    win = challenge_boss(state, "se_l5", success=True)
+    win = challenge_boss(state, weekly["id"], success=True)
     assert win["success"] is True
-    assert "se_l5" in state["rpg"]["journey"]["boss_clears"]
+    assert weekly["id"] in state["rpg"]["journey"]["boss_clears"]
     print("OK weekly boss gate")
 
 

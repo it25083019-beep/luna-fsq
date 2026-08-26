@@ -4,143 +4,1449 @@
     "software_engineer": {
       "career_id": "software_engineer",
       "stages": [
-        {"id": "se_s1", "order": 1, "label_ja": "始まりの平原", "theme_ja": "習慣と基礎"},
-        {"id": "se_s2", "order": 2, "label_ja": "学習の森", "theme_ja": "プログラミング基礎"},
-        {"id": "se_s3", "order": 3, "label_ja": "試練の丘", "theme_ja": "週次チェック"},
-        {"id": "se_s4", "order": 4, "label_ja": "中間の峡谷", "theme_ja": "アプリ制作"},
-        {"id": "se_s5", "order": 5, "label_ja": "キャリアの城", "theme_ja": "エンジニア最終試練"}
+        {
+          "id": "se_s1",
+          "order": 1,
+          "label_ja": "学習の土台",
+          "theme_ja": "習慣・考え方"
+        },
+        {
+          "id": "se_s2",
+          "order": 2,
+          "label_ja": "プログラミング基礎",
+          "theme_ja": "変数・制御・データ"
+        },
+        {
+          "id": "se_s3",
+          "order": 3,
+          "label_ja": "Webの三層",
+          "theme_ja": "HTML/CSS/JS"
+        },
+        {
+          "id": "se_s4",
+          "order": 4,
+          "label_ja": "小さなプロダクト",
+          "theme_ja": "設計して作る"
+        },
+        {
+          "id": "se_s5",
+          "order": 5,
+          "label_ja": "開発の道具箱",
+          "theme_ja": "Git・デバッグ・品質"
+        },
+        {
+          "id": "se_s6",
+          "order": 6,
+          "label_ja": "フロントエンド実践",
+          "theme_ja": "UI状態と非同期"
+        },
+        {
+          "id": "se_s7",
+          "order": 7,
+          "label_ja": "バックエンド入門",
+          "theme_ja": "API・サーバ思考"
+        },
+        {
+          "id": "se_s8",
+          "order": 8,
+          "label_ja": "データと永続化",
+          "theme_ja": "DB・モデル"
+        },
+        {
+          "id": "se_s9",
+          "order": 9,
+          "label_ja": "チームで作る",
+          "theme_ja": "レビュー・協業"
+        },
+        {
+          "id": "se_s10",
+          "order": 10,
+          "label_ja": "キャリアの城",
+          "theme_ja": "作品・発表・就職準備"
+        }
       ],
       "skills": [
-        {"id": "se_logic", "label_ja": "論理思考"},
-        {"id": "se_code", "label_ja": "コーディング"},
-        {"id": "se_debug", "label_ja": "デバッグ"},
-        {"id": "se_collab", "label_ja": "チーム開発"},
-        {"id": "se_system", "label_ja": "システム設計"}
+        {
+          "id": "se_logic",
+          "label_ja": "論理思考"
+        },
+        {
+          "id": "se_code",
+          "label_ja": "コーディング"
+        },
+        {
+          "id": "se_web",
+          "label_ja": "Web基礎"
+        },
+        {
+          "id": "se_debug",
+          "label_ja": "デバッグ"
+        },
+        {
+          "id": "se_git",
+          "label_ja": "Git"
+        },
+        {
+          "id": "se_frontend",
+          "label_ja": "フロントエンド"
+        },
+        {
+          "id": "se_backend",
+          "label_ja": "バックエンド"
+        },
+        {
+          "id": "se_data",
+          "label_ja": "データ設計"
+        },
+        {
+          "id": "se_collab",
+          "label_ja": "チーム開発"
+        },
+        {
+          "id": "se_system",
+          "label_ja": "システム設計"
+        },
+        {
+          "id": "se_career",
+          "label_ja": "キャリア実践"
+        }
       ],
       "lessons": [
-        {"id": "se_l1", "stage_id": "se_s1", "title_ja": "毎日30分の学習習慣", "skill_ids": ["se_logic"], "exp": 12, "gear_drop": {"slot": "accessory", "item_id": "acc_notebook", "label_ja": "学習ノート"}, "boss_type": "none"},
-        {"id": "se_l2", "stage_id": "se_s1", "title_ja": "問題を小さく分解する", "skill_ids": ["se_logic"], "exp": 14, "gear_drop": null, "boss_type": "none"},
-        {"id": "se_l3", "stage_id": "se_s2", "title_ja": "変数と条件分岐", "skill_ids": ["se_code"], "exp": 16, "gear_drop": {"slot": "weapon", "item_id": "wpn_pen_sword", "label_ja": "ペンソード"}, "boss_type": "none"},
-        {"id": "se_l4", "stage_id": "se_s2", "title_ja": "ループと配列", "skill_ids": ["se_code"], "exp": 18, "gear_drop": null, "boss_type": "none"},
-        {"id": "se_l5", "stage_id": "se_s3", "title_ja": "週次ミニ課題チェック", "skill_ids": ["se_debug"], "exp": 22, "gear_drop": {"slot": "armor", "item_id": "arm_hoodie", "label_ja": "集中パーカー"}, "boss_type": "weekly"},
-        {"id": "se_l6", "stage_id": "se_s3", "title_ja": "バグの見つけ方", "skill_ids": ["se_debug"], "exp": 20, "gear_drop": null, "boss_type": "none"},
-        {"id": "se_l7", "stage_id": "se_s4", "title_ja": "小さなWebアプリを作る", "skill_ids": ["se_code", "se_system"], "exp": 28, "gear_drop": {"slot": "weapon", "item_id": "wpn_keyboard", "label_ja": "キーボードブレード"}, "boss_type": "none"},
-        {"id": "se_l8", "stage_id": "se_s4", "title_ja": "月次レビュー試験", "skill_ids": ["se_collab"], "exp": 35, "gear_drop": {"slot": "accessory", "item_id": "acc_badge", "label_ja": "チームバッジ"}, "boss_type": "monthly"},
-        {"id": "se_l9", "stage_id": "se_s4", "title_ja": "Gitとレビューの基本", "skill_ids": ["se_collab"], "exp": 24, "gear_drop": null, "boss_type": "none"},
-        {"id": "se_l10", "stage_id": "se_s5", "title_ja": "設計メモを書く", "skill_ids": ["se_system"], "exp": 30, "gear_drop": {"slot": "armor", "item_id": "arm_cloak_dev", "label_ja": "開発者のマント"}, "boss_type": "none"},
-        {"id": "se_l11", "stage_id": "se_s5", "title_ja": "ポートフォリオ発表", "skill_ids": ["se_system", "se_collab"], "exp": 32, "gear_drop": null, "boss_type": "none"},
-        {"id": "se_l12", "stage_id": "se_s5", "title_ja": "最終ボス：未来のエンジニア", "skill_ids": ["se_logic", "se_code", "se_system"], "exp": 60, "gear_drop": {"slot": "artifact", "item_id": "art_career_se", "label_ja": "エンジニアの証"}, "boss_type": "career_final"}
+        {
+          "id": "se_l1",
+          "stage_id": "se_s1",
+          "title_ja": "学習習慣を設計する",
+          "skill_ids": [
+            "se_logic"
+          ],
+          "exp": 14,
+          "gear_drop": {
+            "slot": "accessory",
+            "item_id": "acc_notebook",
+            "label_ja": "学習ノート"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l2",
+          "stage_id": "se_s1",
+          "title_ja": "問題を小さく分解する",
+          "skill_ids": [
+            "se_logic"
+          ],
+          "exp": 16,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l1b",
+          "stage_id": "se_s1",
+          "title_ja": "学習ログと振り返りの型",
+          "skill_ids": [
+            "se_logic"
+          ],
+          "exp": 14,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l1c",
+          "stage_id": "se_s1",
+          "title_ja": "情報の探し方（一次情報）",
+          "skill_ids": [
+            "se_logic"
+          ],
+          "exp": 16,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l3",
+          "stage_id": "se_s2",
+          "title_ja": "変数とデータ型",
+          "skill_ids": [
+            "se_code"
+          ],
+          "exp": 18,
+          "gear_drop": {
+            "slot": "weapon",
+            "item_id": "wpn_pen_sword",
+            "label_ja": "ペンソード"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l4",
+          "stage_id": "se_s2",
+          "title_ja": "条件分岐を使いこなす",
+          "skill_ids": [
+            "se_code"
+          ],
+          "exp": 18,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l4b",
+          "stage_id": "se_s2",
+          "title_ja": "ループと配列",
+          "skill_ids": [
+            "se_code"
+          ],
+          "exp": 20,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l4c",
+          "stage_id": "se_s2",
+          "title_ja": "関数で再利用する",
+          "skill_ids": [
+            "se_code"
+          ],
+          "exp": 20,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l4d",
+          "stage_id": "se_s2",
+          "title_ja": "オブジェクトと辞書的思考",
+          "skill_ids": [
+            "se_code"
+          ],
+          "exp": 20,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l5",
+          "stage_id": "se_s2",
+          "title_ja": "基礎文法チェック（週次）",
+          "skill_ids": [
+            "se_debug"
+          ],
+          "exp": 24,
+          "gear_drop": {
+            "slot": "armor",
+            "item_id": "arm_hoodie",
+            "label_ja": "集中パーカー"
+          },
+          "boss_type": "weekly"
+        },
+        {
+          "id": "se_l6",
+          "stage_id": "se_s3",
+          "title_ja": "HTMLで文書構造を作る",
+          "skill_ids": [
+            "se_web"
+          ],
+          "exp": 20,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l6b",
+          "stage_id": "se_s3",
+          "title_ja": "CSSでレイアウトと余白",
+          "skill_ids": [
+            "se_web"
+          ],
+          "exp": 22,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l6c",
+          "stage_id": "se_s3",
+          "title_ja": "レスポンシブの考え方",
+          "skill_ids": [
+            "se_web"
+          ],
+          "exp": 22,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l7",
+          "stage_id": "se_s3",
+          "title_ja": "JSでDOMを動かす",
+          "skill_ids": [
+            "se_code",
+            "se_web"
+          ],
+          "exp": 24,
+          "gear_drop": {
+            "slot": "weapon",
+            "item_id": "wpn_keyboard",
+            "label_ja": "キーボードブレード"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l7b",
+          "stage_id": "se_s3",
+          "title_ja": "イベントとフォーム処理",
+          "skill_ids": [
+            "se_web"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l7c",
+          "stage_id": "se_s3",
+          "title_ja": "小さな静的ページを完成させる",
+          "skill_ids": [
+            "se_web",
+            "se_system"
+          ],
+          "exp": 26,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l9",
+          "stage_id": "se_s4",
+          "title_ja": "要件を1文で書く",
+          "skill_ids": [
+            "se_system"
+          ],
+          "exp": 18,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l9b",
+          "stage_id": "se_s4",
+          "title_ja": "画面とデータの対応表",
+          "skill_ids": [
+            "se_system"
+          ],
+          "exp": 20,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l10",
+          "stage_id": "se_s4",
+          "title_ja": "ToDoアプリを設計して作る",
+          "skill_ids": [
+            "se_code",
+            "se_system"
+          ],
+          "exp": 28,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l10b",
+          "stage_id": "se_s4",
+          "title_ja": "ローカル保存まで入れる",
+          "skill_ids": [
+            "se_code"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l8",
+          "stage_id": "se_s4",
+          "title_ja": "プロダクトレビュー（月次）",
+          "skill_ids": [
+            "se_collab"
+          ],
+          "exp": 30,
+          "gear_drop": {
+            "slot": "accessory",
+            "item_id": "acc_badge",
+            "label_ja": "チームバッジ"
+          },
+          "boss_type": "monthly"
+        },
+        {
+          "id": "se_l11",
+          "stage_id": "se_s5",
+          "title_ja": "バグの再現と仮説検証",
+          "skill_ids": [
+            "se_debug"
+          ],
+          "exp": 22,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l11b",
+          "stage_id": "se_s5",
+          "title_ja": "DevToolsで調べる",
+          "skill_ids": [
+            "se_debug"
+          ],
+          "exp": 22,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l12a",
+          "stage_id": "se_s5",
+          "title_ja": "Gitの基本操作",
+          "skill_ids": [
+            "se_git"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l12b",
+          "stage_id": "se_s5",
+          "title_ja": "良いコミットメッセージ",
+          "skill_ids": [
+            "se_git"
+          ],
+          "exp": 18,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l12c",
+          "stage_id": "se_s5",
+          "title_ja": "GitHubに公開する",
+          "skill_ids": [
+            "se_git",
+            "se_career"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l12d",
+          "stage_id": "se_s5",
+          "title_ja": "READMEの書き方",
+          "skill_ids": [
+            "se_career"
+          ],
+          "exp": 20,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l13",
+          "stage_id": "se_s6",
+          "title_ja": "状態（state）を意識する",
+          "skill_ids": [
+            "se_frontend"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l13b",
+          "stage_id": "se_s6",
+          "title_ja": "非同期処理（Promise/fetch）",
+          "skill_ids": [
+            "se_frontend"
+          ],
+          "exp": 26,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l13c",
+          "stage_id": "se_s6",
+          "title_ja": "APIからデータを表示する",
+          "skill_ids": [
+            "se_frontend"
+          ],
+          "exp": 26,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l13d",
+          "stage_id": "se_s6",
+          "title_ja": "ローディングとエラー表示",
+          "skill_ids": [
+            "se_frontend"
+          ],
+          "exp": 22,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l13e",
+          "stage_id": "se_s6",
+          "title_ja": "フロント週次チェック",
+          "skill_ids": [
+            "se_frontend",
+            "se_debug"
+          ],
+          "exp": 28,
+          "gear_drop": null,
+          "boss_type": "weekly"
+        },
+        {
+          "id": "se_l14",
+          "stage_id": "se_s7",
+          "title_ja": "クライアントとサーバの役割",
+          "skill_ids": [
+            "se_backend"
+          ],
+          "exp": 22,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l14b",
+          "stage_id": "se_s7",
+          "title_ja": "HTTPメソッドとステータス",
+          "skill_ids": [
+            "se_backend"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l14c",
+          "stage_id": "se_s7",
+          "title_ja": "簡単なAPIを設計する",
+          "skill_ids": [
+            "se_backend",
+            "se_system"
+          ],
+          "exp": 26,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l14d",
+          "stage_id": "se_s7",
+          "title_ja": "認証の考え方（入門）",
+          "skill_ids": [
+            "se_backend"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l15",
+          "stage_id": "se_s8",
+          "title_ja": "データの正規化入門",
+          "skill_ids": [
+            "se_data"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l15b",
+          "stage_id": "se_s8",
+          "title_ja": "CRUDを言葉で設計する",
+          "skill_ids": [
+            "se_data",
+            "se_backend"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l15c",
+          "stage_id": "se_s8",
+          "title_ja": "永続化の選択肢を比べる",
+          "skill_ids": [
+            "se_data"
+          ],
+          "exp": 22,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l15d",
+          "stage_id": "se_s8",
+          "title_ja": "データ設計レビュー（月次）",
+          "skill_ids": [
+            "se_data",
+            "se_system"
+          ],
+          "exp": 30,
+          "gear_drop": null,
+          "boss_type": "monthly"
+        },
+        {
+          "id": "se_l16",
+          "stage_id": "se_s9",
+          "title_ja": "Issueの切り方",
+          "skill_ids": [
+            "se_collab"
+          ],
+          "exp": 20,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l16b",
+          "stage_id": "se_s9",
+          "title_ja": "コードレビューの受け方・返し方",
+          "skill_ids": [
+            "se_collab"
+          ],
+          "exp": 22,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l16c",
+          "stage_id": "se_s9",
+          "title_ja": "ペアで仕様を決める演習",
+          "skill_ids": [
+            "se_collab",
+            "se_system"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l16d",
+          "stage_id": "se_s9",
+          "title_ja": "テスト観点チェックリスト",
+          "skill_ids": [
+            "se_debug",
+            "se_collab"
+          ],
+          "exp": 22,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l17",
+          "stage_id": "se_s10",
+          "title_ja": "ポートフォリオ作品を選ぶ",
+          "skill_ids": [
+            "se_career"
+          ],
+          "exp": 20,
+          "gear_drop": {
+            "slot": "armor",
+            "item_id": "arm_cloak_dev",
+            "label_ja": "開発者のマント"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l17b",
+          "stage_id": "se_s10",
+          "title_ja": "作品ページ（課題→工夫→学び）",
+          "skill_ids": [
+            "se_career"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l17c",
+          "stage_id": "se_s10",
+          "title_ja": "技術面接の説明練習",
+          "skill_ids": [
+            "se_career"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l17d",
+          "stage_id": "se_s10",
+          "title_ja": "30日学習ロードマップ",
+          "skill_ids": [
+            "se_career",
+            "se_logic"
+          ],
+          "exp": 22,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "se_l12",
+          "stage_id": "se_s10",
+          "title_ja": "最終試験：未来のエンジニア",
+          "skill_ids": [
+            "se_logic",
+            "se_code",
+            "se_system",
+            "se_career"
+          ],
+          "exp": 60,
+          "gear_drop": {
+            "slot": "artifact",
+            "item_id": "art_career_se",
+            "label_ja": "エンジニアの証"
+          },
+          "boss_type": "career_final"
+        }
       ]
     },
     "ui_designer": {
       "career_id": "ui_designer",
       "stages": [
-        {"id": "ux_s1", "order": 1, "label_ja": "始まりの平原", "theme_ja": "観察の目"},
-        {"id": "ux_s2", "order": 2, "label_ja": "学習の森", "theme_ja": "表現の基礎"},
-        {"id": "ux_s3", "order": 3, "label_ja": "試練の丘", "theme_ja": "週次デザイン"},
-        {"id": "ux_s4", "order": 4, "label_ja": "中間の峡谷", "theme_ja": "プロトタイプ"},
-        {"id": "ux_s5", "order": 5, "label_ja": "キャリアの城", "theme_ja": "デザイナー最終試練"}
+        {
+          "id": "ux_s1",
+          "order": 1,
+          "label_ja": "始まりの平原",
+          "theme_ja": "観察の目"
+        },
+        {
+          "id": "ux_s2",
+          "order": 2,
+          "label_ja": "学習の森",
+          "theme_ja": "表現の基礎"
+        },
+        {
+          "id": "ux_s3",
+          "order": 3,
+          "label_ja": "試練の丘",
+          "theme_ja": "週次デザイン"
+        },
+        {
+          "id": "ux_s4",
+          "order": 4,
+          "label_ja": "中間の峡谷",
+          "theme_ja": "プロトタイプ"
+        },
+        {
+          "id": "ux_s5",
+          "order": 5,
+          "label_ja": "キャリアの城",
+          "theme_ja": "デザイナー最終試練"
+        }
       ],
       "skills": [
-        {"id": "ux_observe", "label_ja": "観察力"},
-        {"id": "ux_visual", "label_ja": "ビジュアル"},
-        {"id": "ux_wire", "label_ja": "ワイヤーフレーム"},
-        {"id": "ux_user", "label_ja": "ユーザー理解"},
-        {"id": "ux_proto", "label_ja": "プロトタイピング"}
+        {
+          "id": "ux_observe",
+          "label_ja": "観察力"
+        },
+        {
+          "id": "ux_visual",
+          "label_ja": "ビジュアル"
+        },
+        {
+          "id": "ux_wire",
+          "label_ja": "ワイヤーフレーム"
+        },
+        {
+          "id": "ux_user",
+          "label_ja": "ユーザー理解"
+        },
+        {
+          "id": "ux_proto",
+          "label_ja": "プロトタイピング"
+        }
       ],
       "lessons": [
-        {"id": "ux_l1", "stage_id": "ux_s1", "title_ja": "身近なアプリを観察する", "skill_ids": ["ux_observe"], "exp": 12, "gear_drop": {"slot": "accessory", "item_id": "acc_sketch", "label_ja": "スケッチ帳"}, "boss_type": "none"},
-        {"id": "ux_l2", "stage_id": "ux_s1", "title_ja": "色と余白の感覚", "skill_ids": ["ux_visual"], "exp": 14, "gear_drop": null, "boss_type": "none"},
-        {"id": "ux_l3", "stage_id": "ux_s2", "title_ja": "レイアウトの基本", "skill_ids": ["ux_visual"], "exp": 16, "gear_drop": {"slot": "weapon", "item_id": "wpn_brush", "label_ja": "デザインブラシ"}, "boss_type": "none"},
-        {"id": "ux_l4", "stage_id": "ux_s2", "title_ja": "ワイヤーを手描きする", "skill_ids": ["ux_wire"], "exp": 18, "gear_drop": null, "boss_type": "none"},
-        {"id": "ux_l5", "stage_id": "ux_s3", "title_ja": "週次UIチェック", "skill_ids": ["ux_user"], "exp": 22, "gear_drop": {"slot": "armor", "item_id": "arm_apron", "label_ja": "クリエイターエプロン"}, "boss_type": "weekly"},
-        {"id": "ux_l6", "stage_id": "ux_s3", "title_ja": "ユーザーの困りごとを聞く", "skill_ids": ["ux_user"], "exp": 20, "gear_drop": null, "boss_type": "none"},
-        {"id": "ux_l7", "stage_id": "ux_s4", "title_ja": "クリックできる試作をつくる", "skill_ids": ["ux_proto"], "exp": 28, "gear_drop": {"slot": "weapon", "item_id": "wpn_stylus", "label_ja": "スタイラス弓"}, "boss_type": "none"},
-        {"id": "ux_l8", "stage_id": "ux_s4", "title_ja": "月次デザインレビュー", "skill_ids": ["ux_wire", "ux_proto"], "exp": 35, "gear_drop": {"slot": "accessory", "item_id": "acc_palette", "label_ja": "パレットブローチ"}, "boss_type": "monthly"},
-        {"id": "ux_l9", "stage_id": "ux_s4", "title_ja": "フィードバックを反映する", "skill_ids": ["ux_user"], "exp": 24, "gear_drop": null, "boss_type": "none"},
-        {"id": "ux_l10", "stage_id": "ux_s5", "title_ja": "ケーススタディをまとめる", "skill_ids": ["ux_observe", "ux_proto"], "exp": 30, "gear_drop": {"slot": "armor", "item_id": "arm_cloak_design", "label_ja": "デザインマント"}, "boss_type": "none"},
-        {"id": "ux_l11", "stage_id": "ux_s5", "title_ja": "作品発表", "skill_ids": ["ux_visual"], "exp": 32, "gear_drop": null, "boss_type": "none"},
-        {"id": "ux_l12", "stage_id": "ux_s5", "title_ja": "最終ボス：未来のデザイナー", "skill_ids": ["ux_observe", "ux_visual", "ux_proto"], "exp": 60, "gear_drop": {"slot": "artifact", "item_id": "art_career_ux", "label_ja": "デザイナーの証"}, "boss_type": "career_final"}
+        {
+          "id": "ux_l1",
+          "stage_id": "ux_s1",
+          "title_ja": "身近なアプリを観察する",
+          "skill_ids": [
+            "ux_observe"
+          ],
+          "exp": 12,
+          "gear_drop": {
+            "slot": "accessory",
+            "item_id": "acc_sketch",
+            "label_ja": "スケッチ帳"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "ux_l2",
+          "stage_id": "ux_s1",
+          "title_ja": "色と余白の感覚",
+          "skill_ids": [
+            "ux_visual"
+          ],
+          "exp": 14,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "ux_l3",
+          "stage_id": "ux_s2",
+          "title_ja": "レイアウトの基本",
+          "skill_ids": [
+            "ux_visual"
+          ],
+          "exp": 16,
+          "gear_drop": {
+            "slot": "weapon",
+            "item_id": "wpn_brush",
+            "label_ja": "デザインブラシ"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "ux_l4",
+          "stage_id": "ux_s2",
+          "title_ja": "ワイヤーを手描きする",
+          "skill_ids": [
+            "ux_wire"
+          ],
+          "exp": 18,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "ux_l5",
+          "stage_id": "ux_s3",
+          "title_ja": "週次UIチェック",
+          "skill_ids": [
+            "ux_user"
+          ],
+          "exp": 22,
+          "gear_drop": {
+            "slot": "armor",
+            "item_id": "arm_apron",
+            "label_ja": "クリエイターエプロン"
+          },
+          "boss_type": "weekly"
+        },
+        {
+          "id": "ux_l6",
+          "stage_id": "ux_s3",
+          "title_ja": "ユーザーの困りごとを聞く",
+          "skill_ids": [
+            "ux_user"
+          ],
+          "exp": 20,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "ux_l7",
+          "stage_id": "ux_s4",
+          "title_ja": "クリックできる試作をつくる",
+          "skill_ids": [
+            "ux_proto"
+          ],
+          "exp": 28,
+          "gear_drop": {
+            "slot": "weapon",
+            "item_id": "wpn_stylus",
+            "label_ja": "スタイラス弓"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "ux_l8",
+          "stage_id": "ux_s4",
+          "title_ja": "月次デザインレビュー",
+          "skill_ids": [
+            "ux_wire",
+            "ux_proto"
+          ],
+          "exp": 35,
+          "gear_drop": {
+            "slot": "accessory",
+            "item_id": "acc_palette",
+            "label_ja": "パレットブローチ"
+          },
+          "boss_type": "monthly"
+        },
+        {
+          "id": "ux_l9",
+          "stage_id": "ux_s4",
+          "title_ja": "フィードバックを反映する",
+          "skill_ids": [
+            "ux_user"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "ux_l10",
+          "stage_id": "ux_s5",
+          "title_ja": "ケーススタディをまとめる",
+          "skill_ids": [
+            "ux_observe",
+            "ux_proto"
+          ],
+          "exp": 30,
+          "gear_drop": {
+            "slot": "armor",
+            "item_id": "arm_cloak_design",
+            "label_ja": "デザインマント"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "ux_l11",
+          "stage_id": "ux_s5",
+          "title_ja": "作品発表",
+          "skill_ids": [
+            "ux_visual"
+          ],
+          "exp": 32,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "ux_l12",
+          "stage_id": "ux_s5",
+          "title_ja": "最終ボス：未来のデザイナー",
+          "skill_ids": [
+            "ux_observe",
+            "ux_visual",
+            "ux_proto"
+          ],
+          "exp": 60,
+          "gear_drop": {
+            "slot": "artifact",
+            "item_id": "art_career_ux",
+            "label_ja": "デザイナーの証"
+          },
+          "boss_type": "career_final"
+        }
       ]
     },
     "nurse": {
       "career_id": "nurse",
       "stages": [
-        {"id": "nu_s1", "order": 1, "label_ja": "始まりの平原", "theme_ja": "思いやりの種"},
-        {"id": "nu_s2", "order": 2, "label_ja": "学習の森", "theme_ja": "からだの基礎"},
-        {"id": "nu_s3", "order": 3, "label_ja": "試練の丘", "theme_ja": "週次ケア"},
-        {"id": "nu_s4", "order": 4, "label_ja": "中間の峡谷", "theme_ja": "現場シミュレーション"},
-        {"id": "nu_s5", "order": 5, "label_ja": "キャリアの城", "theme_ja": "看護師最終試練"}
+        {
+          "id": "nu_s1",
+          "order": 1,
+          "label_ja": "始まりの平原",
+          "theme_ja": "思いやりの種"
+        },
+        {
+          "id": "nu_s2",
+          "order": 2,
+          "label_ja": "学習の森",
+          "theme_ja": "からだの基礎"
+        },
+        {
+          "id": "nu_s3",
+          "order": 3,
+          "label_ja": "試練の丘",
+          "theme_ja": "週次ケア"
+        },
+        {
+          "id": "nu_s4",
+          "order": 4,
+          "label_ja": "中間の峡谷",
+          "theme_ja": "現場シミュレーション"
+        },
+        {
+          "id": "nu_s5",
+          "order": 5,
+          "label_ja": "キャリアの城",
+          "theme_ja": "看護師最終試練"
+        }
       ],
       "skills": [
-        {"id": "nu_empathy", "label_ja": "共感"},
-        {"id": "nu_body", "label_ja": "身体の知識"},
-        {"id": "nu_observe", "label_ja": "観察・バイタル"},
-        {"id": "nu_safety", "label_ja": "安全・衛生"},
-        {"id": "nu_team", "label_ja": "多職種連携"}
+        {
+          "id": "nu_empathy",
+          "label_ja": "共感"
+        },
+        {
+          "id": "nu_body",
+          "label_ja": "身体の知識"
+        },
+        {
+          "id": "nu_observe",
+          "label_ja": "観察・バイタル"
+        },
+        {
+          "id": "nu_safety",
+          "label_ja": "安全・衛生"
+        },
+        {
+          "id": "nu_team",
+          "label_ja": "多職種連携"
+        }
       ],
       "lessons": [
-        {"id": "nu_l1", "stage_id": "nu_s1", "title_ja": "相手の気持ちを想像する", "skill_ids": ["nu_empathy"], "exp": 12, "gear_drop": {"slot": "accessory", "item_id": "acc_heart", "label_ja": "ハートチャーム"}, "boss_type": "none"},
-        {"id": "nu_l2", "stage_id": "nu_s1", "title_ja": "傾聴の練習", "skill_ids": ["nu_empathy"], "exp": 14, "gear_drop": null, "boss_type": "none"},
-        {"id": "nu_l3", "stage_id": "nu_s2", "title_ja": "人体の基本マップ", "skill_ids": ["nu_body"], "exp": 16, "gear_drop": {"slot": "weapon", "item_id": "wpn_thermometer", "label_ja": "体温計スタッフ"}, "boss_type": "none"},
-        {"id": "nu_l4", "stage_id": "nu_s2", "title_ja": "バイタルサイン入門", "skill_ids": ["nu_observe"], "exp": 18, "gear_drop": null, "boss_type": "none"},
-        {"id": "nu_l5", "stage_id": "nu_s3", "title_ja": "週次ケアチェック", "skill_ids": ["nu_safety"], "exp": 22, "gear_drop": {"slot": "armor", "item_id": "arm_scrubs", "label_ja": "ケアユニフォーム"}, "boss_type": "weekly"},
-        {"id": "nu_l6", "stage_id": "nu_s3", "title_ja": "手洗いと感染対策", "skill_ids": ["nu_safety"], "exp": 20, "gear_drop": null, "boss_type": "none"},
-        {"id": "nu_l7", "stage_id": "nu_s4", "title_ja": "ケースシナリオ演習", "skill_ids": ["nu_observe", "nu_empathy"], "exp": 28, "gear_drop": {"slot": "weapon", "item_id": "wpn_stethoscope", "label_ja": "聴診器レイピア"}, "boss_type": "none"},
-        {"id": "nu_l8", "stage_id": "nu_s4", "title_ja": "月次総合テスト", "skill_ids": ["nu_body", "nu_safety"], "exp": 35, "gear_drop": {"slot": "accessory", "item_id": "acc_watch", "label_ja": "ナースウォッチ"}, "boss_type": "monthly"},
-        {"id": "nu_l9", "stage_id": "nu_s4", "title_ja": "チーム連携ロールプレイ", "skill_ids": ["nu_team"], "exp": 24, "gear_drop": null, "boss_type": "none"},
-        {"id": "nu_l10", "stage_id": "nu_s5", "title_ja": "緊急時の優先順位", "skill_ids": ["nu_observe", "nu_safety"], "exp": 30, "gear_drop": {"slot": "armor", "item_id": "arm_cloak_care", "label_ja": "ケアのマント"}, "boss_type": "none"},
-        {"id": "nu_l11", "stage_id": "nu_s5", "title_ja": "振り返りレポート", "skill_ids": ["nu_team"], "exp": 32, "gear_drop": null, "boss_type": "none"},
-        {"id": "nu_l12", "stage_id": "nu_s5", "title_ja": "最終ボス：未来の看護師", "skill_ids": ["nu_empathy", "nu_observe", "nu_safety"], "exp": 60, "gear_drop": {"slot": "artifact", "item_id": "art_career_nu", "label_ja": "看護師の証"}, "boss_type": "career_final"}
+        {
+          "id": "nu_l1",
+          "stage_id": "nu_s1",
+          "title_ja": "相手の気持ちを想像する",
+          "skill_ids": [
+            "nu_empathy"
+          ],
+          "exp": 12,
+          "gear_drop": {
+            "slot": "accessory",
+            "item_id": "acc_heart",
+            "label_ja": "ハートチャーム"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "nu_l2",
+          "stage_id": "nu_s1",
+          "title_ja": "傾聴の練習",
+          "skill_ids": [
+            "nu_empathy"
+          ],
+          "exp": 14,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "nu_l3",
+          "stage_id": "nu_s2",
+          "title_ja": "人体の基本マップ",
+          "skill_ids": [
+            "nu_body"
+          ],
+          "exp": 16,
+          "gear_drop": {
+            "slot": "weapon",
+            "item_id": "wpn_thermometer",
+            "label_ja": "体温計スタッフ"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "nu_l4",
+          "stage_id": "nu_s2",
+          "title_ja": "バイタルサイン入門",
+          "skill_ids": [
+            "nu_observe"
+          ],
+          "exp": 18,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "nu_l5",
+          "stage_id": "nu_s3",
+          "title_ja": "週次ケアチェック",
+          "skill_ids": [
+            "nu_safety"
+          ],
+          "exp": 22,
+          "gear_drop": {
+            "slot": "armor",
+            "item_id": "arm_scrubs",
+            "label_ja": "ケアユニフォーム"
+          },
+          "boss_type": "weekly"
+        },
+        {
+          "id": "nu_l6",
+          "stage_id": "nu_s3",
+          "title_ja": "手洗いと感染対策",
+          "skill_ids": [
+            "nu_safety"
+          ],
+          "exp": 20,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "nu_l7",
+          "stage_id": "nu_s4",
+          "title_ja": "ケースシナリオ演習",
+          "skill_ids": [
+            "nu_observe",
+            "nu_empathy"
+          ],
+          "exp": 28,
+          "gear_drop": {
+            "slot": "weapon",
+            "item_id": "wpn_stethoscope",
+            "label_ja": "聴診器レイピア"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "nu_l8",
+          "stage_id": "nu_s4",
+          "title_ja": "月次総合テスト",
+          "skill_ids": [
+            "nu_body",
+            "nu_safety"
+          ],
+          "exp": 35,
+          "gear_drop": {
+            "slot": "accessory",
+            "item_id": "acc_watch",
+            "label_ja": "ナースウォッチ"
+          },
+          "boss_type": "monthly"
+        },
+        {
+          "id": "nu_l9",
+          "stage_id": "nu_s4",
+          "title_ja": "チーム連携ロールプレイ",
+          "skill_ids": [
+            "nu_team"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "nu_l10",
+          "stage_id": "nu_s5",
+          "title_ja": "緊急時の優先順位",
+          "skill_ids": [
+            "nu_observe",
+            "nu_safety"
+          ],
+          "exp": 30,
+          "gear_drop": {
+            "slot": "armor",
+            "item_id": "arm_cloak_care",
+            "label_ja": "ケアのマント"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "nu_l11",
+          "stage_id": "nu_s5",
+          "title_ja": "振り返りレポート",
+          "skill_ids": [
+            "nu_team"
+          ],
+          "exp": 32,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "nu_l12",
+          "stage_id": "nu_s5",
+          "title_ja": "最終ボス：未来の看護師",
+          "skill_ids": [
+            "nu_empathy",
+            "nu_observe",
+            "nu_safety"
+          ],
+          "exp": 60,
+          "gear_drop": {
+            "slot": "artifact",
+            "item_id": "art_career_nu",
+            "label_ja": "看護師の証"
+          },
+          "boss_type": "career_final"
+        }
       ]
     },
     "teacher": {
       "career_id": "teacher",
       "stages": [
-        {"id": "te_s1", "order": 1, "label_ja": "始まりの平原", "theme_ja": "伝える種"},
-        {"id": "te_s2", "order": 2, "label_ja": "学習の森", "theme_ja": "教える技術"},
-        {"id": "te_s3", "order": 3, "label_ja": "試練の丘", "theme_ja": "週次レッスン"},
-        {"id": "te_s4", "order": 4, "label_ja": "中間の峡谷", "theme_ja": "授業設計"},
-        {"id": "te_s5", "order": 5, "label_ja": "キャリアの城", "theme_ja": "教育者最終試練"}
+        {
+          "id": "te_s1",
+          "order": 1,
+          "label_ja": "始まりの平原",
+          "theme_ja": "伝える種"
+        },
+        {
+          "id": "te_s2",
+          "order": 2,
+          "label_ja": "学習の森",
+          "theme_ja": "教える技術"
+        },
+        {
+          "id": "te_s3",
+          "order": 3,
+          "label_ja": "試練の丘",
+          "theme_ja": "週次レッスン"
+        },
+        {
+          "id": "te_s4",
+          "order": 4,
+          "label_ja": "中間の峡谷",
+          "theme_ja": "授業設計"
+        },
+        {
+          "id": "te_s5",
+          "order": 5,
+          "label_ja": "キャリアの城",
+          "theme_ja": "教育者最終試練"
+        }
       ],
       "skills": [
-        {"id": "te_explain", "label_ja": "わかりやすく伝える"},
-        {"id": "te_plan", "label_ja": "授業設計"},
-        {"id": "te_motivate", "label_ja": "動機づけ"},
-        {"id": "te_assess", "label_ja": "評価・フィードバック"},
-        {"id": "te_classroom", "label_ja": "クラス運営"}
+        {
+          "id": "te_explain",
+          "label_ja": "わかりやすく伝える"
+        },
+        {
+          "id": "te_plan",
+          "label_ja": "授業設計"
+        },
+        {
+          "id": "te_motivate",
+          "label_ja": "動機づけ"
+        },
+        {
+          "id": "te_assess",
+          "label_ja": "評価・フィードバック"
+        },
+        {
+          "id": "te_classroom",
+          "label_ja": "クラス運営"
+        }
       ],
       "lessons": [
-        {"id": "te_l1", "stage_id": "te_s1", "title_ja": "好きなことを3分で説明する", "skill_ids": ["te_explain"], "exp": 12, "gear_drop": {"slot": "accessory", "item_id": "acc_chalk", "label_ja": "チョークペンダント"}, "boss_type": "none"},
-        {"id": "te_l2", "stage_id": "te_s1", "title_ja": "たとえ話をつくる", "skill_ids": ["te_explain"], "exp": 14, "gear_drop": null, "boss_type": "none"},
-        {"id": "te_l3", "stage_id": "te_s2", "title_ja": "学習目標を書く", "skill_ids": ["te_plan"], "exp": 16, "gear_drop": {"slot": "weapon", "item_id": "wpn_pointer", "label_ja": "指示棒ソード"}, "boss_type": "none"},
-        {"id": "te_l4", "stage_id": "te_s2", "title_ja": "やる気を引き出す問い", "skill_ids": ["te_motivate"], "exp": 18, "gear_drop": null, "boss_type": "none"},
-        {"id": "te_l5", "stage_id": "te_s3", "title_ja": "週次ミニ授業", "skill_ids": ["te_classroom"], "exp": 22, "gear_drop": {"slot": "armor", "item_id": "arm_vest", "label_ja": "ティーチャーベスト"}, "boss_type": "weekly"},
-        {"id": "te_l6", "stage_id": "te_s3", "title_ja": "フィードバックの型", "skill_ids": ["te_assess"], "exp": 20, "gear_drop": null, "boss_type": "none"},
-        {"id": "te_l7", "stage_id": "te_s4", "title_ja": "45分の授業案", "skill_ids": ["te_plan"], "exp": 28, "gear_drop": {"slot": "weapon", "item_id": "wpn_book", "label_ja": "知恵の書"}, "boss_type": "none"},
-        {"id": "te_l8", "stage_id": "te_s4", "title_ja": "月次模擬授業", "skill_ids": ["te_explain", "te_classroom"], "exp": 35, "gear_drop": {"slot": "accessory", "item_id": "acc_whistle", "label_ja": "ホイッスル"}, "boss_type": "monthly"},
-        {"id": "te_l9", "stage_id": "te_s4", "title_ja": "つまずき対応シナリオ", "skill_ids": ["te_motivate", "te_assess"], "exp": 24, "gear_drop": null, "boss_type": "none"},
-        {"id": "te_l10", "stage_id": "te_s5", "title_ja": "クラスルールづくり", "skill_ids": ["te_classroom"], "exp": 30, "gear_drop": {"slot": "armor", "item_id": "arm_cloak_teach", "label_ja": "教導のマント"}, "boss_type": "none"},
-        {"id": "te_l11", "stage_id": "te_s5", "title_ja": "学びの記録を残す", "skill_ids": ["te_assess"], "exp": 32, "gear_drop": null, "boss_type": "none"},
-        {"id": "te_l12", "stage_id": "te_s5", "title_ja": "最終ボス：未来の教師", "skill_ids": ["te_explain", "te_plan", "te_motivate"], "exp": 60, "gear_drop": {"slot": "artifact", "item_id": "art_career_te", "label_ja": "教師の証"}, "boss_type": "career_final"}
+        {
+          "id": "te_l1",
+          "stage_id": "te_s1",
+          "title_ja": "好きなことを3分で説明する",
+          "skill_ids": [
+            "te_explain"
+          ],
+          "exp": 12,
+          "gear_drop": {
+            "slot": "accessory",
+            "item_id": "acc_chalk",
+            "label_ja": "チョークペンダント"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "te_l2",
+          "stage_id": "te_s1",
+          "title_ja": "たとえ話をつくる",
+          "skill_ids": [
+            "te_explain"
+          ],
+          "exp": 14,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "te_l3",
+          "stage_id": "te_s2",
+          "title_ja": "学習目標を書く",
+          "skill_ids": [
+            "te_plan"
+          ],
+          "exp": 16,
+          "gear_drop": {
+            "slot": "weapon",
+            "item_id": "wpn_pointer",
+            "label_ja": "指示棒ソード"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "te_l4",
+          "stage_id": "te_s2",
+          "title_ja": "やる気を引き出す問い",
+          "skill_ids": [
+            "te_motivate"
+          ],
+          "exp": 18,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "te_l5",
+          "stage_id": "te_s3",
+          "title_ja": "週次ミニ授業",
+          "skill_ids": [
+            "te_classroom"
+          ],
+          "exp": 22,
+          "gear_drop": {
+            "slot": "armor",
+            "item_id": "arm_vest",
+            "label_ja": "ティーチャーベスト"
+          },
+          "boss_type": "weekly"
+        },
+        {
+          "id": "te_l6",
+          "stage_id": "te_s3",
+          "title_ja": "フィードバックの型",
+          "skill_ids": [
+            "te_assess"
+          ],
+          "exp": 20,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "te_l7",
+          "stage_id": "te_s4",
+          "title_ja": "45分の授業案",
+          "skill_ids": [
+            "te_plan"
+          ],
+          "exp": 28,
+          "gear_drop": {
+            "slot": "weapon",
+            "item_id": "wpn_book",
+            "label_ja": "知恵の書"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "te_l8",
+          "stage_id": "te_s4",
+          "title_ja": "月次模擬授業",
+          "skill_ids": [
+            "te_explain",
+            "te_classroom"
+          ],
+          "exp": 35,
+          "gear_drop": {
+            "slot": "accessory",
+            "item_id": "acc_whistle",
+            "label_ja": "ホイッスル"
+          },
+          "boss_type": "monthly"
+        },
+        {
+          "id": "te_l9",
+          "stage_id": "te_s4",
+          "title_ja": "つまずき対応シナリオ",
+          "skill_ids": [
+            "te_motivate",
+            "te_assess"
+          ],
+          "exp": 24,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "te_l10",
+          "stage_id": "te_s5",
+          "title_ja": "クラスルールづくり",
+          "skill_ids": [
+            "te_classroom"
+          ],
+          "exp": 30,
+          "gear_drop": {
+            "slot": "armor",
+            "item_id": "arm_cloak_teach",
+            "label_ja": "教導のマント"
+          },
+          "boss_type": "none"
+        },
+        {
+          "id": "te_l11",
+          "stage_id": "te_s5",
+          "title_ja": "学びの記録を残す",
+          "skill_ids": [
+            "te_assess"
+          ],
+          "exp": 32,
+          "gear_drop": null,
+          "boss_type": "none"
+        },
+        {
+          "id": "te_l12",
+          "stage_id": "te_s5",
+          "title_ja": "最終ボス：未来の教師",
+          "skill_ids": [
+            "te_explain",
+            "te_plan",
+            "te_motivate"
+          ],
+          "exp": 60,
+          "gear_drop": {
+            "slot": "artifact",
+            "item_id": "art_career_te",
+            "label_ja": "教師の証"
+          },
+          "boss_type": "career_final"
+        }
       ]
     }
   },
   "stub_template": {
     "stages": [
-      {"id": "stub_s1", "order": 1, "label_ja": "始まりの平原", "theme_ja": "導入"},
-      {"id": "stub_s2", "order": 2, "label_ja": "学習の森", "theme_ja": "基礎"},
-      {"id": "stub_s3", "order": 3, "label_ja": "キャリアの丘", "theme_ja": "入門ボス"}
+      {
+        "id": "stub_s1",
+        "order": 1,
+        "label_ja": "始まりの平原",
+        "theme_ja": "導入"
+      },
+      {
+        "id": "stub_s2",
+        "order": 2,
+        "label_ja": "学習の森",
+        "theme_ja": "基礎"
+      },
+      {
+        "id": "stub_s3",
+        "order": 3,
+        "label_ja": "キャリアの丘",
+        "theme_ja": "入門ボス"
+      }
     ],
     "skills": [
-      {"id": "stub_focus", "label_ja": "集中"},
-      {"id": "stub_practice", "label_ja": "実践"},
-      {"id": "stub_reflect", "label_ja": "振り返り"}
+      {
+        "id": "stub_focus",
+        "label_ja": "集中"
+      },
+      {
+        "id": "stub_practice",
+        "label_ja": "実践"
+      },
+      {
+        "id": "stub_reflect",
+        "label_ja": "振り返り"
+      }
     ],
     "lessons": [
-      {"id": "stub_l1", "stage_id": "stub_s1", "title_ja": "職業を調べる", "skill_ids": ["stub_focus"], "exp": 12, "gear_drop": {"slot": "accessory", "item_id": "acc_map", "label_ja": "探索マップ"}, "boss_type": "none"},
-      {"id": "stub_l2", "stage_id": "stub_s2", "title_ja": "基礎スキルを1つ練習", "skill_ids": ["stub_practice"], "exp": 16, "gear_drop": {"slot": "weapon", "item_id": "wpn_starter", "label_ja": "スターター武器"}, "boss_type": "none"},
-      {"id": "stub_l3", "stage_id": "stub_s3", "title_ja": "入門ボス：第一歩", "skill_ids": ["stub_reflect"], "exp": 30, "gear_drop": {"slot": "artifact", "item_id": "art_stub", "label_ja": "第一歩の証"}, "boss_type": "career_final"}
+      {
+        "id": "stub_l1",
+        "stage_id": "stub_s1",
+        "title_ja": "職業を調べる",
+        "skill_ids": [
+          "stub_focus"
+        ],
+        "exp": 12,
+        "gear_drop": {
+          "slot": "accessory",
+          "item_id": "acc_map",
+          "label_ja": "探索マップ"
+        },
+        "boss_type": "none"
+      },
+      {
+        "id": "stub_l2",
+        "stage_id": "stub_s2",
+        "title_ja": "基礎スキルを1つ練習",
+        "skill_ids": [
+          "stub_practice"
+        ],
+        "exp": 16,
+        "gear_drop": {
+          "slot": "weapon",
+          "item_id": "wpn_starter",
+          "label_ja": "スターター武器"
+        },
+        "boss_type": "none"
+      },
+      {
+        "id": "stub_l3",
+        "stage_id": "stub_s3",
+        "title_ja": "入門ボス：第一歩",
+        "skill_ids": [
+          "stub_reflect"
+        ],
+        "exp": 30,
+        "gear_drop": {
+          "slot": "artifact",
+          "item_id": "art_stub",
+          "label_ja": "第一歩の証"
+        },
+        "boss_type": "career_final"
+      }
     ]
   }
 }
