@@ -441,6 +441,12 @@
   function evolutionSpritePath(classId, rankId) {
     const cls = classId || "swordsman";
     const rank = rankId || "novice";
+    return "/static/rpg/characters/" + cls + "_" + rank + "_stand.png";
+  }
+
+  function portraitSpritePath(classId, rankId) {
+    const cls = classId || "swordsman";
+    const rank = rankId || "novice";
     return "/static/rpg/characters/" + cls + "_" + rank + ".png";
   }
 
@@ -478,16 +484,22 @@
   }
 
   const GEAR_SLOT_JA = { weapon: "武器", armor: "防具", accessory: "装飾", artifact: "証" };
+  const GEAR_SLOT_ICO = { weapon: "⚔", armor: "🛡", accessory: "💠", artifact: "📜" };
 
   function applyAppearance(wrap, img, appearance) {
     if (!wrap || !img) return;
     const ap = appearance || {};
-    wrap.className = "hero-avatar " + (ap.css_classes || "");
+    const standee = wrap.classList.contains("standee");
+    wrap.className = "hero-avatar " + (standee ? "standee " : "") + (ap.css_classes || "");
     const classId = ap.class_id || journeyStatus.class_id || selectedClass;
     const rankId = ap.rank_id || journeyStatus.rank_id || "novice";
-    const evo = ap.evolution_sprite || ap.sprite || (classId ? evolutionSpritePath(classId, rankId) : null);
+    let evo = ap.evolution_sprite || ap.sprite || (classId ? evolutionSpritePath(classId, rankId) : null);
+    if (evo && typeof evo === "string" && evo.indexOf("_stand.png") < 0 && /\/static\/rpg\/characters\/[^/]+\.png$/.test(evo)) {
+      evo = evo.replace(/\.png$/, "_stand.png");
+    }
     if (evo && classId) {
       wrap.classList.add("has-evolution");
+      if (standee) wrap.classList.add("standee");
       img.src = evo;
       img.alt = (ap.class_label_ja || classLabel(classId)) + " " + (ap.rank_label_ja || journeyStatus.rank_ja || "");
     } else if (ap.sprite) {
@@ -515,8 +527,15 @@
       .map((slot) => {
         const row = bySlot[slot];
         const label = row ? row.label_ja || row.id || "装備中" : "未装備";
+        const empty = row ? "" : " empty";
         return (
-          '<div class="gear-slot"><span class="k">' +
+          '<div class="gear-slot' +
+          empty +
+          '" data-slot="' +
+          slot +
+          '"><span class="ico" aria-hidden="true">' +
+          (GEAR_SLOT_ICO[slot] || "◆") +
+          '</span><span class="k">' +
           (GEAR_SLOT_JA[slot] || slot) +
           '</span><span class="v">' +
           label +

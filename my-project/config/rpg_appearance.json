@@ -77,22 +77,22 @@
     },
     "sprites": {
       "swordsman": {
-        "novice": "/static/rpg/characters/swordsman_novice.png",
-        "intermediate": "/static/rpg/characters/swordsman_intermediate.png",
-        "veteran": "/static/rpg/characters/swordsman_veteran.png",
-        "saint": "/static/rpg/characters/swordsman_saint.png"
+        "novice": "/static/rpg/characters/swordsman_novice_stand.png",
+        "intermediate": "/static/rpg/characters/swordsman_intermediate_stand.png",
+        "veteran": "/static/rpg/characters/swordsman_veteran_stand.png",
+        "saint": "/static/rpg/characters/swordsman_saint_stand.png"
       },
       "archer": {
-        "novice": "/static/rpg/characters/archer_novice.png",
-        "intermediate": "/static/rpg/characters/archer_intermediate.png",
-        "veteran": "/static/rpg/characters/archer_veteran.png",
-        "saint": "/static/rpg/characters/archer_saint.png"
+        "novice": "/static/rpg/characters/archer_novice_stand.png",
+        "intermediate": "/static/rpg/characters/archer_intermediate_stand.png",
+        "veteran": "/static/rpg/characters/archer_veteran_stand.png",
+        "saint": "/static/rpg/characters/archer_saint_stand.png"
       },
       "mage": {
-        "novice": "/static/rpg/characters/mage_novice.png",
-        "intermediate": "/static/rpg/characters/mage_intermediate.png",
-        "veteran": "/static/rpg/characters/mage_veteran.png",
-        "saint": "/static/rpg/characters/mage_saint.png"
+        "novice": "/static/rpg/characters/mage_novice_stand.png",
+        "intermediate": "/static/rpg/characters/mage_intermediate_stand.png",
+        "veteran": "/static/rpg/characters/mage_veteran_stand.png",
+        "saint": "/static/rpg/characters/mage_saint_stand.png"
       }
     }
   }

@@ -120,8 +120,46 @@
     .rpg-bar-lab{font-size:.58rem;font-weight:900;opacity:.9;min-width:1.8rem}
     .rpg-exp{flex:1;height:10px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.2)}
     .rpg-exp span{background:linear-gradient(90deg,#77f1ff,#fff38d,#ffd27a)}
+    .rpg-status-top{position:relative;z-index:1;margin-top:.45rem}
+    .rpg-status-top .role{font-size:1.15rem;font-weight:800;margin:.1rem 0}
+    .rpg-status-top .small{font-size:.7rem;opacity:.88;line-height:1.4}
+    .hero-showcase{position:relative;z-index:1;margin-top:.35rem;padding:0 .15rem .2rem;min-height:340px}
+    .hero-stage{position:relative;display:flex;flex-direction:column;align-items:center;z-index:2;padding:0 4.6rem 0}
+    .stage-aura{position:absolute;left:50%;top:8%;transform:translateX(-50%);width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(255,230,150,.28),rgba(120,160,255,.12) 45%,transparent 70%);pointer-events:none;animation:auraPulse 3.2s ease-in-out infinite;z-index:0}
+    @keyframes auraPulse{0%,100%{opacity:.7;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.06)}}
+    .stage-floor{width:150px;height:26px;margin-top:-10px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,210,122,.65),rgba(80,60,160,.15) 55%,transparent 72%);box-shadow:0 8px 28px rgba(0,0,0,.25);z-index:1}
+    .hero-avatar.standee{width:min(210px,58vw);height:255px;max-height:none;aspect-ratio:auto;border:none!important;border-radius:0;overflow:visible;background:transparent!important;box-shadow:none!important;outline:none!important;z-index:2}
+    .hero-avatar.standee .class-motif,.hero-avatar.standee::after,.hero-avatar.standee::before{display:none!important}
+    .hero-avatar.standee img,
+    .hero-avatar.has-evolution.standee img{position:relative;left:auto;right:auto;bottom:auto;width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 14px 18px rgba(0,0,0,.45));animation:heroFloat 3.6s ease-in-out infinite}
+    .hero-avatar.standee .class-tag{left:50%;top:auto;bottom:-2px;transform:translateX(-120%);font-size:.52rem}
+    .hero-avatar.standee .class-emblem{right:auto;left:50%;top:auto;bottom:-4px;transform:translateX(40%);width:26px;height:26px;font-size:.7rem}
+    .hero-showcase .hero-nameplate{margin-top:.55rem;letter-spacing:.14em}
+    .gear-orbit{position:absolute;inset:8px 0 90px;z-index:3;pointer-events:none}
+    .gear-orbit .gear-slot{pointer-events:auto;position:absolute;width:78px;padding:.4rem .4rem .45rem;border-radius:14px;background:rgba(12,10,36,.55);border:1px solid rgba(255,210,122,.45);box-shadow:0 8px 18px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.12);backdrop-filter:blur(6px);text-align:center}
+    .gear-orbit .gear-slot .ico{display:block;font-size:1rem;line-height:1;margin-bottom:.15rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+    .gear-orbit .gear-slot .k{opacity:.8;display:block;font-size:.5rem;margin-bottom:.08rem}
+    .gear-orbit .gear-slot .v{font-weight:800;font-size:.58rem;line-height:1.25;display:block}
+    .gear-orbit .gear-slot.empty{opacity:.55;border-style:dashed}
+    .gear-orbit .gear-slot[data-slot="weapon"]{left:0;top:6%}
+    .gear-orbit .gear-slot[data-slot="armor"]{left:0;top:42%}
+    .gear-orbit .gear-slot[data-slot="accessory"]{right:0;top:6%}
+    .gear-orbit .gear-slot[data-slot="artifact"]{right:0;top:42%}
+    .evo-orbit{position:relative;z-index:3;margin-top:.65rem;padding:.55rem .45rem .35rem;border-radius:18px;background:rgba(8,6,28,.35);border:1px solid rgba(255,255,255,.12)}
+    .evo-orbit-title{display:flex;justify-content:space-between;align-items:center;font-size:.72rem;font-weight:800;color:#ffe9b0;margin:0 0 .4rem;padding:0 .15rem}
+    .evo-orbit-title span{font-size:.58rem;color:rgba(255,255,255,.7);font-weight:700}
+    .evo-ring{display:grid;grid-template-columns:repeat(4,1fr);gap:.3rem}
+    .evo-ring .evo-cell{background:rgba(255,255,255,.06)!important;border-radius:14px;padding:.3rem .15rem .35rem}
+    .evo-ring .evo-cell img{width:100%;max-width:70px;height:78px;object-fit:contain;object-position:center bottom;background:transparent;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35))}
+    .evo-ring .evo-cell.current{border-color:#ffd27a!important;box-shadow:0 0 0 2px rgba(255,210,122,.25),0 0 16px rgba(255,210,122,.2)!important}
+    @media (max-width:420px){
+      .hero-stage{padding:0 3.6rem 0}
+      .gear-orbit .gear-slot{width:66px;padding:.32rem}
+      .gear-orbit .gear-slot .v{font-size:.52rem}
+      .hero-avatar.standee{height:230px}
+    }
+    @media (prefers-reduced-motion:reduce){.stage-aura,.hero-avatar.standee img{animation:none}}
     .hero-frame{position:relative;z-index:1}
-    .hero-frame::before{content:"";position:absolute;inset:-6px;border-radius:26px;border:2px solid rgba(255,210,122,.55);pointer-events:none;box-shadow:0 0 18px rgba(255,210,122,.2);z-index:3}
     .hero-nameplate{margin-top:.45rem;text-align:center;font-size:.62rem;font-weight:900;letter-spacing:.12em;color:#ffe9b0;text-shadow:0 1px 4px rgba(0,0,0,.35)}
     .quest-board{background:
       linear-gradient(180deg,rgba(255,248,230,.95),#fff),
@@ -245,13 +283,13 @@
     .evolution-strip h4 span{font-size:.62rem;color:var(--muted);font-weight:700}
     .evo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem}
     .evo-cell{text-align:center;border-radius:14px;padding:.35rem .2rem .45rem;border:2px solid transparent;background:#fff;transition:.2s}
-    .evo-cell img{width:100%;max-width:72px;height:78px;object-fit:cover;object-position:center top;border-radius:10px;display:block;margin:0 auto .2rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,.12))}
     .evo-cell .lbl{font-size:.52rem;font-weight:800;color:var(--muted);line-height:1.2}
     .evo-cell.current{border-color:var(--lilac);background:linear-gradient(180deg,#fff,#f0ecff);box-shadow:0 0 0 2px rgba(122,92,255,.15)}
     .evo-cell.current .lbl{color:var(--lilac-deep)}
     .evo-cell.locked{opacity:.45}
     .evo-cell.reached:not(.current){opacity:.85}
-    .class-btn .class-preview{width:100%;max-width:64px;height:72px;object-fit:cover;object-position:center top;border-radius:10px;display:block;margin:0 auto .2rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,.15))}
+    .class-btn .class-preview{width:100%;max-width:64px;height:72px;object-fit:contain;object-position:center bottom;border-radius:10px;display:block;margin:0 auto .2rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,.2));background:radial-gradient(ellipse at 50% 85%,rgba(120,100,200,.15),transparent)}
+    .evo-cell img{width:100%;max-width:72px;height:78px;object-fit:contain;object-position:center bottom;border-radius:10px;display:block;margin:0 auto .2rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,.2));background:transparent}
     .map-world{position:relative;border-radius:22px;overflow:hidden;margin:.65rem 0;box-shadow:0 14px 36px rgba(20,40,30,.25);min-height:240px;background:
       radial-gradient(ellipse 90% 50% at 70% 20%,rgba(255,255,220,.35),transparent 55%),
       linear-gradient(180deg,#7ec8f0 0%,#87c98a 36%,#4a9a55 72%,#2f6b3a 100%)}
@@ -268,16 +306,16 @@
     .map-node .dot{width:20px;height:20px;border-width:3px;box-shadow:0 2px 6px rgba(0,0,0,.25);background:#fff}
     .map-node.current .dot{width:24px;height:24px;background:linear-gradient(135deg,#ffd27a,#fff38d)}
     .map-node.boss .dot{background:linear-gradient(135deg,#ff7a7a,#ffd27a)}
-    .map-avatar{position:absolute;width:54px;height:64px;transform:translate(-50%,-92%);z-index:5;pointer-events:none;filter:drop-shadow(0 6px 10px rgba(0,0,0,.4));transition:left .4s ease,top .4s ease;animation:mapBob 2.4s ease-in-out infinite}
-    .map-avatar img{width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:12px;border:2px solid rgba(255,255,255,.75);background:rgba(20,16,48,.25)}
+    .map-avatar{position:absolute;width:58px;height:78px;transform:translate(-50%,-92%);z-index:5;pointer-events:none;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45));transition:left .4s ease,top .4s ease;animation:mapBob 2.4s ease-in-out infinite}
+    .map-avatar img{width:100%;height:100%;object-fit:contain;object-position:center bottom;border-radius:0;border:none;background:transparent}
     @keyframes mapBob{0%,100%{transform:translate(-50%,-92%)}50%{transform:translate(-50%,-98%)}}
     @media (prefers-reduced-motion:reduce){.map-avatar{animation:none}}
     .map-quest-panel{margin-top:.65rem;border-radius:18px;background:rgba(255,255,255,.92);padding:.65rem .75rem;border:1px solid rgba(255,255,255,.6)}
     .map-quest-panel h4{margin:0 0 .35rem;font-size:.72rem;color:#5a4a20}
     .portfolio-hero{border-radius:22px;padding:1rem;margin-bottom:.65rem;background:linear-gradient(165deg,#12183a 0%,#1e2858 45%,#2a1f6b 100%);color:#fff;box-shadow:0 16px 40px rgba(18,24,58,.45)}
     .portfolio-hero .ph-top{display:flex;gap:.65rem;align-items:center}
-    .portfolio-hero .ph-avatar{width:72px;height:86px;border-radius:16px;overflow:hidden;border:2px solid rgba(255,255,255,.35);flex-shrink:0;background:rgba(255,255,255,.08)}
-    .portfolio-hero .ph-avatar img{width:100%;height:100%;object-fit:cover}
+    .portfolio-hero .ph-avatar{width:72px;height:86px;border-radius:16px;overflow:hidden;border:2px solid rgba(255,255,255,.35);flex-shrink:0;background:radial-gradient(ellipse at 50% 80%,rgba(255,210,122,.2),rgba(255,255,255,.06))}
+    .portfolio-hero .ph-avatar img{width:100%;height:100%;object-fit:contain;object-position:center bottom}
     .portfolio-hero .ph-title{font-size:1rem;font-weight:900;margin:0}
     .portfolio-hero .ph-sub{font-size:.68rem;opacity:.82;margin:.2rem 0 .45rem}
     .portfolio-hero .ph-exp{height:8px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden}
@@ -829,33 +867,35 @@
                 <span class="badge" id="homeClassBadge">現在のクラス：—</span>
                 <span class="rpg-chip" id="homeRankChip">見習い</span>
               </div>
-              <div class="char-main">
-                <div class="rpg-status">
-                  <div class="role" id="homeRoleName">冒険者</div>
-                  <div class="small" id="homeRoleDesc">長いキャリア学習の進捗がここに表示されます。</div>
-                  <div class="rpg-bars" style="margin-top:.55rem">
-                    <div class="rpg-bar-row">
-                      <span class="rpg-bar-lab">EXP</span>
-                      <div class="exp-bar rpg-exp"><span id="homeExpBar"></span></div>
-                    </div>
-                    <div class="exp-label"><span id="homeExpLabel">学習EXP 0</span><span id="homeLvLabel">Lv.1</span></div>
+              <div class="rpg-status rpg-status-top">
+                <div class="role" id="homeRoleName">冒険者</div>
+                <div class="small" id="homeRoleDesc">長いキャリア学習の進捗がここに表示されます。</div>
+                <div class="rpg-bars" style="margin-top:.45rem">
+                  <div class="rpg-bar-row">
+                    <span class="rpg-bar-lab">EXP</span>
+                    <div class="exp-bar rpg-exp"><span id="homeExpBar"></span></div>
                   </div>
-                  <div class="gear-panel" id="homeGearPanel"></div>
-                </div>
-                <div class="hero-frame">
-                  <div class="hero-avatar" id="homeAvatarWrap">
-                    <div class="class-motif" aria-hidden="true"></div>
-                    <span class="class-tag" id="homeAvatarClass">—</span>
-                    <span class="class-emblem" id="homeAvatarEmblem">剣</span>
-                    <img id="homeAvatarImg" src="/static/rpg/characters/swordsman_novice.png" alt="" />
-                  </div>
-                  <div class="hero-nameplate" id="homeNameplate">PARTY</div>
+                  <div class="exp-label"><span id="homeExpLabel">学習EXP 0</span><span id="homeLvLabel">Lv.1</span></div>
                 </div>
               </div>
-            </div>
-            <div class="evolution-strip" id="homeEvolutionStrip">
-              <h4>クラス進化 <span id="homeEvoRankLabel">見習い</span></h4>
-              <div class="evo-grid" id="homeEvoGrid"></div>
+              <div class="hero-showcase">
+                <div class="gear-orbit" id="homeGearPanel" aria-label="装備"></div>
+                <div class="hero-stage">
+                  <div class="stage-aura" aria-hidden="true"></div>
+                  <div class="hero-avatar standee" id="homeAvatarWrap">
+                    <span class="class-tag" id="homeAvatarClass">—</span>
+                    <span class="class-emblem" id="homeAvatarEmblem">剣</span>
+                    <img id="homeAvatarImg" src="/static/rpg/characters/swordsman_novice_stand.png" alt="" />
+                  </div>
+                  <div class="stage-floor" aria-hidden="true"></div>
+                  <div class="hero-nameplate" id="homeNameplate">PARTY</div>
+                </div>
+                <div class="evo-orbit">
+                  <div class="evo-orbit-title">クラス進化 <span id="homeEvoRankLabel">見習い</span></div>
+                  <div class="evo-grid evo-ring" id="homeEvoGrid"></div>
+                </div>
+              </div>
+              <div class="evolution-strip" id="homeEvolutionStrip" hidden></div>
             </div>
             <div class="card quest-board">
               <div class="section-title"><span>📜 MAIN QUEST</span><span class="quest-tag">次の学習</span></div>
@@ -908,7 +948,7 @@
           <div class="content" style="padding-top:.65rem">
             <div class="portfolio-hero" id="portfolioHero">
               <div class="ph-top">
-                <div class="ph-avatar"><img id="portfolioAvatarImg" src="/static/rpg/characters/swordsman_novice.png" alt="" /></div>
+                <div class="ph-avatar"><img id="portfolioAvatarImg" src="/static/rpg/characters/swordsman_novice_stand.png" alt="" /></div>
                 <div>
                   <div class="ph-title" id="portfolioTitle">未来探求者</div>
                   <div class="ph-sub" id="portfolioSub">Lv.1 ／ 見習い</div>
