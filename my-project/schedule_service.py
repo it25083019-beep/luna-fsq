@@ -255,12 +255,18 @@ def expand_recurring_templates(
     user: Dict[str, Any],
     *,
     today: Optional[date] = None,
-    horizon_days: int = 200,
-    lookback_days: int = 90,
+    horizon_years: int = 10,
+    lookback_days: int = 400,
 ) -> List[Dict[str, Any]]:
-    """Materialize upcoming instances from recurring templates."""
-    today = today or date.today()
-    end = today + timedelta(days=horizon_days)
+    """Materialize recurring instances around a focus day.
+
+    Templates themselves are permanent; we only generate a window of concrete
+    dates for the calendar. The window is long (default 10 years ahead) so
+    browsing far months does not look like the series 'stopped'.
+    """
+    focus = today or date.today()
+    # Cover through end of (focus_year + horizon_years) so far months keep dots.
+    end = date(focus.year + max(horizon_years, 1), 12, 31)
     stored = _events_store(user)
     existing = _existing_keys(stored)
     occupied = _occupied_recurrence_dates(stored)
@@ -273,13 +279,12 @@ def expand_recurring_templates(
         if not title:
             continue
         recurrence = tpl.get("recurrence") or "weekly"
-        start = _parse_date(tpl.get("start_date") or today.isoformat())
+        start = _parse_date(tpl.get("start_date") or focus.isoformat())
         time_val = tpl.get("time")
         tpl_id = tpl.get("id") or uuid.uuid4().hex[:12]
         cancelled = set(tpl.get("cancelled_dates") or [])
 
-        # Cover the browsed calendar month: look back + look ahead around focus day.
-        horizon_start = today - timedelta(days=lookback_days)
+        horizon_start = focus - timedelta(days=lookback_days)
         cursor = max(start, horizon_start)
         while cursor <= end:
             match = False

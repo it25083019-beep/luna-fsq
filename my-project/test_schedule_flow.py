@@ -65,17 +65,23 @@ def active_templates(user):
 
 
 def test_month_panel_focus_expansion():
-    """Browsing Nov must still expand Mon/Tue dots (was truncated at ~90 days)."""
+    """Browsing far months must still show recurring dots (not cut off mid-series)."""
     user = fresh_user()
     add_event(user, title="Di hoc", event_date="2026-08-24", event_time="09:20", event_end_time="16:40", recurrence="weekly")
     add_event(user, title="Di hoc", event_date="2026-08-25", event_time="09:20", event_end_time="16:40", recurrence="weekly")
-    # Focus as if user opened November
-    data = list_events(user, on_date="2026-11-15")
+    # Focus as if user opened March 2027 (the screenshot cut-off month)
+    data = list_events(user, on_date="2027-03-15")
     dates = {e["date"] for e in data["events"] if e.get("title") == "Di hoc"}
-    assert "2026-11-02" in dates, dates  # Monday
-    assert "2026-11-03" in dates, dates  # Tuesday
-    assert "2026-11-30" in dates, dates  # late Nov Monday
-    print("OK month expansion to November")
+    assert "2027-03-01" in dates, dates  # Monday
+    assert "2027-03-02" in dates, dates  # Tuesday
+    assert "2027-03-29" in dates, dates  # late March Monday — must NOT be cut off
+    assert "2027-03-30" in dates, dates  # late March Tuesday
+    # Still continues years later
+    data2 = list_events(user, on_date="2030-06-01")
+    dates2 = {e["date"] for e in data2["events"] if e.get("title") == "Di hoc"}
+    assert "2030-06-03" in dates2 or any(d.startswith("2030-06") for d in dates2), dates2
+    print("OK month expansion through late March 2027 and into 2030")
+
 
 
 def test_screenshot_desync_data_shape():
