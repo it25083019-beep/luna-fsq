@@ -61,5 +61,39 @@
     "intermediate": "rank-intermediate",
     "veteran": "rank-veteran",
     "saint": "rank-saint"
+  },
+  "character_evolution": {
+    "rank_labels": {
+      "novice": "見習い",
+      "intermediate": "中級",
+      "veteran": "熟練",
+      "saint": "聖級"
+    },
+    "rank_desc": {
+      "novice": "基礎を学ぶ冒険の始まり",
+      "intermediate": "経験を積み力を目覚めさせる",
+      "veteran": "技を極め仲間に頼られる存在へ",
+      "saint": "聖なる力を宿し伝説となる"
+    },
+    "sprites": {
+      "swordsman": {
+        "novice": "/static/rpg/characters/swordsman_novice.svg",
+        "intermediate": "/static/rpg/characters/swordsman_intermediate.svg",
+        "veteran": "/static/rpg/characters/swordsman_veteran.svg",
+        "saint": "/static/rpg/characters/swordsman_saint.svg"
+      },
+      "archer": {
+        "novice": "/static/rpg/characters/archer_novice.svg",
+        "intermediate": "/static/rpg/characters/archer_intermediate.svg",
+        "veteran": "/static/rpg/characters/archer_veteran.svg",
+        "saint": "/static/rpg/characters/archer_saint.svg"
+      },
+      "mage": {
+        "novice": "/static/rpg/characters/mage_novice.svg",
+        "intermediate": "/static/rpg/characters/mage_intermediate.svg",
+        "veteran": "/static/rpg/characters/mage_veteran.svg",
+        "saint": "/static/rpg/characters/mage_saint.svg"
+      }
+    }
   }
 }

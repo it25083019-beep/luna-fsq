@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" role="img" aria-label="archer-novice">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a8a78"/><stop offset="100%" stop-color="#0f3a32"/></linearGradient></defs><rect width="200" height="240" rx="18" fill="url(#bg)"/><ellipse cx="100" cy="205" rx="42" ry="8" fill="#000" opacity=".22"/><rect x="78" y="118" width="44" height="52" rx="12" fill="#2d6b4a"/><circle cx="100" cy="88" r="26" fill="#ffd8b8"/><ellipse cx="100" cy="72" rx="28" ry="22" fill="#3d2810"/><circle cx="90" cy="86" r="3" fill="#3a2a20"/><circle cx="110" cy="86" r="3" fill="#3a2a20"/><path d="M94 98 Q100 103 106 98" fill="none" stroke="#c87858" stroke-width="2" stroke-linecap="round"/><path d="M148 130 Q118 95 88 118" fill="none" stroke="#6ecf8a" stroke-width="3"/><line x1="88" y1="118" x2="148" y2="130" stroke="#8fd4a8" stroke-width="2"/>
+</svg>

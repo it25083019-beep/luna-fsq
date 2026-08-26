@@ -271,14 +271,24 @@ def _build_appearance(class_id: str, equipped: Dict[str, Any], rank_id: str, inv
                 "label_ja": meta.get("label_ja") or lookup,
             }
         )
+    evo_cfg = app.get("character_evolution") or {}
+    evo_sprites = (evo_cfg.get("sprites") or {}).get(class_id) or {}
+    evolution_sprite = evo_sprites.get(rank_id) or evo_sprites.get("novice")
+    rank_labels = evo_cfg.get("rank_labels") or {}
+    rank_desc = evo_cfg.get("rank_desc") or {}
+    display_sprite = evolution_sprite or base.get("sprite")
     return {
-        "sprite": base.get("sprite"),
+        "sprite": display_sprite,
+        "evolution_sprite": evolution_sprite,
+        "fallback_sprite": base.get("sprite"),
         "css_classes": " ".join(layers),
         "class_label_ja": base.get("label_ja"),
         "class_emblem_ja": base.get("emblem_ja") or (base.get("label_ja") or "")[:1],
         "class_motif_ja": base.get("motif_ja") or "",
         "class_id": class_id,
         "rank_id": rank_id,
+        "rank_label_ja": rank_labels.get(rank_id),
+        "rank_desc_ja": rank_desc.get(rank_id),
         "tints": tints,
         "equipped_details": equipped_details,
     }

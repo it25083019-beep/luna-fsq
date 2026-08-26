@@ -158,6 +158,47 @@
     .gear-slot{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:.4rem .5rem;font-size:.62rem}
     .gear-slot .k{opacity:.75;display:block;margin-bottom:.1rem}
     .gear-slot .v{font-weight:800}
+    /* --- RPG visual upgrade (additive) --- */
+    .hero-avatar.has-evolution img{left:0;right:0;bottom:0;width:100%;height:100%;object-fit:cover;object-position:center bottom}
+    .hero-avatar.has-evolution::after{display:none}
+    .evolution-strip{margin-bottom:.65rem;padding:.75rem;border-radius:20px;background:linear-gradient(180deg,#fff,#f3f5ff);box-shadow:var(--shadow);border:1px solid #e8ebff}
+    .evolution-strip h4{margin:0 0 .5rem;font-size:.78rem;color:var(--lilac-deep);display:flex;justify-content:space-between;align-items:center}
+    .evolution-strip h4 span{font-size:.62rem;color:var(--muted);font-weight:700}
+    .evo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem}
+    .evo-cell{text-align:center;border-radius:14px;padding:.35rem .2rem .45rem;border:2px solid transparent;background:#fff;transition:.2s}
+    .evo-cell img{width:100%;max-width:56px;height:68px;object-fit:contain;display:block;margin:0 auto .2rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,.12))}
+    .evo-cell .lbl{font-size:.52rem;font-weight:800;color:var(--muted);line-height:1.2}
+    .evo-cell.current{border-color:var(--lilac);background:linear-gradient(180deg,#fff,#f0ecff);box-shadow:0 0 0 2px rgba(122,92,255,.15)}
+    .evo-cell.current .lbl{color:var(--lilac-deep)}
+    .evo-cell.locked{opacity:.45}
+    .evo-cell.reached:not(.current){opacity:.85}
+    .class-btn .class-preview{width:100%;max-width:52px;height:62px;object-fit:contain;display:block;margin:0 auto .2rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,.15))}
+    .map-world{position:relative;border-radius:22px;overflow:hidden;margin:.65rem 0;box-shadow:0 14px 36px rgba(20,40,30,.25);min-height:200px;background:linear-gradient(180deg,#87ceeb 0%,#6db87a 38%,#3d8f52 100%)}
+    .map-world::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 80% 40% at 50% 15%,rgba(255,255,255,.45),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.08),transparent 40%)}
+    .map-hud{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:.55rem .65rem;color:#fff;font-size:.62rem;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.35)}
+    .map-hud .pill{background:rgba(20,16,48,.45);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:.25rem .55rem}
+    .map-strip{margin:0;padding:0;border-radius:0;background:transparent;min-height:160px;box-shadow:none}
+    .map-path{position:relative;height:150px;z-index:1}
+    .map-node{width:64px;font-size:.58rem}
+    .map-node .dot{width:18px;height:18px;border-width:3px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+    .map-node.current .dot{width:22px;height:22px}
+    .map-avatar{position:absolute;width:36px;height:44px;transform:translate(-50%,-100%);z-index:5;pointer-events:none;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35));transition:left .35s,top .35s}
+    .map-avatar img{width:100%;height:100%;object-fit:contain}
+    .map-quest-panel{margin-top:.65rem;border-radius:18px;background:rgba(255,255,255,.92);padding:.65rem .75rem;border:1px solid rgba(255,255,255,.6)}
+    .map-quest-panel h4{margin:0 0 .35rem;font-size:.72rem;color:#5a4a20}
+    .portfolio-hero{border-radius:22px;padding:1rem;margin-bottom:.65rem;background:linear-gradient(165deg,#12183a 0%,#1e2858 45%,#2a1f6b 100%);color:#fff;box-shadow:0 16px 40px rgba(18,24,58,.45)}
+    .portfolio-hero .ph-top{display:flex;gap:.65rem;align-items:center}
+    .portfolio-hero .ph-avatar{width:72px;height:86px;border-radius:16px;overflow:hidden;border:2px solid rgba(255,255,255,.35);flex-shrink:0;background:rgba(255,255,255,.08)}
+    .portfolio-hero .ph-avatar img{width:100%;height:100%;object-fit:cover}
+    .portfolio-hero .ph-title{font-size:1rem;font-weight:900;margin:0}
+    .portfolio-hero .ph-sub{font-size:.68rem;opacity:.82;margin:.2rem 0 .45rem}
+    .portfolio-hero .ph-exp{height:8px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden}
+    .portfolio-hero .ph-exp span{display:block;height:100%;background:linear-gradient(90deg,#ffd27a,#fff38d);border-radius:inherit}
+    .portfolio-hero .ph-story{margin:.65rem 0 0;padding:.65rem .75rem;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:.72rem;line-height:1.55;opacity:.92}
+    .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem;margin-bottom:.65rem}
+    .stat-box{border-radius:16px;padding:.65rem .45rem;text-align:center;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.15)}
+    .stat-box span{display:block;font-size:.58rem;opacity:.88;margin-bottom:.15rem;font-weight:700}
+    .stat-box strong{font-size:1.1rem;font-weight:900}
     .study-theory{background:#f6f7ff;border:1px solid #e4e8ff;border-radius:14px;padding:.7rem .75rem;margin:.45rem 0 .7rem}
     .study-theory p{margin:0 0 .45rem;font-size:.74rem;line-height:1.55;color:#3a3f63}
     .study-theory p:last-child{margin-bottom:0}
@@ -605,8 +646,12 @@
           <div class="content" style="padding-top:.65rem">
             <div class="card journey-onboard" id="onboardClassStep">
               <div class="section-title"><span>① クラスを選ぶ</span></div>
-              <p class="hint" style="margin:0 0 .5rem">剣士 / 魔法使い / 弓使い</p>
+              <p class="hint" style="margin:0 0 .5rem">剣士 / 魔法使い / 弓使い — 見習いから聖級まで進化</p>
               <div class="classes" id="classPicker"></div>
+              <div class="evolution-strip" id="onboardEvolutionPreview" style="margin-top:.65rem;display:none">
+                <h4>クラス進化プレビュー <span id="onboardEvoHint">見習い</span></h4>
+                <div class="evo-grid" id="onboardEvoGrid"></div>
+              </div>
             </div>
             <div class="card journey-onboard" id="onboardCareerStep" style="display:none">
               <div class="section-title"><span>② 将来の職業を選ぶ</span><button type="button" id="backToClassBtn" class="hint" style="border:none;background:none;cursor:pointer;color:var(--lilac)">← クラス</button></div>
@@ -637,6 +682,10 @@
                 </div>
               </div>
             </div>
+            <div class="evolution-strip" id="homeEvolutionStrip">
+              <h4>クラス進化 <span id="homeEvoRankLabel">見習い</span></h4>
+              <div class="evo-grid" id="homeEvoGrid"></div>
+            </div>
             <div class="card">
               <div class="section-title"><span>📘 次の学習</span></div>
               <div class="next-lesson" id="nextLessonBox"><p class="hint" style="margin:0">進路を選ぶとレッスンが表示されます。</p></div>
@@ -649,8 +698,18 @@
         </div>
         <div id="fsq-map" class="fsq-section">
           <div class="content" style="padding-top:.65rem">
+            <div class="map-world">
+              <div class="map-hud">
+                <span class="pill" id="mapHudRegion">現在：始まりの平原</span>
+                <span class="pill" id="mapHudExp">EXP —</span>
+              </div>
+              <div class="map-strip"><div class="map-path" id="mapPath"></div><div class="map-avatar" id="mapAvatar" hidden><img id="mapAvatarImg" alt="" /></div></div>
+            </div>
             <p class="hint" id="mapRegionLabel" style="margin:0 0 .5rem">現在：始まりの平原</p>
-            <div class="map-strip"><div class="map-path" id="mapPath"></div></div>
+            <div class="map-quest-panel" id="mapDailyQuest">
+              <h4>📜 今日のクエスト</h4>
+              <div id="mapQuestList"><p class="hint" style="margin:0">次のレッスンがここに表示されます。</p></div>
+            </div>
             <div class="card">
               <div class="section-title"><span>✅ レッスン</span></div>
               <div id="questList"></div>
@@ -663,6 +722,17 @@
         </div>
         <div id="fsq-career" class="fsq-section">
           <div class="content" style="padding-top:.65rem">
+            <div class="portfolio-hero" id="portfolioHero">
+              <div class="ph-top">
+                <div class="ph-avatar"><img id="portfolioAvatarImg" src="/static/rpg/characters/swordsman_novice.svg" alt="" /></div>
+                <div>
+                  <div class="ph-title" id="portfolioTitle">未来探求者</div>
+                  <div class="ph-sub" id="portfolioSub">Lv.1 ／ 見習い</div>
+                  <div class="ph-exp"><span id="portfolioExpBar" style="width:0%"></span></div>
+                </div>
+              </div>
+              <div class="ph-story" id="portfolioStory">進路を選ぶと、冒険の記録がここに表示されます。</div>
+            </div>
             <div class="stats-row" id="portfolioStats"></div>
             <div class="card">
               <div class="section-title"><span>🧭 選んだ進路</span><button type="button" id="refreshCareerBtn" class="hint" style="border:none;background:none;cursor:pointer;color:var(--lilac)">更新</button></div>

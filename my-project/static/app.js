@@ -30,6 +30,12 @@
     { left: "88%", top: "60%" },
   ];
   const BOSS_LABEL = { weekly: "週次ボス", monthly: "月次ボス", career_final: "最終ボス" };
+  const EVOLUTION_RANKS = [
+    { id: "novice", label: "見習い" },
+    { id: "intermediate", label: "中級" },
+    { id: "veteran", label: "熟練" },
+    { id: "saint", label: "聖級" },
+  ];
 
   let token = LunaAuth.getToken();
   let busy = false;
@@ -314,12 +320,18 @@
       if (classStep) classStep.style.display = onboardStep === "class" ? "block" : "none";
       if (careerStep) careerStep.style.display = onboardStep === "career" ? "block" : "none";
       if (onboardStep === "career") renderCareerPicker();
+      const prev = document.getElementById("onboardEvolutionPreview");
+      if (prev) prev.style.display = onboardStep === "class" ? "block" : "none";
+      if (onboardStep === "class") {
+        renderEvolutionGrid("onboardEvoGrid", selectedClass, "novice", "onboardEvoHint");
+      }
       return;
     }
     renderHomeHeader();
     renderSkills();
     renderNextLesson();
     renderMap();
+    renderMapDailyQuest();
     renderLessons();
     renderBosses();
     renderCareerPortfolio();
@@ -360,10 +372,15 @@
       const b = document.createElement("button");
       b.type = "button";
       b.className = "class-btn" + (c.id === selectedClass ? " active" : "");
-      b.innerHTML = '<span class="class-icon">' + c.icon + "</span>" + c.label;
+      b.innerHTML =
+        '<img class="class-preview" src="' +
+        evolutionSpritePath(c.id, "novice") +
+        '" alt=""/>' +
+        c.label;
       b.onclick = () => {
         selectedClass = c.id;
         localStorage.setItem("luna_class", c.id);
+        renderEvolutionGrid("onboardEvoGrid", selectedClass, "novice", "onboardEvoHint");
         onboardStep = "career";
         applyJourneyUi();
       };
@@ -416,13 +433,61 @@
     return classLabels[id] || CLASSES.find((c) => c.id === id)?.label || id;
   }
 
+  function evolutionSpritePath(classId, rankId) {
+    const cls = classId || "swordsman";
+    const rank = rankId || "novice";
+    return "/static/rpg/characters/" + cls + "_" + rank + ".svg";
+  }
+
+  function rankOrder(rankId) {
+    const i = EVOLUTION_RANKS.findIndex((r) => r.id === rankId);
+    return i >= 0 ? i : 0;
+  }
+
+  function renderEvolutionGrid(containerId, classId, currentRankId, labelId) {
+    const grid = document.getElementById(containerId);
+    if (!grid || !classId) return;
+    const cur = currentRankId || "novice";
+    const curIdx = rankOrder(cur);
+    grid.innerHTML = EVOLUTION_RANKS.map((r, i) => {
+      const cls = ["evo-cell"];
+      if (r.id === cur) cls.push("current");
+      else if (i < curIdx) cls.push("reached");
+      else cls.push("locked");
+      return (
+        '<div class="' +
+        cls.join(" ") +
+        '"><img src="' +
+        evolutionSpritePath(classId, r.id) +
+        '" alt="' +
+        r.label +
+        '"/><div class="lbl">' +
+        r.label +
+        "</div></div>"
+      );
+    }).join("");
+    if (labelId) {
+      const lbl = document.getElementById(labelId);
+      if (lbl) lbl.textContent = EVOLUTION_RANKS[curIdx]?.label || "見習い";
+    }
+  }
+
   const GEAR_SLOT_JA = { weapon: "武器", armor: "防具", accessory: "装飾", artifact: "証" };
 
   function applyAppearance(wrap, img, appearance) {
     if (!wrap || !img) return;
     const ap = appearance || {};
     wrap.className = "hero-avatar " + (ap.css_classes || "");
-    if (ap.sprite) img.src = ap.sprite;
+    const classId = ap.class_id || journeyStatus.class_id || selectedClass;
+    const rankId = ap.rank_id || journeyStatus.rank_id || "novice";
+    const evo = ap.evolution_sprite || ap.sprite || (classId ? evolutionSpritePath(classId, rankId) : null);
+    if (evo && classId) {
+      wrap.classList.add("has-evolution");
+      img.src = evo;
+      img.alt = (ap.class_label_ja || classLabel(classId)) + " " + (ap.rank_label_ja || journeyStatus.rank_ja || "");
+    } else if (ap.sprite) {
+      img.src = ap.sprite;
+    }
     const tag = document.getElementById("homeAvatarClass");
     if (tag) tag.textContent = ap.class_label_ja || classLabel(ap.class_id) || "—";
     const emblem = document.getElementById("homeAvatarEmblem");
@@ -493,6 +558,12 @@
       journeyStatus.appearance
     );
     renderGearPanel(journeyStatus.appearance, journeyStatus.inventory || []);
+    renderEvolutionGrid(
+      "homeEvoGrid",
+      cls,
+      (journeyStatus.appearance && journeyStatus.appearance.rank_id) || journeyStatus.rank_id || "novice",
+      "homeEvoRankLabel"
+    );
     const my = document.getElementById("myName");
     if (my) my.textContent = user;
   }
@@ -723,6 +794,22 @@
     }
   }
 
+  function renderMapDailyQuest() {
+    const box = document.getElementById("mapQuestList");
+    if (!box) return;
+    const les = journeyStatus.next_lesson;
+    if (!les) {
+      box.innerHTML = '<p class="hint" style="margin:0">次の学習単元はホームタブで確認できます。</p>';
+      return;
+    }
+    box.innerHTML =
+      '<div style="font-size:.74rem;font-weight:800">' +
+      (les.title_ja || les.id) +
+      '</div><div class="hint">+' +
+      (les.exp || 0) +
+      " EXP ・ 教材あり</div>";
+  }
+
   function renderMap() {
     const path = document.getElementById("mapPath");
     if (!path) return;
@@ -751,12 +838,29 @@
       path.appendChild(node);
     });
     const cur = list.find((r) => r.current) || list[0];
+    const curIdx = Math.max(0, list.indexOf(cur));
     const lbl = document.getElementById("mapRegionLabel");
     if (lbl) {
       lbl.textContent =
         "現在：" +
         (cur ? cur.label_ja : "始まりの平原") +
         (journeyStatus.career_title_ja ? "（" + journeyStatus.career_title_ja + "）" : "");
+    }
+    const hud = document.getElementById("mapHudRegion");
+    if (hud) hud.textContent = lbl ? lbl.textContent : "現在：始まりの平原";
+    const hudExp = document.getElementById("mapHudExp");
+    if (hudExp) hudExp.textContent = "学習EXP " + (journeyStatus.journey_exp || 0);
+    const mapAv = document.getElementById("mapAvatar");
+    const mapAvImg = document.getElementById("mapAvatarImg");
+    if (mapAv && mapAvImg && cur) {
+      const pos = MAP_POSITIONS[curIdx] || MAP_POSITIONS[MAP_POSITIONS.length - 1];
+      mapAv.hidden = false;
+      mapAv.style.left = pos.left;
+      mapAv.style.top = pos.top;
+      const ap = journeyStatus.appearance || {};
+      mapAvImg.src =
+        ap.evolution_sprite ||
+        evolutionSpritePath(journeyStatus.class_id || selectedClass, journeyStatus.rank_id || "novice");
     }
   }
 
@@ -842,6 +946,37 @@
   }
 
   function renderCareerPortfolio() {
+    const cls = journeyStatus.class_id || selectedClass;
+    const rankId = journeyStatus.rank_id || "novice";
+    const ap = journeyStatus.appearance || {};
+    const lv = journeyStatus.level || stateData.level || 1;
+    const exp = journeyStatus.total_exp || stateData.total_exp || 0;
+    const prog = expProgress(exp, lv);
+    const pAv = document.getElementById("portfolioAvatarImg");
+    if (pAv) pAv.src = ap.evolution_sprite || evolutionSpritePath(cls, rankId);
+    const pTitle = document.getElementById("portfolioTitle");
+    if (pTitle) pTitle.textContent = (stateData.user_display_name || "学習者") + " Lv." + lv;
+    const pSub = document.getElementById("portfolioSub");
+    if (pSub) {
+      pSub.textContent =
+        (journeyStatus.class_ja || classLabel(cls)) +
+        " ／ " +
+        (journeyStatus.rank_ja || "見習い") +
+        (journeyStatus.career_title_ja ? " ・ " + journeyStatus.career_title_ja : "");
+    }
+    const pBar = document.getElementById("portfolioExpBar");
+    if (pBar) pBar.style.width = prog.pct + "%";
+    const pStory = document.getElementById("portfolioStory");
+    if (pStory) {
+      pStory.textContent = journeyStatus.selected
+        ? (journeyStatus.career_title_ja || "進路") +
+          "への冒険。習熟「" +
+          (journeyStatus.rank_ja || "見習い") +
+          "」— レッスン " +
+          (journeyStatus.completed_count || 0) +
+          " 完了。理論と実践を重ね、最終ボスへ向かおう。"
+        : "クラスと職業を選ぶと、冒険の記録がここに表示されます。";
+    }
     const row = document.getElementById("portfolioStats");
     if (row) {
       row.innerHTML =
