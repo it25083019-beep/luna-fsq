@@ -512,7 +512,10 @@ def life_module_append(
 @app.get("/home/summary")
 def get_home_summary(current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
-    return home_summary(brain)
+    result = home_summary(brain)
+    if brain.pop("_schedule_dirty", False):
+        save_user_brain(current.public_id, brain)
+    return result
 
 
 @app.get("/schedule/events")

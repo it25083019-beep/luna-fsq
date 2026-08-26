@@ -285,13 +285,14 @@ def expand_recurring_templates(
     user: Dict[str, Any],
     *,
     today: Optional[date] = None,
-    ahead_days: int = 400,
-    lookback_days: int = 93,
+    ahead_days: int = 45,
+    lookback_days: int = 40,
 ) -> List[Dict[str, Any]]:
     """Materialize recurring instances within each template's 1-year horizon.
 
     Templates are permanent. Concrete dates are only generated up to
-    ``horizon_end`` (default: start + 1 year). When that window is nearly over,
+    ``horizon_end`` (default: start + 1 year), and only around the browsed
+    month so the API stays small. When that year window is nearly over,
     the UI asks the user to extend another year.
     """
     focus = today or date.today()
@@ -321,8 +322,9 @@ def expand_recurring_templates(
         cursor = max(start, horizon_start)
         if cursor > end:
             continue
+        # ~2 months of weekly ticks per template is enough for the month grid.
         guard = 0
-        guard_max = 400  # ~1 year of weekly ticks
+        guard_max = 70
         while cursor <= end and guard < guard_max:
             guard += 1
             match = False
@@ -503,13 +505,13 @@ def _all_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> List[
         except ValueError:
             pass
     generated = expand_recurring_templates(user, today=focus)
-    # Keep payload small: only return stored + generated near the focus window.
-    window_start = (focus - timedelta(days=93)).isoformat()
-    window_end = (focus + timedelta(days=400)).isoformat()
+    # Keep payload small: only return stored + generated near the focus month.
+    window_start = (focus - timedelta(days=40)).isoformat()
+    window_end = (focus + timedelta(days=45)).isoformat()
     near_stored = [
         e
         for e in stored
-        if not e.get("date") or (window_start <= e.get("date", "") <= window_end)
+        if e.get("date") and window_start <= e.get("date", "") <= window_end
     ]
     merged = near_stored + generated
     merged.sort(key=lambda e: (e.get("date", ""), e.get("time") or ""))
@@ -550,7 +552,6 @@ def list_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> Dict[
         "open_count": open_count,
         "events": events,
         "dates_with_events": dates_with_events,
-        "recurring_templates": _recurring_store(user),
         "extend_prompt": recurring_extend_prompt(user, focus=today),
     }
 
@@ -1196,7 +1197,9 @@ def apply_suggestions(
 
 
 def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
-    sched = list_events(user)
+    # Today-only focus keeps this cheap (calendar uses its own month window).
+    today_s = date.today().isoformat()
+    sched = list_events(user, on_date=today_s)
     health = user.get("life_modules", {}).get("health", {}).get("structured", {}) or {}
     score = int(health.get("score") or 85)
     goals_done = int(health.get("goals_done") or 0)

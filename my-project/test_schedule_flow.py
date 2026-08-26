@@ -67,24 +67,27 @@ def active_templates(user):
 
 
 def test_month_panel_focus_expansion():
-    """Within the 1-year horizon, browsing months still shows recurring dots."""
+    """Within the month window, browsing that month shows recurring dots."""
     user = fresh_user()
     add_event(user, title="Di hoc", event_date="2026-08-24", event_time="09:20", event_end_time="16:40", recurrence="weekly")
     add_event(user, title="Di hoc", event_date="2026-08-25", event_time="09:20", event_end_time="16:40", recurrence="weekly")
+    # Focus March 2027 (still inside 1-year horizon) — events appear for that month only.
     data = list_events(user, on_date="2027-03-15")
     dates = {e["date"] for e in data["events"] if e.get("title") == "Di hoc"}
     assert "2027-03-01" in dates, dates
     assert "2027-03-02" in dates, dates
     assert "2027-03-29" in dates, dates
     assert "2027-03-30" in dates, dates
+    # Aug 2026 is outside the March focus window — not dumped into this response.
+    assert "2026-08-24" not in dates, dates
     # Past the 1-year horizon: no materialization until user extends
     data2 = list_events(user, on_date="2030-06-01")
     dates2 = {e["date"] for e in data2["events"] if e.get("title") == "Di hoc"}
     assert not any(d.startswith("2030-06") for d in dates2), dates2
     assert data2["extend_prompt"]["needed"] is True, data2["extend_prompt"]
     # Payload stays bounded (no multi-year dump in one response)
-    assert len(data["events"]) < 500, len(data["events"])
-    print("OK month expansion within 1-year horizon + extend prompt beyond")
+    assert len(data["events"]) < 80, len(data["events"])
+    print("OK month expansion within focus window + extend prompt beyond")
 
 
 
