@@ -344,23 +344,15 @@
     .health-hero{display:grid;grid-template-columns:96px 1fr;gap:.65rem;align-items:center;margin-bottom:.65rem}
     .health-hero img{width:96px;height:96px;object-fit:contain;border-radius:18px;background:#fff;padding:.15rem;will-change:transform}
     .health-hero.wide{grid-template-columns:1fr;gap:.55rem}
-    .health-hero.wide img{width:100%;height:auto;max-height:140px;object-fit:contain;padding:.1rem;animation:uiBob 2.8s ease-in-out infinite}
-    .health-hero.portrait{grid-template-columns:112px 1fr}
-    .health-hero.portrait img{width:112px;height:148px;object-fit:cover;object-position:top center;animation:uiSway 3.4s ease-in-out infinite;transform-origin:50% 85%}
+    .health-hero.wide img{width:100%;height:auto;max-height:180px;object-fit:contain;padding:.1rem;animation:uiBob 2.8s ease-in-out infinite;border-radius:16px;background:transparent}
     .module-banner{margin:0 1rem .75rem;background:linear-gradient(160deg,#f4ecff,#fff);border-radius:18px;padding:.7rem .75rem;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .module-banner img{width:min(100%,220px);max-height:140px;object-fit:contain;border-radius:14px;animation:uiBob 3s ease-in-out infinite;filter:drop-shadow(0 8px 14px rgba(120,90,180,.18))}
-    .status-card .ico-img{width:3.2rem;height:3.2rem;margin:0 auto .25rem;display:block;object-fit:contain;border-radius:12px;background:rgba(255,255,255,.7);animation:uiIdle 2.6s ease-in-out infinite;transition:transform .2s ease;filter:drop-shadow(0 4px 8px rgba(120,90,180,.16))}
-    .status-card:hover .ico-img,.status-card:focus-visible .ico-img{animation:none;transform:translateY(-4px) scale(1.12)}
-    .status-card:nth-child(2) .ico-img{animation-delay:.25s}
-    .status-card:nth-child(3) .ico-img{animation-delay:.5s}
+    .module-banner img{width:100%;max-height:180px;object-fit:contain;border-radius:14px;animation:uiBob 3s ease-in-out infinite;filter:drop-shadow(0 8px 14px rgba(120,90,180,.18))}
     .subview:not(.hidden) .module-banner,
     .subview:not(.hidden) .dash-card:first-child{animation:uiEnter .5s cubic-bezier(.2,.8,.2,1) both}
-    @keyframes uiIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
     @keyframes uiBob{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.02)}}
-    @keyframes uiSway{0%,100%{transform:translateY(0) rotate(0)}35%{transform:translateY(-7px) rotate(-2.5deg)}70%{transform:translateY(-3px) rotate(2.5deg)}}
     @keyframes uiEnter{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
     @media (prefers-reduced-motion:reduce){
-      .health-hero.wide img,.health-hero.portrait img,.module-banner img,.status-card .ico-img,
+      .health-hero.wide img,.module-banner img,
       .subview:not(.hidden) .module-banner,.subview:not(.hidden) .dash-card:first-child,
       .status-card{animation:none;transition:none}
     }
@@ -486,9 +478,9 @@
             <button type="button" id="mentalRemindBtn">答える</button>
           </div>
           <div class="status-row">
-            <button type="button" class="status-card" data-open="schedule"><img class="ico-img" src="/static/ui/schedule-luna.png?v=2" alt="" /><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
-            <button type="button" class="status-card" data-open="health"><img class="ico-img" src="/static/ui/health-luna.png?v=2" alt="" /><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
-            <button type="button" class="status-card" data-open="money"><img class="ico-img" src="/static/ui/money-luna.png?v=2" alt="" /><div class="label">目標</div><div class="val" id="stGoals">—</div></button>
+            <button type="button" class="status-card" data-open="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
+            <button type="button" class="status-card" data-open="health"><div class="ico">💚</div><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
+            <button type="button" class="status-card" data-open="money"><div class="ico">🎯</div><div class="label">目標</div><div class="val" id="stGoals">—</div></button>
           </div>
           <div class="home-today">
             <h3>今日の予定 <button type="button" data-open="schedule">カレンダー</button></h3>
@@ -517,7 +509,7 @@
           <span style="width:2rem"></span>
         </div>
         <div class="module-banner">
-          <img src="/static/ui/schedule-luna.png?v=2" alt="スケジュール" />
+          <img src="/static/ui/schedule-luna.png?v=3" alt="スケジュール" />
         </div>
         <div class="cal-wrap">
           <div class="cal-nav">
@@ -564,7 +556,7 @@
         <div class="module-hero">
           <div class="dash-card">
             <div class="health-hero wide">
-              <img src="/static/ui/health-luna.png?v=2" alt="LUNA" />
+              <img src="/static/ui/health-luna.png?v=3" alt="LUNA" />
               <div class="score-ring"><span id="healthStatus">—</span><strong id="healthScoreBig">—</strong><span>健康スコア</span></div>
             </div>
             <p class="hint" id="healthBmiLine" style="margin:.35rem 0 0">BMI —</p>
@@ -622,8 +614,8 @@
         <div class="subview-head"><button type="button" data-back="money">←</button><h2>お金・ゆとり</h2><span style="width:2rem"></span></div>
         <div class="module-hero">
           <div class="dash-card">
-            <div class="health-hero portrait">
-              <img src="/static/ui/money-luna.png?v=2" alt="LUNA" />
+            <div class="health-hero wide">
+              <img src="/static/ui/money-luna.png?v=3" alt="LUNA" />
               <div class="score-ring"><span id="moneyStatus">—</span><strong id="moneyScoreBig">—</strong><span>お金スコア</span></div>
             </div>
             <p class="hint" id="moneyAgeLine" style="margin:.35rem 0 0">—</p>
