@@ -749,13 +749,88 @@ def safe_chat_start_reply(user_id: str, message: str = "") -> str:
 
 def soft_chat_failure_reply(exc: BaseException) -> str:
     """Turn AI outages into a spoken line so the bubble is never empty."""
-    if isinstance(exc, LunaAiError):
+    if _is_quota_error(exc) or (isinstance(exc, LunaAiError) and getattr(exc, "code", "") == "quota_exceeded"):
+        msg = "少し混み合っているみたいだけど、ちゃんと話は聞いているよ。もう一度短く話しかけてね。"
+    elif isinstance(exc, LunaAiError):
         msg = str(exc)
-    elif _is_quota_error(exc):
-        msg = "AIの利用上限に達しました。少し待ってからもう一度話しかけてくださいね。"
     else:
         msg = "少し混み合っているみたい。もう一度話しかけてくれる？"
-    return _pack_reply(msg, {})
+    return _pack_reply(msg, {"emotion": "think"})
+
+
+# When Gemini quota is hit, skip API for a while and answer locally (no 30s wait).
+_quota_block_until: float = 0.0
+
+
+def _quota_blocked() -> bool:
+    return time.time() < _quota_block_until
+
+
+def _mark_quota_block(seconds: int = 90) -> None:
+    global _quota_block_until
+    _quota_block_until = time.time() + max(45, min(int(seconds or 90), 180))
+
+
+def _local_companion_reply(user: Dict[str, Any], user_text: str) -> str:
+    """Instant Japanese companion lines without Gemini (mood / daily care)."""
+    msg = (user_text or "").strip()
+    who = _honorific(user) if user.get("user_display_name") else "あなた"
+    cname = user.get("companion_name") or "LUNA"
+    emotion = "happy"
+
+    if re.search(r"疲れ|つらい|しんど|眠い|疲れた|mệt|tired|exhausted", msg, re.I):
+        dialogue = (
+            f"{who}、お疲れさま。無理はしないでね。"
+            f"水を一口飲んで、肩の力を抜いて深呼吸しよう。{cname}がそばにいるよ。"
+        )
+        emotion = "sad"
+    elif re.search(r"元気|調子いい|嬉しい|たのしい|楽しい|やった", msg):
+        dialogue = f"{who}、それはうれしいな！その調子だよ。今日の小さな成功もちゃんと褒めてあげてね。"
+        emotion = "cheer"
+    elif re.search(r"おはよう|こんにちは|こんばんは|はじめまして|よろしく", msg):
+        dialogue = f"{who}、こんにちは。{cname}だよ。今日も一緒にいこうね。体調はどう？"
+        emotion = "wave"
+    elif re.search(r"眠|寝|眠れ", msg):
+        dialogue = f"{who}、眠いときは体が休めサインを出してるよ。可能なら短く横になって、明日に備えよう。"
+        emotion = "think"
+    elif re.search(r"お金|財布|節約|使った", msg):
+        dialogue = f"{who}、お金の話も大事だね。今日はいくら使ったか、短くメモするだけでも安心につながるよ。"
+        emotion = "think"
+    elif re.search(r"勉強|宿題|テスト|授業", msg):
+        dialogue = f"{who}、勉強がんばってるね。まずは15分だけ集中→休憩、のリズムがおすすめだよ。"
+        emotion = "cheer"
+    elif re.search(r"予定|スケジュール|バイト", msg):
+        dialogue = f"{who}、予定を見せてくれてありがとう。無理のない順に並べて、一つずつ進めよう。"
+        emotion = "think"
+    elif len(msg) <= 40:
+        dialogue = (
+            f"{who}、話してくれてありがとう。ちゃんと受け取ったよ。"
+            f"今は少し混み合っているけど、{cname}はそばにいるからね。"
+        )
+        emotion = "happy"
+    else:
+        dialogue = (
+            f"{who}、長い話もありがとう。要点だけ整理すると楽になるよ。"
+            f"一番つらい点を一言で教えてくれる？"
+        )
+        emotion = "think"
+
+    return _pack_reply(
+        dialogue,
+        {
+            "emotion": emotion,
+            "user_display_name": user.get("user_display_name"),
+            "companion_name": user.get("companion_name"),
+        },
+    )
+
+
+def _persist_local_turn(user_id: str, user: Dict[str, Any], user_text: str, ai_reply: str) -> str:
+    user.setdefault("chat_history", [])
+    user["chat_history"].append({"role": "user", "content": user_text})
+    user["chat_history"].append({"role": "model", "content": ai_reply})
+    save_user_brain(user_id, user)
+    return ai_reply
 
 
 def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
@@ -862,23 +937,39 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
     return None
 
 
-def generate_with_retry(user_id: str, user_text: str, max_retries: int = 2) -> str:
+def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> str:
     # Deterministic user onboarding (greet already done via /chat/start)
     onboarded = handle_user_onboarding_turn(user_id, user_text)
     if onboarded is not None:
         return onboarded
 
+    user = load_user_brain(user_id)
+    admin = is_admin(user_id)
+    text_in = (user_text or "").strip()
+
+    # Instant local care for common short moods (no Gemini wait).
+    if not admin and text_in and re.search(
+        r"疲れ|つらい|しんど|眠い|疲れた|mệt|tired|exhausted|おはよう|こんにちは|こんばんは",
+        text_in,
+        re.I,
+    ):
+        _update_relationship(user, text_in)
+        return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
+
+    # Quota cooldown: answer locally instead of waiting ~30s on Gemini.
+    if not admin and _quota_blocked():
+        if text_in:
+            _update_relationship(user, text_in)
+        return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
+
     blueprint = load_blueprint()
     policy = load_product_policy()
     core = load_core_brain()
-    user = load_user_brain(user_id)
-    admin = is_admin(user_id)
 
-    # Batch relationship / activity updates into this same brain object (one save later)
-    if not admin and (user_text or "").strip():
-        _update_relationship(user, user_text)
+    if not admin and text_in:
+        _update_relationship(user, text_in)
         if user.get("profile_complete"):
-            note = _activity_notification(user_text)
+            note = _activity_notification(text_in)
             if note:
                 user["pending_notification"] = note
 
@@ -921,15 +1012,22 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 2) -> s
             return ai_reply
         except Exception as e:
             last_error = e
+            # Never sleep on quota — fail over to local companion immediately.
+            if _is_quota_error(e):
+                _mark_quota_block(_retry_after_from_error(e, 90))
+                if not admin:
+                    return _persist_local_turn(
+                        user_id, user, text_in, _local_companion_reply(user, text_in)
+                    )
+                break
             if _is_transient_error(e) and i < max_retries - 1:
-                wait = min(1.2 * (i + 1), 4) + random.uniform(0, 0.4)
-                if _is_quota_error(e):
-                    wait = max(wait, min(_retry_after_from_error(e, 12), 25))
-                time.sleep(wait)
+                time.sleep(0.8 + random.uniform(0, 0.4))
                 continue
             break
 
     assert last_error is not None
+    if not admin:
+        return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
     retry_after = _retry_after_from_error(last_error)
     if _is_quota_error(last_error):
         raise LunaAiError(
