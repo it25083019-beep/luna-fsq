@@ -299,11 +299,16 @@ def get_brain_status(user_id: str) -> Dict[str, Any]:
     }
 
 
-def _history_to_contents(history: List[Dict[str, str]], limit: int = 10) -> List[types.Content]:
+def _history_to_contents(history: List[Dict[str, str]], limit: int = 6) -> List[types.Content]:
     contents: List[types.Content] = []
     for turn in history[-limit:]:
         role = "user" if turn.get("role") == "user" else "model"
         text = turn.get("content", "")
+        # Keep prompts light: only feed dialogue text into model history when possible
+        if "<dialogue>" in text:
+            m = re.search(r"<dialogue>\s*(.*?)\s*</dialogue>", text, re.DOTALL | re.IGNORECASE)
+            if m:
+                text = m.group(1).strip()
         contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
     return contents
 
@@ -857,29 +862,25 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
     return None
 
 
-def generate_with_retry(user_id: str, user_text: str, max_retries: int = 5) -> str:
+def generate_with_retry(user_id: str, user_text: str, max_retries: int = 2) -> str:
     # Deterministic user onboarding (greet already done via /chat/start)
     onboarded = handle_user_onboarding_turn(user_id, user_text)
     if onboarded is not None:
         return onboarded
-
-    # For completed users: if they announce study/work, stash activity notification
-    if not is_admin(user_id):
-        u = load_user_brain(user_id)
-        if (user_text or "").strip():
-            _update_relationship(u, user_text)
-            save_user_brain(user_id, u)
-        if u.get("profile_complete"):
-            note = _activity_notification(user_text)
-            if note:
-                u["pending_notification"] = note
-                save_user_brain(user_id, u)
 
     blueprint = load_blueprint()
     policy = load_product_policy()
     core = load_core_brain()
     user = load_user_brain(user_id)
     admin = is_admin(user_id)
+
+    # Batch relationship / activity updates into this same brain object (one save later)
+    if not admin and (user_text or "").strip():
+        _update_relationship(user, user_text)
+        if user.get("profile_complete"):
+            note = _activity_notification(user_text)
+            if note:
+                user["pending_notification"] = note
 
     if admin:
         system_prompt = _build_admin_system_prompt(blueprint, policy, core)
@@ -890,10 +891,11 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 5) -> s
 
     chat_session = client.chats.create(
         model=MODEL_NAME,
-        history=_history_to_contents(history),
+        history=_history_to_contents(history, limit=6),
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
-            temperature=0.7,
+            temperature=0.6,
+            max_output_tokens=180,
         ),
     )
 
@@ -915,16 +917,14 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 5) -> s
                 user["chat_history"].append({"role": "user", "content": user_text})
                 user["chat_history"].append({"role": "model", "content": ai_reply})
                 save_user_brain(user_id, user)
-                with open(os.path.join(BRAIN_DIR, "_debug_save.log"), "a", encoding="utf-8") as dbg:
-                    dbg.write(f"saved user={user_id} hist={len(user['chat_history'])} msg={user_text[:40]}\n")
 
             return ai_reply
         except Exception as e:
             last_error = e
             if _is_transient_error(e) and i < max_retries - 1:
-                wait = min(2 ** i, 12) + random.uniform(0, 1)
+                wait = min(1.2 * (i + 1), 4) + random.uniform(0, 0.4)
                 if _is_quota_error(e):
-                    wait = max(wait, min(_retry_after_from_error(e, 20), 45))
+                    wait = max(wait, min(_retry_after_from_error(e, 12), 25))
                 time.sleep(wait)
                 continue
             break

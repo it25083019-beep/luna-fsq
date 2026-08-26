@@ -1128,11 +1128,11 @@
     const mySeq = ++speakSeq;
     unlockAudio();
     stopLunaSpeech();
-    // Prefer browser voice first so sound always plays after async chat
-    // (autoplay policy). Gemini narrator is tried next and can replace it.
-    speakJaBrowserFallback(line).catch(() => {});
-
-    if (ttsFailStreak >= 3) return;
+    // Chat path: browser voice only (instant). Gemini TTS competes with chat
+    // quota/latency — keep it opt-in via localStorage luna_gemini_voice=1.
+    const wantGemini = localStorage.getItem("luna_gemini_voice") === "1" && ttsFailStreak < 3;
+    await speakJaBrowserFallback(line);
+    if (!wantGemini || mySeq !== speakSeq) return;
 
     const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
     const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
@@ -1148,7 +1148,6 @@
       if (!res.ok) throw new Error("tts");
       const blob = await res.blob();
       if (mySeq !== speakSeq) return;
-      // Swap to Gemini narrator when ready
       if (window.speechSynthesis) window.speechSynthesis.cancel();
       lunaAudioUrl = URL.createObjectURL(blob);
       lunaAudio = new Audio(lunaAudioUrl);
@@ -1165,7 +1164,6 @@
       ttsFailStreak = 0;
     } catch (_) {
       ttsFailStreak += 1;
-      // browser voice already started above
     } finally {
       if (timer) clearTimeout(timer);
     }
@@ -1217,7 +1215,10 @@
     } catch (_) {}
     firstChat = false;
     if (line) speakJa(line).catch(() => {});
-    refreshCore().catch((e) => setErr(e.message || String(e)));
+    // Defer heavy refresh so chat feels instant
+    setTimeout(() => {
+      refreshCore().catch(() => {});
+    }, 400);
   }
 
   function showLocalGreeting() {
@@ -1231,20 +1232,27 @@
     } catch (_) {}
   }
 
+  function paintNow() {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+  }
+
   async function sendMessage(text) {
     const msg = (text || "").trim();
     if (!msg || busy) return;
     busy = true;
     unlockAudio();
+    // Instant think reaction BEFORE any network wait
+    try {
+      if (luna) luna.startThinking();
+    } catch (_) {}
+    await paintNow();
     const sendBtn = document.getElementById("sendBtn");
     if (sendBtn) sendBtn.disabled = true;
     setErr("");
     const msgEl = document.getElementById("message");
     if (msgEl) msgEl.value = "";
-    // Keep previous dialogue text; only run continuous think animation.
-    try {
-      if (luna) luna.startThinking();
-    } catch (_) {}
     try {
       if (!chatStarted) chatStarted = true;
       const data = await api("/chat", { method: "POST", body: JSON.stringify({ message: msg }) });
