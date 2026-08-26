@@ -441,7 +441,7 @@
   function evolutionSpritePath(classId, rankId) {
     const cls = classId || "swordsman";
     const rank = rankId || "novice";
-    return "/static/rpg/characters/" + cls + "_" + rank + ".svg";
+    return "/static/rpg/characters/" + cls + "_" + rank + ".png";
   }
 
   function rankOrder(rankId) {
