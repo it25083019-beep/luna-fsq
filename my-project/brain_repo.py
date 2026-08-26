@@ -1,11 +1,14 @@
 """DB-backed brain load/save with one-time JSON migration."""
 from __future__ import annotations
 
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
 
-_env_dir = __import__('pathlib').Path(__file__).resolve().parent
-load_dotenv(_env_dir / '.env')
-load_dotenv()  # also CWD
+    _env_dir = __import__("pathlib").Path(__file__).resolve().parent
+    load_dotenv(_env_dir / ".env")
+    load_dotenv()  # also CWD
+except ImportError:
+    pass
 
 import json
 import os
@@ -16,6 +19,7 @@ from typing import Any, Dict, Optional
 from sqlalchemy.orm import Session
 
 from auth_security import hash_password
+from brain_merge import merge_life_modules, safe_merge_for_save
 from database import SessionLocal
 from models import CoreBrain, User, UserBrain
 
@@ -101,7 +105,29 @@ def _parse_state(raw: Optional[str], fallback: Dict[str, Any]) -> Dict[str, Any]
         data = json.loads(raw)
         if isinstance(data, dict):
             base = dict(fallback)
+            life_fallback = base.get("life_modules") if isinstance(base.get("life_modules"), dict) else {}
+            career_fallback = base.get("career_path") if isinstance(base.get("career_path"), dict) else {}
+            rpg_fallback = base.get("rpg") if isinstance(base.get("rpg"), dict) else {}
             base.update(data)
+            base["life_modules"] = merge_life_modules(life_fallback, data.get("life_modules"))
+            if isinstance(data.get("career_path"), dict):
+                merged_c = dict(career_fallback)
+                merged_c.update(data["career_path"])
+                base["career_path"] = merged_c
+            else:
+                base["career_path"] = dict(career_fallback)
+            if isinstance(data.get("rpg"), dict):
+                merged_r = dict(rpg_fallback)
+                merged_r.update(data["rpg"])
+                if isinstance((rpg_fallback or {}).get("journey"), dict) or isinstance(
+                    data["rpg"].get("journey"), dict
+                ):
+                    j0 = dict((rpg_fallback or {}).get("journey") or {})
+                    j0.update(data["rpg"].get("journey") or {})
+                    merged_r["journey"] = j0
+                base["rpg"] = merged_r
+            else:
+                base["rpg"] = dict(rpg_fallback)
             return base
     except json.JSONDecodeError:
         pass
@@ -139,8 +165,13 @@ def save_user_brain(public_id: str, data: Dict[str, Any], db: Optional[Session] 
             )
             session.add(user)
             session.flush()
-        payload = dict(data)
-        payload.pop("_schedule_dirty", None)
+        existing: Dict[str, Any] = {}
+        if user.brain and user.brain.state_json:
+            try:
+                existing = json.loads(user.brain.state_json) or {}
+            except json.JSONDecodeError:
+                existing = {}
+        payload = safe_merge_for_save(existing, dict(data))
         payload["user_id"] = public_id
         raw = json.dumps(payload, ensure_ascii=False)
         if user.brain:

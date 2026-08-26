@@ -133,21 +133,27 @@
     .career-pick span{font-size:.62rem;color:var(--muted);line-height:1.35}
     .career-pick .tag{display:inline-block;margin-top:.35rem;font-size:.55rem;font-weight:800;color:var(--lilac-deep);background:#eee8ff;padding:.15rem .4rem;border-radius:999px}
     .career-pick.stub{opacity:.72}
-    .hero-avatar{position:relative;width:108px;height:108px;border-radius:24px;overflow:hidden;background:rgba(255,255,255,.18);flex-shrink:0;border:2px solid rgba(255,255,255,.35)}
-    .hero-avatar img{width:100%;height:100%;object-fit:cover;display:block}
-    .hero-avatar .class-tag{position:absolute;left:6px;top:6px;font-size:.55rem;font-weight:800;background:rgba(20,16,48,.55);color:#fff;padding:.15rem .35rem;border-radius:999px}
-    .hero-avatar.class-swordsman{box-shadow:inset 0 -18px 24px rgba(201,162,39,.35)}
-    .hero-avatar.class-mage{box-shadow:inset 0 -18px 24px rgba(120,90,220,.45)}
-    .hero-avatar.class-archer{box-shadow:inset 0 -18px 24px rgba(60,180,150,.4)}
+    .hero-avatar{position:relative;width:112px;height:128px;border-radius:22px;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.4)}
+    .hero-avatar img{position:absolute;left:8%;right:8%;bottom:4%;width:84%;height:70%;object-fit:contain;object-position:center bottom;display:block;z-index:2}
+    .hero-avatar .class-tag{position:absolute;left:6px;top:6px;font-size:.55rem;font-weight:800;background:rgba(20,16,48,.62);color:#fff;padding:.15rem .4rem;border-radius:999px;z-index:4}
+    .hero-avatar .class-emblem{position:absolute;right:6px;top:6px;width:28px;height:28px;border-radius:10px;display:grid;place-items:center;font-size:.8rem;font-weight:900;z-index:4;border:1px solid rgba(255,255,255,.35)}
+    .hero-avatar .class-motif{position:absolute;inset:0 0 auto 0;height:44%;z-index:1;pointer-events:none}
+    .hero-avatar.class-swordsman{background:linear-gradient(165deg,#3a2a12,#6b4a1e 42%,#1b1540)}
+    .hero-avatar.class-swordsman .class-motif{background:linear-gradient(180deg,rgba(255,200,87,.38),transparent)}
+    .hero-avatar.class-swordsman .class-emblem{background:linear-gradient(135deg,#c9a227,#8b6914);color:#fff8e8}
+    .hero-avatar.class-swordsman::after{content:"";position:absolute;right:12px;bottom:20px;width:12px;height:48px;border-radius:3px;background:linear-gradient(180deg,#fff6c8,#c9a227 55%,#6a4e12);box-shadow:0 0 0 1px rgba(255,255,255,.35);z-index:3;transform:rotate(18deg)}
+    .hero-avatar.class-mage{background:linear-gradient(165deg,#2a1860,#5b3db8 45%,#1b1540)}
+    .hero-avatar.class-mage .class-emblem{background:linear-gradient(135deg,#8b6ad4,#4a2f9b);color:#f3eefe}
+    .hero-avatar.class-archer{background:linear-gradient(165deg,#0f3a32,#2a8a78 45%,#1b1540)}
+    .hero-avatar.class-archer .class-emblem{background:linear-gradient(135deg,#3ecfad,#1a7a68);color:#e9fff9}
     .hero-avatar.rank-intermediate{outline:2px solid rgba(255,200,87,.7)}
     .hero-avatar.rank-veteran{outline:2px solid rgba(120,200,255,.85)}
     .hero-avatar.rank-saint{outline:2px solid rgba(255,230,120,.95);box-shadow:0 0 14px rgba(255,230,120,.55)}
-    .hero-avatar.gear-weapon-blade::after,.hero-avatar.gear-weapon-tech::after,.hero-avatar.gear-weapon-pen::after,.hero-avatar.gear-weapon-brush::after,.hero-avatar.gear-weapon-bow::after,.hero-avatar.gear-weapon-staff::after,.hero-avatar.gear-weapon-tome::after{content:"";position:absolute;right:8px;bottom:10px;width:10px;height:34px;border-radius:3px;background:linear-gradient(#fff8,#c9a227);box-shadow:0 0 0 1px rgba(255,255,255,.4)}
-    .hero-avatar.gear-weapon-tech::after{background:linear-gradient(#dff,#497cff)}
-    .hero-avatar.gear-weapon-bow::after{width:18px;height:18px;border-radius:50%;border:2px solid #fff;background:transparent;bottom:14px}
-    .hero-avatar.gear-armor-hoodie::before,.hero-avatar.gear-armor-cloak::before,.hero-avatar.gear-armor-vest::before,.hero-avatar.gear-armor-uniform::before,.hero-avatar.gear-armor-apron::before{content:"";position:absolute;left:10%;right:10%;bottom:0;height:32%;background:rgba(30,24,70,.4)}
-    .hero-avatar.gear-acc-glow{filter:saturate(1.15)}
-    .hero-avatar.gear-artifact{box-shadow:inset 0 0 0 2px rgba(255,210,122,.8)}
+    .hero-avatar.gear-weapon-blade::before,.hero-avatar.gear-weapon-tech::before{content:"";position:absolute;left:10px;bottom:16px;width:8px;height:30px;border-radius:2px;background:linear-gradient(#eef,#7b5eb8);z-index:3}
+    .hero-avatar.gear-weapon-tech::before{background:linear-gradient(#dff,#497cff)}
+    .hero-avatar.gear-armor-hoodie img,.hero-avatar.gear-armor-cloak img{filter:brightness(.95)}
+    .hero-avatar.gear-acc-glow img{filter:saturate(1.2) brightness(1.05)}
+    .hero-avatar.gear-artifact{box-shadow:inset 0 0 0 2px rgba(255,210,122,.85)}
     .gear-panel{display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-top:.65rem}
     .gear-slot{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:.4rem .5rem;font-size:.62rem}
     .gear-slot .k{opacity:.75;display:block;margin-bottom:.1rem}
@@ -624,8 +630,10 @@
                   <div class="gear-panel" id="homeGearPanel"></div>
                 </div>
                 <div class="hero-avatar" id="homeAvatarWrap">
+                  <div class="class-motif" aria-hidden="true"></div>
                   <span class="class-tag" id="homeAvatarClass">—</span>
-                  <img id="homeAvatarImg" src="/static/live2d/luna-expressions/luna-happy.png" alt="" />
+                  <span class="class-emblem" id="homeAvatarEmblem">剣</span>
+                  <img id="homeAvatarImg" src="/static/live2d/luna-expressions/luna-cheer.png" alt="" />
                 </div>
               </div>
             </div>

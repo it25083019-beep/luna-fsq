@@ -275,6 +275,8 @@ def _build_appearance(class_id: str, equipped: Dict[str, Any], rank_id: str, inv
         "sprite": base.get("sprite"),
         "css_classes": " ".join(layers),
         "class_label_ja": base.get("label_ja"),
+        "class_emblem_ja": base.get("emblem_ja") or (base.get("label_ja") or "")[:1],
+        "class_motif_ja": base.get("motif_ja") or "",
         "class_id": class_id,
         "rank_id": rank_id,
         "tints": tints,

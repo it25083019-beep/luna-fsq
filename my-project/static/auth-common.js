@@ -28,7 +28,7 @@
 
   const ALLOWED_NEXT = ["/app", "/admin", "/demo", "/live2d", "/luna-3d"];
 
-  /** Resolve post-login URL. Admins are not forced into /admin — default is /app. */
+  /** Resolve post-login URL. Admins default to chooser unless next=/admin. */
   function resolvePostLoginUrl(data, opts) {
     const params = new URLSearchParams(global.location.search);
     const next = (opts && opts.next) || params.get("next") || "";
@@ -38,15 +38,25 @@
 
   /**
    * Save token and navigate.
-   * opts.forceChoice: if true and admin with no explicit next → caller should show picker (returns null).
+   * Admins always get App vs Admin picker unless next is explicitly /admin
+   * (or another allowed non-app demo path).
    * Returns destination string, or null when admin should pick App vs Admin.
    */
   function redirectAfterLogin(data, opts) {
     setToken(data.access_token);
     const params = new URLSearchParams(global.location.search);
     const next = (opts && opts.next) || params.get("next") || "";
-    const forceChoice = opts && opts.forceChoice;
-    if (data.is_admin && forceChoice !== false && !ALLOWED_NEXT.includes(next)) {
+    const forceChoice = !(opts && opts.forceChoice === false);
+    if (data.is_admin && forceChoice) {
+      if (next === "/admin") {
+        global.location.href = "/admin";
+        return "/admin";
+      }
+      if (next && next !== "/app" && ALLOWED_NEXT.includes(next)) {
+        global.location.href = next;
+        return next;
+      }
+      // next empty or /app → show destination picker
       return null;
     }
     const dest = resolvePostLoginUrl(data, opts);

@@ -423,6 +423,8 @@
     if (ap.sprite) img.src = ap.sprite;
     const tag = document.getElementById("homeAvatarClass");
     if (tag) tag.textContent = ap.class_label_ja || classLabel(ap.class_id) || "—";
+    const emblem = document.getElementById("homeAvatarEmblem");
+    if (emblem) emblem.textContent = ap.class_emblem_ja || (ap.class_label_ja || "旅")[0] || "旅";
   }
 
   function renderGearPanel(appearance, inventory) {

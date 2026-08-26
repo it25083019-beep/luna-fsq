@@ -184,12 +184,13 @@ def _default_user_brain(user_id: str) -> Dict[str, Any]:
 
 def load_user_brain(user_id: str) -> Dict[str, Any]:
     if os.getenv("LUNA_USE_JSON_FALLBACK") == "1":
+        from brain_repo import _parse_state
+
         path = os.path.join(USERS_DIR, f"{user_id}.json")
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            base = _default_user_brain(user_id)
-            base.update(data)
+            base = _parse_state(json.dumps(data, ensure_ascii=False), _default_user_brain(user_id))
             base["user_id"] = user_id
             return base
         return _default_user_brain(user_id)
@@ -201,10 +202,20 @@ def save_user_brain(user_id: str, brain_data: Dict[str, Any]) -> None:
     # Ephemeral runtime flags must never be persisted.
     brain_data.pop("_schedule_dirty", None)
     if os.getenv("LUNA_USE_JSON_FALLBACK") == "1":
+        from brain_merge import safe_merge_for_save
+
         path = os.path.join(USERS_DIR, f"{user_id}.json")
-        brain_data["user_id"] = user_id
+        existing = {}
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    existing = json.load(f) or {}
+            except (json.JSONDecodeError, OSError):
+                existing = {}
+        payload = safe_merge_for_save(existing, dict(brain_data))
+        payload["user_id"] = user_id
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(brain_data, f, indent=4, ensure_ascii=False)
+            json.dump(payload, f, indent=4, ensure_ascii=False)
         return
     from brain_repo import save_user_brain as _db_save_user
     _db_save_user(user_id, brain_data)

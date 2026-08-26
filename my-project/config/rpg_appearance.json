@@ -2,19 +2,25 @@
   "version": "1.0",
   "class_base": {
     "swordsman": {
-      "sprite": "/static/live2d/luna-expressions/luna-happy.png",
+      "sprite": "/static/live2d/luna-expressions/luna-cheer.png",
       "css_class": "class-swordsman",
-      "label_ja": "剣士"
+      "label_ja": "剣士",
+      "emblem_ja": "剣",
+      "motif_ja": "剣の道"
     },
     "mage": {
       "sprite": "/static/live2d/luna-expressions/luna-think.png",
       "css_class": "class-mage",
-      "label_ja": "魔法使い"
+      "label_ja": "魔法使い",
+      "emblem_ja": "魔",
+      "motif_ja": "知の灯"
     },
     "archer": {
       "sprite": "/static/live2d/luna-expressions/luna-neutral.png",
       "css_class": "class-archer",
-      "label_ja": "弓使い"
+      "label_ja": "弓使い",
+      "emblem_ja": "弓",
+      "motif_ja": "狙いの眼"
     }
   },
   "gear_modifiers": {

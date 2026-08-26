@@ -277,13 +277,14 @@ def auth_login(req: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if getattr(user, "is_locked", False):
         raise HTTPException(status_code=403, detail="Account is locked")
-    token = create_access_token(user.public_id, extra={"email": user.email, "is_admin": user.is_admin})
+    admin_flag = bool(user.is_admin or is_admin(user.public_id))
+    token = create_access_token(user.public_id, extra={"email": user.email, "is_admin": admin_flag})
     return TokenResponse(
         access_token=token,
         token_type="bearer",
         user_id=user.public_id,
         email=user.email,
-        is_admin=user.is_admin,
+        is_admin=admin_flag,
     )
 
 
