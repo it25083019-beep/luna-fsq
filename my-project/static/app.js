@@ -47,6 +47,8 @@
   let lunaAudioUrl = null;
   let ttsFailStreak = 0;
   let speakSeq = 0;
+  let audioUnlocked = false;
+  let voicesReady = false;
   let currentTab = "luna";
   let currentModule = "health";
   let stateData = { level: 1, total_exp: 0, companion_name: null, user_display_name: null };
@@ -1032,7 +1034,11 @@
 
   function stopLunaSpeech() {
     if (lunaAudio) {
-      lunaAudio.pause();
+      try {
+        lunaAudio.onended = null;
+        lunaAudio.onerror = null;
+        lunaAudio.pause();
+      } catch (_) {}
       lunaAudio = null;
     }
     if (lunaAudioUrl) {
@@ -1040,26 +1046,69 @@
       lunaAudioUrl = null;
     }
     if (window.speechSynthesis) window.speechSynthesis.cancel();
-    if (luna) luna.stopLipSync();
+    if (luna && !luna.thinking) luna.stopLipSync();
   }
 
-  function pickJaBrowserVoice() {
-    if (!window.speechSynthesis) return null;
-    const voices = window.speechSynthesis.getVoices() || [];
-    const prefer = ["Nanami", "Haruka", "Kyoko", "Google 日本語", "Microsoft Ayumi"];
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try {
+      if (window.speechSynthesis) {
+        const warm = new SpeechSynthesisUtterance(" ");
+        warm.volume = 0;
+        window.speechSynthesis.speak(warm);
+        window.speechSynthesis.cancel();
+      }
+    } catch (_) {}
+    try {
+      const silent = new Audio(
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
+      );
+      silent.volume = 0.01;
+      silent.play().catch(() => {});
+    } catch (_) {}
+  }
+
+  function ensureVoicesLoaded() {
+    return new Promise((resolve) => {
+      if (!window.speechSynthesis) {
+        resolve([]);
+        return;
+      }
+      const have = window.speechSynthesis.getVoices() || [];
+      if (have.length) {
+        voicesReady = true;
+        resolve(have);
+        return;
+      }
+      const done = () => {
+        voicesReady = true;
+        resolve(window.speechSynthesis.getVoices() || []);
+      };
+      window.speechSynthesis.addEventListener("voiceschanged", done, { once: true });
+      setTimeout(done, 600);
+    });
+  }
+
+  function pickJaBrowserVoice(voices) {
+    const list = voices || (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
+    const prefer = ["Nanami", "Haruka", "Kyoko", "Google 日本語", "Microsoft Ayumi", "Ichiro"];
     for (const name of prefer) {
-      const hit = voices.find((v) => v.name.includes(name));
+      const hit = list.find((v) => (v.name || "").includes(name));
       if (hit) return hit;
     }
-    return voices.find((v) => (v.lang || "").toLowerCase().startsWith("ja")) || null;
+    return list.find((v) => (v.lang || "").toLowerCase().startsWith("ja")) || null;
   }
 
-  function speakJaBrowserFallback(text) {
+  async function speakJaBrowserFallback(text) {
     if (!window.speechSynthesis) return;
+    unlockAudio();
     window.speechSynthesis.cancel();
+    const voices = await ensureVoicesLoaded();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "ja-JP";
-    const voice = pickJaBrowserVoice();
+    u.rate = 1.05;
+    const voice = pickJaBrowserVoice(voices);
     if (voice) u.voice = voice;
     u.onstart = () => {
       if (luna) luna.startLipSync();
@@ -1077,15 +1126,16 @@
     const line = (text || "").trim();
     if (!voiceOn || !line) return;
     const mySeq = ++speakSeq;
+    unlockAudio();
     stopLunaSpeech();
-    // After repeated Gemini TTS failures, keep chat snappy with browser voice
-    // without removing the Gemini narrator path.
-    if (ttsFailStreak >= 2) {
-      speakJaBrowserFallback(line);
-      return;
-    }
+    // Prefer browser voice first so sound always plays after async chat
+    // (autoplay policy). Gemini narrator is tried next and can replace it.
+    speakJaBrowserFallback(line).catch(() => {});
+
+    if (ttsFailStreak >= 3) return;
+
     const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timer = ctrl ? setTimeout(() => ctrl.abort(), 10000) : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
     try {
       const headers = { "Content-Type": "application/json" };
       if (token) headers.Authorization = "Bearer " + token;
@@ -1098,22 +1148,24 @@
       if (!res.ok) throw new Error("tts");
       const blob = await res.blob();
       if (mySeq !== speakSeq) return;
+      // Swap to Gemini narrator when ready
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
       lunaAudioUrl = URL.createObjectURL(blob);
       lunaAudio = new Audio(lunaAudioUrl);
       lunaAudio.onplay = () => {
         if (luna) luna.startLipSync();
       };
       lunaAudio.onended = () => {
-        if (mySeq === speakSeq) stopLunaSpeech();
+        if (mySeq === speakSeq && luna) luna.stopLipSync();
       };
       lunaAudio.onerror = () => {
-        if (mySeq === speakSeq) stopLunaSpeech();
+        if (mySeq === speakSeq) speakJaBrowserFallback(line).catch(() => {});
       };
       await lunaAudio.play();
       ttsFailStreak = 0;
     } catch (_) {
       ttsFailStreak += 1;
-      if (mySeq === speakSeq) speakJaBrowserFallback(line);
+      // browser voice already started above
     } finally {
       if (timer) clearTimeout(timer);
     }
@@ -1151,17 +1203,19 @@
   function applyChat(data) {
     const dialogueEl = document.getElementById("dialogue");
     const line = ((data && data.dialogue) || "").trim();
+    try {
+      if (luna) luna.stopThinking();
+    } catch (_) {}
     if (dialogueEl && line) dialogueEl.textContent = line;
     renderChips((data && data.suggested_replies) || []);
     const emo = data && data.game_state && data.game_state.emotion;
     try {
       if (luna && line) {
         if (emo) luna.applyEmotion(emo);
-        else luna.reactToText(line, { greeting: firstChat, fallback: "happy" });
+        else luna.reactToText(line, { greeting: firstChat, fallback: "happy", force: true });
       }
     } catch (_) {}
     firstChat = false;
-    // Voice + core refresh must not block chat replies / busy lock.
     if (line) speakJa(line).catch(() => {});
     refreshCore().catch((e) => setErr(e.message || String(e)));
   }
@@ -1170,10 +1224,10 @@
     const dialogueEl = document.getElementById("dialogue");
     const cur = (dialogueEl && dialogueEl.textContent) || "";
     if (!dialogueEl) return;
-    if (cur && cur !== "…" && cur !== "..." && cur !== "考え中…") return;
+    if (cur && cur !== "…" && cur !== "...") return;
     dialogueEl.textContent = "こんにちは。LUNAです。今日も一緒にがんばろうね。";
     try {
-      if (luna) luna.reactToText(dialogueEl.textContent, { greeting: true, fallback: "happy" });
+      if (luna) luna.reactToText(dialogueEl.textContent, { greeting: true, fallback: "happy", force: true });
     } catch (_) {}
   }
 
@@ -1181,29 +1235,32 @@
     const msg = (text || "").trim();
     if (!msg || busy) return;
     busy = true;
+    unlockAudio();
     const sendBtn = document.getElementById("sendBtn");
     if (sendBtn) sendBtn.disabled = true;
     setErr("");
     const msgEl = document.getElementById("message");
     if (msgEl) msgEl.value = "";
-    const dialogueEl = document.getElementById("dialogue");
-    if (dialogueEl) dialogueEl.textContent = "考え中…";
+    // Keep previous dialogue text; only run continuous think animation.
     try {
-      if (luna) luna.reactToText(msg, { fallback: "think" });
+      if (luna) luna.startThinking();
     } catch (_) {}
     try {
-      if (!chatStarted) {
-        chatStarted = true;
-      }
+      if (!chatStarted) chatStarted = true;
       const data = await api("/chat", { method: "POST", body: JSON.stringify({ message: msg }) });
       applyChat(data);
     } catch (e) {
+      try {
+        if (luna) luna.stopThinking();
+      } catch (_) {}
       const soft = "うまく返事できなかったみたい。もう一度送ってくれる？";
+      const dialogueEl = document.getElementById("dialogue");
       if (dialogueEl) dialogueEl.textContent = soft;
       setErr(e.message || String(e));
       try {
-        if (luna) luna.reactToText(soft, { fallback: "sad" });
+        if (luna) luna.reactToText(soft, { fallback: "sad", force: true });
       } catch (_) {}
+      speakJa(soft).catch(() => {});
     } finally {
       busy = false;
       if (sendBtn) sendBtn.disabled = false;
@@ -2078,10 +2135,15 @@
       }
     };
     document.getElementById("voiceBtn").onclick = () => {
+      unlockAudio();
       voiceOn = !voiceOn;
       syncVoiceBtn();
       if (!voiceOn) stopLunaSpeech();
-      else ttsFailStreak = 0;
+      else {
+        ttsFailStreak = 0;
+        const sample = (document.getElementById("dialogue") || {}).textContent || "こんにちは。";
+        if (sample && sample !== "…" && sample !== "...") speakJa(sample).catch(() => {});
+      }
     };
     document.getElementById("refreshCareerBtn").onclick = () => loadJourney().catch((e) => setErr(e.message));
     const backClass = document.getElementById("backToClassBtn");
@@ -2173,6 +2235,14 @@
     token = LunaAuth.getToken();
     syncVoiceBtn();
     bindEvents();
+    ensureVoicesLoaded().catch(() => {});
+    document.addEventListener(
+      "pointerdown",
+      () => {
+        unlockAudio();
+      },
+      { once: true, passive: true }
+    );
     try {
       const me = await api("/auth/me");
       if (me.is_admin) document.getElementById("adminLink").classList.remove("hidden");

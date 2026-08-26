@@ -1,68 +1,62 @@
 /**
- * LUNA 2D avatar — VTuber-inspired emotionMap + idle/tap motions (sprite stage).
- * Pattern from Open-LLM-VTuber: emotion tags → expression, idle loop, tap motions.
+ * LUNA 2D avatar — expression / idle / tap / lip-sync / thinking
  */
 (function (global) {
   const BASE = "/static/live2d/luna-expressions";
 
-  /** emotionMap (Open-LLM-VTuber style) → sprite key */
   const EMOTION_MAP = {
     neutral: "neutral",
     joy: "happy",
     happy: "happy",
-    smirk: "happy",
-    cheer: "cheer",
-    wave: "wave",
     sadness: "sad",
     sad: "sad",
-    fear: "sad",
-    disgust: "sad",
-    anger: "surprised",
     surprise: "surprised",
     surprised: "surprised",
     think: "think",
-    talk: "talk",
-    blink: "blink",
+    cheer: "cheer",
+    wave: "wave",
   };
 
   const EXPRESSIONS = {
     neutral: `${BASE}/luna-neutral.png`,
-    talk: `${BASE}/luna-talk.png`,
-    blink: `${BASE}/luna-blink.png`,
-    cheer: `${BASE}/luna-cheer.png`,
-    wave: `${BASE}/luna-wave.png`,
-    think: `${BASE}/luna-think.png`,
+    happy: `${BASE}/luna-happy.png`,
     sad: `${BASE}/luna-sad.png`,
     surprised: `${BASE}/luna-surprised.png`,
-    happy: `${BASE}/luna-happy.png`,
+    talk: `${BASE}/luna-talk.png`,
+    blink: `${BASE}/luna-blink.png`,
+    wave: `${BASE}/luna-wave.png`,
+    cheer: `${BASE}/luna-cheer.png`,
+    think: `${BASE}/luna-think.png`,
   };
 
-  const TAP_MOTIONS = ["wave", "cheer", "happy", "surprised"];
+  const TAP_MOTIONS = ["happy", "cheer", "wave", "surprised"];
 
-  const SITUATION_RULES = [
-    { expr: "wave", patterns: [/こんにちは|おはよう|こんばんは|やあ|はじめまして|ようこそ|hello|hi\b/i] },
-    { expr: "cheer", patterns: [/がんば|頑張|できた|すごい|ナイス|よくでき|おめでと|合格|クリア|すばらし|いいね|えらい|拍手/i] },
-    { expr: "sad", patterns: [/つらい|悲し|残念|ごめん|申し訳|しんどい|不安|心配/i] },
-    { expr: "think", patterns: [/どうして|なぜ|考え|教えて|どうすれば|？|\?/] },
-    { expr: "surprised", patterns: [/えっ|まじ|びっくり|本当に|！？|驚/i] },
-    { expr: "happy", patterns: [/ありがと|嬉し|楽し|うれし|笑|ワクワク|やった/i] },
-  ];
-
-  function mapEmotion(name) {
-    const k = String(name || "").toLowerCase();
+  function mapEmotion(emotion) {
+    if (!emotion) return "neutral";
+    const k = String(emotion).toLowerCase().trim();
     return EMOTION_MAP[k] || (EXPRESSIONS[k] ? k : "neutral");
   }
 
   function detectExpression(text, opts = {}) {
-    const t = String(text || "");
+    const t = (text || "").trim();
+    if (opts.greeting) return "wave";
+    if (opts.fallback === "think") return "think";
+    if (opts.fallback === "sad") return "sad";
+    if (opts.fallback === "happy") return "happy";
+    const rules = [
+      { expr: "cheer", patterns: [/やった|すごい|がんば|応援|クリア|成功|おめでとう/] },
+      { expr: "wave", patterns: [/こんにちは|おはよう|こんばんは|はじめまして|よろしく/] },
+      { expr: "sad", patterns: [/つらい|悲しい|落ち込|疲れ|ごめん|大丈夫？/] },
+      { expr: "surprised", patterns: [/えっ|まさか|びっくり|すごい！|！{2,}/] },
+      { expr: "think", patterns: [/どうして|なぜ|考え|教えて|どうすれば|？|\?/] },
+      { expr: "happy", patterns: [/嬉しい|楽しい|いいね|大好き|ありがとう/] },
+    ];
+    for (const r of rules) {
+      if (r.patterns.some((p) => p.test(t))) return r.expr;
+    }
     const tag = t.match(/^\[(neutral|joy|happy|sadness|sad|surprise|surprised|think|cheer|wave)\]/i);
     if (tag) return mapEmotion(tag[1]);
-    if (opts.emotion) return mapEmotion(opts.emotion);
-    if (opts.greeting) return "wave";
-    for (const rule of SITUATION_RULES) {
-      if (rule.patterns.some((re) => re.test(t))) return rule.expr;
-    }
-    return opts.fallback || "neutral";
+    return opts.fallback || "happy";
   }
 
   class LunaAvatar {
@@ -81,6 +75,7 @@
       this.exprTimer = null;
       this.idleTimer = null;
       this.speaking = false;
+      this.thinking = false;
       this._preload();
       this.setExpression("neutral");
       this.startBlink();
@@ -107,8 +102,13 @@
     _setMotionClass(name) {
       if (!this.stage) return;
       this.stage.classList.remove(
-        "luna-idle", "luna-bob", "luna-wave-motion", "luna-cheer-motion",
-        "luna-talk-motion", "luna-tap-bounce"
+        "luna-idle",
+        "luna-bob",
+        "luna-wave-motion",
+        "luna-cheer-motion",
+        "luna-talk-motion",
+        "luna-tap-bounce",
+        "luna-think-motion"
       );
       if (name) this.stage.classList.add(name);
     }
@@ -123,45 +123,72 @@
         void this.img.offsetWidth;
         this.img.classList.add("luna-fade");
       }
-      if (this.current === "wave") this._setMotionClass("luna-wave-motion");
+      if (this.thinking) this._setMotionClass("luna-think-motion");
+      else if (this.current === "wave") this._setMotionClass("luna-wave-motion");
       else if (this.current === "cheer") this._setMotionClass("luna-cheer-motion");
-      else if (this.current === "talk") this._setMotionClass("luna-talk-motion");
+      else if (this.current === "talk" || this.speaking) this._setMotionClass("luna-talk-motion");
       else if (!this.speaking) this._setMotionClass("luna-idle");
 
       if (this.exprTimer) {
         clearTimeout(this.exprTimer);
         this.exprTimer = null;
       }
-      if (holdMs > 0) {
+      if (holdMs > 0 && !this.thinking) {
         this.exprTimer = setTimeout(() => {
-          if (!this.speaking) this.setExpression("neutral");
+          if (!this.speaking && !this.thinking) this.setExpression("neutral");
         }, holdMs);
       }
       return this.current;
     }
 
     playExpression(name, holdMs = 2200) {
+      if (this.thinking && name !== "think") return;
       if (this.speaking && name !== "talk" && name !== "blink") return;
       this.setExpression(name, holdMs);
     }
 
-    /** Apply emotion from API game_state.emotion or dialogue tags */
+    /** Keep think pose until stopThinking() — while waiting for chat reply. */
+    startThinking() {
+      this.thinking = true;
+      this.speaking = false;
+      if (this.lipTimer) {
+        clearInterval(this.lipTimer);
+        this.lipTimer = null;
+      }
+      if (this.exprTimer) {
+        clearTimeout(this.exprTimer);
+        this.exprTimer = null;
+      }
+      this.setExpression("think", 0);
+      this._setMotionClass("luna-think-motion");
+    }
+
+    stopThinking() {
+      if (!this.thinking) return;
+      this.thinking = false;
+      if (!this.speaking) {
+        this.setExpression("neutral");
+        this._setMotionClass("luna-idle");
+      }
+    }
+
     applyEmotion(emotion, holdMs = 2400) {
+      if (this.thinking) this.stopThinking();
       const key = mapEmotion(emotion);
       this.playExpression(key, holdMs);
       return key;
     }
 
     reactToText(text, opts = {}) {
+      if (this.thinking && !(opts && opts.force)) return "think";
       const expr = detectExpression(text, opts);
       const hold = expr === "wave" ? 2800 : expr === "cheer" ? 2600 : 2200;
       this.playExpression(expr, hold);
       return expr;
     }
 
-    /** tapMotions equivalent */
     tap() {
-      if (this.speaking) return;
+      if (this.speaking || this.thinking) return;
       const pick = TAP_MOTIONS[Math.floor(Math.random() * TAP_MOTIONS.length)];
       this._setMotionClass("luna-tap-bounce");
       this.playExpression(pick, 2000);
@@ -170,9 +197,8 @@
     startIdle() {
       this.stopIdle();
       this._setMotionClass("luna-idle");
-      // occasional soft bob pulse
       this.idleTimer = setInterval(() => {
-        if (this.speaking || !this.stage) return;
+        if (this.speaking || this.thinking || !this.stage) return;
         if (this.current !== "neutral" && this.current !== "blink") return;
         this.stage.classList.add("luna-bob");
         setTimeout(() => this.stage && this.stage.classList.remove("luna-bob"), 900);
@@ -189,11 +215,13 @@
       const schedule = () => {
         const delay = 2800 + Math.random() * 3200;
         this.blinkTimer = setTimeout(() => {
-          if (!this.speaking && (this.current === "neutral" || this.current === "happy")) {
+          if (!this.speaking && !this.thinking && (this.current === "neutral" || this.current === "happy")) {
             const prev = this.current;
             this.setExpression("blink");
             setTimeout(() => {
-              if (!this.speaking && this.current === "blink") this.setExpression(prev === "happy" ? "happy" : "neutral");
+              if (!this.speaking && !this.thinking && this.current === "blink") {
+                this.setExpression(prev === "happy" ? "happy" : "neutral");
+              }
             }, 120 + Math.random() * 80);
           }
           schedule();
@@ -208,6 +236,7 @@
     }
 
     startLipSync() {
+      this.stopThinking();
       this.stopLipSync();
       this.speaking = true;
       this._setMotionClass("luna-talk-motion");
@@ -222,6 +251,11 @@
       this.speaking = false;
       if (this.lipTimer) clearInterval(this.lipTimer);
       this.lipTimer = null;
+      if (this.thinking) {
+        this.setExpression("think", 0);
+        this._setMotionClass("luna-think-motion");
+        return;
+      }
       this.setExpression("neutral");
       this._setMotionClass("luna-idle");
     }
@@ -230,6 +264,7 @@
       this.stopBlink();
       this.stopLipSync();
       this.stopIdle();
+      this.thinking = false;
       if (this.exprTimer) clearTimeout(this.exprTimer);
     }
 
