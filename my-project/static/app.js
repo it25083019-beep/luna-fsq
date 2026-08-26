@@ -874,6 +874,14 @@
       });
       renderHealthDashboard(res.dashboard || res);
       setHealthFormErr("");
+      const healthView = document.getElementById("sub-health");
+      if (healthView) healthView.scrollTo({ top: 0, behavior: "smooth" });
+      const savedHint = document.getElementById("healthSavedHint");
+      if (savedHint) {
+        savedHint.textContent = "保存しました。上の評価を確認してね。";
+        savedHint.classList.add("show");
+        setTimeout(() => savedHint.classList.remove("show"), 3500);
+      }
       await loadHomeSummary();
     } catch (e) {
       setHealthFormErr(e.message);

@@ -301,6 +301,8 @@
     .suggest-list{margin:.25rem 0 0;padding:0 0 0 1.05rem;font-size:.75rem;line-height:1.5;color:var(--text)}
     .suggest-list li{margin:.25rem 0}
     .suggest-list.empty{list-style:none;padding-left:0;color:var(--muted)}
+    .health-saved-hint{margin:.45rem 0 0;font-size:.78rem;font-weight:700;color:var(--lilac-deep);min-height:1.1em;opacity:0;transition:opacity .2s ease}
+    .health-saved-hint.show{opacity:1}
     .mental-card{width:100%;max-width:420px;background:var(--card);border-radius:20px;padding:1rem;box-shadow:var(--shadow)}
     .mental-card h3{margin:0 0 .35rem;font-size:.95rem;color:var(--lilac-deep)}
     .mental-card p{margin:0 0 .65rem;font-size:.78rem;color:var(--muted);line-height:1.45}
@@ -420,6 +422,7 @@
               <div class="score-ring"><span id="healthStatus">—</span><strong id="healthScoreBig">—</strong><span>健康スコア</span></div>
             </div>
             <p class="hint" id="healthBmiLine" style="margin:.35rem 0 0">BMI —</p>
+            <p class="health-saved-hint" id="healthSavedHint" aria-live="polite"></p>
           </div>
           <div class="dash-card">
             <h4>今日の評価</h4>
