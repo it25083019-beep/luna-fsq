@@ -1180,24 +1180,41 @@
     } catch (_) {}
   }
 
+  const DEFAULT_CHIPS = [
+    "体調を相談したい",
+    "お金の相談",
+    "予定を整理したい",
+    "健康に追記したい",
+    "欲しいものがある",
+  ];
+
   function chipRouteForLabel(label) {
     const t = String(label || "");
     if (t.includes("健康に追記")) return { type: "subview", name: "health" };
     if (t.includes("予定を整理")) return { type: "subview", name: "schedule" };
     if (t.includes("欲しいもの")) return { type: "subview", name: "goals" };
+    // Consult chips: open the module first, then also chat
+    if (t.includes("体調を相談") || (t.includes("体調") && t.includes("相談"))) {
+      return { type: "consult", name: "health" };
+    }
+    if (t.includes("お金の相談") || (t.includes("お金") && t.includes("相談"))) {
+      return { type: "consult", name: "money" };
+    }
     if (t.includes("自分で") || t.includes("自由")) return { type: "focus" };
     return { type: "chat" };
   }
 
   function renderChips(list) {
     const chipsEl = document.getElementById("chips");
+    if (!chipsEl) return;
     chipsEl.innerHTML = "";
-    (list || []).forEach((label) => {
+    const labels = list && list.length ? list : DEFAULT_CHIPS;
+    labels.forEach((label) => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "chip";
       b.textContent = label;
-      b.onclick = () => {
+      b.onclick = async () => {
         const route = chipRouteForLabel(label);
         if (route.type === "focus") {
           document.getElementById("message").focus();
@@ -1206,6 +1223,17 @@
         if (route.type === "subview") {
           openSubview(route.name);
           setNavActive("luna");
+          return;
+        }
+        if (route.type === "consult") {
+          // Stay on home chat so the conversation is visible; open module if chat fails
+          closeAllSubviews();
+          setNavActive("luna");
+          const ok = await sendMessage(label);
+          if (!ok) {
+            openSubview(route.name);
+            setNavActive(route.name === "money" || route.name === "health" ? route.name : "luna");
+          }
           return;
         }
         sendMessage(label);
@@ -1221,7 +1249,7 @@
       if (luna) luna.stopThinking();
     } catch (_) {}
     if (dialogueEl && line) dialogueEl.textContent = line;
-    renderChips((data && data.suggested_replies) || []);
+    renderChips((data && data.suggested_replies) || DEFAULT_CHIPS);
     const emo = data && data.game_state && data.game_state.emotion;
     try {
       if (luna && line) {
@@ -1243,6 +1271,7 @@
     if (!dialogueEl) return;
     if (cur && cur !== "…" && cur !== "...") return;
     dialogueEl.textContent = "こんにちは。LUNAです。今日も一緒にがんばろうね。";
+    renderChips(DEFAULT_CHIPS);
     try {
       if (luna) luna.reactToText(dialogueEl.textContent, { greeting: true, fallback: "happy", force: true });
     } catch (_) {}
@@ -1256,7 +1285,7 @@
 
   async function sendMessage(text) {
     const msg = (text || "").trim();
-    if (!msg || busy) return;
+    if (!msg || busy) return false;
     busy = true;
     unlockAudio();
     // Instant think reaction BEFORE any network wait
@@ -1273,6 +1302,7 @@
       if (!chatStarted) chatStarted = true;
       const data = await api("/chat", { method: "POST", body: JSON.stringify({ message: msg }) });
       applyChat(data);
+      return true;
     } catch (e) {
       try {
         if (luna) luna.stopThinking();
@@ -1285,6 +1315,7 @@
         if (luna) luna.reactToText(soft, { fallback: "sad", force: true });
       } catch (_) {}
       speakJa(soft).catch(() => {});
+      return false;
     } finally {
       busy = false;
       if (sendBtn) sendBtn.disabled = false;
@@ -1295,14 +1326,16 @@
     if (chatStarted) return;
     chatStarted = true;
     showLocalGreeting();
+    renderChips(DEFAULT_CHIPS);
     try {
       const data = await api("/chat/start", { method: "POST", body: JSON.stringify({ message: "" }) });
       applyChat(data);
     } catch (e) {
       setErr(e.message);
-      // Keep local greeting visible; allow retry on next luna tab focus.
+      // Keep local greeting + default chips; allow retry on next luna tab focus.
       chatStarted = false;
       showLocalGreeting();
+      renderChips(DEFAULT_CHIPS);
     }
   }
 
@@ -2188,6 +2221,8 @@
       document.getElementById("homeDate").textContent = s.date_ja || "";
       document.getElementById("stSchedule").textContent = s.schedule?.label || "予定なし";
       document.getElementById("stHealth").textContent = s.health?.label || "良好";
+      const stMoney = document.getElementById("stMoney");
+      if (stMoney) stMoney.textContent = s.money?.label || "—";
       document.getElementById("stGoals").textContent = s.goals?.label || "—";
       renderHomeToday(s.schedule?.today_items || []);
       updateMentalReminderBanner(s);

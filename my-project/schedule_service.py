@@ -1237,8 +1237,17 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
     if remind and not user.get("pending_notification"):
         user["pending_notification"] = "LUNAが今日の気分を聞きたいよ"
     from goals_service import home_goals_summary
+    from money_eval import evaluate_money, spend_pace_snapshot
 
     goals_sum = home_goals_summary(user)
+    money_s = (user.get("life_modules") or {}).get("money", {}).get("structured", {}) or {}
+    money_ev = evaluate_money(user, money_s)
+    money_pace = spend_pace_snapshot(money_s)
+    money_label = money_ev.get("status_ja") or "—"
+    if money_pace.get("today_spent"):
+        money_label = f"今日{int(money_pace['today_spent']):,}円"
+    elif money_ev.get("score") is not None:
+        money_label = f"{money_ev.get('status_ja') or '—'} {money_ev.get('score')}"
     return {
         "schedule": {
             "open_count": today_open_n,
@@ -1252,6 +1261,12 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
             "label": f"{status} {score}",
             "mental_needed": needed,
             "mental_reminder": remind,
+        },
+        "money": {
+            "score": money_ev.get("score"),
+            "status_ja": money_ev.get("status_ja"),
+            "label": money_label,
+            "today_spent": money_pace.get("today_spent") or 0,
         },
         "goals": goals_sum,
         "date_ja": f"{date.today().month}月{date.today().day}日",

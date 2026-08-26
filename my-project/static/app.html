@@ -60,10 +60,13 @@
     .bubble{margin:-.4rem 1rem .7rem;background:var(--card);border-radius:20px;padding:.85rem 1rem;box-shadow:var(--shadow);line-height:1.7;white-space:pre-wrap;min-height:4rem;position:relative;z-index:2}
     .bubble::before{content:"";position:absolute;top:-8px;left:18%;width:16px;height:16px;background:var(--card);transform:rotate(45deg);border-radius:3px}
     .bubble .who{display:inline-block;font-size:.68rem;background:var(--lilac);color:#fff;padding:.12rem .5rem;border-radius:999px;margin-bottom:.4rem}
-    .status-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:0 1rem .75rem}
+    .status-row{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;padding:0 1rem .75rem}
+    @media (min-width:380px){
+      .status-row{grid-template-columns:repeat(4,1fr)}
+    }
     .status-card{background:var(--card);border-radius:16px;padding:.55rem .4rem .7rem;text-align:center;box-shadow:var(--shadow);border:none;cursor:pointer;color:var(--text);transition:transform .2s ease, box-shadow .2s ease}
     .status-card:hover,.status-card:focus-visible{transform:translateY(-3px);box-shadow:0 12px 28px rgba(120,90,180,.22)}
-    .status-card:nth-child(1){background:var(--st1)} .status-card:nth-child(2){background:var(--st2)} .status-card:nth-child(3){background:var(--st3)}
+    .status-card:nth-child(1){background:var(--st1)} .status-card:nth-child(2){background:var(--st2)} .status-card:nth-child(3){background:var(--st3)} .status-card:nth-child(4){background:var(--st1)}
     .status-card .ico{font-size:1.15rem;margin-bottom:.15rem}
     .status-card .label{font-size:.72rem;color:var(--muted)}
     .status-card .val{font-size:.88rem;font-weight:700;color:var(--lilac-deep);margin-top:.15rem}
@@ -493,6 +496,7 @@
           <div class="status-row">
             <button type="button" class="status-card" data-open="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
             <button type="button" class="status-card" data-open="health"><div class="ico">💚</div><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
+            <button type="button" class="status-card" data-open="money"><div class="ico">👛</div><div class="label">お金</div><div class="val" id="stMoney">—</div></button>
             <button type="button" class="status-card" data-open="goals"><div class="ico">🎯</div><div class="label">目標</div><div class="val" id="stGoals">—</div></button>
           </div>
           <div class="home-today">
@@ -865,6 +869,7 @@
           <button type="button" data-open="schedule">📅 スケジュール・ToDo</button>
           <button type="button" data-open="health">💚 ヘルスケア</button>
           <button type="button" data-open="money">👛 お金・家計</button>
+          <button type="button" data-open="goals">🎯 目標</button>
           <button type="button" id="menuThemeBtn">🎨 テーマ設定</button>
           <button type="button" id="morningBtn">🌅 朝チェックイン</button>
           <button type="button" id="eveningBtn">🌙 夜チェックイン</button>
