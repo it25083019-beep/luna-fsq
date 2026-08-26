@@ -1,0 +1,59 @@
+{
+  "version": "1.0",
+  "class_base": {
+    "swordsman": {
+      "sprite": "/static/live2d/luna-expressions/luna-happy.png",
+      "css_class": "class-swordsman",
+      "label_ja": "剣士"
+    },
+    "mage": {
+      "sprite": "/static/live2d/luna-expressions/luna-think.png",
+      "css_class": "class-mage",
+      "label_ja": "魔法使い"
+    },
+    "archer": {
+      "sprite": "/static/live2d/luna-expressions/luna-neutral.png",
+      "css_class": "class-archer",
+      "label_ja": "弓使い"
+    }
+  },
+  "gear_modifiers": {
+    "wpn_pen_sword": {"css": "gear-weapon-blade", "tint": "#7b5eb8"},
+    "wpn_keyboard": {"css": "gear-weapon-tech", "tint": "#497cff"},
+    "wpn_brush": {"css": "gear-weapon-brush", "tint": "#e07a8a"},
+    "wpn_stylus": {"css": "gear-weapon-bow", "tint": "#6ec9b8"},
+    "wpn_thermometer": {"css": "gear-weapon-staff", "tint": "#6ec9b8"},
+    "wpn_stethoscope": {"css": "gear-weapon-staff", "tint": "#9b7ed9"},
+    "wpn_pointer": {"css": "gear-weapon-blade", "tint": "#e8b86d"},
+    "wpn_book": {"css": "gear-weapon-tome", "tint": "#7b5eb8"},
+    "wpn_starter": {"css": "gear-weapon-blade", "tint": "#9aa0b8"},
+    "arm_hoodie": {"css": "gear-armor-hoodie", "tint": "#5b6abf"},
+    "arm_cloak_dev": {"css": "gear-armor-cloak", "tint": "#3d2f8a"},
+    "arm_apron": {"css": "gear-armor-apron", "tint": "#f0a8c8"},
+    "arm_cloak_design": {"css": "gear-armor-cloak", "tint": "#c45d7a"},
+    "arm_scrubs": {"css": "gear-armor-uniform", "tint": "#5bb8a8"},
+    "arm_cloak_care": {"css": "gear-armor-cloak", "tint": "#2f8a7a"},
+    "arm_vest": {"css": "gear-armor-vest", "tint": "#e8b86d"},
+    "arm_cloak_teach": {"css": "gear-armor-cloak", "tint": "#8b6ad4"},
+    "acc_notebook": {"css": "gear-acc-glow", "tint": "#b4aee8"},
+    "acc_badge": {"css": "gear-acc-glow", "tint": "#497cff"},
+    "acc_sketch": {"css": "gear-acc-glow", "tint": "#f0a8c8"},
+    "acc_palette": {"css": "gear-acc-glow", "tint": "#e07a8a"},
+    "acc_heart": {"css": "gear-acc-glow", "tint": "#e07a8a"},
+    "acc_watch": {"css": "gear-acc-glow", "tint": "#6ec9b8"},
+    "acc_chalk": {"css": "gear-acc-glow", "tint": "#e8b86d"},
+    "acc_whistle": {"css": "gear-acc-glow", "tint": "#9b7ed9"},
+    "acc_map": {"css": "gear-acc-glow", "tint": "#b4aee8"},
+    "art_career_se": {"css": "gear-artifact", "tint": "#ffd27a"},
+    "art_career_ux": {"css": "gear-artifact", "tint": "#ffd27a"},
+    "art_career_nu": {"css": "gear-artifact", "tint": "#ffd27a"},
+    "art_career_te": {"css": "gear-artifact", "tint": "#ffd27a"},
+    "art_stub": {"css": "gear-artifact", "tint": "#c8c0e0"}
+  },
+  "rank_aura": {
+    "novice": "rank-novice",
+    "intermediate": "rank-intermediate",
+    "veteran": "rank-veteran",
+    "saint": "rank-saint"
+  }
+}

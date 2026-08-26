@@ -75,9 +75,24 @@ from schemas import (
     HealthProfileUpdate,
     HealthMentalCheckin,
     MoneyProfileUpdate,
+    JourneySelectRequest,
+    JourneyBossChallenge,
+    JourneyLessonEnrich,
 )
 from suggestions import get_suggested_replies
 from career_engine import load_taxonomy, suggest_careers, rpg_class_label
+from journey_engine import (
+    challenge_boss,
+    complete_lesson,
+    enrich_lesson_detail,
+    get_curriculum,
+    journey_status,
+    list_bosses,
+    list_careers,
+    list_classes,
+    list_journey_map,
+    select_journey,
+)
 from rpg_engine import (
     build_portfolio,
     complete_activity,
@@ -818,6 +833,113 @@ def admin_export(
 
 
 # ----- Career RPG orientation -----
+
+
+@app.get("/journey/careers")
+def journey_careers(current: User = Depends(get_current_user)):
+    return {"classes": list_classes(), "careers": list_careers()}
+
+
+@app.get("/journey/status")
+def journey_get_status(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    return journey_status(brain)
+
+
+@app.post("/journey/select")
+def journey_select(req: JourneySelectRequest, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        status = select_journey(brain, class_id=req.class_id, career_id=req.career_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "status": status, "map": list_journey_map(brain)}
+
+
+@app.get("/journey/map")
+def journey_map(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    return list_journey_map(brain)
+
+
+@app.post("/journey/lessons/{lesson_id}/complete")
+def journey_complete_lesson(lesson_id: str, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        result = complete_lesson(brain, lesson_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return result
+
+
+@app.get("/journey/bosses")
+def journey_bosses(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    return {"bosses": list_bosses(brain)}
+
+
+@app.post("/journey/bosses/{boss_id}/challenge")
+def journey_boss_challenge(
+    boss_id: str,
+    req: JourneyBossChallenge,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    try:
+        result = challenge_boss(brain, boss_id, success=req.success)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return result
+
+
+@app.post("/journey/lessons/{lesson_id}/enrich")
+def journey_lesson_enrich(
+    lesson_id: str,
+    req: JourneyLessonEnrich,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    j = journey_status(brain)
+    if not j.get("selected"):
+        raise HTTPException(status_code=400, detail="journey not selected")
+    detail = (req.detail_ja or "").strip()
+    if not detail:
+        # Build from curriculum title + AI optional
+        cur = get_curriculum(j["career_id"])
+        les = next((x for x in (cur.get("lessons") or []) if x["id"] == lesson_id), None)
+        if not les:
+            raise HTTPException(status_code=404, detail="lesson not found")
+        try:
+            from luna_service import generate_json_task
+
+            prompt = (
+                "Return JSON {\"detail_ja\": \"...\"} only. "
+                "Write a short Japanese study tip (3-5 sentences) for this lesson. "
+                f"Career: {j.get('career_title_ja')}. Lesson: {les.get('title_ja')}."
+            )
+            data = generate_json_task(
+                "You enrich learning tips. Do not invent new rewards or skills.",
+                prompt,
+            )
+            if isinstance(data, dict):
+                detail = str(data.get("detail_ja") or "").strip()
+        except Exception:
+            detail = ""
+        if not detail:
+            title = les.get("title_ja") or lesson_id
+            detail = (
+                f"「{title}」に取り組もう。"
+                "小さな目標を決めて、今日できるところまで進めてみよう。"
+            )
+    try:
+        result = enrich_lesson_detail(brain, lesson_id, detail)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return result
 
 
 @app.get("/career/taxonomy")

@@ -1,24 +1,14 @@
 (function () {
   const CLASSES = [
     { id: "swordsman", label: "剣士", icon: "⚔️" },
-    { id: "archer", label: "弓使い", icon: "🏹" },
     { id: "mage", label: "魔法使い", icon: "🪄" },
-    { id: "priest", label: "牧師", icon: "✨" },
+    { id: "archer", label: "弓使い", icon: "🏹" },
   ];
   const CLASS_DESC = {
-    swordsman: "近接攻撃に優れたバランス型。初心者におすすめ！",
-    archer: "遠距離から狙う俊敏なアタッカー",
-    mage: "強力な魔法で学びを深めるスペシャリスト",
-    priest: "仲間を支え回復するヒーラー",
+    swordsman: "近接・バランス型。粘り強く基礎を積む冒険者向き。",
+    mage: "知識と分析で道を開くタイプ。学習量が多い職に相性◎。",
+    archer: "集中と精度。観察・デザイン・精密作業向き。",
   };
-  const SKILLS = [
-    { icon: "あ", label: "日本語", cls: "pink" },
-    { icon: "EN", label: "英語", cls: "blue" },
-    { icon: "数", label: "数学", cls: "yellow" },
-    { icon: "理", label: "理科", cls: "green" },
-    { icon: "💼", label: "生活", cls: "purple" },
-    { icon: "🎯", label: "進路", cls: "orange" },
-  ];
   const SKILL_CLS = {
     pink: "linear-gradient(135deg,#ff5d9d,#ff91c8)",
     blue: "linear-gradient(135deg,#497cff,#31d2ff)",
@@ -27,17 +17,11 @@
     purple: "linear-gradient(135deg,#7a5cff,#b47aff)",
     orange: "linear-gradient(135deg,#ff7a38,#ffbf42)",
   };
-  const DEFAULT_QUESTS = [
-    { title: "25分学習する", quest_type: "daily_study", subject: "general", icon: "📘", color: SKILL_CLS.blue },
-    { title: "今日の目標を1つ決める", quest_type: "homework", subject: "life", icon: "✅", color: SKILL_CLS.green },
-    { title: "LUNAに近況を話す", quest_type: "daily_study", subject: "mental", icon: "💬", color: SKILL_CLS.pink },
-  ];
   const QUICK = {
     health: ["睡眠7時間目標", "水を意識する", "少し疲れた", "調子いい"],
     money: ["時給を記録", "欲しいものメモ", "今月の支出", "貯金目標"],
     schedule: ["テスト日程", "バイトシフト", "締切あり", "空き時間"],
   };
-  const ROUTE_COLORS = ["pink", "blue", "green"];
   const MAP_POSITIONS = [
     { left: "12%", top: "55%" },
     { left: "35%", top: "25%" },
@@ -45,6 +29,7 @@
     { left: "78%", top: "20%" },
     { left: "88%", top: "60%" },
   ];
+  const BOSS_LABEL = { weekly: "週次ボス", monthly: "月次ボス", career_final: "最終ボス" };
 
   let token = LunaAuth.getToken();
   let busy = false;
@@ -59,6 +44,10 @@
   let regions = [];
   let classLabels = {};
   let selectedClass = localStorage.getItem("luna_class") || "swordsman";
+  let journeyStatus = { selected: false, classes: [], careers: [] };
+  let journeyMap = { selected: false, stages: [], lessons: [], bosses: [] };
+  let onboardStep = "class";
+  let reselectJourney = false;
 
   const errEl = document.getElementById("err");
   const lunaMainView = document.getElementById("lunaMainView");
@@ -288,49 +277,113 @@
   }
 
   function loadFsqTab() {
+    loadJourney().catch((e) => setErr(e.message));
+  }
+
+  async function loadJourney() {
+    const [st, mp] = await Promise.all([api("/journey/status"), api("/journey/map")]);
+    journeyStatus = st || { selected: false };
+    journeyMap = mp || { selected: false, stages: [], lessons: [], bosses: [] };
+    if (st.class_id) selectedClass = st.class_id;
+    applyJourneyUi();
+  }
+
+  function showFsqOnboarding(show) {
+    const onboard = document.getElementById("fsq-onboard");
+    const sub = document.getElementById("fsqSubnav");
+    const sections = ["fsq-home", "fsq-map", "fsq-career"];
+    if (onboard) onboard.style.display = show ? "block" : "none";
+    if (sub) sub.style.display = show ? "none" : "flex";
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (show) el.classList.remove("active");
+      else if (id === "fsq-home") el.classList.add("active");
+    });
+    if (!show) switchFsqSub("home");
+  }
+
+  function applyJourneyUi() {
+    const needOnboard = reselectJourney || !journeyStatus.selected;
+    showFsqOnboarding(needOnboard);
+    if (needOnboard) {
+      renderClassPicker();
+      document.getElementById("onboardClassStep").style.display = onboardStep === "class" ? "block" : "none";
+      document.getElementById("onboardCareerStep").style.display = onboardStep === "career" ? "block" : "none";
+      if (onboardStep === "career") renderCareerPicker();
+      return;
+    }
     renderHomeHeader();
-    renderClassPicker();
     renderSkills();
+    renderNextLesson();
     renderMap();
-    renderQuests();
-    loadCareerTab();
+    renderLessons();
+    renderBosses();
+    renderCareerPortfolio();
   }
 
   function renderClassPicker() {
     const el = document.getElementById("classPicker");
     if (!el) return;
     el.innerHTML = "";
-    CLASSES.forEach((c) => {
+    const list = (journeyStatus.classes && journeyStatus.classes.length ? journeyStatus.classes : CLASSES).map((c) => ({
+      id: c.id,
+      label: c.label_ja || c.label,
+      icon: CLASSES.find((x) => x.id === c.id)?.icon || "⚔️",
+    }));
+    list.forEach((c) => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "class-btn" + (c.id === selectedClass ? " active" : "");
-      b.innerHTML = '<span class="class-icon">' + c.icon + '</span>' + c.label;
-      b.onclick = () => selectClass(c.id);
+      b.innerHTML = '<span class="class-icon">' + c.icon + "</span>" + c.label;
+      b.onclick = () => {
+        selectedClass = c.id;
+        localStorage.setItem("luna_class", c.id);
+        onboardStep = "career";
+        applyJourneyUi();
+      };
       el.appendChild(b);
     });
   }
 
-  async function selectClass(classId) {
-    selectedClass = classId;
-    localStorage.setItem("luna_class", classId);
-    renderClassPicker();
-    renderHomeHeader();
-    const cluster = findClusterForClass(classId);
-    if (cluster) {
-      try {
-        await api("/career/select", {
-          method: "POST",
-          body: JSON.stringify({ cluster_id: cluster.id, rpg_class: classId }),
-        });
-        await refreshCore();
-      } catch (e) {
-        setErr(e.message);
-      }
-    }
+  function renderCareerPicker() {
+    const el = document.getElementById("careerPicker");
+    if (!el) return;
+    el.innerHTML = "";
+    const careers = journeyStatus.careers || [];
+    careers.forEach((c) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "career-pick" + (c.full_curriculum ? "" : " stub");
+      b.innerHTML =
+        "<strong>" +
+        (c.title_ja || c.id) +
+        "</strong><span>" +
+        (c.short_blurb || "") +
+        '</span><span class="tag">' +
+        (c.full_curriculum ? "フル教材" : "ミニ教材") +
+        "</span>";
+      b.onclick = () => selectJourneyCareer(c.id);
+      el.appendChild(b);
+    });
   }
 
-  function findClusterForClass(classId) {
-    return (window._careerClusters || []).find((c) => c.rpg_class === classId);
+  async function selectJourneyCareer(careerId) {
+    try {
+      const res = await api("/journey/select", {
+        method: "POST",
+        body: JSON.stringify({ class_id: selectedClass, career_id: careerId }),
+      });
+      journeyStatus = res.status || journeyStatus;
+      journeyMap = res.map || journeyMap;
+      reselectJourney = false;
+      onboardStep = "class";
+      if (luna) luna.applyEmotion("cheer", 1500);
+      applyJourneyUi();
+      await refreshCore();
+    } catch (e) {
+      setErr(e.message);
+    }
   }
 
   function classLabel(id) {
@@ -338,943 +391,326 @@
     return classLabels[id] || CLASSES.find((c) => c.id === id)?.label || id;
   }
 
+  function applyAppearance(wrap, img, appearance) {
+    if (!wrap || !img) return;
+    const ap = appearance || {};
+    wrap.className = "hero-avatar " + (ap.css_classes || "");
+    if (ap.sprite) img.src = ap.sprite;
+  }
+
   function renderHomeHeader() {
-    const cls = rpgData.class_id || selectedClass;
+    const cls = journeyStatus.class_id || rpgData.class_id || selectedClass;
     const user = stateData.user_display_name || "冒険者";
-    const lv = stateData.level || 1;
-    const exp = stateData.total_exp || 0;
+    const lv = journeyStatus.level || stateData.level || 1;
+    const exp = journeyStatus.total_exp || stateData.total_exp || 0;
     const prog = expProgress(exp, lv);
     const badge = document.getElementById("homeClassBadge");
-    if (badge) badge.textContent = "現在のクラス：" + classLabel(cls);
+    if (badge) {
+      badge.textContent =
+        "クラス：" +
+        (journeyStatus.class_ja || classLabel(cls)) +
+        " ／ 進化：" +
+        (journeyStatus.rank_ja || "見習い");
+    }
     const role = document.getElementById("homeRoleName");
-    if (role) role.textContent = user;
+    if (role) role.textContent = journeyStatus.career_title_ja || user;
     const desc = document.getElementById("homeRoleDesc");
-    if (desc) desc.textContent = CLASS_DESC[cls] || CLASS_DESC.swordsman;
+    if (desc) {
+      desc.textContent = journeyStatus.selected
+        ? CLASS_DESC[cls] || "レッスンをクリアして装備とランクを上げよう。"
+        : CLASS_DESC[cls] || CLASS_DESC.swordsman;
+    }
     const expL = document.getElementById("homeExpLabel");
-    if (expL) expL.textContent = "EXP " + prog.cur + " / " + prog.need;
+    if (expL) expL.textContent = "旅EXP " + (journeyStatus.journey_exp || 0) + " ／ 総EXP " + prog.cur;
     const lvL = document.getElementById("homeLvLabel");
     if (lvL) lvL.textContent = "Lv." + lv;
     const bar = document.getElementById("homeExpBar");
     if (bar) bar.style.width = prog.pct + "%";
-    document.getElementById("myName").textContent = user;
-  }
-
-  async function loadHomeSummary() {
-    try {
-      const s = await api("/home/summary");
-      document.getElementById("homeDate").textContent = s.date_ja || "";
-      document.getElementById("stSchedule").textContent = s.schedule?.label || "予定なし";
-      document.getElementById("stHealth").textContent = s.health?.label || "良好";
-      document.getElementById("stGoals").textContent = s.goals?.label || "—";
-      renderHomeToday(s.schedule?.today_items || []);
-      updateMentalReminderBanner(s);
-    } catch (_) {}
-  }
-
-  function updateMentalReminderBanner(s) {
-    const banner = document.getElementById("mentalRemindBanner");
-    if (!banner) return;
-    const show = !!(s && (s.health?.mental_reminder || (s.pending_notification && String(s.pending_notification).includes("気分"))));
-    banner.classList.toggle("open", show && !sessionStorage.getItem("mentalModalOpen"));
-    const txt = document.getElementById("mentalRemindText");
-    if (txt) txt.textContent = s.pending_notification || "LUNAが今日の気分を聞きたいよ";
-  }
-
-  function formatTimeRange(ev) {
-    if (!ev) return "終日";
-    const start = ev.time || "";
-    const end = ev.end_time || "";
-    if (start && end) return start + "〜" + end;
-    if (start) return start + "〜";
-    if (end) return "〜" + end;
-    return "終日";
-  }
-
-  function attachSwipeDelete(row, onDelete) {
-    let startX = 0;
-    let tracking = false;
-    let locked = false;
-    row.addEventListener(
-      "touchstart",
-      (e) => {
-        startX = e.touches[0].clientX;
-        tracking = true;
-      },
-      { passive: true }
+    applyAppearance(
+      document.getElementById("homeAvatarWrap"),
+      document.getElementById("homeAvatarImg"),
+      journeyStatus.appearance
     );
-    row.addEventListener("touchend", (e) => {
-      if (!tracking) return;
-      const dx = e.changedTouches[0].clientX - startX;
-      tracking = false;
-      // swipe left -> delete (per-item)
-      if (dx < -48 && !locked) {
-        locked = true;
-        try {
-          onDelete && onDelete();
-        } finally {
-          setTimeout(() => {
-            locked = false;
-          }, 900);
-        }
-      }
-    });
+    const my = document.getElementById("myName");
+    if (my) my.textContent = user;
   }
 
-  function renderHomeToday(items) {
-    const el = document.getElementById("homeTodayList");
-    if (!el) return;
-    el.innerHTML = "";
-    if (!items.length) {
-      el.innerHTML = '<p class="hint">まだ予定はありません。カレンダーから追加できます。</p>';
-      return;
-    }
-    items.forEach((ev) => {
-      const row = document.createElement("div");
-      row.className = "home-today-item" + (ev.done ? " done" : "");
-      row.innerHTML =
-        '<span class="t">' +
-        formatTimeRange(ev) +
-        "</span><span style='flex:1'>" +
-        ev.title +
-        "</span>";
-      // swipe left to delete (no delete button)
-      attachSwipeDelete(row, () => deleteScheduleEvent(ev.id));
-      el.appendChild(row);
-    });
-  }
-
-  function eventsForDate(iso) {
-    return allScheduleEvents
-      .filter((e) => e.date === iso)
-      .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
-  }
-
-  function isoFromYmd(y, m0, d) {
-    return y + "-" + String(m0 + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
-  }
-
-  function clampDayInMonth(y, m0, day) {
-    const max = new Date(y, m0 + 1, 0).getDate();
-    return Math.min(Math.max(1, day || 1), max);
-  }
-
-  function shiftCalendarMonth(delta) {
-    const prevDay = selectedDate ? Number(selectedDate.split("-")[2]) : 1;
-    const next = new Date(calCursor.getFullYear(), calCursor.getMonth() + delta, 1);
-    calCursor = next;
-    const y = next.getFullYear();
-    const m0 = next.getMonth();
-    const today = todayIso();
-    const monthPrefix = y + "-" + String(m0 + 1).padStart(2, "0");
-    // Keep month grid and day panel in lockstep — this was the desync bug.
-    const nextIso = today.startsWith(monthPrefix)
-      ? today
-      : isoFromYmd(y, m0, clampDayInMonth(y, m0, prevDay));
-    selectedDate = nextIso;
-    const dateInput = document.getElementById("addDate");
-    if (dateInput) dateInput.value = nextIso;
-    renderCalendar();
-    renderDayEvents();
-    // Refresh expansion around the browsed month (skip home summary — keeps UI snappy).
-    loadScheduleView({ preserveCursor: true, skipHome: true });
-  }
-
-  function renderCalendar() {
-    const y = calCursor.getFullYear();
-    const m = calCursor.getMonth();
-    const label = document.getElementById("calMonthLabel");
-    if (label) label.textContent = y + "年" + (m + 1) + "月";
-    const grid = document.getElementById("calGrid");
-    if (!grid) return;
-    grid.innerHTML = "";
-    const first = new Date(y, m, 1);
-    const startPad = first.getDay();
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
-    const today = todayIso();
-    for (let i = 0; i < startPad; i++) {
-      const blank = document.createElement("button");
-      blank.type = "button";
-      blank.className = "cal-day muted";
-      blank.disabled = true;
-      blank.textContent = "";
-      grid.appendChild(blank);
-    }
-    for (let d = 1; d <= daysInMonth; d++) {
-      const iso = isoFromYmd(y, m, d);
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "cal-day";
-      if (iso === today) btn.classList.add("today");
-      if (iso === selectedDate) btn.classList.add("selected");
-      if (datesWithEvents.has(iso)) btn.classList.add("has-event");
-      btn.textContent = String(d);
-      btn.onclick = () => selectCalendarDay(iso);
-      grid.appendChild(btn);
-    }
-  }
-
-  function selectCalendarDay(iso) {
-    selectedDate = iso;
-    const parts = iso.split("-").map(Number);
-    calCursor = new Date(parts[0], parts[1] - 1, 1);
-    const dateInput = document.getElementById("addDate");
-    if (dateInput) dateInput.value = iso;
-    renderCalendar();
-    renderDayEvents();
-  }
-
-  function renderDayEvents() {
-    const title = document.getElementById("dayPanelTitle");
-    if (title) title.textContent = fmtDateJa(selectedDate);
-    const el = document.getElementById("dayEventList");
-    if (!el) return;
-    const items = eventsForDate(selectedDate);
-    el.innerHTML = "";
-    if (!items.length) {
-      el.innerHTML = '<p class="hint">この日の予定はまだありません。「＋」で追加できます。</p>';
-      return;
-    }
-    items.forEach((ev) => {
-      const row = document.createElement("div");
-      row.className = "todo-row" + (ev.done ? " done" : "");
-      const time = ev.time || ev.end_time ? formatTimeRange(ev) + " · " : "";
-      const recur = ev.recurrence
-        ? '<span class="recur-tag">🔁同じ' + weekdayJaFromIso(ev.date || selectedDate) + "曜</span>"
-        : "";
-      row.innerHTML = '<span style="flex:1">' + time + ev.title + recur + "</span>";
-      const acts = document.createElement("div");
-      acts.className = "acts";
-      const doneBtn = document.createElement("button");
-      doneBtn.textContent = ev.done ? "戻す" : "完了";
-      doneBtn.onclick = () => toggleEventDone(ev.id, !ev.done);
-      const editBtn = document.createElement("button");
-      editBtn.textContent = "編集";
-      editBtn.onclick = () => openEditEvent(ev);
-      const delBtn = document.createElement("button");
-      delBtn.textContent = "削除";
-      delBtn.className = "danger";
-      delBtn.onclick = () => deleteScheduleEvent(ev.id);
-      acts.appendChild(doneBtn);
-      acts.appendChild(editBtn);
-      acts.appendChild(delBtn);
-      row.appendChild(acts);
-      el.appendChild(row);
-    });
-  }
-
-  function openEditEvent(ev) {
-    document.getElementById("editEventId").value = ev.id || "";
-    document.getElementById("editRecurrenceId").value = ev.recurrence_id || "";
-    document.getElementById("addTitle").value = ev.title || "";
-    document.getElementById("addDate").value = ev.date || selectedDate;
-    document.getElementById("addTime").value = ev.time || "";
-    document.getElementById("addEndTime").value = ev.end_time || "";
-    document.getElementById("addNote").value = ev.note || "";
-    document.getElementById("addForm").classList.add("open");
-    document.getElementById("addSaveBtn").textContent = "更新";
-  }
-
-  function resetAddForm(keepDate) {
-    document.getElementById("editEventId").value = "";
-    document.getElementById("editRecurrenceId").value = "";
-    document.getElementById("addTitle").value = "";
-    document.getElementById("addTime").value = "";
-    document.getElementById("addEndTime").value = "";
-    document.getElementById("addNote").value = "";
-    document.getElementById("addDate").value = keepDate || selectedDate || todayIso();
-    document.getElementById("addSaveBtn").textContent = "保存";
-    document.getElementById("addForm").classList.remove("open");
-  }
-
-  async function loadScheduleView(opts) {
-    const preserveCursor = !!(opts && opts.preserveCursor);
-    const skipHome = !!(opts && opts.skipHome);
-    try {
-      const focus = selectedDate || document.getElementById("addDate")?.value || todayIso();
-      const data = await api("/schedule/events?date=" + encodeURIComponent(focus));
-      allScheduleEvents = data.events || [];
-      datesWithEvents = new Set(data.dates_with_events || []);
-      window.__lastExtendPrompt = data.extend_prompt || null;
-      showExtendHorizonPrompt(data.extend_prompt);
-      if (!selectedDate) selectedDate = focus || data.today || todayIso();
-      if (!preserveCursor) {
-        const parts = selectedDate.split("-").map(Number);
-        calCursor = new Date(parts[0], parts[1] - 1, 1);
-      }
-      document.getElementById("addDate").value = selectedDate;
-      renderCalendar();
-      renderDayEvents();
-      if (!skipHome) await loadHomeSummary();
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  async function toggleEventDone(id, done) {
-    try {
-      await api("/schedule/events/" + id + "/complete", {
-        method: "POST",
-        body: JSON.stringify({ done }),
-      });
-      await loadScheduleView();
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  async function deleteScheduleEvent(id) {
-    if (!id) return;
-    const ev = (allScheduleEvents || []).find((e) => e.id === id);
-    const isRecurring = !!(ev && (ev.recurrence_id || ev.recurrence || String(id).startsWith("rec-")));
-    if (!confirm("この予定を削除しますか？")) return;
-    let scope = "this";
-    if (isRecurring) {
-      scope = confirm(
-        "同じ曜日のこれから先の予定もすべて削除しますか？\n\nOK = すべて削除\nキャンセル = この日だけ"
-      )
-        ? "all"
-        : "this";
-    }
-    try {
-      await api("/schedule/events/" + id + "?scope=" + encodeURIComponent(scope), { method: "DELETE" });
-      resetAddForm(selectedDate || todayIso());
-      await loadScheduleView();
-      await loadHomeSummary();
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  async function addScheduleEvent() {
-    const editId = document.getElementById("editEventId").value;
-    const title = document.getElementById("addTitle").value.trim();
-    const date = document.getElementById("addDate").value;
-    const time = (document.getElementById("addTime").value || "").trim();
-    const endTime = (document.getElementById("addEndTime").value || "").trim();
-    const note = document.getElementById("addNote").value.trim();
-    if (!title || !date) return;
-    // Accept both `8:00` and `08:00`, but normalize to `HH:MM` before saving.
-    const TIME_RE = /^(\d{1,2}):([0-5]\d)$/;
-    function normalizeTime(t) {
-      const m = TIME_RE.exec(t);
-      if (!m) return null;
-      const h = Number(m[1]);
-      if (h < 0 || h > 23) return null;
-      return String(h).padStart(2, "0") + ":" + m[2];
-    }
-    const normTime = time ? normalizeTime(time) : null;
-    if (time && !normTime) {
-      setErr("開始時刻はHH:MM（24h）で入力してください。");
-      return;
-    }
-    const normEndTime = endTime ? normalizeTime(endTime) : null;
-    if (endTime && !normEndTime) {
-      setErr("終了時刻はHH:MM（24h）で入力してください。");
-      return;
-    }
-    try {
-      if (editId) {
-        const recurrenceId = document.getElementById("editRecurrenceId").value;
-        const isRecurring = !!(recurrenceId || String(editId).startsWith("rec-"));
-        let scope = "this";
-        if (isRecurring) {
-          const editAll = confirm(
-            "繰り返し予定です。\n\n同じ曜日のこれから先の予定もすべて変更しますか？\n\nOK = すべて変更\nキャンセル = この日だけ変更"
-          );
-          scope = editAll ? "all" : "this";
-        }
-        await api("/schedule/events/" + editId, {
-          method: "PATCH",
-          body: JSON.stringify({
-            title,
-            date,
-            time: normTime || null,
-            end_time: normEndTime || null,
-            note: note || null,
-            scope,
-          }),
-        });
-        selectedDate = date;
-        resetAddForm(date);
-        await loadScheduleView();
-      } else {
-        // Simple rule: ask once — repeat on the same weekday forever, or this day only.
-        const recurrence = askRepeatSameWeekday(date) ? "weekly" : null;
-        await api("/schedule/events", {
-          method: "POST",
-          body: JSON.stringify({
-            title,
-            date,
-            time: normTime || null,
-            end_time: normEndTime || null,
-            note: note || null,
-            recurrence,
-          }),
-        });
-        selectedDate = date;
-        resetAddForm(date);
-        await loadScheduleView();
-      }
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  function setInputVal(id, val) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.value = val == null || val === "" ? "" : val;
-  }
-
-  function numOrNull(id) {
-    const el = document.getElementById(id);
-    if (!el) return null;
-    const t = (el.value || "").trim().replace(",", ".");
-    if (!t) return null;
-    const n = Number(t);
-    return Number.isFinite(n) ? n : null;
-  }
-
-  function setHealthFormErr(msg) {
-    const el = document.getElementById("healthFormErr");
-    if (el) el.textContent = msg || "";
-    if (msg) setErr(msg);
-    else setErr("");
-  }
-
-  function strOrNull(id) {
-    const el = document.getElementById(id);
-    if (!el) return null;
-    const t = (el.value || "").trim();
-    return t || null;
-  }
-
-  function renderSuggestList(elId, items) {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    el.innerHTML = "";
-    const list = items || [];
-    if (!list.length) {
-      el.classList.add("empty");
-      el.innerHTML = "<li>プロフィールを保存すると提案が出ます。</li>";
-      return;
-    }
-    el.classList.remove("empty");
-    list.forEach((text) => {
-      const li = document.createElement("li");
-      li.textContent = text;
-      el.appendChild(li);
-    });
-  }
-
-  function renderHealthDashboard(d) {
-    if (!d) return;
-    document.getElementById("healthScoreBig").textContent = d.score ?? "—";
-    document.getElementById("healthStatus").textContent = d.status_ja || "—";
-    document.getElementById("healthMessage").textContent = d.message_ja || "";
-    const bmiLine = document.getElementById("healthBmiLine");
-    if (bmiLine) {
-      const bits = [];
-      if (d.bmi) bits.push("BMI " + d.bmi);
-      if (d.bmi_range_ja) bits.push(d.bmi_range_ja);
-      bmiLine.textContent = bits.length ? bits.join(" · ") : "BMI —（年齢・身長・体重を入力）";
-    }
-    const list = document.getElementById("healthBreakdown");
-    if (list) {
-      list.innerHTML = "";
-      (d.breakdown || []).forEach((row) => {
-        const li = document.createElement("li");
-        li.innerHTML =
-          '<span class="k">' +
-          (row.label_ja || row.key) +
-          '</span><span class="n">' +
-          (row.note || "") +
-          '</span><span class="v">' +
-          (row.score ?? "—") +
-          "</span>";
-        list.appendChild(li);
-      });
-    }
-    renderSuggestList("healthGoalSuggest", d.goal_suggestions);
-    renderSuggestList("healthExerciseSuggest", d.exercise_suggestions);
-    const p = d.profile || {};
-    setInputVal("editAge", p.age);
-    setInputVal("editWeight", p.weight_kg);
-    setInputVal("editHeight", p.height_cm);
-    setInputVal("editTargetWeight", p.target_weight_kg);
-    setInputVal("editTargetHeight", p.target_height_cm);
-    setInputVal("editSleepHours", p.sleep_hours);
-    setInputVal("editWakeTime", p.wake_time);
-    setInputVal("editBedtime", p.bedtime);
-    setInputVal("editHobbies", p.hobbies);
-    setInputVal("editSchoolHours", p.school_hours);
-    setInputVal("editStudyHours", p.study_hours);
-    setInputVal("editRelaxHours", p.relax_hours);
-    setInputVal("editExercisePlan", p.exercise_plan);
-  }
-
-  async function loadHealthView() {
-    try {
-      const d = await api("/life/health/dashboard");
-      renderHealthDashboard(d);
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  async function saveHealthMetrics() {
-    const TIME_RE = /^(\d{1,2}):([0-5]\d)$/;
-    function normalizeTime(t) {
-      if (!t) return null;
-      const raw = String(t).trim();
-      // Allow 24:00 as end-of-day bedtime → 00:00
-      if (raw === "24:00") return "00:00";
-      const m = TIME_RE.exec(raw);
-      if (!m) return null;
-      const h = Number(m[1]);
-      if (h > 23) return null;
-      return String(h).padStart(2, "0") + ":" + m[2];
-    }
-    setHealthFormErr("");
-    const wakeRaw = strOrNull("editWakeTime");
-    const bedRaw = strOrNull("editBedtime");
-    const wake = normalizeTime(wakeRaw);
-    const bed = normalizeTime(bedRaw);
-    if (wakeRaw && !wake) {
-      setHealthFormErr("起床は HH:MM（例 07:15）で入力してください");
-      return;
-    }
-    if (bedRaw && !bed) {
-      setHealthFormErr("就寝は HH:MM（例 23:00 / 24:00）で入力してください");
-      return;
-    }
-    const sleepRaw = (document.getElementById("editSleepHours")?.value || "").trim();
-    if (sleepRaw && numOrNull("editSleepHours") == null) {
-      setHealthFormErr("睡眠時間は数字で入力してください（例 7.5 または 7,5）");
-      return;
-    }
-    try {
-      const res = await api("/life/health/profile", {
-        method: "PATCH",
-        body: JSON.stringify({
-          age: numOrNull("editAge"),
-          weight_kg: numOrNull("editWeight"),
-          height_cm: numOrNull("editHeight"),
-          target_weight_kg: numOrNull("editTargetWeight"),
-          target_height_cm: numOrNull("editTargetHeight"),
-          sleep_hours: numOrNull("editSleepHours"),
-          wake_time: wake,
-          bedtime: bed,
-          hobbies: strOrNull("editHobbies"),
-          school_hours: numOrNull("editSchoolHours"),
-          study_hours: numOrNull("editStudyHours"),
-          relax_hours: numOrNull("editRelaxHours"),
-          exercise_plan: strOrNull("editExercisePlan"),
-        }),
-      });
-      renderHealthDashboard(res.dashboard || res);
-      setHealthFormErr("");
-      const healthView = document.getElementById("sub-health");
-      if (healthView) healthView.scrollTo({ top: 0, behavior: "smooth" });
-      const savedHint = document.getElementById("healthSavedHint");
-      if (savedHint) {
-        savedHint.textContent = "保存しました。上の評価を確認してね。";
-        savedHint.classList.add("show");
-        setTimeout(() => savedHint.classList.remove("show"), 3500);
-      }
-      await loadHomeSummary();
-    } catch (e) {
-      setHealthFormErr(e.message);
-    }
-  }
-
-  let mentalSkippedSession = false;
-
-  function showMentalModal(choices) {
-    const overlay = document.getElementById("mentalOverlay");
-    const box = document.getElementById("mentalChoices");
-    if (!overlay || !box) return;
-    box.innerHTML = "";
-    (choices || ["元気", "普通", "疲れ", "落ち込み", "不安"]).forEach((label) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = label;
-      btn.onclick = () => submitMentalStatus(label);
-      box.appendChild(btn);
-    });
-    overlay.classList.add("open");
-    overlay.setAttribute("aria-hidden", "false");
-    sessionStorage.setItem("mentalModalOpen", "1");
-  }
-
-  function hideMentalModal() {
-    const overlay = document.getElementById("mentalOverlay");
-    if (!overlay) return;
-    overlay.classList.remove("open");
-    overlay.setAttribute("aria-hidden", "true");
-    sessionStorage.removeItem("mentalModalOpen");
-  }
-
-  async function submitMentalStatus(status) {
-    try {
-      const res = await api("/life/health/mental", {
-        method: "POST",
-        body: JSON.stringify({ status }),
-      });
-      hideMentalModal();
-      mentalSkippedSession = false;
-      const banner = document.getElementById("mentalRemindBanner");
-      if (banner) banner.classList.remove("open");
-      if (res.dashboard) renderHealthDashboard(res.dashboard);
-      await loadHomeSummary();
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  async function checkMentalCheckin(opts) {
-    const force = !!(opts && opts.force);
-    try {
-      const st = await api("/life/health/mental/status");
-      if (st.needed && (force || !mentalSkippedSession)) {
-        showMentalModal(st.choices);
-      } else if (st.reminder || st.needed) {
-        updateMentalReminderBanner({
-          health: { mental_reminder: !!st.reminder || !!st.needed },
-          pending_notification: st.pending_notification || "LUNAが今日の気分を聞きたいよ",
-        });
-      } else {
-        const banner = document.getElementById("mentalRemindBanner");
-        if (banner) banner.classList.remove("open");
-      }
-    } catch (_) {}
-  }
-
-  function setMoneyFormErr(msg) {
-    const el = document.getElementById("moneyFormErr");
-    if (el) el.textContent = msg || "";
-    if (msg) setErr(msg);
-    else setErr("");
-  }
-
-  function renderMoneyFundInputs(funds, profile) {
-    const box = document.getElementById("moneyFundInputs");
+  function renderNextLesson() {
+    const box = document.getElementById("nextLessonBox");
     if (!box) return;
-    box.innerHTML = "";
-    (funds || []).forEach((f) => {
-      const wrap = document.createElement("div");
-      wrap.className = "money-fund";
-      const curId = "editFund_" + f.key + "_current";
-      const tgtId = "editFund_" + f.key + "_target";
-      const curVal = profile && profile[f.key + "_current"] != null ? profile[f.key + "_current"] : f.current;
-      const tgtVal = profile && profile[f.key + "_target"] != null ? profile[f.key + "_target"] : f.target;
-      wrap.innerHTML =
-        '<div class="top"><span class="name">' +
-        (f.label_ja || f.key) +
-        '</span><span class="hint">' +
-        (f.hint_ja || "") +
-        "</span></div>" +
-        '<div class="money-fund-inputs">' +
-        "<div><label>いま（円）</label><input id=\"" +
-        curId +
-        '" type="number" min="0" step="1000" /></div>' +
-        "<div><label>目標（円）</label><input id=\"" +
-        tgtId +
-        '" type="number" min="0" step="1000" /></div>' +
-        "</div>";
-      box.appendChild(wrap);
-      setInputVal(curId, curVal);
-      setInputVal(tgtId, tgtVal);
-    });
-  }
-
-  function renderMoneyDashboard(d) {
-    if (!d) return;
-    const scoreEl = document.getElementById("moneyScoreBig");
-    if (scoreEl) scoreEl.textContent = d.score ?? "—";
-    const st = document.getElementById("moneyStatus");
-    if (st) st.textContent = d.status_ja || "—";
-    const ageLine = document.getElementById("moneyAgeLine");
-    if (ageLine) ageLine.textContent = d.age_label_ja || "—";
-    const roomLine = document.getElementById("moneyRoomLine");
-    if (roomLine) roomLine.textContent = d.room_note_ja || "—";
-    const msg = document.getElementById("moneyMessage");
-    if (msg) msg.textContent = d.message_ja || "";
-    const rule = document.getElementById("moneyRuleLine");
-    if (rule) rule.textContent = d.rule_ja || "";
-    renderSuggestList("moneyTips", d.tips_ja || []);
-
-    const bars = document.getElementById("moneyFundsBars");
-    if (bars) {
-      bars.innerHTML = "";
-      (d.funds || []).forEach((f) => {
-        const row = document.createElement("div");
-        row.className = "money-fund";
-        row.innerHTML =
-          '<div class="top"><span class="name">' +
-          (f.label_ja || f.key) +
-          '</span><span class="pct">' +
-          (f.pct ?? 0) +
-          "%</span></div>" +
-          '<div class="bar"><span style="width:' +
-          (f.pct ?? 0) +
-          '%"></span></div>' +
-          '<div class="meta">' +
-          fmtYen(f.current) +
-          " / " +
-          fmtYen(f.target) +
-          "</div>";
-        bars.appendChild(row);
-      });
+    const les = journeyStatus.next_lesson;
+    if (!les) {
+      box.innerHTML = '<p class="hint" style="margin:0">次のレッスンはありません。マップのボスに挑戦しよう。</p>';
+      return;
     }
-
-    const p = d.profile || {};
-    setInputVal("editMoneyIncome", p.monthly_income != null ? p.monthly_income : d.monthly_income);
-    setInputVal("editMoneyExpense", p.monthly_expense != null ? p.monthly_expense : d.monthly_expense);
-    setInputVal("editPurchaseName", p.purchase_name || d.purchase_name || "");
-    renderMoneyFundInputs(d.funds || [], p);
-  }
-
-  async function loadMoneyView() {
-    try {
-      const d = await api("/life/money/dashboard");
-      renderMoneyDashboard(d);
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  async function saveMoneyMetrics() {
-    setMoneyFormErr("");
-    const payload = {
-      monthly_income: numOrNull("editMoneyIncome"),
-      monthly_expense: numOrNull("editMoneyExpense"),
-      purchase_name: strOrNull("editPurchaseName"),
-    };
-    ["purchase", "emergency", "reserve", "invest"].forEach((key) => {
-      const curEl = document.getElementById("editFund_" + key + "_current");
-      const tgtEl = document.getElementById("editFund_" + key + "_target");
-      if (curEl) payload[key + "_current"] = numOrNull("editFund_" + key + "_current");
-      if (tgtEl) payload[key + "_target"] = numOrNull("editFund_" + key + "_target");
-    });
-    try {
-      const res = await api("/life/money/profile", {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      });
-      renderMoneyDashboard(res.dashboard || res);
-      setMoneyFormErr("");
-      const moneyView = document.getElementById("sub-money");
-      if (moneyView) moneyView.scrollTo({ top: 0, behavior: "smooth" });
-      const hint = document.getElementById("moneySavedHint");
-      if (hint) {
-        hint.textContent = "保存しました。上の評価を確認してね。";
-        hint.classList.add("show");
-        setTimeout(() => hint.classList.remove("show"), 3500);
-      }
-      await loadHomeSummary();
-    } catch (e) {
-      setMoneyFormErr(e.message);
-    }
+    box.innerHTML =
+      "<div><strong>" +
+      (les.title_ja || les.id) +
+      '</strong><div class="hint">+' +
+      (les.exp || 0) +
+      " EXP</div></div>";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "クリア";
+    btn.onclick = () => completeJourneyLesson(les.id);
+    box.appendChild(btn);
   }
 
   function renderSkills() {
     const grid = document.getElementById("skillGrid");
     if (!grid) return;
-    const lv = stateData.level || 1;
     grid.innerHTML = "";
-    SKILLS.forEach((s, i) => {
-      const locked = i > lv + 1;
+    const skills = journeyStatus.skills || [];
+    if (!skills.length) {
+      grid.innerHTML = '<p class="hint">レッスンをクリアするとスキルが増えます。</p>';
+      return;
+    }
+    const colors = Object.values(SKILL_CLS);
+    skills.forEach((s, i) => {
       const div = document.createElement("div");
       div.className = "skill";
-      div.style.opacity = locked ? ".45" : "1";
       div.innerHTML =
         '<div class="icon" style="background:' +
-        SKILL_CLS[s.cls] +
+        colors[i % colors.length] +
         '">' +
-        s.icon +
-        '</div><strong>' +
-        s.label +
-        '</strong><em style="font-style:normal;color:var(--muted);font-size:.58rem">Lv.' +
-        Math.max(1, Math.min(lv, i + 1)) +
-        "</em>";
+        (s.label_ja || s.id).slice(0, 1) +
+        "</div><strong>" +
+        (s.label_ja || s.id) +
+        "</strong>";
       grid.appendChild(div);
     });
+  }
+
+  function showRewardModal(title, lines, chips) {
+    const modal = document.getElementById("rewardModal");
+    document.getElementById("rewardTitle").textContent = title;
+    document.getElementById("rewardBody").innerHTML = (lines || []).map((x) => "<p>" + x + "</p>").join("");
+    const chipEl = document.getElementById("rewardChips");
+    chipEl.innerHTML = (chips || []).map((c) => '<span class="chip-mini">' + c + "</span>").join("");
+    modal.classList.add("open");
+  }
+
+  async function completeJourneyLesson(lessonId) {
+    try {
+      const res = await api("/journey/lessons/" + encodeURIComponent(lessonId) + "/complete", {
+        method: "POST",
+        body: "{}",
+      });
+      journeyStatus = res.status || journeyStatus;
+      journeyMap = res.map || journeyMap;
+      const chips = [];
+      (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
+      if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
+      if (res.rank) chips.push("進化：" + (res.rank.label_ja || res.rank.id));
+      showRewardModal("レッスン完了！", ["EXP +" + (res.exp_gained || 0), (res.lesson && res.lesson.title_ja) || ""], chips);
+      if (luna) luna.applyEmotion("cheer", 1500);
+      applyJourneyUi();
+      await refreshCore();
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  async function enrichLesson(lessonId) {
+    try {
+      const res = await api("/journey/lessons/" + encodeURIComponent(lessonId) + "/enrich", {
+        method: "POST",
+        body: "{}",
+      });
+      alert(res.detail_ja || "詳細を追加しました。");
+      await loadJourney();
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  async function challengeBoss(bossId, success) {
+    try {
+      const res = await api("/journey/bosses/" + encodeURIComponent(bossId) + "/challenge", {
+        method: "POST",
+        body: JSON.stringify({ success: !!success }),
+      });
+      if (res.status) journeyStatus = res.status;
+      if (res.map) journeyMap = res.map;
+      const chips = [];
+      (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
+      if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
+      showRewardModal(res.success ? "ボス討伐！" : "退却…", [res.message_ja || ""], chips);
+      if (res.success && luna) luna.applyEmotion("cheer", 1500);
+      applyJourneyUi();
+      await refreshCore();
+    } catch (e) {
+      setErr(e.message);
+    }
   }
 
   function renderMap() {
     const path = document.getElementById("mapPath");
     if (!path) return;
     path.innerHTML = "";
-    const list = regions.length
-      ? regions
-      : [
-          { label_ja: "始まりの平原", unlocked: true, current: true },
-          { label_ja: "学習の森", unlocked: false },
-          { label_ja: "試練の丘", unlocked: false },
-          { label_ja: "中間の峡谷", unlocked: false },
-          { label_ja: "期末の城", unlocked: false },
-        ];
+    const list = (journeyMap.stages || []).length
+      ? journeyMap.stages
+      : regions.length
+        ? regions
+        : [{ label_ja: "始まりの平原", unlocked: true, current: true }];
     list.forEach((r, i) => {
       const pos = MAP_POSITIONS[i] || MAP_POSITIONS[MAP_POSITIONS.length - 1];
       const node = document.createElement("div");
-      node.className = "map-node" + (r.current ? " current" : "") + (!r.unlocked ? " locked" : "");
+      const bossHere = (journeyMap.bosses || []).some((b) => b.stage_id === r.id && !b.cleared);
+      node.className =
+        "map-node" +
+        (r.current ? " current" : "") +
+        (!r.unlocked ? " locked" : "") +
+        (r.cleared ? " cleared" : "") +
+        (bossHere ? " boss" : "");
       node.style.left = pos.left;
       node.style.top = pos.top;
-      node.innerHTML = '<div class="dot"></div>' + (r.label_ja || r.id);
+      node.innerHTML =
+        '<div class="dot"></div>' +
+        (r.label_ja || r.id) +
+        (r.progress ? '<div class="hint" style="color:#fff;opacity:.85">' + r.progress + "</div>" : "");
       path.appendChild(node);
     });
     const cur = list.find((r) => r.current) || list[0];
     const lbl = document.getElementById("mapRegionLabel");
-    if (lbl) lbl.textContent = "現在のエリア：" + (cur ? cur.label_ja : "始まりの平原");
+    if (lbl) {
+      lbl.textContent =
+        "現在：" +
+        (cur ? cur.label_ja : "始まりの平原") +
+        (journeyStatus.career_title_ja ? "（" + journeyStatus.career_title_ja + "）" : "");
+    }
   }
 
-  function renderQuests() {
+  function renderLessons() {
     const list = document.getElementById("questList");
     if (!list) return;
     list.innerHTML = "";
-    const active = (rpgData.active_quests || []).slice(0, 5);
-    const items = active.length
-      ? active.map((q) => ({
-          id: q.id,
-          title: q.title,
-          quest_type: q.quest_type || "daily_study",
-          subject: q.subject,
-          icon: "📘",
-          color: SKILL_CLS.blue,
-          active: true,
-        }))
-      : DEFAULT_QUESTS.map((q) => Object.assign({}, q, { active: false }));
-
-    items.forEach((q) => {
+    const lessons = (journeyMap.lessons || []).filter((l) => (l.boss_type || "none") === "none");
+    if (!lessons.length) {
+      list.innerHTML = '<p class="hint">進路を選ぶとレッスンが表示されます。</p>';
+      return;
+    }
+    lessons.forEach((les) => {
       const row = document.createElement("div");
-      row.className = "quest-item";
+      row.className = "lesson-row" + (les.completed ? " done" : "");
+      const detail = les.detail_ja
+        ? '<div class="hint">' + les.detail_ja.slice(0, 80) + (les.detail_ja.length > 80 ? "…" : "") + "</div>"
+        : "";
       row.innerHTML =
-        '<div class="quest-icon" style="background:' +
-        q.color +
-        '">' +
-        q.icon +
-        '</div><div class="quest-text"><strong>' +
-        q.title +
-        '</strong><span>+' +
-        (q.quest_type === "daily_study" ? "10" : "12") +
-        ' EXP</span></div><div class="quest-actions"></div>';
-      const actions = row.querySelector(".quest-actions");
-      const btn = document.createElement("button");
-      btn.className = q.active ? "done" : "go";
-      btn.textContent = q.active ? "達成" : "開始";
-      btn.onclick = () => (q.active ? completeQuest(q) : startQuest(q));
-      actions.appendChild(btn);
+        "<div><strong>" +
+        (les.title_ja || les.id) +
+        '</strong><div class="hint">+' +
+        (les.exp || 0) +
+        " EXP" +
+        (les.completed ? " ・完了" : les.available ? "" : " ・ロック") +
+        "</div>" +
+        detail +
+        '</div><div class="actions"></div>';
+      const actions = row.querySelector(".actions");
+      const enrichBtn = document.createElement("button");
+      enrichBtn.type = "button";
+      enrichBtn.className = "ghost";
+      enrichBtn.textContent = "詳しく";
+      enrichBtn.onclick = () => enrichLesson(les.id);
+      actions.appendChild(enrichBtn);
+      if (!les.completed && les.available) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "クリア";
+        btn.onclick = () => completeJourneyLesson(les.id);
+        actions.appendChild(btn);
+      }
       list.appendChild(row);
     });
   }
 
-  async function startQuest(q) {
-    try {
-      await api("/rpg/quest/start", {
-        method: "POST",
-        body: JSON.stringify({ title: q.title, quest_type: q.quest_type, subject: q.subject }),
-      });
-      await refreshCore();
-      renderQuests();
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  async function completeQuest(q) {
-    try {
-      await api("/rpg/activity/complete", {
-        method: "POST",
-        body: JSON.stringify({
-          title: q.title,
-          quest_type: q.quest_type,
-          subject: q.subject,
-          quest_id: q.id,
-        }),
-      });
-      if (luna) luna.applyEmotion("cheer", 1500);
-      await refreshCore();
-      renderQuests();
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  async function loadCareerTab() {
-    try {
-      const [port, suggest] = await Promise.all([
-        api("/rpg/portfolio"),
-        api("/career/suggest", {
-          method: "POST",
-          body: JSON.stringify({ personality_text: "", hobbies_text: "", save: false, top_k: 3 }),
-        }),
-      ]);
-      renderPortfolioStats(port);
-      const story = document.getElementById("storyBox");
-      if (story) story.textContent = port.story_ja || "冒険は始まったばかりです。";
-      renderRoutes(suggest.suggestions || []);
-    } catch (_) {
-      const story = document.getElementById("storyBox");
-      if (story) story.textContent = "LUNAと話してから、探索ルートを見てみましょう。";
-    }
-  }
-
-  function renderPortfolioStats(port) {
-    const row = document.getElementById("portfolioStats");
-    if (!row) return;
-    const s = port.summary || {};
-    row.innerHTML =
-      '<div class="stat-box" style="background:linear-gradient(135deg,#c9a227,#8b6914)"><span>クエスト</span><strong>' +
-      (s.quests_completed || 0) +
-      '</strong></div><div class="stat-box" style="background:linear-gradient(135deg,#497cff,#31d2ff)"><span>装備</span><strong>' +
-      (s.tests_equipment || 0) +
-      '</strong></div><div class="stat-box" style="background:linear-gradient(135deg,#7a5cff,#b47aff)"><span>ボス</span><strong>' +
-      (s.bosses_cleared || 0) +
-      "</strong></div>";
-  }
-
-  function renderRoutes(suggestions) {
-    const el = document.getElementById("routeList");
-    if (!el) return;
-    el.innerHTML = "";
-    if (!suggestions.length) {
-      el.innerHTML = '<p class="hint">LUNAに話すと、進路の候補が出てきます。</p>';
+  function renderBosses() {
+    const list = document.getElementById("bossList");
+    if (!list) return;
+    list.innerHTML = "";
+    const bosses = journeyMap.bosses || [];
+    if (!bosses.length) {
+      list.innerHTML = '<p class="hint">ボスはマップ進行で解放されます。</p>';
       return;
     }
-    suggestions.slice(0, 3).forEach((s, i) => {
-      const card = document.createElement("div");
-      card.className = "route-card " + ROUTE_COLORS[i % ROUTE_COLORS.length];
-      card.innerHTML =
-        "<h4>" +
-        (s.label_ja || s.cluster_id) +
-        "</h4><p>" +
-        (s.reason_ja || "") +
-        '</p><button type="button">このルートを選ぶ</button>';
-      card.querySelector("button").onclick = () => selectRoute(s);
-      el.appendChild(card);
+    bosses.forEach((b) => {
+      const row = document.createElement("div");
+      row.className = "boss-row";
+      row.innerHTML =
+        "<div><strong>" +
+        (b.title_ja || b.id) +
+        '</strong><div class="hint">' +
+        (BOSS_LABEL[b.boss_type] || b.boss_type) +
+        " ・ " +
+        (b.cleared ? "討伐済" : b.available ? "挑戦可" : b.requirement_ja || "ロック") +
+        '</div></div><div class="actions"></div>';
+      const actions = row.querySelector(".actions");
+      if (!b.cleared && b.available) {
+        const win = document.createElement("button");
+        win.type = "button";
+        win.textContent = "挑戦";
+        win.onclick = () => challengeBoss(b.id, true);
+        const lose = document.createElement("button");
+        lose.type = "button";
+        lose.className = "ghost";
+        lose.textContent = "退却";
+        lose.onclick = () => challengeBoss(b.id, false);
+        actions.appendChild(win);
+        actions.appendChild(lose);
+      }
+      list.appendChild(row);
     });
   }
 
-  async function selectRoute(s) {
-    try {
-      await api("/career/select", {
-        method: "POST",
-        body: JSON.stringify({
-          cluster_id: s.cluster_id,
-          decided_career: (s.example_jobs && s.example_jobs[0]) || null,
-          rpg_class: s.rpg_class,
-        }),
-      });
-      if (s.rpg_class) {
-        selectedClass = s.rpg_class;
-        localStorage.setItem("luna_class", s.rpg_class);
+  function renderCareerPortfolio() {
+    const row = document.getElementById("portfolioStats");
+    if (row) {
+      row.innerHTML =
+        '<div class="stat-box" style="background:linear-gradient(135deg,#c9a227,#8b6914)"><span>レッスン</span><strong>' +
+        (journeyStatus.completed_count || 0) +
+        '</strong></div><div class="stat-box" style="background:linear-gradient(135deg,#497cff,#31d2ff)"><span>装備</span><strong>' +
+        ((journeyStatus.inventory || []).length || 0) +
+        '</strong></div><div class="stat-box" style="background:linear-gradient(135deg,#7a5cff,#b47aff)"><span>ボス</span><strong>' +
+        ((journeyStatus.boss_clears || []).length || 0) +
+        "</strong></div>";
+    }
+    const route = document.getElementById("routeList");
+    if (route) {
+      if (!journeyStatus.selected) {
+        route.innerHTML = '<p class="hint">まだ進路を選んでいません。</p>';
+      } else {
+        route.innerHTML =
+          "<p><strong>" +
+          (journeyStatus.career_title_ja || "") +
+          '</strong></p><p class="hint">クラス：' +
+          (journeyStatus.class_ja || "") +
+          " ／ 進化：" +
+          (journeyStatus.rank_ja || "") +
+          '</p><div style="margin-top:.4rem">' +
+          (journeyStatus.skills || [])
+            .map((s) => '<span class="chip-mini">' + (s.label_ja || s.id) + "</span>")
+            .join("") +
+          "</div>";
       }
-      await refreshCore();
-      renderClassPicker();
-      loadCareerTab();
-    } catch (e) {
-      setErr(e.message);
+    }
+    const gear = document.getElementById("gearList");
+    if (gear) {
+      const inv = journeyStatus.inventory || [];
+      if (!inv.length) gear.innerHTML = '<p class="hint">レッスン報酬で装備が増えます。</p>';
+      else {
+        gear.innerHTML = inv
+          .map((g) => '<span class="chip-mini">' + (g.label_ja || g.id) + "（" + (g.slot || "") + "）</span>")
+          .join("");
+      }
+    }
+    const story = document.getElementById("storyBox");
+    if (story) {
+      story.textContent = journeyStatus.selected
+        ? (journeyStatus.career_title_ja || "進路") +
+          "への旅。ランク「" +
+          (journeyStatus.rank_ja || "見習い") +
+          "」。レッスンを重ねて最終ボスへ挑もう。"
+        : "クラスと職業を選んで旅を始めよう。";
     }
   }
 
@@ -1511,7 +947,27 @@
         if (luna) luna.stopLipSync();
       }
     };
-    document.getElementById("refreshCareerBtn").onclick = () => loadCareerTab();
+    document.getElementById("refreshCareerBtn").onclick = () => loadJourney().catch((e) => setErr(e.message));
+    const backClass = document.getElementById("backToClassBtn");
+    if (backClass) {
+      backClass.onclick = () => {
+        onboardStep = "class";
+        applyJourneyUi();
+      };
+    }
+    const resetJ = document.getElementById("resetJourneyBtn");
+    if (resetJ) {
+      resetJ.onclick = () => {
+        if (!confirm("クラスと職業を選び直しますか？（進行はリセットされます）")) return;
+        reselectJourney = true;
+        onboardStep = "class";
+        applyJourneyUi();
+      };
+    }
+    const rewardClose = document.getElementById("rewardCloseBtn");
+    if (rewardClose) {
+      rewardClose.onclick = () => document.getElementById("rewardModal").classList.remove("open");
+    }
     document.getElementById("logoutBtn").onclick = () => {
       LunaAuth.clearToken();
       LunaAuth.goLogin("/app");
@@ -1522,11 +978,12 @@
 
   async function refreshCore() {
     try {
-      const [state, rpg, tax, brain] = await Promise.all([
+      const [state, rpg, tax, brain, jst] = await Promise.all([
         api("/state/me"),
         api("/rpg/me"),
         api("/career/taxonomy"),
         api("/brain/me"),
+        api("/journey/status").catch(() => null),
       ]);
       stateData = {
         level: state.current_level || rpg.level || 1,
@@ -1540,13 +997,16 @@
       (tax.rpg_classes || []).forEach((c) => {
         classLabels[c.id] = c.label_ja;
       });
-      if (rpgData.class_id) selectedClass = rpgData.class_id;
+      if (jst) {
+        journeyStatus = jst;
+        if (jst.class_id) selectedClass = jst.class_id;
+      } else if (rpgData.class_id) {
+        selectedClass = rpgData.class_id;
+      }
       const modePill = document.getElementById("modePill");
       if (modePill) modePill.textContent = brain.mode || "—";
-      renderHomeHeader();
-      renderSkills();
-      renderMap();
-      renderQuests();
+      if (currentTab === "fsq") await loadJourney();
+      else renderHomeHeader();
       await loadHomeSummary();
     } catch (e) {
       setErr(e.message);

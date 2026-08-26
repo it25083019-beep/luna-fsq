@@ -218,3 +218,16 @@ class MoneyProfileUpdate(BaseModel):
     invest_current: Optional[int] = Field(default=None, ge=0)
     invest_target: Optional[int] = Field(default=None, ge=0)
     note: Optional[str] = Field(default=None, max_length=2000)
+
+
+class JourneySelectRequest(BaseModel):
+    class_id: str = Field(min_length=1, max_length=32)
+    career_id: str = Field(min_length=1, max_length=64)
+
+
+class JourneyBossChallenge(BaseModel):
+    success: bool = True
+
+
+class JourneyLessonEnrich(BaseModel):
+    detail_ja: Optional[str] = Field(default=None, max_length=1200)

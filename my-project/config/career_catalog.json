@@ -1,0 +1,124 @@
+{
+  "version": "1.0",
+  "classes": [
+    {"id": "swordsman", "label_ja": "剣士", "blurb_ja": "近接・バランス型。粘り強く基礎を積む冒険者向き。"},
+    {"id": "mage", "label_ja": "魔法使い", "blurb_ja": "知識と分析で道を開くタイプ。学習量が多い職に相性◎。"},
+    {"id": "archer", "label_ja": "弓使い", "blurb_ja": "集中と精度。観察・デザイン・精密作業向き。"}
+  ],
+  "ranks": [
+    {"id": "novice", "label_ja": "見習い", "min_lessons": 0, "min_exp": 0},
+    {"id": "intermediate", "label_ja": "中級", "min_lessons": 4, "min_exp": 80},
+    {"id": "veteran", "label_ja": "熟練", "min_lessons": 9, "min_exp": 220},
+    {"id": "saint", "label_ja": "聖級", "min_lessons": 14, "min_exp": 400}
+  ],
+  "careers": [
+    {
+      "id": "software_engineer",
+      "title_ja": "ソフトウェアエンジニア",
+      "cluster_id": "it_engineering",
+      "tags": ["論理", "問題解決", "コード"],
+      "short_blurb": "アプリや仕組みを作り、社会の課題を技術で解く職。",
+      "recommended_class": ["mage", "swordsman"],
+      "full_curriculum": true
+    },
+    {
+      "id": "ui_designer",
+      "title_ja": "UI/UXデザイナー",
+      "cluster_id": "design_creative",
+      "tags": ["創造", "感性", "表現"],
+      "short_blurb": "使いやすさと美しさで体験をつくる職。",
+      "recommended_class": ["archer", "mage"],
+      "full_curriculum": true
+    },
+    {
+      "id": "nurse",
+      "title_ja": "看護師",
+      "cluster_id": "care_helping",
+      "tags": ["共感", "支える", "観察"],
+      "short_blurb": "人の健康を支え、現場で判断とケアを行う職。",
+      "recommended_class": ["swordsman", "archer"],
+      "full_curriculum": true
+    },
+    {
+      "id": "teacher",
+      "title_ja": "教師・教育者",
+      "cluster_id": "education",
+      "tags": ["教える", "伝える", "成長"],
+      "short_blurb": "学びを設計し、人の成長に伴走する職。",
+      "recommended_class": ["mage", "swordsman"],
+      "full_curriculum": true
+    },
+    {
+      "id": "data_analyst",
+      "title_ja": "データアナリスト",
+      "cluster_id": "it_engineering",
+      "tags": ["分析", "データ", "論理"],
+      "short_blurb": "数字から意味を読み取り、意思決定を支える職。",
+      "recommended_class": ["mage"],
+      "full_curriculum": false
+    },
+    {
+      "id": "game_creator",
+      "title_ja": "ゲームクリエイター",
+      "cluster_id": "design_creative",
+      "tags": ["創造", "物語", "企画"],
+      "short_blurb": "遊びの体験を企画・制作する職。",
+      "recommended_class": ["archer", "mage"],
+      "full_curriculum": false
+    },
+    {
+      "id": "architect",
+      "title_ja": "建築士",
+      "cluster_id": "hands_on_making",
+      "tags": ["空間", "設計", "ものづくり"],
+      "short_blurb": "住まいや街の空間を設計する職。",
+      "recommended_class": ["archer", "swordsman"],
+      "full_curriculum": false
+    },
+    {
+      "id": "marketer",
+      "title_ja": "マーケター",
+      "cluster_id": "business_social",
+      "tags": ["伝える", "戦略", "SNS"],
+      "short_blurb": "価値を届け、人の行動を動かす職。",
+      "recommended_class": ["archer", "mage"],
+      "full_curriculum": false
+    },
+    {
+      "id": "researcher",
+      "title_ja": "研究者",
+      "cluster_id": "science_research",
+      "tags": ["探究", "実験", "論理"],
+      "short_blurb": "未知を調べ、新しい知識を生み出す職。",
+      "recommended_class": ["mage"],
+      "full_curriculum": false
+    },
+    {
+      "id": "chef",
+      "title_ja": "料理人",
+      "cluster_id": "hands_on_making",
+      "tags": ["手仕事", "感覚", "サービス"],
+      "short_blurb": "食で人を喜ばせる職。",
+      "recommended_class": ["swordsman", "archer"],
+      "full_curriculum": false
+    },
+    {
+      "id": "pilot",
+      "title_ja": "パイロット",
+      "cluster_id": "precision_ops",
+      "tags": ["集中", "責任", "精密"],
+      "short_blurb": "安全を最優先に空を運ぶ職。",
+      "recommended_class": ["archer", "swordsman"],
+      "full_curriculum": false
+    },
+    {
+      "id": "entrepreneur",
+      "title_ja": "起業家",
+      "cluster_id": "business_social",
+      "tags": ["挑戦", "企画", "リーダー"],
+      "short_blurb": "課題を事業にして社会に届ける職。",
+      "recommended_class": ["swordsman", "mage"],
+      "full_curriculum": false
+    }
+  ]
+}

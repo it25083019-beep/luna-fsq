@@ -124,6 +124,35 @@
     .map-node .dot{width:14px;height:14px;border-radius:50%;background:#fff;margin:0 auto .2rem;border:2px solid var(--amber)}
     .map-node.locked .dot{background:#888;opacity:.6}
     .map-node.current .dot{box-shadow:0 0 0 4px rgba(255,200,87,.5);background:var(--amber)}
+    .map-node.cleared .dot{background:#6de8b8;border-color:#1bb874}
+    .map-node.boss .dot{background:#ff7a38;border-color:#c94a10}
+    .journey-onboard{margin:.65rem 0}
+    .career-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+    .career-pick{border:1px solid #e2e5ff;background:#fff;border-radius:14px;padding:.65rem;text-align:left;cursor:pointer}
+    .career-pick strong{display:block;font-size:.78rem;margin-bottom:.2rem}
+    .career-pick span{font-size:.62rem;color:var(--muted);line-height:1.35}
+    .career-pick .tag{display:inline-block;margin-top:.35rem;font-size:.55rem;font-weight:800;color:var(--lilac-deep);background:#eee8ff;padding:.15rem .4rem;border-radius:999px}
+    .career-pick.stub{opacity:.72}
+    .hero-avatar{position:relative;width:88px;height:88px;border-radius:22px;overflow:hidden;background:rgba(255,255,255,.18);flex-shrink:0}
+    .hero-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+    .hero-avatar.rank-intermediate{box-shadow:0 0 0 3px rgba(255,200,87,.55)}
+    .hero-avatar.rank-veteran{box-shadow:0 0 0 3px rgba(120,200,255,.7)}
+    .hero-avatar.rank-saint{box-shadow:0 0 12px 4px rgba(255,230,120,.85)}
+    .hero-avatar.gear-weapon-sword1::after,.hero-avatar.gear-weapon-pen::after,.hero-avatar.gear-weapon-brush::after{content:"";position:absolute;right:4px;bottom:8px;width:10px;height:28px;background:linear-gradient(#fff,#c9a227);border-radius:2px;opacity:.9}
+    .hero-avatar.gear-armor-hoodie::before,.hero-avatar.gear-armor-cloak::before{content:"";position:absolute;inset:auto 8% 0;height:28%;background:rgba(40,30,90,.35)}
+    .next-lesson{display:flex;gap:.55rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .lesson-row,.boss-row{display:flex;gap:.5rem;align-items:flex-start;padding:.55rem 0;border-bottom:1px solid #ecefff}
+    .lesson-row:last-child,.boss-row:last-child{border-bottom:none}
+    .lesson-row .actions,.boss-row .actions{display:flex;flex-direction:column;gap:.25rem;margin-left:auto}
+    .lesson-row button,.boss-row button,.reward-modal button{border:none;border-radius:999px;padding:.35rem .7rem;font-size:.68rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .lesson-row button.ghost,.boss-row button.ghost{background:#eef0ff;color:var(--lilac-deep)}
+    .lesson-row.done{opacity:.55}
+    .reward-modal{position:fixed;inset:0;background:rgba(20,16,48,.55);display:none;align-items:center;justify-content:center;z-index:80;padding:1rem}
+    .reward-modal.open{display:flex}
+    .reward-card{background:#fff;border-radius:18px;padding:1.1rem;max-width:340px;width:100%;box-shadow:0 18px 40px rgba(20,16,48,.3)}
+    .reward-card h3{margin:0 0 .4rem;font-size:1rem}
+    .reward-card p{margin:.25rem 0;font-size:.78rem;color:var(--muted)}
+    .chip-mini{display:inline-block;margin:.15rem .2rem 0 0;padding:.2rem .45rem;border-radius:999px;background:#f0ecff;font-size:.62rem;font-weight:700}
     .quest-item{display:flex;align-items:center;gap:.55rem;padding:.55rem 0;border-bottom:1px solid #eceeff}
     .quest-item:last-child{border-bottom:none}
     .quest-icon{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:#fff;font-size:.85rem;flex-shrink:0}
@@ -523,12 +552,26 @@
       <section id="tab-fsq" class="tab-panel">
         <div class="fsq-banner">
           <h2>⚔️ Future Skill Quest</h2>
-          <p>学習をRPG化するサブモード（メインはLUNAチャット）</p>
+          <p>クラスと職業を選び、レッスンで成長するキャリア旅</p>
         </div>
-        <div class="fsq-subnav">
+        <div class="fsq-subnav" id="fsqSubnav">
           <button type="button" class="fsq-sub active" data-fsq="home">ホーム</button>
           <button type="button" class="fsq-sub" data-fsq="map">マップ</button>
           <button type="button" class="fsq-sub" data-fsq="career">進路</button>
+        </div>
+        <div id="fsq-onboard" class="fsq-section" style="display:none">
+          <div class="content" style="padding-top:.65rem">
+            <div class="card journey-onboard" id="onboardClassStep">
+              <div class="section-title"><span>① クラスを選ぶ</span></div>
+              <p class="hint" style="margin:0 0 .5rem">剣士 / 魔法使い / 弓使い</p>
+              <div class="classes" id="classPicker"></div>
+            </div>
+            <div class="card journey-onboard" id="onboardCareerStep" style="display:none">
+              <div class="section-title"><span>② 将来の職業を選ぶ</span><button type="button" id="backToClassBtn" class="hint" style="border:none;background:none;cursor:pointer;color:var(--lilac)">← クラス</button></div>
+              <p class="hint" style="margin:0 0 .5rem">カリキュラム付きの職業から始めるのがおすすめ</p>
+              <div class="career-grid" id="careerPicker"></div>
+            </div>
+          </div>
         </div>
         <div id="fsq-home" class="fsq-section active">
           <div class="content" style="padding-top:.65rem">
@@ -543,15 +586,15 @@
                     <div class="exp-bar"><span id="homeExpBar"></span></div>
                   </div>
                 </div>
-                <div class="char-thumb"><img src="/static/live2d/luna-expressions/luna-happy.png" alt="" /></div>
+                <div class="hero-avatar" id="homeAvatarWrap"><img id="homeAvatarImg" src="/static/live2d/luna-expressions/luna-happy.png" alt="" /></div>
               </div>
             </div>
             <div class="card">
-              <div class="section-title"><span>🛡️ クラス選択</span></div>
-              <div class="classes" id="classPicker"></div>
+              <div class="section-title"><span>📘 次のレッスン</span></div>
+              <div class="next-lesson" id="nextLessonBox"><p class="hint" style="margin:0">進路を選ぶとレッスンが表示されます。</p></div>
             </div>
             <div class="card">
-              <div class="section-title"><span>🌳 スキル</span></div>
+              <div class="section-title"><span>🌳 習得スキル</span></div>
               <div class="skill-grid" id="skillGrid"></div>
             </div>
           </div>
@@ -561,8 +604,12 @@
             <p class="hint" id="mapRegionLabel" style="margin:0 0 .5rem">現在：始まりの平原</p>
             <div class="map-strip"><div class="map-path" id="mapPath"></div></div>
             <div class="card">
-              <div class="section-title"><span>✅ 今日のクエスト</span></div>
+              <div class="section-title"><span>✅ レッスン</span></div>
               <div id="questList"></div>
+            </div>
+            <div class="card">
+              <div class="section-title"><span>👹 ボス</span></div>
+              <div id="bossList"><p class="hint">ボスはマップ進行で解放されます。</p></div>
             </div>
           </div>
         </div>
@@ -570,16 +617,29 @@
           <div class="content" style="padding-top:.65rem">
             <div class="stats-row" id="portfolioStats"></div>
             <div class="card">
-              <div class="section-title"><span>🧭 探索ルート</span><button type="button" id="refreshCareerBtn" class="hint" style="border:none;background:none;cursor:pointer;color:var(--lilac)">更新</button></div>
+              <div class="section-title"><span>🧭 選んだ進路</span><button type="button" id="refreshCareerBtn" class="hint" style="border:none;background:none;cursor:pointer;color:var(--lilac)">更新</button></div>
               <div id="routeList"></div>
             </div>
             <div class="card">
-              <div class="section-title"><span>📜 冒険のあらすじ</span></div>
+              <div class="section-title"><span>🎒 装備・インベントリ</span></div>
+              <div id="gearList"><p class="hint">レッスン報酬で装備が増えます。</p></div>
+            </div>
+            <div class="card">
+              <div class="section-title"><span>📜 冒険メモ</span></div>
               <div class="story-box" id="storyBox">…</div>
             </div>
+            <button type="button" id="resetJourneyBtn" class="hint" style="margin:.5rem 0 0;border:1px solid #dde1ff;background:#fff;border-radius:999px;padding:.45rem .9rem;cursor:pointer;color:var(--lilac-deep);font-weight:700">クラス／職業を選び直す</button>
           </div>
         </div>
       </section>
+      <div id="rewardModal" class="reward-modal" role="dialog" aria-modal="true">
+        <div class="reward-card">
+          <h3 id="rewardTitle">レッスン完了！</h3>
+          <p id="rewardBody"></p>
+          <div id="rewardChips" style="margin:.5rem 0 .8rem"></div>
+          <button type="button" id="rewardCloseBtn">つづける</button>
+        </div>
+      </div>
 
       <!-- MENU -->
       <section id="tab-mypage" class="tab-panel">
