@@ -389,8 +389,8 @@
     if (dateInput) dateInput.value = nextIso;
     renderCalendar();
     renderDayEvents();
-    // Refresh expansion around the browsed month.
-    loadScheduleView({ preserveCursor: true });
+    // Refresh expansion around the browsed month (skip home summary — keeps UI snappy).
+    loadScheduleView({ preserveCursor: true, skipHome: true });
   }
 
   function renderCalendar() {
@@ -498,6 +498,7 @@
 
   async function loadScheduleView(opts) {
     const preserveCursor = !!(opts && opts.preserveCursor);
+    const skipHome = !!(opts && opts.skipHome);
     try {
       const focus = selectedDate || document.getElementById("addDate")?.value || todayIso();
       const data = await api("/schedule/events?date=" + encodeURIComponent(focus));
@@ -511,7 +512,7 @@
       document.getElementById("addDate").value = selectedDate;
       renderCalendar();
       renderDayEvents();
-      await loadHomeSummary();
+      if (!skipHome) await loadHomeSummary();
     } catch (e) {
       setErr(e.message);
     }

@@ -140,6 +140,7 @@ def save_user_brain(public_id: str, data: Dict[str, Any], db: Optional[Session] 
             session.add(user)
             session.flush()
         payload = dict(data)
+        payload.pop("_schedule_dirty", None)
         payload["user_id"] = public_id
         raw = json.dumps(payload, ensure_ascii=False)
         if user.brain:

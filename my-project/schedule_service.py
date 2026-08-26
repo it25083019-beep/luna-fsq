@@ -76,6 +76,10 @@ def _existing_keys(events: List[Dict[str, Any]]) -> Set[Tuple[str, str]]:
     return {(e.get("date", ""), e.get("title", "")) for e in events}
 
 
+def _mark_schedule_dirty(user: Dict[str, Any]) -> None:
+    user["_schedule_dirty"] = True
+
+
 def _occupied_recurrence_dates(events: List[Dict[str, Any]]) -> Set[Tuple[str, str]]:
     """(recurrence_id, date) already covered by a stored exception/event."""
     out: Set[Tuple[str, str]] = set()
@@ -115,6 +119,7 @@ def _purge_legacy_recurring_seeds(user: Dict[str, Any]) -> None:
     if changed:
         user["life_modules"]["schedule"]["structured"]["events"] = kept
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+        _mark_schedule_dirty(user)
 
 
 def _title_norm(title: Optional[str]) -> str:
@@ -189,6 +194,7 @@ def _collapse_duplicate_recurring_series(user: Dict[str, Any]) -> None:
 
     if changed:
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+        _mark_schedule_dirty(user)
 
     active_templates = [t for t in templates if t.get("id") and t.get("active", True)]
     templates_by_id = {t.get("id"): t for t in active_templates}
@@ -239,6 +245,7 @@ def _collapse_duplicate_recurring_series(user: Dict[str, Any]) -> None:
     if ev_changed:
         user["life_modules"]["schedule"]["structured"]["events"] = kept_events
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+        _mark_schedule_dirty(user)
 
 
 def _cancel_template_date(user: Dict[str, Any], tpl_id: str, event_date: str) -> None:
@@ -255,18 +262,17 @@ def expand_recurring_templates(
     user: Dict[str, Any],
     *,
     today: Optional[date] = None,
-    horizon_years: int = 10,
-    lookback_days: int = 400,
+    ahead_days: int = 400,
+    lookback_days: int = 93,
 ) -> List[Dict[str, Any]]:
     """Materialize recurring instances around a focus day.
 
-    Templates themselves are permanent; we only generate a window of concrete
-    dates for the calendar. The window is long (default 10 years ahead) so
-    browsing far months does not look like the series 'stopped'.
+    Templates are permanent. We only generate a sliding window around the
+    browsed date so the calendar feels continuous without freezing the app
+    on multi-year payloads.
     """
     focus = today or date.today()
-    # Cover through end of (focus_year + horizon_years) so far months keep dots.
-    end = date(focus.year + max(horizon_years, 1), 12, 31)
+    end = focus + timedelta(days=max(ahead_days, 31))
     stored = _events_store(user)
     existing = _existing_keys(stored)
     occupied = _occupied_recurrence_dates(stored)
@@ -286,7 +292,11 @@ def expand_recurring_templates(
 
         horizon_start = focus - timedelta(days=lookback_days)
         cursor = max(start, horizon_start)
-        while cursor <= end:
+        # Safety cap: never generate more than ~3 years of weekly ticks per template.
+        guard = 0
+        guard_max = 2000
+        while cursor <= end and guard < guard_max:
+            guard += 1
             match = False
             if recurrence == "monthly":
                 dom = int(tpl.get("day_of_month") or start.day)
@@ -380,15 +390,24 @@ def _all_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> List[
     if len(deduped) != len(stored):
         user["life_modules"]["schedule"]["structured"]["events"] = deduped
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+        _mark_schedule_dirty(user)
         stored = deduped
-    today = date.today()
+    focus = date.today()
     if on_date:
         try:
-            today = _parse_date(on_date)
+            focus = _parse_date(on_date)
         except ValueError:
             pass
-    generated = expand_recurring_templates(user, today=today)
-    merged = stored + generated
+    generated = expand_recurring_templates(user, today=focus)
+    # Keep payload small: only return stored + generated near the focus window.
+    window_start = (focus - timedelta(days=93)).isoformat()
+    window_end = (focus + timedelta(days=400)).isoformat()
+    near_stored = [
+        e
+        for e in stored
+        if not e.get("date") or (window_start <= e.get("date", "") <= window_end)
+    ]
+    merged = near_stored + generated
     merged.sort(key=lambda e: (e.get("date", ""), e.get("time") or ""))
     return merged
 

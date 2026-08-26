@@ -517,8 +517,9 @@ def get_home_summary(current: User = Depends(get_current_user)):
 def schedule_list(date: Optional[str] = None, current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
     result = list_events(brain, on_date=date)
-    # Persist cleanup of legacy recurring first-day seeds.
-    save_user_brain(current.public_id, brain)
+    # Only persist when cleanup mutated schedule data (avoid lag on every open).
+    if brain.pop("_schedule_dirty", False):
+        save_user_brain(current.public_id, brain)
     return result
 
 

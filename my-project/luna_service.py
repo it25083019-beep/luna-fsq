@@ -198,6 +198,8 @@ def load_user_brain(user_id: str) -> Dict[str, Any]:
 
 
 def save_user_brain(user_id: str, brain_data: Dict[str, Any]) -> None:
+    # Ephemeral runtime flags must never be persisted.
+    brain_data.pop("_schedule_dirty", None)
     if os.getenv("LUNA_USE_JSON_FALLBACK") == "1":
         path = os.path.join(USERS_DIR, f"{user_id}.json")
         brain_data["user_id"] = user_id
