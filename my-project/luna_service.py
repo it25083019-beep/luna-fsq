@@ -723,6 +723,36 @@ def start_user_greeting(user_id: str) -> str:
     return ai_reply
 
 
+def safe_chat_start_reply(user_id: str, message: str = "") -> str:
+    """Always return a speak-first greeting; never raise for normal UX path."""
+    try:
+        if is_admin(user_id):
+            try:
+                return generate_with_retry(user_id, message or "こんにちは", max_retries=2)
+            except Exception:
+                return _pack_reply(
+                    "Hoang-sama、ギルドマスターのLUNAです。本日もご指示をどうぞ。",
+                    {},
+                )
+        return start_user_greeting(user_id)
+    except Exception:
+        return _pack_reply(
+            "こんにちは。LUNAです。今日も一緒にがんばろうね。何か話しかけてください。",
+            {},
+        )
+
+
+def soft_chat_failure_reply(exc: BaseException) -> str:
+    """Turn AI outages into a spoken line so the bubble is never empty."""
+    if isinstance(exc, LunaAiError):
+        msg = str(exc)
+    elif _is_quota_error(exc):
+        msg = "AIの利用上限に達しました。少し待ってからもう一度話しかけてくださいね。"
+    else:
+        msg = "少し混み合っているみたい。もう一度話しかけてくれる？"
+    return _pack_reply(msg, {})
+
+
 def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
     if is_admin(user_id):
         return None

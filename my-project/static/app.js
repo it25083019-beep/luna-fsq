@@ -1150,19 +1150,31 @@
 
   function applyChat(data) {
     const dialogueEl = document.getElementById("dialogue");
-    if (dialogueEl) dialogueEl.textContent = data.dialogue || "";
-    renderChips(data.suggested_replies || []);
-    const emo = data.game_state && data.game_state.emotion;
+    const line = ((data && data.dialogue) || "").trim();
+    if (dialogueEl && line) dialogueEl.textContent = line;
+    renderChips((data && data.suggested_replies) || []);
+    const emo = data && data.game_state && data.game_state.emotion;
     try {
-      if (luna) {
+      if (luna && line) {
         if (emo) luna.applyEmotion(emo);
-        else luna.reactToText(data.dialogue || "", { greeting: firstChat, fallback: "happy" });
+        else luna.reactToText(line, { greeting: firstChat, fallback: "happy" });
       }
     } catch (_) {}
     firstChat = false;
     // Voice + core refresh must not block chat replies / busy lock.
-    speakJa(data.dialogue || "").catch(() => {});
+    if (line) speakJa(line).catch(() => {});
     refreshCore().catch((e) => setErr(e.message || String(e)));
+  }
+
+  function showLocalGreeting() {
+    const dialogueEl = document.getElementById("dialogue");
+    const cur = (dialogueEl && dialogueEl.textContent) || "";
+    if (!dialogueEl) return;
+    if (cur && cur !== "…" && cur !== "..." && cur !== "考え中…") return;
+    dialogueEl.textContent = "こんにちは。LUNAです。今日も一緒にがんばろうね。";
+    try {
+      if (luna) luna.reactToText(dialogueEl.textContent, { greeting: true, fallback: "happy" });
+    } catch (_) {}
   }
 
   async function sendMessage(text) {
@@ -1174,16 +1186,23 @@
     setErr("");
     const msgEl = document.getElementById("message");
     if (msgEl) msgEl.value = "";
+    const dialogueEl = document.getElementById("dialogue");
+    if (dialogueEl) dialogueEl.textContent = "考え中…";
     try {
       if (luna) luna.reactToText(msg, { fallback: "think" });
     } catch (_) {}
     try {
+      if (!chatStarted) {
+        chatStarted = true;
+      }
       const data = await api("/chat", { method: "POST", body: JSON.stringify({ message: msg }) });
       applyChat(data);
     } catch (e) {
+      const soft = "うまく返事できなかったみたい。もう一度送ってくれる？";
+      if (dialogueEl) dialogueEl.textContent = soft;
       setErr(e.message || String(e));
       try {
-        if (luna) luna.reactToText("", { fallback: "sad" });
+        if (luna) luna.reactToText(soft, { fallback: "sad" });
       } catch (_) {}
     } finally {
       busy = false;
@@ -1194,12 +1213,15 @@
   async function startChat() {
     if (chatStarted) return;
     chatStarted = true;
+    showLocalGreeting();
     try {
       const data = await api("/chat/start", { method: "POST", body: JSON.stringify({ message: "" }) });
       applyChat(data);
     } catch (e) {
       setErr(e.message);
+      // Keep local greeting visible; allow retry on next luna tab focus.
       chatStarted = false;
+      showLocalGreeting();
     }
   }
 
@@ -2155,8 +2177,12 @@
       const me = await api("/auth/me");
       if (me.is_admin) document.getElementById("adminLink").classList.remove("hidden");
       luna = new LunaAvatar(document.getElementById("lunaSprite"), null, document.getElementById("lunaStage"));
-      await refreshCore();
-      await startChat();
+      // Speak-first: greet immediately, refresh other panels in parallel.
+      showLocalGreeting();
+      const greetP = startChat();
+      const coreP = refreshCore();
+      await greetP;
+      await coreP;
       await loadHomeSummary();
       await checkMentalCheckin();
     } catch (_) {

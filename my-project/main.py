@@ -113,7 +113,8 @@ from luna_service import (
     get_brain_status,
     load_user_brain,
     save_user_brain,
-    start_user_greeting,
+    safe_chat_start_reply,
+    soft_chat_failure_reply,
     is_admin,
 )
 
@@ -429,11 +430,10 @@ def chat_start(req: ChatRequest, current: User = Depends(get_current_user)):
     """AI greets first for normal users. Admin gets a short LUNA hello."""
     uid = _resolve_user_id(req.user_id, current)
     try:
-        if is_admin(uid):
-            raw = generate_with_retry(uid, req.message or "こんにちは")
-        else:
-            raw = start_user_greeting(uid)
+        raw = safe_chat_start_reply(uid, req.message or "")
         dialogue, ai_state = parse_ai_reply(raw)
+        if not (dialogue or "").strip():
+            dialogue = "こんにちは。LUNAです。今日も一緒にがんばろうね。"
         state = get_user_state(uid)
         if isinstance(ai_state, dict) and ai_state.get("emotion"):
             state = dict(state)
@@ -446,7 +446,16 @@ def chat_start(req: ChatRequest, current: User = Depends(get_current_user)):
             allow_voice_input=True,
         )
     except Exception as e:
-        raise _chat_http_error(e)
+        # Speak-first: never leave the bubble empty on start.
+        state = get_user_state(uid)
+        dialogue, _ = parse_ai_reply(soft_chat_failure_reply(e))
+        return ChatResponse(
+            dialogue=dialogue or "こんにちは。LUNAです。話しかけてくださいね。",
+            game_state=state,
+            suggested_replies=get_suggested_replies(uid, state),
+            allow_custom_input=True,
+            allow_voice_input=True,
+        )
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -455,6 +464,8 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
     try:
         raw = generate_with_retry(uid, req.message)
         dialogue, ai_state = parse_ai_reply(raw)
+        if not (dialogue or "").strip():
+            dialogue = "うん、聞こえてるよ。もう少し詳しく教えてくれる？"
         state = get_user_state(uid)
         if isinstance(ai_state, dict) and ai_state.get("emotion"):
             state = dict(state)
@@ -467,7 +478,16 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
             allow_voice_input=True,
         )
     except Exception as e:
-        raise _chat_http_error(e)
+        # Keep bubble speaking even when Gemini is down / quota hit.
+        state = get_user_state(uid)
+        dialogue, _ = parse_ai_reply(soft_chat_failure_reply(e))
+        return ChatResponse(
+            dialogue=dialogue or "少し待ってから、もう一度話しかけてね。",
+            game_state=state,
+            suggested_replies=["もう一度送る", "元気？", "今日の予定は？"],
+            allow_custom_input=True,
+            allow_voice_input=True,
+        )
 
 
 @app.post("/tts/speak")
