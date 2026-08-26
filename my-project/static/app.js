@@ -1011,6 +1011,723 @@
     });
   }
 
+  async function loadScheduleView(opts) {
+    const preserveCursor = !!(opts && opts.preserveCursor);
+    const skipHome = !!(opts && opts.skipHome);
+    try {
+      const focus = selectedDate || document.getElementById("addDate")?.value || todayIso();
+      const data = await api("/schedule/events?date=" + encodeURIComponent(focus));
+      allScheduleEvents = data.events || [];
+      datesWithEvents = new Set(data.dates_with_events || []);
+      window.__lastExtendPrompt = data.extend_prompt || null;
+      showExtendHorizonPrompt(data.extend_prompt);
+      if (!selectedDate) selectedDate = focus || data.today || todayIso();
+      if (!preserveCursor) {
+        const parts = selectedDate.split("-").map(Number);
+        calCursor = new Date(parts[0], parts[1] - 1, 1);
+      }
+      document.getElementById("addDate").value = selectedDate;
+      renderCalendar();
+      renderDayEvents();
+      if (!skipHome) await loadHomeSummary();
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  function renderCalendar() {
+    const y = calCursor.getFullYear();
+    const m = calCursor.getMonth();
+    const label = document.getElementById("calMonthLabel");
+    if (label) label.textContent = y + "年" + (m + 1) + "月";
+    const grid = document.getElementById("calGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+    const first = new Date(y, m, 1);
+    const startPad = first.getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const today = todayIso();
+    for (let i = 0; i < startPad; i++) {
+      const blank = document.createElement("button");
+      blank.type = "button";
+      blank.className = "cal-day muted";
+      blank.disabled = true;
+      blank.textContent = "";
+      grid.appendChild(blank);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = isoFromYmd(y, m, d);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cal-day";
+      if (iso === today) btn.classList.add("today");
+      if (iso === selectedDate) btn.classList.add("selected");
+      if (datesWithEvents.has(iso)) btn.classList.add("has-event");
+      btn.textContent = String(d);
+      btn.onclick = () => selectCalendarDay(iso);
+      grid.appendChild(btn);
+    }
+  }
+
+  function renderDayEvents() {
+    const title = document.getElementById("dayPanelTitle");
+    if (title) title.textContent = fmtDateJa(selectedDate);
+    const el = document.getElementById("dayEventList");
+    if (!el) return;
+    const items = eventsForDate(selectedDate);
+    el.innerHTML = "";
+    if (!items.length) {
+      el.innerHTML = '<p class="hint">この日の予定はまだありません。「＋」で追加できます。</p>';
+      return;
+    }
+    items.forEach((ev) => {
+      const row = document.createElement("div");
+      row.className = "todo-row" + (ev.done ? " done" : "");
+      const time = ev.time || ev.end_time ? formatTimeRange(ev) + " · " : "";
+      const recur = ev.recurrence
+        ? '<span class="recur-tag">🔁同じ' + weekdayJaFromIso(ev.date || selectedDate) + "曜</span>"
+        : "";
+      row.innerHTML = '<span style="flex:1">' + time + ev.title + recur + "</span>";
+      const acts = document.createElement("div");
+      acts.className = "acts";
+      const doneBtn = document.createElement("button");
+      doneBtn.textContent = ev.done ? "戻す" : "完了";
+      doneBtn.onclick = () => toggleEventDone(ev.id, !ev.done);
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "編集";
+      editBtn.onclick = () => openEditEvent(ev);
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "削除";
+      delBtn.className = "danger";
+      delBtn.onclick = () => deleteScheduleEvent(ev.id);
+      acts.appendChild(doneBtn);
+      acts.appendChild(editBtn);
+      acts.appendChild(delBtn);
+      row.appendChild(acts);
+      el.appendChild(row);
+    });
+  }
+
+  function resetAddForm(keepDate) {
+    document.getElementById("editEventId").value = "";
+    document.getElementById("editRecurrenceId").value = "";
+    document.getElementById("addTitle").value = "";
+    document.getElementById("addTime").value = "";
+    document.getElementById("addEndTime").value = "";
+    document.getElementById("addNote").value = "";
+    document.getElementById("addDate").value = keepDate || selectedDate || todayIso();
+    document.getElementById("addSaveBtn").textContent = "保存";
+    document.getElementById("addForm").classList.remove("open");
+  }
+
+  async function deleteScheduleEvent(id) {
+    if (!id) return;
+    const ev = (allScheduleEvents || []).find((e) => e.id === id);
+    const isRecurring = !!(ev && (ev.recurrence_id || ev.recurrence || String(id).startsWith("rec-")));
+    if (!confirm("この予定を削除しますか？")) return;
+    let scope = "this";
+    if (isRecurring) {
+      scope = confirm(
+        "同じ曜日のこれから先の予定もすべて削除しますか？\n\nOK = すべて削除\nキャンセル = この日だけ"
+      )
+        ? "all"
+        : "this";
+    }
+    try {
+      await api("/schedule/events/" + id + "?scope=" + encodeURIComponent(scope), { method: "DELETE" });
+      resetAddForm(selectedDate || todayIso());
+      await loadScheduleView();
+      await loadHomeSummary();
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  async function loadMoneyView() {
+    try {
+      const d = await api("/life/money/dashboard");
+      renderMoneyDashboard(d);
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  async function loadHealthView() {
+    try {
+      const d = await api("/life/health/dashboard");
+      renderHealthDashboard(d);
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  function eventsForDate(iso) {
+    return allScheduleEvents
+      .filter((e) => e.date === iso)
+      .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
+  }
+
+  function updateMentalReminderBanner(s) {
+    const banner = document.getElementById("mentalRemindBanner");
+    if (!banner) return;
+    const show = !!(s && (s.health?.mental_reminder || (s.pending_notification && String(s.pending_notification).includes("気分"))));
+    banner.classList.toggle("open", show && !sessionStorage.getItem("mentalModalOpen"));
+    const txt = document.getElementById("mentalRemindText");
+    if (txt) txt.textContent = s.pending_notification || "LUNAが今日の気分を聞きたいよ";
+  }
+
+  function formatTimeRange(ev) {
+    if (!ev) return "終日";
+    const start = ev.time || "";
+    const end = ev.end_time || "";
+    if (start && end) return start + "〜" + end;
+    if (start) return start + "〜";
+    if (end) return "〜" + end;
+    return "終日";
+  }
+
+  function attachSwipeDelete(row, onDelete) {
+    let startX = 0;
+    let tracking = false;
+    let locked = false;
+    row.addEventListener(
+      "touchstart",
+      (e) => {
+        startX = e.touches[0].clientX;
+        tracking = true;
+      },
+      { passive: true }
+    );
+    row.addEventListener("touchend", (e) => {
+      if (!tracking) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      tracking = false;
+      // swipe left -> delete (per-item)
+      if (dx < -48 && !locked) {
+        locked = true;
+        try {
+          onDelete && onDelete();
+        } finally {
+          setTimeout(() => {
+            locked = false;
+          }, 900);
+        }
+      }
+    });
+  }
+
+  function renderHomeToday(items) {
+    const el = document.getElementById("homeTodayList");
+    if (!el) return;
+    el.innerHTML = "";
+    if (!items.length) {
+      el.innerHTML = '<p class="hint">まだ予定はありません。カレンダーから追加できます。</p>';
+      return;
+    }
+    items.forEach((ev) => {
+      const row = document.createElement("div");
+      row.className = "home-today-item" + (ev.done ? " done" : "");
+      row.innerHTML =
+        '<span class="t">' +
+        formatTimeRange(ev) +
+        "</span><span style='flex:1'>" +
+        ev.title +
+        "</span>";
+      // swipe left to delete (no delete button)
+      attachSwipeDelete(row, () => deleteScheduleEvent(ev.id));
+      el.appendChild(row);
+    });
+  }
+
+  function isoFromYmd(y, m0, d) {
+    return y + "-" + String(m0 + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  }
+
+  function clampDayInMonth(y, m0, day) {
+    const max = new Date(y, m0 + 1, 0).getDate();
+    return Math.min(Math.max(1, day || 1), max);
+  }
+
+  function shiftCalendarMonth(delta) {
+    const prevDay = selectedDate ? Number(selectedDate.split("-")[2]) : 1;
+    const next = new Date(calCursor.getFullYear(), calCursor.getMonth() + delta, 1);
+    calCursor = next;
+    const y = next.getFullYear();
+    const m0 = next.getMonth();
+    const today = todayIso();
+    const monthPrefix = y + "-" + String(m0 + 1).padStart(2, "0");
+    // Keep month grid and day panel in lockstep — this was the desync bug.
+    const nextIso = today.startsWith(monthPrefix)
+      ? today
+      : isoFromYmd(y, m0, clampDayInMonth(y, m0, prevDay));
+    selectedDate = nextIso;
+    const dateInput = document.getElementById("addDate");
+    if (dateInput) dateInput.value = nextIso;
+    renderCalendar();
+    renderDayEvents();
+    // Refresh expansion around the browsed month (skip home summary — keeps UI snappy).
+    loadScheduleView({ preserveCursor: true, skipHome: true });
+  }
+
+  function selectCalendarDay(iso) {
+    selectedDate = iso;
+    const parts = iso.split("-").map(Number);
+    calCursor = new Date(parts[0], parts[1] - 1, 1);
+    const dateInput = document.getElementById("addDate");
+    if (dateInput) dateInput.value = iso;
+    renderCalendar();
+    renderDayEvents();
+  }
+
+  function openEditEvent(ev) {
+    document.getElementById("editEventId").value = ev.id || "";
+    document.getElementById("editRecurrenceId").value = ev.recurrence_id || "";
+    document.getElementById("addTitle").value = ev.title || "";
+    document.getElementById("addDate").value = ev.date || selectedDate;
+    document.getElementById("addTime").value = ev.time || "";
+    document.getElementById("addEndTime").value = ev.end_time || "";
+    document.getElementById("addNote").value = ev.note || "";
+    document.getElementById("addForm").classList.add("open");
+    document.getElementById("addSaveBtn").textContent = "更新";
+  }
+
+  async function toggleEventDone(id, done) {
+    try {
+      await api("/schedule/events/" + id + "/complete", {
+        method: "POST",
+        body: JSON.stringify({ done }),
+      });
+      await loadScheduleView();
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  async function addScheduleEvent() {
+    const editId = document.getElementById("editEventId").value;
+    const title = document.getElementById("addTitle").value.trim();
+    const date = document.getElementById("addDate").value;
+    const time = (document.getElementById("addTime").value || "").trim();
+    const endTime = (document.getElementById("addEndTime").value || "").trim();
+    const note = document.getElementById("addNote").value.trim();
+    if (!title || !date) return;
+    // Accept both `8:00` and `08:00`, but normalize to `HH:MM` before saving.
+    const TIME_RE = /^(\d{1,2}):([0-5]\d)$/;
+    function normalizeTime(t) {
+      const m = TIME_RE.exec(t);
+      if (!m) return null;
+      const h = Number(m[1]);
+      if (h < 0 || h > 23) return null;
+      return String(h).padStart(2, "0") + ":" + m[2];
+    }
+    const normTime = time ? normalizeTime(time) : null;
+    if (time && !normTime) {
+      setErr("開始時刻はHH:MM（24h）で入力してください。");
+      return;
+    }
+    const normEndTime = endTime ? normalizeTime(endTime) : null;
+    if (endTime && !normEndTime) {
+      setErr("終了時刻はHH:MM（24h）で入力してください。");
+      return;
+    }
+    try {
+      if (editId) {
+        const recurrenceId = document.getElementById("editRecurrenceId").value;
+        const isRecurring = !!(recurrenceId || String(editId).startsWith("rec-"));
+        let scope = "this";
+        if (isRecurring) {
+          const editAll = confirm(
+            "繰り返し予定です。\n\n同じ曜日のこれから先の予定もすべて変更しますか？\n\nOK = すべて変更\nキャンセル = この日だけ変更"
+          );
+          scope = editAll ? "all" : "this";
+        }
+        await api("/schedule/events/" + editId, {
+          method: "PATCH",
+          body: JSON.stringify({
+            title,
+            date,
+            time: normTime || null,
+            end_time: normEndTime || null,
+            note: note || null,
+            scope,
+          }),
+        });
+        selectedDate = date;
+        resetAddForm(date);
+        await loadScheduleView();
+      } else {
+        // Simple rule: ask once — repeat on the same weekday forever, or this day only.
+        const recurrence = askRepeatSameWeekday(date) ? "weekly" : null;
+        await api("/schedule/events", {
+          method: "POST",
+          body: JSON.stringify({
+            title,
+            date,
+            time: normTime || null,
+            end_time: normEndTime || null,
+            note: note || null,
+            recurrence,
+          }),
+        });
+        selectedDate = date;
+        resetAddForm(date);
+        await loadScheduleView();
+      }
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  function setHealthFormErr(msg) {
+    const el = document.getElementById("healthFormErr");
+    if (el) el.textContent = msg || "";
+    if (msg) setErr(msg);
+    else setErr("");
+  }
+
+  function renderHealthDashboard(d) {
+    if (!d) return;
+    document.getElementById("healthScoreBig").textContent = d.score ?? "—";
+    document.getElementById("healthStatus").textContent = d.status_ja || "—";
+    document.getElementById("healthMessage").textContent = d.message_ja || "";
+    const bmiLine = document.getElementById("healthBmiLine");
+    if (bmiLine) {
+      const bits = [];
+      if (d.bmi) bits.push("BMI " + d.bmi);
+      if (d.bmi_range_ja) bits.push(d.bmi_range_ja);
+      bmiLine.textContent = bits.length ? bits.join(" · ") : "BMI —（年齢・身長・体重を入力）";
+    }
+    const list = document.getElementById("healthBreakdown");
+    if (list) {
+      list.innerHTML = "";
+      (d.breakdown || []).forEach((row) => {
+        const li = document.createElement("li");
+        li.innerHTML =
+          '<span class="k">' +
+          (row.label_ja || row.key) +
+          '</span><span class="n">' +
+          (row.note || "") +
+          '</span><span class="v">' +
+          (row.score ?? "—") +
+          "</span>";
+        list.appendChild(li);
+      });
+    }
+    renderSuggestList("healthGoalSuggest", d.goal_suggestions);
+    renderSuggestList("healthExerciseSuggest", d.exercise_suggestions);
+    const p = d.profile || {};
+    setInputVal("editAge", p.age);
+    setInputVal("editWeight", p.weight_kg);
+    setInputVal("editHeight", p.height_cm);
+    setInputVal("editTargetWeight", p.target_weight_kg);
+    setInputVal("editTargetHeight", p.target_height_cm);
+    setInputVal("editSleepHours", p.sleep_hours);
+    setInputVal("editWakeTime", p.wake_time);
+    setInputVal("editBedtime", p.bedtime);
+    setInputVal("editHobbies", p.hobbies);
+    setInputVal("editSchoolHours", p.school_hours);
+    setInputVal("editStudyHours", p.study_hours);
+    setInputVal("editRelaxHours", p.relax_hours);
+    setInputVal("editExercisePlan", p.exercise_plan);
+  }
+
+  async function saveHealthMetrics() {
+    const TIME_RE = /^(\d{1,2}):([0-5]\d)$/;
+    function normalizeTime(t) {
+      if (!t) return null;
+      const raw = String(t).trim();
+      // Allow 24:00 as end-of-day bedtime → 00:00
+      if (raw === "24:00") return "00:00";
+      const m = TIME_RE.exec(raw);
+      if (!m) return null;
+      const h = Number(m[1]);
+      if (h > 23) return null;
+      return String(h).padStart(2, "0") + ":" + m[2];
+    }
+    setHealthFormErr("");
+    const wakeRaw = strOrNull("editWakeTime");
+    const bedRaw = strOrNull("editBedtime");
+    const wake = normalizeTime(wakeRaw);
+    const bed = normalizeTime(bedRaw);
+    if (wakeRaw && !wake) {
+      setHealthFormErr("起床は HH:MM（例 07:15）で入力してください");
+      return;
+    }
+    if (bedRaw && !bed) {
+      setHealthFormErr("就寝は HH:MM（例 23:00 / 24:00）で入力してください");
+      return;
+    }
+    const sleepRaw = (document.getElementById("editSleepHours")?.value || "").trim();
+    if (sleepRaw && numOrNull("editSleepHours") == null) {
+      setHealthFormErr("睡眠時間は数字で入力してください（例 7.5 または 7,5）");
+      return;
+    }
+    try {
+      const res = await api("/life/health/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          age: numOrNull("editAge"),
+          weight_kg: numOrNull("editWeight"),
+          height_cm: numOrNull("editHeight"),
+          target_weight_kg: numOrNull("editTargetWeight"),
+          target_height_cm: numOrNull("editTargetHeight"),
+          sleep_hours: numOrNull("editSleepHours"),
+          wake_time: wake,
+          bedtime: bed,
+          hobbies: strOrNull("editHobbies"),
+          school_hours: numOrNull("editSchoolHours"),
+          study_hours: numOrNull("editStudyHours"),
+          relax_hours: numOrNull("editRelaxHours"),
+          exercise_plan: strOrNull("editExercisePlan"),
+        }),
+      });
+      renderHealthDashboard(res.dashboard || res);
+      setHealthFormErr("");
+      const healthView = document.getElementById("sub-health");
+      if (healthView) healthView.scrollTo({ top: 0, behavior: "smooth" });
+      const savedHint = document.getElementById("healthSavedHint");
+      if (savedHint) {
+        savedHint.textContent = "保存しました。上の評価を確認してね。";
+        savedHint.classList.add("show");
+        setTimeout(() => savedHint.classList.remove("show"), 3500);
+      }
+      await loadHomeSummary();
+    } catch (e) {
+      setHealthFormErr(e.message);
+    }
+  }
+
+  function showMentalModal(choices) {
+    const overlay = document.getElementById("mentalOverlay");
+    const box = document.getElementById("mentalChoices");
+    if (!overlay || !box) return;
+    box.innerHTML = "";
+    (choices || ["元気", "普通", "疲れ", "落ち込み", "不安"]).forEach((label) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = label;
+      btn.onclick = () => submitMentalStatus(label);
+      box.appendChild(btn);
+    });
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden", "false");
+    sessionStorage.setItem("mentalModalOpen", "1");
+  }
+
+  function hideMentalModal() {
+    const overlay = document.getElementById("mentalOverlay");
+    if (!overlay) return;
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden", "true");
+    sessionStorage.removeItem("mentalModalOpen");
+  }
+
+  async function submitMentalStatus(status) {
+    try {
+      const res = await api("/life/health/mental", {
+        method: "POST",
+        body: JSON.stringify({ status }),
+      });
+      hideMentalModal();
+      mentalSkippedSession = false;
+      const banner = document.getElementById("mentalRemindBanner");
+      if (banner) banner.classList.remove("open");
+      if (res.dashboard) renderHealthDashboard(res.dashboard);
+      await loadHomeSummary();
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  async function checkMentalCheckin(opts) {
+    const force = !!(opts && opts.force);
+    try {
+      const st = await api("/life/health/mental/status");
+      if (st.needed && (force || !mentalSkippedSession)) {
+        showMentalModal(st.choices);
+      } else if (st.reminder || st.needed) {
+        updateMentalReminderBanner({
+          health: { mental_reminder: !!st.reminder || !!st.needed },
+          pending_notification: st.pending_notification || "LUNAが今日の気分を聞きたいよ",
+        });
+      } else {
+        const banner = document.getElementById("mentalRemindBanner");
+        if (banner) banner.classList.remove("open");
+      }
+    } catch (_) {}
+  }
+
+  function setMoneyFormErr(msg) {
+    const el = document.getElementById("moneyFormErr");
+    if (el) el.textContent = msg || "";
+    if (msg) setErr(msg);
+    else setErr("");
+  }
+
+  function renderMoneyFundInputs(funds, profile) {
+    const box = document.getElementById("moneyFundInputs");
+    if (!box) return;
+    box.innerHTML = "";
+    (funds || []).forEach((f) => {
+      const wrap = document.createElement("div");
+      wrap.className = "money-fund";
+      const curId = "editFund_" + f.key + "_current";
+      const tgtId = "editFund_" + f.key + "_target";
+      const curVal = profile && profile[f.key + "_current"] != null ? profile[f.key + "_current"] : f.current;
+      const tgtVal = profile && profile[f.key + "_target"] != null ? profile[f.key + "_target"] : f.target;
+      wrap.innerHTML =
+        '<div class="top"><span class="name">' +
+        (f.label_ja || f.key) +
+        '</span><span class="hint">' +
+        (f.hint_ja || "") +
+        "</span></div>" +
+        '<div class="money-fund-inputs">' +
+        "<div><label>いま（円）</label><input id=\"" +
+        curId +
+        '" type="number" min="0" step="1000" /></div>' +
+        "<div><label>目標（円）</label><input id=\"" +
+        tgtId +
+        '" type="number" min="0" step="1000" /></div>' +
+        "</div>";
+      box.appendChild(wrap);
+      setInputVal(curId, curVal);
+      setInputVal(tgtId, tgtVal);
+    });
+  }
+
+  function renderMoneyDashboard(d) {
+    if (!d) return;
+    const scoreEl = document.getElementById("moneyScoreBig");
+    if (scoreEl) scoreEl.textContent = d.score ?? "—";
+    const st = document.getElementById("moneyStatus");
+    if (st) st.textContent = d.status_ja || "—";
+    const ageLine = document.getElementById("moneyAgeLine");
+    if (ageLine) ageLine.textContent = d.age_label_ja || "—";
+    const roomLine = document.getElementById("moneyRoomLine");
+    if (roomLine) roomLine.textContent = d.room_note_ja || "—";
+    const msg = document.getElementById("moneyMessage");
+    if (msg) msg.textContent = d.message_ja || "";
+    const rule = document.getElementById("moneyRuleLine");
+    if (rule) rule.textContent = d.rule_ja || "";
+    renderSuggestList("moneyTips", d.tips_ja || []);
+
+    const bars = document.getElementById("moneyFundsBars");
+    if (bars) {
+      bars.innerHTML = "";
+      (d.funds || []).forEach((f) => {
+        const row = document.createElement("div");
+        row.className = "money-fund";
+        row.innerHTML =
+          '<div class="top"><span class="name">' +
+          (f.label_ja || f.key) +
+          '</span><span class="pct">' +
+          (f.pct ?? 0) +
+          "%</span></div>" +
+          '<div class="bar"><span style="width:' +
+          (f.pct ?? 0) +
+          '%"></span></div>' +
+          '<div class="meta">' +
+          fmtYen(f.current) +
+          " / " +
+          fmtYen(f.target) +
+          "</div>";
+        bars.appendChild(row);
+      });
+    }
+
+    const p = d.profile || {};
+    setInputVal("editMoneyIncome", p.monthly_income != null ? p.monthly_income : d.monthly_income);
+    setInputVal("editMoneyExpense", p.monthly_expense != null ? p.monthly_expense : d.monthly_expense);
+    setInputVal("editPurchaseName", p.purchase_name || d.purchase_name || "");
+    renderMoneyFundInputs(d.funds || [], p);
+  }
+
+  async function saveMoneyMetrics() {
+    setMoneyFormErr("");
+    const payload = {
+      monthly_income: numOrNull("editMoneyIncome"),
+      monthly_expense: numOrNull("editMoneyExpense"),
+      purchase_name: strOrNull("editPurchaseName"),
+    };
+    ["purchase", "emergency", "reserve", "invest"].forEach((key) => {
+      const curEl = document.getElementById("editFund_" + key + "_current");
+      const tgtEl = document.getElementById("editFund_" + key + "_target");
+      if (curEl) payload[key + "_current"] = numOrNull("editFund_" + key + "_current");
+      if (tgtEl) payload[key + "_target"] = numOrNull("editFund_" + key + "_target");
+    });
+    try {
+      const res = await api("/life/money/profile", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      renderMoneyDashboard(res.dashboard || res);
+      setMoneyFormErr("");
+      const moneyView = document.getElementById("sub-money");
+      if (moneyView) moneyView.scrollTo({ top: 0, behavior: "smooth" });
+      const hint = document.getElementById("moneySavedHint");
+      if (hint) {
+        hint.textContent = "保存しました。上の評価を確認してね。";
+        hint.classList.add("show");
+        setTimeout(() => hint.classList.remove("show"), 3500);
+      }
+      await loadHomeSummary();
+    } catch (e) {
+      setMoneyFormErr(e.message);
+    }
+  }
+
+  async function loadHomeSummary() {
+    try {
+      const s = await api("/home/summary");
+      document.getElementById("homeDate").textContent = s.date_ja || "";
+      document.getElementById("stSchedule").textContent = s.schedule?.label || "予定なし";
+      document.getElementById("stHealth").textContent = s.health?.label || "良好";
+      document.getElementById("stGoals").textContent = s.goals?.label || "—";
+      renderHomeToday(s.schedule?.today_items || []);
+      updateMentalReminderBanner(s);
+    } catch (_) {}
+  }
+
+  function numOrNull(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const t = (el.value || "").trim().replace(",", ".");
+    if (!t) return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function renderSuggestList(elId, items) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = "";
+    const list = items || [];
+    if (!list.length) {
+      el.classList.add("empty");
+      el.innerHTML = "<li>プロフィールを保存すると提案が出ます。</li>";
+      return;
+    }
+    el.classList.remove("empty");
+    list.forEach((text) => {
+      const li = document.createElement("li");
+      li.textContent = text;
+      el.appendChild(li);
+    });
+  }
+
+  function setInputVal(id, val) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = val == null || val === "" ? "" : val;
+  }
+
+  function strOrNull(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const t = (el.value || "").trim();
+    return t || null;
+  }
+
   function bindEvents() {
     document.querySelectorAll(".nav-item").forEach((btn) => {
       btn.onclick = () => switchTab(btn.dataset.nav);
