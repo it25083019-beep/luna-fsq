@@ -95,13 +95,83 @@
     #lunaMainView.hidden{display:none!important}
 
     /* ===== FSQ secondary tab ===== */
-    #tab-fsq{background:var(--fsq-panel)}
-    .fsq-banner{background:linear-gradient(180deg,var(--fsq-hero) 0%,#2a1f6b 18%,var(--fsq-panel) 18%);padding:1rem 1rem .5rem;color:#fff}
-    .fsq-banner h2{margin:0;font-size:1rem;display:flex;align-items:center;gap:.4rem}
-    .fsq-banner p{margin:.3rem 0 0;font-size:.72rem;opacity:.8}
+    #tab-fsq{background:
+      radial-gradient(ellipse 80% 40% at 50% -10%,rgba(140,110,255,.22),transparent 55%),
+      var(--fsq-panel)}
+    .fsq-banner{background:linear-gradient(180deg,#1a1448 0%,#2a1f6b 55%,var(--fsq-panel) 100%);padding:1.1rem 1rem .65rem;color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}
+    .fsq-banner h2{margin:0;font-size:1.05rem;display:flex;align-items:center;gap:.4rem;letter-spacing:.02em;text-shadow:0 2px 12px rgba(0,0,0,.35)}
+    .fsq-banner p{margin:.35rem 0 0;font-size:.72rem;opacity:.88;line-height:1.45}
     .fsq-subnav{display:flex;gap:.35rem;padding:.65rem 1rem 0;overflow-x:auto}
-    .fsq-subnav button{border:none;background:var(--card);color:var(--muted);padding:.4rem .75rem;border-radius:999px;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:var(--shadow)}
-    .fsq-subnav button.active{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .fsq-subnav button{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#d7cfff;padding:.45rem .85rem;border-radius:999px;font-size:.72rem;font-weight:800;cursor:pointer;white-space:nowrap}
+    .fsq-subnav button.active{background:linear-gradient(135deg,#ffd27a,#c9a227);color:#2a1a00;border-color:transparent;box-shadow:0 6px 16px rgba(201,162,39,.35)}
+    .rpg-stage{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.22);box-shadow:0 18px 45px rgba(28,32,91,.45), inset 0 1px 0 rgba(255,255,255,.2);background:
+      radial-gradient(ellipse 70% 50% at 85% 15%,rgba(255,210,122,.28),transparent 50%),
+      radial-gradient(ellipse 60% 45% at 10% 90%,rgba(120,200,255,.2),transparent 45%),
+      linear-gradient(145deg,#2a1f78 0%,#4a3ab0 48%,#6b3fd4 100%)}
+    .rpg-stage-shine{position:absolute;inset:-40% -20% auto;height:70%;background:radial-gradient(ellipse at center,rgba(255,255,255,.18),transparent 65%);pointer-events:none;animation:stageShine 6s ease-in-out infinite}
+    @keyframes stageShine{0%,100%{opacity:.7;transform:translateX(0)}50%{opacity:1;transform:translateX(8%)}}
+    @media (prefers-reduced-motion:reduce){.rpg-stage-shine{animation:none}}
+    .rpg-stage::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,.015) 3px,rgba(255,255,255,.015) 4px);pointer-events:none;z-index:0}
+    .rpg-hud-top{display:flex;justify-content:space-between;align-items:center;gap:.4rem;position:relative;z-index:1}
+    .rpg-chip{font-size:.62rem;font-weight:800;background:linear-gradient(135deg,#ffd27a,#c9a227);color:#2a1a00;padding:.28rem .55rem;border-radius:999px}
+    .rpg-status{position:relative;z-index:1}
+    .rpg-bars{display:flex;flex-direction:column;gap:.25rem}
+    .rpg-bar-row{display:flex;align-items:center;gap:.4rem}
+    .rpg-bar-lab{font-size:.58rem;font-weight:900;opacity:.9;min-width:1.8rem}
+    .rpg-exp{flex:1;height:10px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.2)}
+    .rpg-exp span{background:linear-gradient(90deg,#77f1ff,#fff38d,#ffd27a)}
+    .hero-frame{position:relative;z-index:1}
+    .hero-frame::before{content:"";position:absolute;inset:-6px;border-radius:26px;border:2px solid rgba(255,210,122,.55);pointer-events:none;box-shadow:0 0 18px rgba(255,210,122,.2);z-index:3}
+    .hero-nameplate{margin-top:.45rem;text-align:center;font-size:.62rem;font-weight:900;letter-spacing:.12em;color:#ffe9b0;text-shadow:0 1px 4px rgba(0,0,0,.35)}
+    .quest-board{background:
+      linear-gradient(180deg,rgba(255,248,230,.95),#fff),
+      repeating-linear-gradient(90deg,transparent,transparent 11px,rgba(180,140,60,.04) 11px,rgba(180,140,60,.04) 12px);
+      border:2px solid #e8d4a8;box-shadow:0 10px 28px rgba(120,80,30,.12), inset 0 0 0 1px rgba(255,255,255,.8)}
+    .quest-board .section-title{color:#5a3d12;letter-spacing:.02em}
+    .quest-tag{font-size:.58rem;font-weight:800;background:linear-gradient(135deg,#ffe8a8,#ffd27a);color:#6a4208;padding:.2rem .45rem;border-radius:999px;border:1px solid #e8c878}
+    .boss-board{background:linear-gradient(180deg,#fff5f5,#fff);border-color:#e8a8a8}
+    .map-quest-panel{background:linear-gradient(180deg,#fff8e8,#fff);border:2px solid #e8d4a8!important;box-shadow:0 8px 22px rgba(120,80,30,.1)}
+    .skill{position:relative;overflow:hidden;background:linear-gradient(180deg,#fff,#f7f4ff);border:1px solid #ddd6ff;box-shadow:0 4px 12px rgba(80,60,160,.08)}
+    .skill .icon{box-shadow:0 4px 10px rgba(0,0,0,.18)}
+    .skill.locked{opacity:.45;filter:grayscale(.5)}
+    .evolution-strip{background:linear-gradient(180deg,#1a1448,#2a1f6b)!important;border:1px solid rgba(255,210,122,.35)!important;color:#fff}
+    .evolution-strip h4{color:#ffe9b0!important}
+    .evolution-strip h4 span{color:rgba(255,255,255,.7)!important}
+    .evo-cell{background:rgba(255,255,255,.08)!important;border-color:rgba(255,255,255,.12)!important}
+    .evo-cell .lbl{color:rgba(255,255,255,.75)!important}
+    .evo-cell.current{border-color:#ffd27a!important;background:linear-gradient(180deg,rgba(255,210,122,.25),rgba(255,255,255,.1))!important;box-shadow:0 0 0 2px rgba(255,210,122,.2)!important}
+    .evo-cell.current .lbl{color:#ffe9b0!important}
+    .next-lesson{display:flex;justify-content:space-between;align-items:center;gap:.55rem;flex-wrap:wrap;padding:.35rem 0}
+    .next-lesson button{border:none;background:linear-gradient(135deg,#ffd27a,#c9a227);color:#2a1a00;font-weight:900;padding:.55rem 1rem;border-radius:999px;cursor:pointer;box-shadow:0 6px 14px rgba(201,162,39,.3)}
+    .map-deco{position:absolute;border-radius:50%;pointer-events:none;z-index:0;opacity:.55}
+    .map-deco-a{width:70px;height:70px;left:6%;top:42%;background:radial-gradient(circle at 40% 40%,#6db87a,#2f6b3a);box-shadow:18px 10px 0 #3d8f52}
+    .map-deco-b{width:48px;height:48px;right:10%;top:36%;background:radial-gradient(circle at 40% 40%,#7ec88a,#356b40)}
+    .map-deco-c{width:86px;height:36px;left:55%;bottom:14%;background:linear-gradient(180deg,#dfe8f0,#9eb0c4);border-radius:8px 8px 4px 4px;opacity:.4;box-shadow:-22px 8px 0 #b8c4d4}
+    .map-route{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:visible}
+    .map-route path{fill:none;stroke:rgba(255,236,170,.95);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:6 5;filter:drop-shadow(0 1px 1px rgba(80,40,0,.4));animation:routeDash 18s linear infinite}
+    @keyframes routeDash{to{stroke-dashoffset:-120}}
+    @media (prefers-reduced-motion:reduce){.map-route path{animation:none}}
+    .map-legend{position:relative;z-index:4;display:flex;flex-wrap:wrap;gap:.45rem .7rem;padding:.15rem .65rem .55rem;font-size:.55rem;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+    .map-legend span{display:inline-flex;align-items:center;gap:.25rem}
+    .lg-dot{width:9px;height:9px;border-radius:50%;display:inline-block;border:1.5px solid #fff}
+    .lg-dot.cur{background:linear-gradient(135deg,#ffd27a,#fff38d)}
+    .lg-dot.ok{background:#6de8b8}
+    .lg-dot.lock{background:#888}
+    .lg-dot.boss{background:linear-gradient(135deg,#ff7a7a,#ffd27a)}
+    .map-node .flag{display:block;width:30px;height:30px;margin:0 auto .25rem;border-radius:12px;background:rgba(20,16,48,.45);border:2px solid rgba(255,255,255,.6);line-height:30px;font-size:.9rem;box-shadow:0 4px 10px rgba(0,0,0,.25)}
+    .map-node.current .flag{background:linear-gradient(135deg,#ffd27a,#fff38d);color:#3a2800;border-color:#fff;box-shadow:0 0 0 3px rgba(255,210,122,.4),0 0 16px rgba(255,210,122,.55);animation:flagPulse 1.8s ease-in-out infinite}
+    .map-node.cleared .flag{background:linear-gradient(135deg,#6de8b8,#2bb87a);border-color:#fff}
+    .map-node.locked{opacity:.5;filter:grayscale(.4)}
+    .map-node.boss .flag{background:linear-gradient(135deg,#ff7a7a,#ffb06a);animation:bossPulse 1.4s ease-in-out infinite}
+    @keyframes flagPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+    @keyframes bossPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,100,80,.5)}50%{box-shadow:0 0 0 6px rgba(255,100,80,0)}}
+    @media (prefers-reduced-motion:reduce){.map-node.current .flag,.map-node.boss .flag{animation:none}}
+    .lesson-row,.boss-row{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.55rem .35rem;border-bottom:1px dashed rgba(120,90,40,.15)}
+    .lesson-row:last-child,.boss-row:last-child{border-bottom:none}
+    .lesson-row.done{opacity:.65}
+    .lesson-row .actions,.boss-row .actions{display:flex;gap:.3rem;flex-shrink:0}
+    .lesson-row button,.boss-row button{border:none;border-radius:999px;padding:.35rem .65rem;font-size:.68rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#ffd27a,#c9a227);color:#2a1a00}
+    .lesson-row button.ghost,.boss-row button.ghost{background:#f3efe6;color:#6a5430}
     .fsq-section{display:none;padding:0 .85rem 1rem}
     .fsq-section.active{display:block}
     .content{padding:0 .85rem 1rem}
@@ -189,11 +259,11 @@
       radial-gradient(circle at 18% 70%,rgba(60,120,50,.35) 0 18px,transparent 19px),
       radial-gradient(circle at 82% 55%,rgba(60,120,50,.3) 0 22px,transparent 23px),
       radial-gradient(ellipse 80% 40% at 50% 15%,rgba(255,255,255,.4),transparent 60%)}
-    .map-world::after{content:"";position:absolute;left:8%;right:8%;top:58%;height:3px;border-radius:999px;background:linear-gradient(90deg,transparent,rgba(255,236,170,.85),transparent);box-shadow:0 0 0 1px rgba(120,80,20,.25);z-index:1;pointer-events:none}
-    .map-hud{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:.55rem .65rem;color:#fff;font-size:.62rem;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.35)}
-    .map-hud .pill{background:rgba(20,16,48,.45);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:.25rem .55rem}
-    .map-strip{margin:0;padding:0;border-radius:0;background:transparent;min-height:190px;box-shadow:none}
-    .map-path{position:relative;height:180px;z-index:1}
+    .map-world::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(10,30,20,.28));pointer-events:none;z-index:3}
+    .map-hud{position:relative;z-index:4;display:flex;justify-content:space-between;align-items:center;padding:.55rem .65rem;color:#fff;font-size:.62rem;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.35)}
+    .map-hud .pill{background:rgba(20,16,48,.55);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:.25rem .55rem;backdrop-filter:blur(4px)}
+    .map-strip{margin:0;padding:0;border-radius:0;background:transparent;min-height:190px;box-shadow:none;position:relative;z-index:2}
+    .map-path{position:relative;height:180px;z-index:2}
     .map-node{width:72px;font-size:.58rem;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);font-weight:800}
     .map-node .dot{width:20px;height:20px;border-width:3px;box-shadow:0 2px 6px rgba(0,0,0,.25);background:#fff}
     .map-node.current .dot{width:24px;height:24px;background:linear-gradient(135deg,#ffd27a,#fff38d)}
@@ -725,13 +795,13 @@
       <!-- FSQ secondary -->
       <section id="tab-fsq" class="tab-panel">
         <div class="fsq-banner">
-          <h2>📘 Future Skill Quest</h2>
-          <p>職業への長い学習ロードマップ。理論と実践を積み、クラス姿と装備で進捗が見える</p>
+          <h2>⚔ Future Skill Quest</h2>
+          <p>学習が冒険になる世界。クラスを育て、マップを進み、ボスに挑もう</p>
         </div>
         <div class="fsq-subnav" id="fsqSubnav">
-          <button type="button" class="fsq-sub active" data-fsq="home">ホーム</button>
-          <button type="button" class="fsq-sub" data-fsq="map">マップ</button>
-          <button type="button" class="fsq-sub" data-fsq="career">進路</button>
+          <button type="button" class="fsq-sub active" data-fsq="home">🏰 拠点</button>
+          <button type="button" class="fsq-sub" data-fsq="map">🗺 ワールド</button>
+          <button type="button" class="fsq-sub" data-fsq="career">📜 冒険録</button>
         </div>
         <div id="fsq-onboard" class="fsq-section">
           <div class="content" style="padding-top:.65rem">
@@ -753,23 +823,33 @@
         </div>
         <div id="fsq-home" class="fsq-section active">
           <div class="content" style="padding-top:.65rem">
-            <div class="char-card">
-              <span class="badge" id="homeClassBadge">現在のクラス：—</span>
+            <div class="char-card rpg-stage">
+              <div class="rpg-stage-shine" aria-hidden="true"></div>
+              <div class="rpg-hud-top">
+                <span class="badge" id="homeClassBadge">現在のクラス：—</span>
+                <span class="rpg-chip" id="homeRankChip">見習い</span>
+              </div>
               <div class="char-main">
-                <div>
+                <div class="rpg-status">
                   <div class="role" id="homeRoleName">冒険者</div>
                   <div class="small" id="homeRoleDesc">長いキャリア学習の進捗がここに表示されます。</div>
-                  <div class="exp-wrap" style="margin-top:.55rem">
+                  <div class="rpg-bars" style="margin-top:.55rem">
+                    <div class="rpg-bar-row">
+                      <span class="rpg-bar-lab">EXP</span>
+                      <div class="exp-bar rpg-exp"><span id="homeExpBar"></span></div>
+                    </div>
                     <div class="exp-label"><span id="homeExpLabel">学習EXP 0</span><span id="homeLvLabel">Lv.1</span></div>
-                    <div class="exp-bar"><span id="homeExpBar"></span></div>
                   </div>
                   <div class="gear-panel" id="homeGearPanel"></div>
                 </div>
-                <div class="hero-avatar" id="homeAvatarWrap">
-                  <div class="class-motif" aria-hidden="true"></div>
-                  <span class="class-tag" id="homeAvatarClass">—</span>
-                  <span class="class-emblem" id="homeAvatarEmblem">剣</span>
-                  <img id="homeAvatarImg" src="/static/live2d/luna-expressions/luna-cheer.png" alt="" />
+                <div class="hero-frame">
+                  <div class="hero-avatar" id="homeAvatarWrap">
+                    <div class="class-motif" aria-hidden="true"></div>
+                    <span class="class-tag" id="homeAvatarClass">—</span>
+                    <span class="class-emblem" id="homeAvatarEmblem">剣</span>
+                    <img id="homeAvatarImg" src="/static/rpg/characters/swordsman_novice.png" alt="" />
+                  </div>
+                  <div class="hero-nameplate" id="homeNameplate">PARTY</div>
                 </div>
               </div>
             </div>
@@ -777,12 +857,12 @@
               <h4>クラス進化 <span id="homeEvoRankLabel">見習い</span></h4>
               <div class="evo-grid" id="homeEvoGrid"></div>
             </div>
-            <div class="card">
-              <div class="section-title"><span>📘 次の学習</span></div>
+            <div class="card quest-board">
+              <div class="section-title"><span>📜 MAIN QUEST</span><span class="quest-tag">次の学習</span></div>
               <div class="next-lesson" id="nextLessonBox"><p class="hint" style="margin:0">進路を選ぶとレッスンが表示されます。</p></div>
             </div>
             <div class="card">
-              <div class="section-title"><span>🌳 習得スキル</span></div>
+              <div class="section-title"><span>✨ SKILL BOOK</span><span class="quest-tag">習得</span></div>
               <div class="skill-grid" id="skillGrid"></div>
             </div>
           </div>
@@ -790,23 +870,36 @@
         <div id="fsq-map" class="fsq-section">
           <div class="content" style="padding-top:.65rem">
             <div class="map-world">
+              <div class="map-deco map-deco-a" aria-hidden="true"></div>
+              <div class="map-deco map-deco-b" aria-hidden="true"></div>
+              <div class="map-deco map-deco-c" aria-hidden="true"></div>
               <div class="map-hud">
                 <span class="pill" id="mapHudRegion">現在：始まりの平原</span>
                 <span class="pill" id="mapHudExp">EXP —</span>
               </div>
-              <div class="map-strip"><div class="map-path" id="mapPath"></div><div class="map-avatar" id="mapAvatar" hidden><img id="mapAvatarImg" alt="" /></div></div>
+              <div class="map-strip">
+                <svg class="map-route" id="mapRouteSvg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+                <div class="map-path" id="mapPath"></div>
+                <div class="map-avatar" id="mapAvatar" hidden><img id="mapAvatarImg" alt="" /></div>
+              </div>
+              <div class="map-legend">
+                <span><i class="lg-dot cur"></i>現在地</span>
+                <span><i class="lg-dot ok"></i>クリア</span>
+                <span><i class="lg-dot lock"></i>ロック</span>
+                <span><i class="lg-dot boss"></i>ボス</span>
+              </div>
             </div>
             <p class="hint" id="mapRegionLabel" style="margin:0 0 .5rem">現在：始まりの平原</p>
             <div class="map-quest-panel" id="mapDailyQuest">
-              <h4>📜 今日のクエスト</h4>
+              <h4>⚔ 今日のクエスト</h4>
               <div id="mapQuestList"><p class="hint" style="margin:0">次のレッスンがここに表示されます。</p></div>
             </div>
-            <div class="card">
-              <div class="section-title"><span>✅ レッスン</span></div>
+            <div class="card quest-board">
+              <div class="section-title"><span>✅ レッスン一覧</span></div>
               <div id="questList"></div>
             </div>
-            <div class="card">
-              <div class="section-title"><span>👹 ボス</span></div>
+            <div class="card quest-board boss-board">
+              <div class="section-title"><span>👹 ボス戦</span></div>
               <div id="bossList"><p class="hint">ボスはマップ進行で解放されます。</p></div>
             </div>
           </div>
@@ -815,7 +908,7 @@
           <div class="content" style="padding-top:.65rem">
             <div class="portfolio-hero" id="portfolioHero">
               <div class="ph-top">
-                <div class="ph-avatar"><img id="portfolioAvatarImg" src="/static/rpg/characters/swordsman_novice.svg" alt="" /></div>
+                <div class="ph-avatar"><img id="portfolioAvatarImg" src="/static/rpg/characters/swordsman_novice.png" alt="" /></div>
                 <div>
                   <div class="ph-title" id="portfolioTitle">未来探求者</div>
                   <div class="ph-sub" id="portfolioSub">Lv.1 ／ 見習い</div>

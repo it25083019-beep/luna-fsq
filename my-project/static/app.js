@@ -533,14 +533,19 @@
     const exp = journeyStatus.total_exp || stateData.total_exp || 0;
     const prog = expProgress(exp, lv);
     const done = journeyStatus.completed_count || 0;
+    const rankJa = journeyStatus.rank_ja || "見習い";
     const badge = document.getElementById("homeClassBadge");
     if (badge) {
       badge.textContent =
         "クラス：" +
         (journeyStatus.class_ja || classLabel(cls)) +
         " ／ 習熟：" +
-        (journeyStatus.rank_ja || "見習い");
+        rankJa;
     }
+    const chip = document.getElementById("homeRankChip");
+    if (chip) chip.textContent = rankJa;
+    const plate = document.getElementById("homeNameplate");
+    if (plate) plate.textContent = (journeyStatus.class_ja || classLabel(cls) || "PARTY").toUpperCase();
     const role = document.getElementById("homeRoleName");
     if (role) role.textContent = journeyStatus.career_title_ja || user;
     const desc = document.getElementById("homeRoleDesc");
@@ -548,7 +553,7 @@
       desc.textContent = journeyStatus.selected
         ? "職業学習 " +
           done +
-          " 単元完了。理論→実践の長い道のりを積み上げよう。"
+          " 単元完了。マップを進めてボスに挑もう。"
         : CLASS_DESC[cls] || CLASS_DESC.swordsman;
     }
     const expL = document.getElementById("homeExpLabel");
@@ -584,20 +589,20 @@
       p.className = "hint";
       p.style.margin = "0";
       p.textContent = boss
-        ? "いまの単元は一段落。マップの確認テスト（ボス）か、進路タブで復習しよう。"
-        : "次の学習単元を準備中、またはマップを確認しよう。";
+        ? "メインクエスト完了！ ボス戦か冒険録で復習しよう。"
+        : "次のクエストを準備中… ワールドマップを確認しよう。";
       box.appendChild(p);
     } else {
       const left = document.createElement("div");
       left.innerHTML =
-        "<strong>" +
+        "<strong>⚔ " +
         (les.title_ja || les.id) +
-        '</strong><div class="hint">+' +
+        '</strong><div class="hint">報酬 +' +
         (les.exp || 0) +
-        " EXP ・ 教材あり</div>";
+        " EXP ・ 教材クエスト</div>";
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.textContent = "開く";
+      btn.textContent = "出撃する";
       btn.onclick = () => openStudyLesson(les.id);
       box.appendChild(left);
       box.appendChild(btn);
@@ -607,9 +612,9 @@
       hint.className = "next-boss-hint";
       hint.style.flexBasis = "100%";
       hint.textContent =
-        "ボス解放中：" +
+        "👹 ボス出現：" +
         (boss.title_ja || boss.id) +
-        "（マップのボス欄から挑戦。負けても学習進捗は消えない）";
+        "（ワールドのボス欄から挑戦。負けても進捗は消えない）";
       box.appendChild(hint);
     }
   }
@@ -757,7 +762,7 @@
       (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
       if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
       if (res.rank) chips.push("進化：" + (res.rank.label_ja || res.rank.id));
-      showRewardModal("学習を記録した！", ["EXP +" + (res.exp_gained || 0), (res.lesson && res.lesson.title_ja) || ""], chips);
+      showRewardModal("🎉 QUEST CLEAR!", ["EXP +" + (res.exp_gained || 0), (res.lesson && res.lesson.title_ja) || ""], chips);
       if (luna) luna.applyEmotion("cheer", 1500);
       applyJourneyUi();
       await refreshCore();
@@ -790,7 +795,7 @@
       const chips = [];
       (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
       if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
-      showRewardModal(res.success ? "ボス討伐！" : "退却…", [res.message_ja || ""], chips);
+      showRewardModal(res.success ? "🏆 BOSS DEFEATED!" : "退却… また挑もう", [res.message_ja || ""], chips);
       if (res.success && luna) luna.applyEmotion("cheer", 1500);
       applyJourneyUi();
       await refreshCore();
@@ -808,11 +813,11 @@
       return;
     }
     box.innerHTML =
-      '<div style="font-size:.74rem;font-weight:800">' +
+      '<div style="font-size:.74rem;font-weight:800">⚔ ' +
       (les.title_ja || les.id) +
-      '</div><div class="hint">+' +
+      '</div><div class="hint">報酬 +' +
       (les.exp || 0) +
-      " EXP ・ 教材あり</div>";
+      " EXP ・ 出撃可能</div>";
   }
 
   function renderMap() {
@@ -824,8 +829,12 @@
       : regions.length
         ? regions
         : [{ label_ja: "始まりの平原", unlocked: true, current: true }];
+    const pts = [];
     list.forEach((r, i) => {
       const pos = MAP_POSITIONS[i] || MAP_POSITIONS[MAP_POSITIONS.length - 1];
+      const left = parseFloat(pos.left) || 12;
+      const top = parseFloat(pos.top) || 55;
+      pts.push({ x: left, y: top });
       const node = document.createElement("div");
       const bossHere = (journeyMap.bosses || []).some((b) => b.stage_id === r.id && !b.cleared);
       node.className =
@@ -836,12 +845,28 @@
         (bossHere ? " boss" : "");
       node.style.left = pos.left;
       node.style.top = pos.top;
+      const icon = bossHere ? "👹" : r.cleared ? "⚑" : r.current ? "★" : !r.unlocked ? "🔒" : "◆";
       node.innerHTML =
-        '<div class="dot"></div>' +
+        '<span class="flag">' +
+        icon +
+        "</span>" +
         (r.label_ja || r.id) +
-        (r.progress ? '<div class="hint" style="color:#fff;opacity:.85">' + r.progress + "</div>" : "");
+        (r.progress ? '<div class="hint" style="color:#fff;opacity:.9">' + r.progress + "</div>" : "");
       path.appendChild(node);
     });
+    const svg = document.getElementById("mapRouteSvg");
+    if (svg && pts.length > 1) {
+      let d = "M " + pts[0].x + " " + pts[0].y;
+      for (let i = 1; i < pts.length; i++) {
+        const prev = pts[i - 1];
+        const cur = pts[i];
+        const mx = (prev.x + cur.x) / 2;
+        d += " Q " + mx + " " + (prev.y - 8) + " " + cur.x + " " + cur.y;
+      }
+      svg.innerHTML = '<path d="' + d + '" />';
+    } else if (svg) {
+      svg.innerHTML = "";
+    }
     const cur = list.find((r) => r.current) || list[0];
     const curIdx = Math.max(0, list.indexOf(cur));
     const lbl = document.getElementById("mapRegionLabel");
@@ -898,13 +923,13 @@
       const enrichBtn = document.createElement("button");
       enrichBtn.type = "button";
       enrichBtn.className = "ghost";
-      enrichBtn.textContent = "詳しく";
+      enrichBtn.textContent = "情報";
       enrichBtn.onclick = () => enrichLesson(les.id);
       actions.appendChild(enrichBtn);
       if (!les.completed && les.available) {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.textContent = "開く";
+        btn.textContent = "出撃";
         btn.onclick = () => openStudyLesson(les.id);
         actions.appendChild(btn);
       }
@@ -936,7 +961,7 @@
       if (!b.cleared && b.available) {
         const win = document.createElement("button");
         win.type = "button";
-        win.textContent = "挑戦";
+        win.textContent = "討伐";
         win.onclick = () => challengeBoss(b.id, true);
         const lose = document.createElement("button");
         lose.type = "button";
