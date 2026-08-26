@@ -50,6 +50,7 @@ def dates_for_title(user, title: str, focus: str):
 def active_templates(user):
     return [
         {
+            "id": t.get("id"),
             "recurrence": t.get("recurrence"),
             "weekday": t.get("weekday"),
             "day_of_month": t.get("day_of_month"),
@@ -58,6 +59,7 @@ def active_templates(user):
             "end_time": t.get("end_time"),
             "active": t.get("active", True),
             "start_date": t.get("start_date"),
+            "horizon_end": t.get("horizon_end"),
         }
         for t in _recurring_store(user)
         if t.get("active", True)
@@ -65,7 +67,7 @@ def active_templates(user):
 
 
 def test_month_panel_focus_expansion():
-    """Browsing far months must still show recurring dots for that month."""
+    """Within the 1-year horizon, browsing months still shows recurring dots."""
     user = fresh_user()
     add_event(user, title="Di hoc", event_date="2026-08-24", event_time="09:20", event_end_time="16:40", recurrence="weekly")
     add_event(user, title="Di hoc", event_date="2026-08-25", event_time="09:20", event_end_time="16:40", recurrence="weekly")
@@ -75,13 +77,14 @@ def test_month_panel_focus_expansion():
     assert "2027-03-02" in dates, dates
     assert "2027-03-29" in dates, dates
     assert "2027-03-30" in dates, dates
-    # Sliding window: focusing 2030 still works without generating forever from 2026
+    # Past the 1-year horizon: no materialization until user extends
     data2 = list_events(user, on_date="2030-06-01")
     dates2 = {e["date"] for e in data2["events"] if e.get("title") == "Di hoc"}
-    assert any(d.startswith("2030-06") for d in dates2), dates2
+    assert not any(d.startswith("2030-06") for d in dates2), dates2
+    assert data2["extend_prompt"]["needed"] is True, data2["extend_prompt"]
     # Payload stays bounded (no multi-year dump in one response)
     assert len(data["events"]) < 500, len(data["events"])
-    print("OK month expansion sliding window (bounded payload)")
+    print("OK month expansion within 1-year horizon + extend prompt beyond")
 
 
 
@@ -275,6 +278,42 @@ def test_auto_true_weekly_pattern():
     print("OK true weekly pattern + reject Thursday monthly auto")
 
 
+def test_one_year_horizon_and_extend_prompt():
+    from schedule_service import extend_recurring_horizons
+
+    user = fresh_user()
+    add_event(
+        user,
+        title="Laws",
+        event_date="2025-09-01",
+        event_time="22:00",
+        event_end_time="08:00",
+        recurrence="weekly",
+    )
+    tpls = active_templates(user)
+    assert len(tpls) == 1
+    assert tpls[0].get("horizon_end") == "2026-09-01", tpls[0]
+
+    # Near end of horizon: events exist before, not after.
+    near = "2026-08-24"
+    dates = dates_for_title(user, "Laws", near)
+    assert "2026-08-24" in dates or "2026-08-31" in dates
+    far = "2026-09-14"
+    assert "2026-09-14" not in dates_for_title(user, "Laws", far)
+
+    prompt = list_events(user, on_date="2026-08-20")["extend_prompt"]
+    assert prompt["needed"] is True, prompt
+    assert any(t["title"] == "Laws" for t in prompt["templates"])
+
+    result = extend_recurring_horizons(user, template_ids=[tpls[0]["id"]], days=365)
+    assert result["count"] == 1
+    assert active_templates(user)[0]["horizon_end"] == "2027-09-01"
+    assert "2026-09-14" in dates_for_title(user, "Laws", "2026-09-14")
+    prompt2 = list_events(user, on_date="2026-08-20")["extend_prompt"]
+    assert prompt2["needed"] is False, prompt2
+    print("OK 1-year horizon + extend prompt")
+
+
 if __name__ == "__main__":
     test_month_panel_focus_expansion()
     test_screenshot_desync_data_shape()
@@ -284,5 +323,6 @@ if __name__ == "__main__":
     test_spam_save_same_day_recurring()
     test_auto_mixed_weekdays_no_false_weekly()
     test_auto_true_weekly_pattern()
+    test_one_year_horizon_and_extend_prompt()
     print("\nALL SCHEDULE FLOW TESTS PASSED")
 

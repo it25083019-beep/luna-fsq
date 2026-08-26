@@ -268,6 +268,7 @@
     .similar-prompt{margin:0 1rem 1rem;padding:.85rem;background:linear-gradient(135deg,#efe6ff,#fff);border-radius:16px;border:1px dashed var(--lilac);display:none}
     .similar-prompt.open{display:block}
     .similar-prompt h4{margin:0 0 .35rem;font-size:.85rem;color:var(--lilac-deep)}
+    .similar-prompt p{margin:0;font-size:.78rem;color:var(--text);line-height:1.45}
     .similar-prompt .row{display:flex;gap:.4rem;margin-top:.55rem}
     .similar-prompt .row button{flex:1;border:none;border-radius:999px;padding:.55rem;font-weight:700;cursor:pointer}
     .similar-prompt .yes{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
@@ -361,10 +362,18 @@
               <div><label>終了（24h）</label><input id="addEndTime" type="text" placeholder="HH:MM" inputmode="numeric" /></div>
             </div>
             <label>メモ（任意）</label><input id="addNote" type="text" placeholder="詳細メモ" />
-            <p class="hint" style="margin:.2rem 0 .55rem">保存時に「同じ曜日へ今後も繰り返すか」を確認します。</p>
+            <p class="hint" style="margin:.2rem 0 .55rem">保存時に「同じ曜日へ今後も繰り返すか」を確認します（最初は約1年分）。</p>
             <div class="row">
               <button type="button" class="save" id="addSaveBtn">保存</button>
               <button type="button" id="addCancelBtn">キャンセル</button>
+            </div>
+          </div>
+          <div id="extendHorizonPrompt" class="similar-prompt" role="status">
+            <h4>繰り返し予定の延長</h4>
+            <p id="extendHorizonMsg"></p>
+            <div class="row">
+              <button type="button" class="yes" id="extendHorizonYes">あと1年続ける</button>
+              <button type="button" class="no" id="extendHorizonNo">今はしない</button>
             </div>
           </div>
           <div id="dayEventList"></div>

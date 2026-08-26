@@ -34,6 +34,7 @@ from schedule_service import (
     apply_suggestions,
     complete_event,
     delete_event,
+    extend_recurring_horizons,
     home_summary,
     list_events,
     suggest_combined,
@@ -62,6 +63,7 @@ from schemas import (
     ScheduleEventUpdate,
     ScheduleEventComplete,
     ScheduleApplySuggestions,
+    ScheduleExtendHorizons,
     LifeDashboardUpdate,
 )
 from suggestions import get_suggested_replies
@@ -611,6 +613,22 @@ def schedule_apply_suggestions(
     created = apply_suggestions(brain, to_apply)
     save_user_brain(current.public_id, brain)
     return {"ok": True, "created": created, "count": len(created)}
+
+
+@app.post("/schedule/recurring/extend")
+def schedule_extend_horizons(
+    req: ScheduleExtendHorizons,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    result = extend_recurring_horizons(
+        brain,
+        template_ids=req.template_ids,
+        days=req.days,
+    )
+    if result.get("count"):
+        save_user_brain(current.public_id, brain)
+    return result
 
 
 # ----- Admin -----

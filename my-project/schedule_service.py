@@ -258,6 +258,29 @@ def _cancel_template_date(user: Dict[str, Any], tpl_id: str, event_date: str) ->
         cancelled.append(ds)
 
 
+def _default_horizon_end(start: date) -> str:
+    return (start + timedelta(days=365)).isoformat()
+
+
+def _ensure_template_horizon(tpl: Dict[str, Any], user: Optional[Dict[str, Any]] = None) -> str:
+    """Ensure each recurring template has a 1-year generation horizon."""
+    raw = tpl.get("horizon_end")
+    if raw:
+        try:
+            return _parse_date(raw).isoformat()
+        except ValueError:
+            pass
+    try:
+        start = _parse_date(tpl.get("start_date") or date.today().isoformat())
+    except ValueError:
+        start = date.today()
+    horizon = _default_horizon_end(start)
+    tpl["horizon_end"] = horizon
+    if user is not None:
+        _mark_schedule_dirty(user)
+    return horizon
+
+
 def expand_recurring_templates(
     user: Dict[str, Any],
     *,
@@ -265,14 +288,14 @@ def expand_recurring_templates(
     ahead_days: int = 400,
     lookback_days: int = 93,
 ) -> List[Dict[str, Any]]:
-    """Materialize recurring instances around a focus day.
+    """Materialize recurring instances within each template's 1-year horizon.
 
-    Templates are permanent. We only generate a sliding window around the
-    browsed date so the calendar feels continuous without freezing the app
-    on multi-year payloads.
+    Templates are permanent. Concrete dates are only generated up to
+    ``horizon_end`` (default: start + 1 year). When that window is nearly over,
+    the UI asks the user to extend another year.
     """
     focus = today or date.today()
-    end = focus + timedelta(days=max(ahead_days, 31))
+    window_end = focus + timedelta(days=max(ahead_days, 31))
     stored = _events_store(user)
     existing = _existing_keys(stored)
     occupied = _occupied_recurrence_dates(stored)
@@ -289,12 +312,17 @@ def expand_recurring_templates(
         time_val = tpl.get("time")
         tpl_id = tpl.get("id") or uuid.uuid4().hex[:12]
         cancelled = set(tpl.get("cancelled_dates") or [])
+        horizon_end = _parse_date(_ensure_template_horizon(tpl, user))
+        end = min(window_end, horizon_end)
+        if end < start:
+            continue
 
         horizon_start = focus - timedelta(days=lookback_days)
         cursor = max(start, horizon_start)
-        # Safety cap: never generate more than ~3 years of weekly ticks per template.
+        if cursor > end:
+            continue
         guard = 0
-        guard_max = 2000
+        guard_max = 400  # ~1 year of weekly ticks
         while cursor <= end and guard < guard_max:
             guard += 1
             match = False
@@ -316,7 +344,10 @@ def expand_recurring_templates(
                     month = cursor.month + 1
                     year = cursor.year + (month - 1) // 12
                     month = ((month - 1) % 12) + 1
-                    cursor = date(year, month, min(dom, 28))
+                    next_cursor = date(year, month, min(dom, 28))
+                    if next_cursor <= cursor:
+                        break
+                    cursor = next_cursor
                     continue
             else:
                 weekday = int(tpl.get("weekday") if tpl.get("weekday") is not None else start.weekday())
@@ -364,6 +395,79 @@ def expand_recurring_templates(
                 break
 
     return generated
+
+
+def recurring_extend_prompt(user: Dict[str, Any], *, focus: Optional[date] = None) -> Dict[str, Any]:
+    """Return UI payload when any series is near / past its 1-year generation window."""
+    focus = focus or date.today()
+    soon = focus + timedelta(days=45)
+    needing: List[Dict[str, Any]] = []
+    for tpl in _recurring_store(user):
+        if not tpl.get("active", True):
+            continue
+        title = (tpl.get("title") or "").strip()
+        if not title:
+            continue
+        horizon = _parse_date(_ensure_template_horizon(tpl, user))
+        # Prompt when browsing near/past the end, or real today is near the end.
+        real_today = date.today()
+        if horizon <= soon or horizon <= real_today + timedelta(days=45) or focus > horizon:
+            needing.append(
+                {
+                    "id": tpl.get("id"),
+                    "title": title,
+                    "horizon_end": horizon.isoformat(),
+                    "recurrence": tpl.get("recurrence") or "weekly",
+                }
+            )
+    if not needing:
+        return {"needed": False, "templates": [], "message_ja": ""}
+    names = "、".join(t["title"] for t in needing[:3])
+    if len(needing) > 3:
+        names += " など"
+    return {
+        "needed": True,
+        "templates": needing,
+        "message_ja": (
+            "繰り返し予定（"
+            + names
+            + "）の1年分がまもなく終わります。あと1年分を続けて追加しますか？"
+        ),
+    }
+
+
+def extend_recurring_horizons(
+    user: Dict[str, Any],
+    *,
+    template_ids: Optional[List[str]] = None,
+    days: int = 365,
+) -> Dict[str, Any]:
+    """Extend generation horizon by another year for selected (or all due) templates."""
+    focus = date.today()
+    soon = focus + timedelta(days=45)
+    extended: List[Dict[str, Any]] = []
+    id_set = set(template_ids or [])
+    for tpl in _recurring_store(user):
+        if not tpl.get("active", True):
+            continue
+        tid = tpl.get("id")
+        if id_set and tid not in id_set:
+            continue
+        horizon = _parse_date(_ensure_template_horizon(tpl, user))
+        if id_set or horizon <= soon or focus > horizon:
+            base = max(horizon, focus)
+            tpl["horizon_end"] = (base + timedelta(days=max(days, 30))).isoformat()
+            extended.append(
+                {
+                    "id": tid,
+                    "title": tpl.get("title"),
+                    "horizon_end": tpl["horizon_end"],
+                }
+            )
+    if extended:
+        user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+        _mark_schedule_dirty(user)
+    return {"ok": True, "extended": extended, "count": len(extended)}
 
 
 def _all_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -447,6 +551,7 @@ def list_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> Dict[
         "events": events,
         "dates_with_events": dates_with_events,
         "recurring_templates": _recurring_store(user),
+        "extend_prompt": recurring_extend_prompt(user, focus=today),
     }
 
 
@@ -504,6 +609,7 @@ def add_recurring_template(
         "day_of_month": start.day,
         "active": True,
         "cancelled_dates": [],
+        "horizon_end": _default_horizon_end(start),
         "created_at": _utcnow_iso(),
     }
     _recurring_store(user).append(tpl)

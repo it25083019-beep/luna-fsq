@@ -81,9 +81,83 @@
       "この予定を、これから先の同じ曜日にも繰り返しますか？\n\n" +
         "OK = 今後も毎週「" +
         wd +
-        "曜日」に同じ予定を入れる\n" +
+        "曜日」に同じ予定を入れる（最初は約1年分）\n" +
         "キャンセル = この日だけ"
     );
+  }
+
+  let pendingExtendIds = [];
+
+  function readExtendDismissed() {
+    try {
+      return JSON.parse(sessionStorage.getItem("schedExtendDismissed") || "{}") || {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function writeExtendDismissed(map) {
+    try {
+      sessionStorage.setItem("schedExtendDismissed", JSON.stringify(map || {}));
+    } catch (_) {}
+  }
+
+  function showExtendHorizonPrompt(prompt) {
+    const box = document.getElementById("extendHorizonPrompt");
+    const msg = document.getElementById("extendHorizonMsg");
+    if (!box || !msg) return;
+    if (!prompt || !prompt.needed || !(prompt.templates || []).length) {
+      box.classList.remove("open");
+      pendingExtendIds = [];
+      return;
+    }
+    const dismissed = readExtendDismissed();
+    const due = (prompt.templates || []).filter((t) => {
+      const key = String(t.id || "");
+      return key && dismissed[key] !== t.horizon_end;
+    });
+    if (!due.length) {
+      box.classList.remove("open");
+      pendingExtendIds = [];
+      return;
+    }
+    pendingExtendIds = due.map((t) => t.id).filter(Boolean);
+    msg.textContent = prompt.message_ja || "繰り返し予定の1年分がまもなく終わります。あと1年分を続けますか？";
+    box.classList.add("open");
+  }
+
+  async function extendRecurringHorizons() {
+    const ids = pendingExtendIds.slice();
+    try {
+      await api("/schedule/recurring/extend", {
+        method: "POST",
+        body: JSON.stringify({ template_ids: ids.length ? ids : null, days: 365 }),
+      });
+      const box = document.getElementById("extendHorizonPrompt");
+      if (box) box.classList.remove("open");
+      pendingExtendIds = [];
+      await loadScheduleView({ preserveCursor: true });
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  function dismissExtendHorizonPrompt() {
+    const dismissed = readExtendDismissed();
+    const last = window.__lastExtendPrompt;
+    if (last && Array.isArray(last.templates)) {
+      last.templates.forEach((t) => {
+        if (t && t.id) dismissed[String(t.id)] = t.horizon_end || "dismissed";
+      });
+    } else {
+      (pendingExtendIds || []).forEach((id) => {
+        dismissed[String(id)] = "dismissed";
+      });
+    }
+    writeExtendDismissed(dismissed);
+    const box = document.getElementById("extendHorizonPrompt");
+    if (box) box.classList.remove("open");
+    pendingExtendIds = [];
   }
   const chartInstances = {};
 
@@ -504,6 +578,8 @@
       const data = await api("/schedule/events?date=" + encodeURIComponent(focus));
       allScheduleEvents = data.events || [];
       datesWithEvents = new Set(data.dates_with_events || []);
+      window.__lastExtendPrompt = data.extend_prompt || null;
+      showExtendHorizonPrompt(data.extend_prompt);
       if (!selectedDate) selectedDate = focus || data.today || todayIso();
       if (!preserveCursor) {
         const parts = selectedDate.split("-").map(Number);
@@ -1248,6 +1324,10 @@
     };
     document.getElementById("addCancelBtn").onclick = () => resetAddForm(selectedDate || todayIso());
     document.getElementById("addSaveBtn").onclick = () => addScheduleEvent();
+    const extendYes = document.getElementById("extendHorizonYes");
+    const extendNo = document.getElementById("extendHorizonNo");
+    if (extendYes) extendYes.onclick = () => extendRecurringHorizons();
+    if (extendNo) extendNo.onclick = () => dismissExtendHorizonPrompt();
     document.getElementById("calPrev").onclick = () => shiftCalendarMonth(-1);
     document.getElementById("calNext").onclick = () => shiftCalendarMonth(1);
     const saveHealthBtn = document.getElementById("saveHealthBtn");

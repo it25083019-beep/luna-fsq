@@ -172,6 +172,12 @@ class ScheduleApplySuggestions(BaseModel):
     apply_all: bool = False
 
 
+class ScheduleExtendHorizons(BaseModel):
+    """Extend recurring generation windows by another year."""
+    template_ids: Optional[List[str]] = None
+    days: int = Field(default=365, ge=30, le=800)
+
+
 class LifeDashboardUpdate(BaseModel):
     """Manual override for health / money structured metrics."""
     structured: dict = Field(default_factory=dict)
