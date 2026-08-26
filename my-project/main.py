@@ -28,7 +28,13 @@ from database import get_db, init_db
 from models import CoreBrain, PasswordResetToken, User
 from password_reset_email import send_password_reset_email
 from life_modules import MODULE_KEYS, append_module_note, list_modules, summarize_module, update_module_structured
-from life_dashboard import health_dashboard, money_dashboard
+from life_dashboard import (
+    health_dashboard,
+    mental_status_payload,
+    money_dashboard,
+    save_health_profile,
+    save_mental_checkin,
+)
 from schedule_service import (
     add_event,
     apply_suggestions,
@@ -65,6 +71,8 @@ from schemas import (
     ScheduleApplySuggestions,
     ScheduleExtendHorizons,
     LifeDashboardUpdate,
+    HealthProfileUpdate,
+    HealthMentalCheckin,
 )
 from suggestions import get_suggested_replies
 from career_engine import load_taxonomy, suggest_careers, rpg_class_label
@@ -453,7 +461,50 @@ def life_modules_list(current: User = Depends(get_current_user)):
 @app.get("/life/health/dashboard")
 def life_health_dashboard(current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
-    return health_dashboard(brain)
+    result = health_dashboard(brain)
+    # Persist reminder notification if evaluation set it.
+    if brain.get("pending_notification") and result.get("mental_reminder"):
+        save_user_brain(current.public_id, brain)
+    return result
+
+
+@app.get("/life/health/mental/status")
+def life_health_mental_status(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    result = mental_status_payload(brain)
+    if result.get("reminder"):
+        save_user_brain(current.public_id, brain)
+    return result
+
+
+@app.post("/life/health/mental")
+def life_health_mental_checkin(
+    req: HealthMentalCheckin,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    try:
+        dash = save_mental_checkin(brain, req.status)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "dashboard": dash}
+
+
+@app.patch("/life/health/profile")
+def life_health_profile_update(
+    req: HealthProfileUpdate,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    payload = req.model_dump(exclude_unset=True)
+    note = payload.pop("note", None)
+    try:
+        dash = save_health_profile(brain, payload, note=note)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "dashboard": dash}
 
 
 @app.get("/life/money/dashboard")
@@ -472,12 +523,15 @@ def life_dashboard_update(
         raise HTTPException(status_code=404, detail="Unknown module")
     brain = load_user_brain(current.public_id)
     try:
+        if module == "health":
+            # Prefer profile fields; fall back to raw structured merge for compatibility.
+            dash = save_health_profile(brain, req.structured or {}, note=req.note)
+            save_user_brain(current.public_id, brain)
+            return {"ok": True, "dashboard": dash}
         update_module_structured(brain, module, req.structured, req.note)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     save_user_brain(current.public_id, brain)
-    if module == "health":
-        return {"ok": True, "dashboard": health_dashboard(brain)}
     return {"ok": True, "dashboard": money_dashboard(brain)}
 
 
@@ -513,7 +567,7 @@ def life_module_append(
 def get_home_summary(current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
     result = home_summary(brain)
-    if brain.pop("_schedule_dirty", False):
+    if brain.pop("_schedule_dirty", False) or result.get("health", {}).get("mental_reminder"):
         save_user_brain(current.public_id, brain)
     return result
 

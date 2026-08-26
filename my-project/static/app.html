@@ -287,6 +287,27 @@
     .edit-panel .row{display:flex;gap:.4rem;margin-top:.45rem}
     .edit-panel .row button{flex:1;border:none;border-radius:999px;padding:.5rem;font-weight:700;cursor:pointer}
     .edit-panel .save{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .edit-panel .time-row{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
+    .edit-panel textarea{width:100%;min-height:3.2rem;padding:.5rem .65rem;border:none;background:var(--input-bg);border-radius:12px;resize:vertical;font:inherit}
+    .breakdown-list{margin:.35rem 0 0;padding:0;list-style:none}
+    .breakdown-list li{display:flex;justify-content:space-between;gap:.5rem;padding:.35rem 0;border-bottom:1px solid rgba(155,126,217,.12);font-size:.75rem}
+    .breakdown-list li:last-child{border-bottom:none}
+    .breakdown-list .k{color:var(--muted)}
+    .breakdown-list .v{font-weight:700;color:var(--lilac-deep)}
+    .breakdown-list .n{flex:1;color:var(--text);font-size:.7rem}
+    .mental-overlay{position:fixed;inset:0;background:rgba(40,30,60,.45);z-index:80;display:none;align-items:flex-end;justify-content:center;padding:1rem}
+    .mental-overlay.open{display:flex}
+    .mental-card{width:100%;max-width:420px;background:var(--card);border-radius:20px;padding:1rem;box-shadow:var(--shadow)}
+    .mental-card h3{margin:0 0 .35rem;font-size:.95rem;color:var(--lilac-deep)}
+    .mental-card p{margin:0 0 .65rem;font-size:.78rem;color:var(--muted);line-height:1.45}
+    .mental-choices{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
+    .mental-choices button{border:none;border-radius:14px;padding:.7rem .5rem;font-weight:700;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep)}
+    .mental-choices button:last-child{grid-column:1/-1}
+    .mental-skip{margin-top:.55rem;width:100%;border:none;background:transparent;color:var(--muted);font-size:.75rem;cursor:pointer}
+    .home-banner{margin:0 1rem .55rem;padding:.7rem .85rem;border-radius:14px;background:linear-gradient(135deg,#efe6ff,#fff);border:1px dashed var(--lilac);display:none;align-items:center;gap:.5rem}
+    .home-banner.open{display:flex}
+    .home-banner p{margin:0;flex:1;font-size:.78rem;color:var(--text);line-height:1.4}
+    .home-banner button{border:none;border-radius:999px;padding:.4rem .7rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;font-size:.72rem;flex-shrink:0}
     .edit-panel .ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -310,6 +331,10 @@
             <div class="bubble compact"><span class="who">LUNA</span><div id="dialogue">…</div></div>
           </div>
           <div class="status-head"><span>今日のステータス</span><span id="homeDate">—</span></div>
+          <div id="mentalRemindBanner" class="home-banner" role="status">
+            <p id="mentalRemindText">LUNAが今日の気分を聞きたいよ</p>
+            <button type="button" id="mentalRemindBtn">答える</button>
+          </div>
           <div class="status-row">
             <button type="button" class="status-card" data-open="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
             <button type="button" class="status-card" data-open="health"><div class="ico">💚</div><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
@@ -387,34 +412,39 @@
           <div class="dash-card">
             <div class="health-hero">
               <img src="/static/live2d/luna-expressions/luna-happy.png" alt="LUNA" />
-              <div class="score-ring"><span id="healthStatus">良好</span><strong id="healthScoreBig">85</strong><span>健康スコア</span></div>
+              <div class="score-ring"><span id="healthStatus">—</span><strong id="healthScoreBig">—</strong><span>健康スコア</span></div>
             </div>
-            <div class="metric-grid">
-              <div class="metric"><span class="hint">睡眠スコア</span><strong id="healthSleep">88</strong></div>
-              <div class="metric"><span class="hint">歩数</span><strong id="healthSteps">—</strong></div>
-              <div class="metric"><span class="hint">心拍</span><strong id="healthHr">72</strong><span style="font-size:.62rem;color:var(--muted)"> bpm</span></div>
-              <div class="metric"><span class="hint">水分</span><strong id="healthWater">6/8</strong></div>
-            </div>
-            <div class="water-row" id="waterGlasses"></div>
+            <p class="hint" id="healthBmiLine" style="margin:.35rem 0 0">BMI —</p>
           </div>
           <div class="dash-card">
-            <h4>睡眠スコア（推移）</h4>
-            <div class="chart-box"><canvas id="healthSleepChart"></canvas></div>
+            <h4>今日の評価</h4>
+            <div class="bubble compact" id="healthMessage" style="margin:0 0 .45rem">プロフィールを入力すると評価します。</div>
+            <ul class="breakdown-list" id="healthBreakdown"></ul>
           </div>
-          <div class="dash-card">
-            <h4>歩数（月間）</h4>
-            <div class="chart-box tall"><canvas id="healthStepsChart"></canvas></div>
-          </div>
-          <div class="bubble compact" id="healthMessage" style="margin:0">今日もバッチリだね！この調子で頑張ろう！</div>
         </div>
         <div class="edit-panel">
-          <h4>数値を手動で編集</h4>
-          <label>健康スコア</label><input id="editHealthScore" type="number" min="0" max="100" />
-          <label>睡眠スコア</label><input id="editHealthSleep" type="number" min="0" max="100" />
-          <label>歩数</label><input id="editHealthSteps" type="number" min="0" />
-          <label>心拍 (bpm)</label><input id="editHealthHr" type="number" min="30" max="220" />
-          <label>水分（杯）</label><input id="editHealthWater" type="number" min="0" max="20" />
-          <div class="row"><button type="button" class="save" id="saveHealthBtn">保存</button></div>
+          <h4>健康プロフィール</h4>
+          <div class="time-row">
+            <div><label>体重 (kg)</label><input id="editWeight" type="number" min="20" max="300" step="0.1" /></div>
+            <div><label>身長 (cm)</label><input id="editHeight" type="number" min="50" max="250" step="0.1" /></div>
+          </div>
+          <div class="time-row">
+            <div><label>目標体重 (kg)</label><input id="editTargetWeight" type="number" min="20" max="300" step="0.1" /></div>
+            <div><label>目標身長 (cm)</label><input id="editTargetHeight" type="number" min="50" max="250" step="0.1" /></div>
+          </div>
+          <label>睡眠時間（時間/日）</label><input id="editSleepHours" type="number" min="0" max="24" step="0.5" />
+          <div class="time-row">
+            <div><label>起床</label><input id="editWakeTime" type="text" placeholder="HH:MM" inputmode="numeric" /></div>
+            <div><label>就寝</label><input id="editBedtime" type="text" placeholder="HH:MM" inputmode="numeric" /></div>
+          </div>
+          <label>趣味・好きなこと</label><input id="editHobbies" type="text" placeholder="例：音楽、散歩" />
+          <div class="time-row">
+            <div><label>学校 (h)</label><input id="editSchoolHours" type="number" min="0" max="24" step="0.5" /></div>
+            <div><label>自学 (h)</label><input id="editStudyHours" type="number" min="0" max="24" step="0.5" /></div>
+          </div>
+          <label>リラックス (h/日)</label><input id="editRelaxHours" type="number" min="0" max="24" step="0.5" />
+          <label>運動プラン（任意）</label><textarea id="editExercisePlan" placeholder="例：週3回ジョギング30分"></textarea>
+          <div class="row"><button type="button" class="save" id="saveHealthBtn">保存して評価</button></div>
         </div>
         <p class="hint" style="padding:0 1rem">よくある相談から選ぶ</p>
         <div class="consult-row">
@@ -568,6 +598,14 @@
       </button>
     </nav>
     <p class="err" id="err"></p>
+    <div id="mentalOverlay" class="mental-overlay" aria-hidden="true">
+      <div class="mental-card" role="dialog" aria-labelledby="mentalTitle">
+        <h3 id="mentalTitle">今日の気分は？</h3>
+        <p>LUNAが毎日ひとつだけ聞きたいよ。近いものを選んでね。</p>
+        <div class="mental-choices" id="mentalChoices"></div>
+        <button type="button" class="mental-skip" id="mentalSkipBtn">あとで答える</button>
+      </div>
+    </div>
   </div>
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>

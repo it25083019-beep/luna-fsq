@@ -3,9 +3,19 @@ from __future__ import annotations
 
 import re
 from datetime import date
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from life_modules import ensure_life_modules, summarize_module
+from health_eval import (
+    MENTAL_CHOICES,
+    apply_health_evaluation,
+    evaluate_health,
+    mental_needed,
+    mental_reminder_due,
+    profile_snapshot,
+    record_mental_status,
+    sanitize_health_profile,
+)
+from life_modules import ensure_life_modules, summarize_module, update_module_structured
 
 _MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
 
@@ -20,55 +30,92 @@ def _parse_int(value: Any, default: int) -> int:
     return int(nums[0]) if nums else default
 
 
-def _default_sleep_history(score: int) -> List[Dict[str, Any]]:
-    base = max(60, min(98, score))
-    return [
-        {"month": _MONTH_LABELS[i], "score": max(55, min(98, base - 6 + i * 2))}
-        for i in range(6)
-    ]
-
-
-def _default_steps_history(steps: int) -> List[Dict[str, Any]]:
-    base = max(3000, steps)
-    return [
-        {"month": _MONTH_LABELS[i], "steps": max(2000, int(base * (0.72 + i * 0.05)))}
-        for i in range(6)
-    ]
-
-
 def health_dashboard(user: Dict[str, Any]) -> Dict[str, Any]:
+    ensure_life_modules(user)
     summary = summarize_module(user, "health")
     structured = dict(summary.get("structured") or {})
     baseline = summary.get("baseline") or {}
 
-    score = _parse_int(structured.get("score"), 85)
-    steps = _parse_int(structured.get("steps"), 10500)
-    heart_rate = _parse_int(structured.get("heart_rate"), 72)
-    water = _parse_int(structured.get("water_glasses"), 6)
-    water_goal = max(1, _parse_int(structured.get("water_goal"), 8))
-
-    sleep_history = structured.get("sleep_history") or _default_sleep_history(score)
-    steps_history = structured.get("steps_history") or _default_steps_history(steps)
-
-    if baseline.get("health_sleep") and score == 85:
-        score = min(95, score + 2)
-    if baseline.get("health_lifestyle"):
-        steps = max(steps, 9000)
-
-    status = "良好" if score >= 75 else "注意"
-    message = structured.get("message_ja") or "今日もバッチリだね！この調子で頑張ろう！"
+    evaluation = evaluate_health(structured)
+    needed = mental_needed(structured)
+    remind = mental_reminder_due(structured)
+    if remind:
+        note = "LUNAが今日の気分を聞きたいよ"
+        if user.get("pending_notification") != note:
+            user["pending_notification"] = note
 
     return {
-        "score": score,
-        "status_ja": status,
-        "steps": steps,
-        "heart_rate": heart_rate,
-        "water_glasses": water,
-        "water_goal": water_goal,
-        "message_ja": message,
-        "sleep_history": sleep_history,
-        "steps_history": steps_history,
+        "score": evaluation["score"],
+        "status_ja": evaluation["status_ja"],
+        "message_ja": evaluation["message_ja"],
+        "breakdown": evaluation["breakdown"],
+        "tips_ja": evaluation.get("tips_ja") or [],
+        "bmi": evaluation.get("bmi"),
+        "profile": profile_snapshot(structured),
+        "mental_needed": needed,
+        "mental_reminder": remind,
+        "mental_choices": list(MENTAL_CHOICES),
+        "mental_status": structured.get("mental_status"),
+        "mental_checked_on": structured.get("mental_checked_on"),
         "baseline": baseline,
+        "pending_notification": user.get("pending_notification"),
+    }
+
+
+def save_health_profile(
+    user: Dict[str, Any],
+    profile: Dict[str, Any],
+    note: Optional[str] = None,
+) -> Dict[str, Any]:
+    clean = sanitize_health_profile(profile)
+    ensure_life_modules(user)
+    row = user["life_modules"]["health"]
+    structured = dict(row.get("structured") or {})
+    structured.update(clean)
+    apply_health_evaluation(structured)
+    update_module_structured(
+        user,
+        "health",
+        structured,
+        note or "健康プロフィールを更新",
+    )
+    return health_dashboard(user)
+
+
+def save_mental_checkin(user: Dict[str, Any], status: str) -> Dict[str, Any]:
+    ensure_life_modules(user)
+    row = user["life_modules"]["health"]
+    structured = dict(row.get("structured") or {})
+    record_mental_status(structured, status)
+    update_module_structured(
+        user,
+        "health",
+        structured,
+        note=f"今日の気分: {status}",
+    )
+    if user.get("pending_notification") == "LUNAが今日の気分を聞きたいよ":
+        user["pending_notification"] = None
+    return health_dashboard(user)
+
+
+def mental_status_payload(user: Dict[str, Any]) -> Dict[str, Any]:
+    ensure_life_modules(user)
+    structured = dict(
+        (user.get("life_modules") or {}).get("health", {}).get("structured") or {}
+    )
+    today = date.today().isoformat()
+    needed = mental_needed(structured)
+    remind = mental_reminder_due(structured)
+    if remind:
+        user["pending_notification"] = "LUNAが今日の気分を聞きたいよ"
+    return {
+        "needed": needed,
+        "reminder": remind,
+        "last_date": structured.get("mental_checked_on"),
+        "today": today,
+        "status": structured.get("mental_status"),
+        "choices": list(MENTAL_CHOICES),
+        "pending_notification": user.get("pending_notification"),
     }
 
 

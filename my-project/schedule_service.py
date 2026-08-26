@@ -1221,8 +1221,12 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
     # Today-only focus keeps this cheap (calendar uses its own month window).
     today_s = date.today().isoformat()
     sched = list_events(user, on_date=today_s)
+    from health_eval import evaluate_health, mental_needed, mental_reminder_due
+
     health = user.get("life_modules", {}).get("health", {}).get("structured", {}) or {}
-    score = int(health.get("score") or 85)
+    ev = evaluate_health(health)
+    score = int(ev.get("score") or 0)
+    status = ev.get("status_ja") or "注意"
     goals_done = int(health.get("goals_done") or 0)
     goals_total = max(int(health.get("goals_total") or 5), 1)
     rpg = user.get("rpg") or {}
@@ -1232,6 +1236,10 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
         key=lambda e: (e.get("time") or "99:99", e.get("title") or ""),
     )
     today_open_n = len(sched.get("today_open") or [])
+    needed = mental_needed(health)
+    remind = mental_reminder_due(health)
+    if remind and not user.get("pending_notification"):
+        user["pending_notification"] = "LUNAが今日の気分を聞きたいよ"
     return {
         "schedule": {
             "open_count": today_open_n,
@@ -1239,11 +1247,18 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
             "label": ("今日" + str(today_open_n) + "件") if today_open_n else "今日の予定なし",
             "today_items": today_items,
         },
-        "health": {"score": score, "label": "良好 " + str(score)},
+        "health": {
+            "score": score,
+            "status_ja": status,
+            "label": f"{status} {score}",
+            "mental_needed": needed,
+            "mental_reminder": remind,
+        },
         "goals": {
             "done": goals_done or active_quests,
             "total": goals_total,
             "label": str(goals_done or active_quests) + "/" + str(goals_total) + " 達成",
         },
         "date_ja": f"{date.today().month}月{date.today().day}日",
+        "pending_notification": user.get("pending_notification"),
     }

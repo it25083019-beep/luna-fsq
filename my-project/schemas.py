@@ -182,3 +182,23 @@ class LifeDashboardUpdate(BaseModel):
     """Manual override for health / money structured metrics."""
     structured: dict = Field(default_factory=dict)
     note: Optional[str] = Field(default=None, max_length=2000)
+
+
+class HealthProfileUpdate(BaseModel):
+    weight_kg: Optional[float] = None
+    height_cm: Optional[float] = None
+    target_weight_kg: Optional[float] = None
+    target_height_cm: Optional[float] = None
+    sleep_hours: Optional[float] = None
+    wake_time: Optional[str] = Field(default=None, max_length=5)
+    bedtime: Optional[str] = Field(default=None, max_length=5)
+    hobbies: Optional[str] = Field(default=None, max_length=300)
+    school_hours: Optional[float] = None
+    study_hours: Optional[float] = None
+    relax_hours: Optional[float] = None
+    exercise_plan: Optional[str] = Field(default=None, max_length=500)
+    note: Optional[str] = Field(default=None, max_length=2000)
+
+
+class HealthMentalCheckin(BaseModel):
+    status: str = Field(min_length=1, max_length=20)

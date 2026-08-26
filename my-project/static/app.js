@@ -365,7 +365,17 @@
       document.getElementById("stHealth").textContent = s.health?.label || "良好";
       document.getElementById("stGoals").textContent = s.goals?.label || "—";
       renderHomeToday(s.schedule?.today_items || []);
+      updateMentalReminderBanner(s);
     } catch (_) {}
+  }
+
+  function updateMentalReminderBanner(s) {
+    const banner = document.getElementById("mentalRemindBanner");
+    if (!banner) return;
+    const show = !!(s && (s.health?.mental_reminder || (s.pending_notification && String(s.pending_notification).includes("気分"))));
+    banner.classList.toggle("open", show && !sessionStorage.getItem("mentalModalOpen"));
+    const txt = document.getElementById("mentalRemindText");
+    if (txt) txt.textContent = s.pending_notification || "LUNAが今日の気分を聞きたいよ";
   }
 
   function formatTimeRange(ev) {
@@ -708,82 +718,180 @@
     }
   }
 
+  function setInputVal(id, val) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = val == null || val === "" ? "" : val;
+  }
+
+  function numOrNull(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const t = (el.value || "").trim();
+    if (!t) return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function strOrNull(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const t = (el.value || "").trim();
+    return t || null;
+  }
+
+  function renderHealthDashboard(d) {
+    if (!d) return;
+    document.getElementById("healthScoreBig").textContent = d.score ?? "—";
+    document.getElementById("healthStatus").textContent = d.status_ja || "—";
+    document.getElementById("healthMessage").textContent = d.message_ja || "";
+    const bmiLine = document.getElementById("healthBmiLine");
+    if (bmiLine) bmiLine.textContent = d.bmi ? "BMI " + d.bmi : "BMI —（身長・体重を入力）";
+    const list = document.getElementById("healthBreakdown");
+    if (list) {
+      list.innerHTML = "";
+      (d.breakdown || []).forEach((row) => {
+        const li = document.createElement("li");
+        li.innerHTML =
+          '<span class="k">' +
+          (row.label_ja || row.key) +
+          '</span><span class="n">' +
+          (row.note || "") +
+          '</span><span class="v">' +
+          (row.score ?? "—") +
+          "</span>";
+        list.appendChild(li);
+      });
+    }
+    const p = d.profile || {};
+    setInputVal("editWeight", p.weight_kg);
+    setInputVal("editHeight", p.height_cm);
+    setInputVal("editTargetWeight", p.target_weight_kg);
+    setInputVal("editTargetHeight", p.target_height_cm);
+    setInputVal("editSleepHours", p.sleep_hours);
+    setInputVal("editWakeTime", p.wake_time);
+    setInputVal("editBedtime", p.bedtime);
+    setInputVal("editHobbies", p.hobbies);
+    setInputVal("editSchoolHours", p.school_hours);
+    setInputVal("editStudyHours", p.study_hours);
+    setInputVal("editRelaxHours", p.relax_hours);
+    setInputVal("editExercisePlan", p.exercise_plan);
+  }
+
   async function loadHealthView() {
     try {
       const d = await api("/life/health/dashboard");
-      document.getElementById("healthScoreBig").textContent = d.score;
-      document.getElementById("healthStatus").textContent = d.status_ja || "良好";
-      document.getElementById("healthSleep").textContent = (d.sleep_history || []).slice(-1)[0]?.score || d.score;
-      document.getElementById("healthSteps").textContent = Number(d.steps || 0).toLocaleString("ja-JP");
-      document.getElementById("healthHr").textContent = d.heart_rate;
-      document.getElementById("healthWater").textContent = d.water_glasses + "/" + d.water_goal;
-      document.getElementById("healthMessage").textContent = d.message_ja || "";
-      const sleepScore = (d.sleep_history || []).slice(-1)[0]?.score || d.score;
-      document.getElementById("editHealthScore").value = d.score;
-      document.getElementById("editHealthSleep").value = sleepScore;
-      document.getElementById("editHealthSteps").value = d.steps;
-      document.getElementById("editHealthHr").value = d.heart_rate;
-      document.getElementById("editHealthWater").value = d.water_glasses;
-
-      const glassRow = document.getElementById("waterGlasses");
-      if (glassRow) {
-        glassRow.innerHTML = "";
-        for (let i = 0; i < (d.water_goal || 8); i++) {
-          const g = document.createElement("div");
-          g.className = "water-glass" + (i < (d.water_glasses || 0) ? " fill" : "");
-          glassRow.appendChild(g);
-        }
-      }
-
-      const sleepLabels = (d.sleep_history || []).map((x) => x.month);
-      const sleepData = (d.sleep_history || []).map((x) => x.score);
-      makeChart("healthSleep", "healthSleepChart", {
-        type: "line",
-        data: {
-          labels: sleepLabels,
-          datasets: [
-            {
-              data: sleepData,
-              borderColor: "#9b7ed9",
-              backgroundColor: "rgba(155,126,217,.15)",
-              fill: true,
-              tension: 0.35,
-              pointRadius: 3,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { y: { min: 50, max: 100, ticks: { stepSize: 10 } }, x: { grid: { display: false } } },
-        },
-      });
-
-      const stepLabels = (d.steps_history || []).map((x) => x.month);
-      const stepData = (d.steps_history || []).map((x) => x.steps);
-      makeChart("healthSteps", "healthStepsChart", {
-        type: "bar",
-        data: {
-          labels: stepLabels,
-          datasets: [
-            {
-              data: stepData,
-              backgroundColor: ["#b4aee8", "#9b7ed9", "#f0a8c8", "#6ec9b8", "#e8b86d", "#7b5eb8"],
-              borderRadius: 8,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
-        },
-      });
+      renderHealthDashboard(d);
     } catch (e) {
       setErr(e.message);
     }
+  }
+
+  async function saveHealthMetrics() {
+    const TIME_RE = /^(\d{1,2}):([0-5]\d)$/;
+    function normalizeTime(t) {
+      if (!t) return null;
+      const m = TIME_RE.exec(t);
+      if (!m) return null;
+      const h = Number(m[1]);
+      if (h > 23) return null;
+      return String(h).padStart(2, "0") + ":" + m[2];
+    }
+    const wake = normalizeTime(strOrNull("editWakeTime"));
+    const bed = normalizeTime(strOrNull("editBedtime"));
+    if (strOrNull("editWakeTime") && !wake) {
+      setErr("起床は HH:MM で入力してください");
+      return;
+    }
+    if (strOrNull("editBedtime") && !bed) {
+      setErr("就寝は HH:MM で入力してください");
+      return;
+    }
+    try {
+      const res = await api("/life/health/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          weight_kg: numOrNull("editWeight"),
+          height_cm: numOrNull("editHeight"),
+          target_weight_kg: numOrNull("editTargetWeight"),
+          target_height_cm: numOrNull("editTargetHeight"),
+          sleep_hours: numOrNull("editSleepHours"),
+          wake_time: wake,
+          bedtime: bed,
+          hobbies: strOrNull("editHobbies"),
+          school_hours: numOrNull("editSchoolHours"),
+          study_hours: numOrNull("editStudyHours"),
+          relax_hours: numOrNull("editRelaxHours"),
+          exercise_plan: strOrNull("editExercisePlan"),
+        }),
+      });
+      renderHealthDashboard(res.dashboard || res);
+      await loadHomeSummary();
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  let mentalSkippedSession = false;
+
+  function showMentalModal(choices) {
+    const overlay = document.getElementById("mentalOverlay");
+    const box = document.getElementById("mentalChoices");
+    if (!overlay || !box) return;
+    box.innerHTML = "";
+    (choices || ["元気", "普通", "疲れ", "落ち込み", "不安"]).forEach((label) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = label;
+      btn.onclick = () => submitMentalStatus(label);
+      box.appendChild(btn);
+    });
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden", "false");
+    sessionStorage.setItem("mentalModalOpen", "1");
+  }
+
+  function hideMentalModal() {
+    const overlay = document.getElementById("mentalOverlay");
+    if (!overlay) return;
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden", "true");
+    sessionStorage.removeItem("mentalModalOpen");
+  }
+
+  async function submitMentalStatus(status) {
+    try {
+      const res = await api("/life/health/mental", {
+        method: "POST",
+        body: JSON.stringify({ status }),
+      });
+      hideMentalModal();
+      mentalSkippedSession = false;
+      const banner = document.getElementById("mentalRemindBanner");
+      if (banner) banner.classList.remove("open");
+      if (res.dashboard) renderHealthDashboard(res.dashboard);
+      await loadHomeSummary();
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  async function checkMentalCheckin(opts) {
+    const force = !!(opts && opts.force);
+    try {
+      const st = await api("/life/health/mental/status");
+      if (st.needed && (force || !mentalSkippedSession)) {
+        showMentalModal(st.choices);
+      } else if (st.reminder || st.needed) {
+        updateMentalReminderBanner({
+          health: { mental_reminder: !!st.reminder || !!st.needed },
+          pending_notification: st.pending_notification || "LUNAが今日の気分を聞きたいよ",
+        });
+      } else {
+        const banner = document.getElementById("mentalRemindBanner");
+        if (banner) banner.classList.remove("open");
+      }
+    } catch (_) {}
   }
 
   async function loadMoneyView() {
@@ -868,48 +976,6 @@
       Object.entries(d.baseline || {}).forEach(([k, v]) => lines.push("・" + k + ": " + v));
       (d.notes || []).forEach((n) => lines.push("＋ " + n.text));
       document.getElementById("moneyNotes").textContent = lines.length ? lines.join("\n") : "追記はLUNAに話すか、メニューから追加できます。";
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  async function saveHealthMetrics() {
-    try {
-      const sleep = Number(document.getElementById("editHealthSleep").value);
-      const score = Number(document.getElementById("editHealthScore").value);
-      const steps = Number(document.getElementById("editHealthSteps").value);
-      const hr = Number(document.getElementById("editHealthHr").value);
-      const water = Number(document.getElementById("editHealthWater").value);
-      await api("/life/health/dashboard", {
-        method: "PATCH",
-        body: JSON.stringify({
-          structured: {
-            score,
-            steps,
-            heart_rate: hr,
-            water_glasses: water,
-            sleep_history: [
-              { month: "1月", score: Math.max(50, sleep - 8) },
-              { month: "2月", score: Math.max(50, sleep - 5) },
-              { month: "3月", score: Math.max(50, sleep - 3) },
-              { month: "4月", score: Math.max(50, sleep - 1) },
-              { month: "5月", score: sleep },
-              { month: "6月", score: sleep },
-            ],
-            steps_history: [
-              { month: "1月", steps: Math.round(steps * 0.75) },
-              { month: "2月", steps: Math.round(steps * 0.82) },
-              { month: "3月", steps: Math.round(steps * 0.88) },
-              { month: "4月", steps: Math.round(steps * 0.94) },
-              { month: "5月", steps: Math.round(steps * 0.98) },
-              { month: "6月", steps },
-            ],
-          },
-          note: "健康数値を手動更新",
-        }),
-      });
-      await loadHealthView();
-      await loadHomeSummary();
     } catch (e) {
       setErr(e.message);
     }
@@ -1327,6 +1393,24 @@
     document.getElementById("calNext").onclick = () => shiftCalendarMonth(1);
     const saveHealthBtn = document.getElementById("saveHealthBtn");
     if (saveHealthBtn) saveHealthBtn.onclick = () => saveHealthMetrics();
+    const mentalSkip = document.getElementById("mentalSkipBtn");
+    if (mentalSkip) {
+      mentalSkip.onclick = () => {
+        mentalSkippedSession = true;
+        hideMentalModal();
+        updateMentalReminderBanner({
+          health: { mental_reminder: true },
+          pending_notification: "LUNAが今日の気分を聞きたいよ",
+        });
+      };
+    }
+    const mentalRemindBtn = document.getElementById("mentalRemindBtn");
+    if (mentalRemindBtn) {
+      mentalRemindBtn.onclick = () => {
+        mentalSkippedSession = false;
+        checkMentalCheckin({ force: true });
+      };
+    }
     const saveMoneyBtn = document.getElementById("saveMoneyBtn");
     if (saveMoneyBtn) saveMoneyBtn.onclick = () => saveMoneyMetrics();
     document.getElementById("sendBtn").onclick = () => sendMessage(document.getElementById("message").value);
@@ -1416,6 +1500,8 @@
       luna = new LunaAvatar(document.getElementById("lunaSprite"), null, document.getElementById("lunaStage"));
       await refreshCore();
       await startChat();
+      await loadHomeSummary();
+      await checkMentalCheckin();
     } catch (_) {
       LunaAuth.clearToken();
       LunaAuth.goLogin("/app");
