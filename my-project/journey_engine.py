@@ -14,6 +14,7 @@ _ROOT = Path(__file__).resolve().parent / "config"
 _CATALOG: Optional[Dict[str, Any]] = None
 _CURRICULA: Optional[Dict[str, Any]] = None
 _APPEARANCE: Optional[Dict[str, Any]] = None
+_MATERIALS: Optional[Dict[str, Any]] = None
 
 CLASS_IDS = ("swordsman", "mage", "archer")
 
@@ -42,6 +43,51 @@ def load_appearance() -> Dict[str, Any]:
     if _APPEARANCE is None:
         _APPEARANCE = _load_json("rpg_appearance.json")
     return _APPEARANCE
+
+
+def load_materials() -> Dict[str, Any]:
+    global _MATERIALS
+    if _MATERIALS is None:
+        path = _ROOT / "lesson_materials.json"
+        if path.exists():
+            _MATERIALS = _load_json("lesson_materials.json")
+        else:
+            _MATERIALS = {"materials": {}}
+    return _MATERIALS
+
+
+def get_lesson_material(lesson_id: str) -> Dict[str, Any]:
+    mats = load_materials().get("materials") or {}
+    row = mats.get(lesson_id)
+    if row:
+        return dict(row)
+    # stub lessons: career__stub_l1
+    if "__" in lesson_id:
+        base = lesson_id.split("__", 1)[-1]
+        row = mats.get(base)
+        if row:
+            return dict(row)
+    return {
+        "summary_ja": "このレッスンの学習メモを読んで、小さな実践をしてからクリアしよう。",
+        "goals_ja": ["要点を3つメモする", "今日できる実践を1つ行う"],
+        "steps": [
+            {"title_ja": "読む", "body_ja": "タイトルの内容を調べ、わからない言葉を1つ調べる。"},
+            {"title_ja": "実践", "body_ja": "ノートに今日の学びを3行書く。"},
+        ],
+        "practice_ja": "3行メモを書いたらクリアできるよ。",
+        "resources": [],
+    }
+
+
+def _attach_material(lesson: Dict[str, Any]) -> Dict[str, Any]:
+    out = dict(lesson)
+    mat = get_lesson_material(lesson["id"])
+    out["summary_ja"] = mat.get("summary_ja")
+    out["goals_ja"] = mat.get("goals_ja") or []
+    out["steps"] = mat.get("steps") or []
+    out["practice_ja"] = mat.get("practice_ja")
+    out["resources"] = mat.get("resources") or []
+    return out
 
 
 def _utcnow() -> str:
@@ -82,6 +128,49 @@ def get_curriculum(career_id: str) -> Dict[str, Any]:
         lessons.append(row)
     stub["lessons"] = lessons
     return stub
+
+
+def _is_boss(les: Dict[str, Any]) -> bool:
+    return (les.get("boss_type") or "none") != "none"
+
+
+def _stage_learning_lessons(cur: Dict[str, Any], stage_id: str) -> List[Dict[str, Any]]:
+    return [
+        x
+        for x in (cur.get("lessons") or [])
+        if x.get("stage_id") == stage_id and not _is_boss(x)
+    ]
+
+
+def _compute_stages(state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    j = ensure_journey(state)
+    cur = get_curriculum(j["career_id"])
+    completed = set(j.get("completed_lessons") or [])
+    stages_out = []
+    for st in sorted(cur.get("stages") or [], key=lambda s: s.get("order", 0)):
+        stage_lessons = [x for x in (cur.get("lessons") or []) if x.get("stage_id") == st["id"]]
+        learning = _stage_learning_lessons(cur, st["id"])
+        done_learning = sum(1 for x in learning if x["id"] in completed)
+        done_all = sum(1 for x in stage_lessons if x["id"] in completed)
+        unlocked = st.get("order", 0) == 1
+        if st.get("order", 0) > 1:
+            prev = [s for s in cur["stages"] if s.get("order") == st["order"] - 1]
+            if prev:
+                prev_learning = _stage_learning_lessons(cur, prev[0]["id"])
+                # Learning path unlocks when previous stage's study lessons are done
+                # (weekly/monthly bosses are side challenges, not hard blockers).
+                unlocked = (not prev_learning) or all(x["id"] in completed for x in prev_learning)
+        stages_out.append(
+            {
+                **st,
+                "unlocked": unlocked,
+                "current": st["id"] == j.get("stage_id"),
+                "cleared": bool(learning) and all(x["id"] in completed for x in learning),
+                "progress": f"{done_learning}/{len(learning)}" if learning else f"{done_all}/{len(stage_lessons)}",
+                "stars": min(3, done_learning if learning else done_all),
+            }
+        )
+    return stages_out
 
 
 def list_careers() -> List[Dict[str, Any]]:
@@ -209,17 +298,17 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
     career = _career_meta(j.get("career_id") or "") if j.get("career_id") else None
     cur = get_curriculum(j["career_id"]) if j.get("career_id") else None
     completed = set(j.get("completed_lessons") or [])
+    mmap = list_journey_map(state) if j.get("career_id") else {"lessons": [], "bosses": []}
     next_lesson = None
-    if cur:
-        for les in cur.get("lessons") or []:
-            if les["id"] not in completed and (les.get("boss_type") or "none") == "none":
-                next_lesson = les
-                break
-        if next_lesson is None:
-            for les in cur.get("lessons") or []:
-                if les["id"] not in completed:
-                    next_lesson = les
-                    break
+    for les in mmap.get("lessons") or []:
+        if les.get("available") and not _is_boss(les):
+            next_lesson = les
+            break
+    next_boss = None
+    for b in mmap.get("bosses") or []:
+        if b.get("available") and not b.get("cleared"):
+            next_boss = b
+            break
     appearance = _build_appearance(j.get("class_id") or "swordsman", j.get("equipped") or {}, j.get("rank_id") or "novice")
     return {
         "selected": bool(j.get("class_id") and j.get("career_id")),
@@ -239,6 +328,7 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
         "equipped": j.get("equipped") or {},
         "appearance": appearance,
         "next_lesson": next_lesson,
+        "next_boss": next_boss,
         "boss_clears": j.get("boss_clears") or [],
         "classes": list_classes(),
         "careers": list_careers(),
@@ -252,38 +342,15 @@ def list_journey_map(state: Dict[str, Any]) -> Dict[str, Any]:
         return {"selected": False, "stages": [], "lessons": [], "bosses": []}
     cur = get_curriculum(j["career_id"])
     completed = set(j.get("completed_lessons") or [])
-    stages_out = []
-    for st in sorted(cur.get("stages") or [], key=lambda s: s.get("order", 0)):
-        stage_lessons = [x for x in (cur.get("lessons") or []) if x.get("stage_id") == st["id"]]
-        done = sum(1 for x in stage_lessons if x["id"] in completed)
-        unlocked = st["id"] == j.get("stage_id") or done > 0 or st.get("order", 0) == 1
-        # unlock if previous stage fully clear
-        if st.get("order", 0) > 1:
-            prev = [s for s in cur["stages"] if s.get("order") == st["order"] - 1]
-            if prev:
-                prev_lessons = [x for x in cur["lessons"] if x.get("stage_id") == prev[0]["id"]]
-                unlocked = all(x["id"] in completed for x in prev_lessons) or done > 0
-        stages_out.append(
-            {
-                **st,
-                "unlocked": unlocked,
-                "current": st["id"] == j.get("stage_id"),
-                "cleared": bool(stage_lessons) and all(x["id"] in completed for x in stage_lessons),
-                "progress": f"{done}/{len(stage_lessons)}",
-                "stars": min(3, done),
-            }
-        )
+    stages_out = _compute_stages(state)
     lessons_out = []
     for les in cur.get("lessons") or []:
         stage = next((s for s in stages_out if s["id"] == les.get("stage_id")), None)
-        lessons_out.append(
-            {
-                **les,
-                "completed": les["id"] in completed,
-                "available": bool(stage and stage.get("unlocked")) and les["id"] not in completed,
-                "detail_ja": (j.get("lesson_enrich") or {}).get(les["id"]),
-            }
-        )
+        row = _attach_material(les)
+        row["completed"] = les["id"] in completed
+        row["available"] = bool(stage and stage.get("unlocked")) and les["id"] not in completed
+        row["detail_ja"] = (j.get("lesson_enrich") or {}).get(les["id"])
+        lessons_out.append(row)
     bosses = list_bosses(state)
     return {
         "selected": True,
@@ -293,6 +360,18 @@ def list_journey_map(state: Dict[str, Any]) -> Dict[str, Any]:
         "skills_catalog": cur.get("skills") or [],
         "bosses": bosses,
     }
+
+
+def get_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
+    j = ensure_journey(state)
+    if not j.get("career_id"):
+        raise ValueError("journey not selected")
+    mmap = list_journey_map(state)
+    row = next((x for x in mmap["lessons"] if x["id"] == lesson_id), None)
+    if not row:
+        # boss entries live in lessons too
+        raise ValueError("lesson not found")
+    return row
 
 
 def _equip_gear(j: Dict[str, Any], gear: Dict[str, Any]) -> None:
@@ -329,7 +408,9 @@ def _advance_stage(j: Dict[str, Any], cur: Dict[str, Any]) -> None:
     completed = set(j.get("completed_lessons") or [])
     stages = sorted(cur.get("stages") or [], key=lambda s: s.get("order", 0))
     for st in stages:
-        lessons = [x for x in (cur.get("lessons") or []) if x.get("stage_id") == st["id"]]
+        lessons = _stage_learning_lessons(cur, st["id"])
+        if not lessons:
+            lessons = [x for x in (cur.get("lessons") or []) if x.get("stage_id") == st["id"] and not _is_boss(x)]
         if lessons and all(x["id"] in completed for x in lessons):
             continue
         j["stage_id"] = st["id"]
@@ -349,11 +430,9 @@ def complete_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
     if lesson_id in (j.get("completed_lessons") or []):
         raise ValueError("lesson already completed")
 
-    # Gate: stage unlocked
     mmap = list_journey_map(state)
     row = next((x for x in mmap["lessons"] if x["id"] == lesson_id), None)
     if not row or not row.get("available"):
-        # allow if stage unlocked even for boss lessons marked available false when completed check
         stage = next((s for s in mmap["stages"] if s["id"] == les.get("stage_id")), None)
         if not stage or not stage.get("unlocked"):
             raise ValueError("lesson locked")
@@ -362,8 +441,9 @@ def complete_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
     if boss_type in ("weekly", "monthly", "career_final"):
         raise ValueError("use boss challenge endpoint for boss lessons")
 
-    gained_exp = _apply_exp(state, int(les.get("exp") or 10))
-    j["journey_exp"] = int(j.get("journey_exp") or 0) + gained_exp
+    raw_exp = int(les.get("exp") or 10)
+    gained_exp = _apply_exp(state, raw_exp)
+    j["journey_exp"] = int(j.get("journey_exp") or 0) + raw_exp
     j.setdefault("completed_lessons", []).append(lesson_id)
     skills = _unlock_skills(j, cur, les.get("skill_ids") or [])
     gear = None
@@ -375,7 +455,6 @@ def complete_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
     _advance_stage(j, cur)
     appearance = _build_appearance(j["class_id"], j.get("equipped") or {}, j["rank_id"])
 
-    # Sync light gear into rpg.equipment for portfolio
     rpg = ensure_rpg(state)
     if gear:
         rpg.setdefault("equipment", []).append(
@@ -384,8 +463,9 @@ def complete_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
 
     return {
         "ok": True,
-        "lesson": les,
+        "lesson": _attach_material(les),
         "exp_gained": gained_exp,
+        "journey_exp_gained": raw_exp,
         "skills_gained": skills,
         "gear": gear,
         "rank": rank,
@@ -474,8 +554,9 @@ def challenge_boss(state: Dict[str, Any], boss_id: str, *, success: bool = True)
     if not success:
         return {"ok": False, "success": False, "message_ja": "今回は退却…でも旅は続くよ。準備して再挑戦しよう。", "status": journey_status(state)}
 
-    gained_exp = _apply_exp(state, int(les.get("exp") or 40))
-    j["journey_exp"] = int(j.get("journey_exp") or 0) + gained_exp
+    raw_exp = int(les.get("exp") or 40)
+    gained_exp = _apply_exp(state, raw_exp)
+    j["journey_exp"] = int(j.get("journey_exp") or 0) + raw_exp
     if boss_id not in (j.get("completed_lessons") or []):
         j.setdefault("completed_lessons", []).append(boss_id)
     j.setdefault("boss_clears", []).append(boss_id)
@@ -498,6 +579,7 @@ def challenge_boss(state: Dict[str, Any], boss_id: str, *, success: bool = True)
         "success": True,
         "message_ja": "ボス討伐成功！装備と経験を手に入れたよ。",
         "exp_gained": gained_exp,
+        "journey_exp_gained": raw_exp,
         "skills_gained": skills,
         "gear": gear,
         "rank": rank,

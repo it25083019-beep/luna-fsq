@@ -153,6 +153,23 @@
     .reward-card h3{margin:0 0 .4rem;font-size:1rem}
     .reward-card p{margin:.25rem 0;font-size:.78rem;color:var(--muted)}
     .chip-mini{display:inline-block;margin:.15rem .2rem 0 0;padding:.2rem .45rem;border-radius:999px;background:#f0ecff;font-size:.62rem;font-weight:700}
+    .study-modal{position:fixed;inset:0;background:rgba(20,16,48,.55);display:none;align-items:flex-end;justify-content:center;z-index:85;padding:0}
+    .study-modal.open{display:flex}
+    .study-sheet{background:#fff;border-radius:22px 22px 0 0;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:1rem 1rem 1.25rem;box-shadow:0 -12px 40px rgba(20,16,48,.25)}
+    .study-sheet h3{margin:0 0 .35rem;font-size:1.05rem}
+    .study-sheet .summary{font-size:.8rem;line-height:1.55;color:#3a3f63;margin:.4rem 0 .7rem}
+    .study-goals{margin:0 0 .75rem;padding-left:1.1rem;font-size:.75rem;color:#445;line-height:1.45}
+    .study-step{border:1px solid #e8eaff;border-radius:14px;padding:.65rem .7rem;margin-bottom:.45rem;background:#fafbff}
+    .study-step strong{display:block;font-size:.78rem;margin-bottom:.2rem}
+    .study-step p{margin:0;font-size:.72rem;color:var(--muted);line-height:1.5}
+    .study-resources{display:flex;flex-direction:column;gap:.35rem;margin:.55rem 0 .8rem}
+    .study-resources a{font-size:.72rem;font-weight:700;color:var(--lilac-deep);text-decoration:none;padding:.45rem .6rem;border-radius:12px;background:#f3f0ff;border:1px solid #e4defe}
+    .study-actions{display:flex;gap:.45rem;flex-wrap:wrap;position:sticky;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%);padding-top:.8rem}
+    .study-actions button{flex:1;min-width:120px;border:none;border-radius:999px;padding:.55rem .8rem;font-size:.78rem;font-weight:800;cursor:pointer}
+    .study-actions .primary{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .study-actions .ghost{background:#eef0ff;color:var(--lilac-deep)}
+    .next-lesson button{border:none;border-radius:999px;padding:.4rem .85rem;font-size:.72rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .next-boss-hint{margin-top:.55rem;padding:.55rem .65rem;border-radius:14px;background:#fff6ef;border:1px solid #ffd7bf;font-size:.72rem;color:#8a4b20}
     .quest-item{display:flex;align-items:center;gap:.55rem;padding:.55rem 0;border-bottom:1px solid #eceeff}
     .quest-item:last-child{border-bottom:none}
     .quest-icon{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:#fff;font-size:.85rem;flex-shrink:0}
@@ -552,7 +569,7 @@
       <section id="tab-fsq" class="tab-panel">
         <div class="fsq-banner">
           <h2>⚔️ Future Skill Quest</h2>
-          <p>クラスと職業を選び、レッスンで成長するキャリア旅</p>
+          <p>クラスと職業を選び、本物の教材で学びながら成長するキャリア旅</p>
         </div>
         <div class="fsq-subnav" id="fsqSubnav">
           <button type="button" class="fsq-sub active" data-fsq="home">ホーム</button>
@@ -638,6 +655,26 @@
           <p id="rewardBody"></p>
           <div id="rewardChips" style="margin:.5rem 0 .8rem"></div>
           <button type="button" id="rewardCloseBtn">つづける</button>
+        </div>
+      </div>
+      <div id="studyModal" class="study-modal" role="dialog" aria-modal="true">
+        <div class="study-sheet">
+          <h3 id="studyTitle">レッスン</h3>
+          <div class="hint" id="studyExp"></div>
+          <p class="summary" id="studySummary"></p>
+          <div class="section-title" style="margin-bottom:.35rem"><span>🎯 ゴール</span></div>
+          <ul class="study-goals" id="studyGoals"></ul>
+          <div class="section-title" style="margin-bottom:.35rem"><span>📘 学習ステップ</span></div>
+          <div id="studySteps"></div>
+          <div class="section-title" style="margin:.7rem 0 .35rem"><span>🔗 参考教材</span></div>
+          <div class="study-resources" id="studyResources"></div>
+          <p class="hint" id="studyPractice" style="margin:0 0 .4rem"></p>
+          <p class="hint" id="studyEnrich" style="margin:0 0 .4rem;display:none"></p>
+          <div class="study-actions">
+            <button type="button" class="ghost" id="studyEnrichBtn">AIで詳しく</button>
+            <button type="button" class="ghost" id="studyCloseBtn">閉じる</button>
+            <button type="button" class="primary" id="studyCompleteBtn">実践したらクリア</button>
+          </div>
         </div>
       </div>
 

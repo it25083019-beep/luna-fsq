@@ -6,6 +6,7 @@ from journey_engine import (
     complete_lesson,
     enrich_lesson_detail,
     get_curriculum,
+    get_lesson,
     journey_status,
     list_bosses,
     list_careers,
@@ -74,6 +75,26 @@ def test_select_complete_rank_gear():
     print("OK select+lesson", res["rank"]["label_ja"])
 
 
+def test_learning_not_blocked_by_weekly_boss():
+    state = fresh()
+    select_journey(state, class_id="swordsman", career_id="software_engineer")
+    cur = get_curriculum("software_engineer")
+    for les in cur["lessons"]:
+        if les["stage_id"] in ("se_s1", "se_s2") and (les.get("boss_type") or "none") == "none":
+            complete_lesson(state, les["id"])
+            state["daily_exp"] = 0
+    complete_lesson(state, "se_l6")
+    state["daily_exp"] = 0
+    st = journey_status(state)
+    assert st["next_lesson"]["id"] == "se_l7"
+    assert st["next_boss"]["id"] == "se_l5"
+    les = get_lesson(state, "se_l7")
+    assert les["available"] is True
+    assert les.get("resources")
+    complete_lesson(state, "se_l7")
+    print("OK learning path past weekly boss")
+
+
 def test_stage_lock_and_weekly_boss_gate():
     state = fresh()
     select_journey(state, class_id="swordsman", career_id="software_engineer")
@@ -88,9 +109,9 @@ def test_stage_lock_and_weekly_boss_gate():
 
     bosses = {b["id"]: b for b in list_bosses(state)}
     assert "se_l5" in bosses
+    # weekly needs half of stage-3 learning lessons
     assert bosses["se_l5"]["available"] is False or bosses["se_l5"]["boss_type"] == "weekly"
 
-    # Finish enough stage-3 non-boss to unlock weekly
     for les in cur["lessons"]:
         if les["stage_id"] == "se_s3" and (les.get("boss_type") or "none") == "none":
             complete_lesson(state, les["id"])
@@ -180,6 +201,7 @@ if __name__ == "__main__":
     test_catalog_has_full_and_stub()
     test_unselected_status_does_not_crash()
     test_select_complete_rank_gear()
+    test_learning_not_blocked_by_weekly_boss()
     test_stage_lock_and_weekly_boss_gate()
     test_final_boss_requires_progress_and_rank()
     test_enrich_caches_detail()

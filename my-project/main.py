@@ -86,6 +86,7 @@ from journey_engine import (
     complete_lesson,
     enrich_lesson_detail,
     get_curriculum,
+    get_lesson,
     journey_status,
     list_bosses,
     list_careers,
@@ -861,6 +862,15 @@ def journey_select(req: JourneySelectRequest, current: User = Depends(get_curren
 def journey_map(current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
     return list_journey_map(brain)
+
+
+@app.get("/journey/lessons/{lesson_id}")
+def journey_get_lesson(lesson_id: str, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        return get_lesson(brain, lesson_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.post("/journey/lessons/{lesson_id}/complete")

@@ -1,0 +1,1398 @@
+{
+  "version": "1.0",
+  "materials": {
+    "se_l1": {
+      "summary_ja": "エンジニアの成長は「毎日少しずつ」が最強です。完璧な日より、続く日を作ろう。",
+      "goals_ja": [
+        "学習時間をカレンダーに置く",
+        "スマホ通知を1つ減らす",
+        "終わったら1行メモする"
+      ],
+      "steps": [
+        {
+          "title_ja": "なぜ30分か",
+          "body_ja": "集中が続く短時間は習慣化しやすい。まずは始めるハードルを下げるのが目的。"
+        },
+        {
+          "title_ja": "タイマーの使い方",
+          "body_ja": "ポモドーロ（25分＋5分休）でもOK。途中で止めても「やった」と記録する。"
+        },
+        {
+          "title_ja": "記録の型",
+          "body_ja": "日付 / 学んだこと1行 / 明日やること1行。ノートでもメモアプリでも可。"
+        }
+      ],
+      "practice_ja": "今日はタイマーをセットして、教材を開くところまでやってみよう。できたらクリア。",
+      "resources": [
+        {
+          "title_ja": "ポモドーロ・テクニック概要",
+          "url": "https://todoist.com/ja/productivity-methods/pomodoro-technique",
+          "kind": "article"
+        },
+        {
+          "title_ja": "MDN 学習エリア",
+          "url": "https://developer.mozilla.org/ja/docs/Learn",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l2": {
+      "summary_ja": "大きな問題は小さく割ると進む。エンジニアの基本スキル「分解」を身につける。",
+      "goals_ja": [
+        "大きな目標を3〜5個の小タスクにする",
+        "各タスクを30分以内に収める",
+        "依存関係を矢印で書く"
+      ],
+      "steps": [
+        {
+          "title_ja": "分解の例",
+          "body_ja": "「Webアプリを作る」→ 画面を描く / HTML骨組み / ボタン動作 / 保存 / 見た目。"
+        },
+        {
+          "title_ja": "チェックリスト化",
+          "body_ja": "タスクは動詞で書く（調べる・書く・動かす）。曖昧な名詞だけの項目は避ける。"
+        },
+        {
+          "title_ja": "詰まったとき",
+          "body_ja": "さらに半分に割る。それでも無理なら「調べる」タスクを先に置く。"
+        }
+      ],
+      "practice_ja": "作りたいものか宿題を1つ選び、メモで5個以下に分解して残そう。",
+      "resources": [
+        {
+          "title_ja": "MDN: 学習への入り口",
+          "url": "https://developer.mozilla.org/ja/docs/Learn",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "freeCodeCamp 日本語ニュース",
+          "url": "https://www.freecodecamp.org/japanese/news/",
+          "kind": "article"
+        }
+      ]
+    },
+    "se_l3": {
+      "summary_ja": "プログラムは「データ（変数）」と「判断（条件）」で動く。コーディングの入口。",
+      "goals_ja": [
+        "変数に値を入れる意味を説明できる",
+        "if / else で分岐を書ける",
+        "真偽を意識する"
+      ],
+      "steps": [
+        {
+          "title_ja": "変数とは",
+          "body_ja": "箱に名前をつけて値を入れておく仕組み。例: age = 16"
+        },
+        {
+          "title_ja": "条件分岐",
+          "body_ja": "もし点数 >= 60 なら合格、そうでなければ復習、のように道を分ける。"
+        },
+        {
+          "title_ja": "手を動かす",
+          "body_ja": "オンラインエディタやブラウザのコンソールで短いコードを実行する。"
+        }
+      ],
+      "practice_ja": "「所持金が500円以上ならお茶、未満なら水」を if/else で書いて動かそう。",
+      "resources": [
+        {
+          "title_ja": "MDN: JavaScript の第一歩",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/First_steps",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "MDN: if...else",
+          "url": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Statements/if...else",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "freeCodeCamp: JS",
+          "url": "https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures-v8/",
+          "kind": "course"
+        }
+      ]
+    },
+    "se_l4": {
+      "summary_ja": "同じ作業のくり返しはループへ。複数のデータは配列でまとめる。",
+      "goals_ja": [
+        "for / while をざっくり説明できる",
+        "配列の要素を順番に処理できる",
+        "数え間違いに注意する"
+      ],
+      "steps": [
+        {
+          "title_ja": "配列",
+          "body_ja": "関連する値を順番に入れる箱の列。例: scores = [70, 85, 90]"
+        },
+        {
+          "title_ja": "ループ",
+          "body_ja": "配列の各要素に同じ処理をするときに使う。"
+        },
+        {
+          "title_ja": "よくあるバグ",
+          "body_ja": "i < length と i <= length の間違い。ログで確認する習慣を。"
+        }
+      ],
+      "practice_ja": "1〜10を表示するループ、または名前配列を1つずつ表示するコードを書こう。",
+      "resources": [
+        {
+          "title_ja": "MDN: ループと反復処理",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/Building_blocks/Looping_code",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "MDN: Array",
+          "url": "https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l5": {
+      "summary_ja": "週次確認：ここまでの基礎を短い課題でチェックする。復習してから挑もう。",
+      "goals_ja": [
+        "変数・条件・ループのミニ課題を解く",
+        "解法を自分の言葉で説明できる",
+        "わからなかった所をメモする"
+      ],
+      "steps": [
+        {
+          "title_ja": "準備",
+          "body_ja": "変数・条件・ループのノートを見返す。"
+        },
+        {
+          "title_ja": "課題例",
+          "body_ja": "配列の合計、最大値、偶数だけ表示などのミニ問題を2問。"
+        },
+        {
+          "title_ja": "振り返り",
+          "body_ja": "解けた/詰まったを記録。詰まった所が次の学習ポイント。"
+        }
+      ],
+      "practice_ja": "ミニ課題を2問解いてからマップの週次ボスに挑戦しよう。負けても学習進捗は消えない。",
+      "resources": [
+        {
+          "title_ja": "MDN 学習ハブ",
+          "url": "https://developer.mozilla.org/ja/docs/Learn",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "Codewars（練習）",
+          "url": "https://www.codewars.com/",
+          "kind": "practice"
+        }
+      ]
+    },
+    "se_l6": {
+      "summary_ja": "バグは敵ではなく手がかり。再現→仮説→確認の手順で潰す。",
+      "goals_ja": [
+        "再現手順を書く",
+        "予想と実際の差を言語化する",
+        "ログで値を確認する"
+      ],
+      "steps": [
+        {
+          "title_ja": "再現が半分",
+          "body_ja": "いつ・どの操作・期待・実際を書くと助けを求めやすい。"
+        },
+        {
+          "title_ja": "仮説を1つ",
+          "body_ja": "いきなり直さず、原因候補を1つ立てて検証する。"
+        },
+        {
+          "title_ja": "二分法",
+          "body_ja": "怪しい範囲を半分に削る。最近変えた所から疑うのも定石。"
+        }
+      ],
+      "practice_ja": "わざと間違ったコードを1つ作り、再現手順を3行で書いてから直そう。",
+      "resources": [
+        {
+          "title_ja": "MDN: 何がうまくいかないのか",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/First_steps/What_went_wrong",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "Chrome DevTools",
+          "url": "https://developer.chrome.com/docs/devtools?hl=ja",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l7": {
+      "summary_ja": "小さなWebアプリ＝HTMLで骨組み、CSSで見た目、JSで動き。まずは動く1画面を作ろう。",
+      "goals_ja": [
+        "HTMLで見出し・入力・ボタンを置く",
+        "クリックで文字が変わる/追加される",
+        "構成を自分の言葉で説明できる"
+      ],
+      "steps": [
+        {
+          "title_ja": "設計（5分）",
+          "body_ja": "例: ToDo、打刻メモ、気分ログ、単語帳。機能は1つだけ。"
+        },
+        {
+          "title_ja": "HTML骨組み",
+          "body_ja": "input と button と結果表示（ul や p）を用意する。"
+        },
+        {
+          "title_ja": "JSの動き",
+          "body_ja": "クリックで入力を読み、リスト追加や文字更新。console.log で確認。"
+        },
+        {
+          "title_ja": "仕上げ",
+          "body_ja": "余白とフォントだけ整える。完璧なデザインは後回し。"
+        }
+      ],
+      "practice_ja": "index.html 1枚、または CodePen で「追加できるメモ」を作ろう。動いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "MDN: 初めてのウェブサイト",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/Getting_started_with_the_web",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "MDN: 文書の操作",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/JavaScript/Client-side_web_APIs/Manipulating_documents",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "freeCodeCamp: Responsive Web Design",
+          "url": "https://www.freecodecamp.org/learn/2022/responsive-web-design/",
+          "kind": "course"
+        },
+        {
+          "title_ja": "CodePen",
+          "url": "https://codepen.io/pen/",
+          "kind": "tool"
+        }
+      ]
+    },
+    "se_l8": {
+      "summary_ja": "月次レビュー：作ったものや学びを説明できるかがポイント。",
+      "goals_ja": [
+        "成果を見ながら説明する",
+        "良かった点・改善点を書く",
+        "次の2週間の目標を決める"
+      ],
+      "steps": [
+        {
+          "title_ja": "観点",
+          "body_ja": "動くか / わかりやすいか / 次に何を足すか。"
+        },
+        {
+          "title_ja": "フィードバック",
+          "body_ja": "否定ではなく次の実験としてメモする。"
+        }
+      ],
+      "practice_ja": "成果を3分で話す箇条書きを書いてから月次ボスへ。",
+      "resources": [
+        {
+          "title_ja": "Qiita（技術メモの例）",
+          "url": "https://qiita.com/",
+          "kind": "article"
+        }
+      ]
+    },
+    "se_l9": {
+      "summary_ja": "Gitは変更の履歴を残す道具。一人でもチームでも必須。",
+      "goals_ja": [
+        "commit の意味を説明できる",
+        "add → commit を一度行う",
+        "良いメッセージの型を知る"
+      ],
+      "steps": [
+        {
+          "title_ja": "なぜGitか",
+          "body_ja": "壊しても戻れる。何を変えたか後から追える。"
+        },
+        {
+          "title_ja": "最小フロー",
+          "body_ja": "変更 → git add → git commit"
+        },
+        {
+          "title_ja": "メッセージ",
+          "body_ja": "何をしたかを短く。例: Add memo list feature"
+        }
+      ],
+      "practice_ja": "GitHub にリポジトリを作り、README を1回コミットしよう（Desktop可）。",
+      "resources": [
+        {
+          "title_ja": "Pro Git（日本語）",
+          "url": "https://git-scm.com/book/ja/v2",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "GitHub Skills",
+          "url": "https://skills.github.com/",
+          "kind": "course"
+        }
+      ]
+    },
+    "se_l10": {
+      "summary_ja": "設計メモは未来の自分への手紙。コードの前に意図を残す。",
+      "goals_ja": [
+        "目的・ユーザー・画面・データ・制約を書く",
+        "曖昧点を質問リストにする"
+      ],
+      "steps": [
+        {
+          "title_ja": "テンプレ",
+          "body_ja": "目的 / 誰向け / 主要画面 / データ / やらないこと。"
+        },
+        {
+          "title_ja": "図",
+          "body_ja": "箱と矢印のラフで十分。綺麗さより共有しやすさ。"
+        }
+      ],
+      "practice_ja": "作りたいアプリの設計メモを半ページ書こう。",
+      "resources": [
+        {
+          "title_ja": "MDN: サーバーサイド第一歩",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/Server-side/First_steps",
+          "kind": "docs"
+        }
+      ]
+    },
+    "se_l11": {
+      "summary_ja": "ポートフォリオは作品で語る履歴書。小さくても公開と説明が大事。",
+      "goals_ja": [
+        "作品を公開またはスクショ付きでまとめる",
+        "課題→工夫→学びを書く"
+      ],
+      "steps": [
+        {
+          "title_ja": "載せる内容",
+          "body_ja": "概要、技術、自分でやったこと、リンク。"
+        },
+        {
+          "title_ja": "見せ方",
+          "body_ja": "README や Notion で良い。未完成でも学習成果になる。"
+        }
+      ],
+      "practice_ja": "README かドキュメントに作品紹介を書こう。",
+      "resources": [
+        {
+          "title_ja": "Make a README",
+          "url": "https://www.makeareadme.com/",
+          "kind": "article"
+        }
+      ]
+    },
+    "se_l12": {
+      "summary_ja": "最終確認：習慣・分解・実装・デバッグ・Git・設計を統合する。",
+      "goals_ja": [
+        "各ステージを振り返る",
+        "今後30日の学習計画を立てる",
+        "成果物を1つ示す"
+      ],
+      "steps": [
+        {
+          "title_ja": "総合確認",
+          "body_ja": "ノートを見返す。"
+        },
+        {
+          "title_ja": "宣言",
+          "body_ja": "次に作るものと毎週の学習枠を決める。"
+        }
+      ],
+      "practice_ja": "30日プラン（週テーマ）を書いてから最終ボスへ。",
+      "resources": [
+        {
+          "title_ja": "MDN Learn",
+          "url": "https://developer.mozilla.org/ja/docs/Learn",
+          "kind": "docs"
+        },
+        {
+          "title_ja": "freeCodeCamp",
+          "url": "https://www.freecodecamp.org/learn/",
+          "kind": "course"
+        }
+      ]
+    },
+    "ux_l1": {
+      "summary_ja": "身近なUIを観察し、良い点と困りごとを見つける。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://lawsofux.com/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l2": {
+      "summary_ja": "色と余白で読みやすさを整える感覚を養う。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://developer.mozilla.org/ja/docs/Learn/CSS/First_steps",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l3": {
+      "summary_ja": "レイアウトは視線の流れの設計。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://help.figma.com/hc/ja",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l4": {
+      "summary_ja": "ワイヤーは見た目より情報構造。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://www.nngroup.com/articles/wireframes-getting-started/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l5": {
+      "summary_ja": "週次確認：観察メモとワイヤーを見直す。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://lawsofux.com/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l6": {
+      "summary_ja": "ユーザーの困りごとを聞き取る。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://www.nngroup.com/articles/usability-testing-101/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l7": {
+      "summary_ja": "クリックできる試作で検証する。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://help.figma.com/hc/ja/articles/360040328053",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l8": {
+      "summary_ja": "月次レビュー：意図を説明し改善点を決める。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://www.nngroup.com/articles/design-critiques/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l9": {
+      "summary_ja": "フィードバックを反映して1画面改善。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://www.nngroup.com/articles/ux-iteration/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l10": {
+      "summary_ja": "ケーススタディにまとめる。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://www.interaction-design.org/literature/topics/case-studies",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l11": {
+      "summary_ja": "作品発表の練習をする。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://www.nngroup.com/articles/ux-portfolios/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "ux_l12": {
+      "summary_ja": "最終確認：観察から試作までの流れを振り返る。",
+      "goals_ja": [
+        "教材を読む",
+        "手を動かしてメモを残す"
+      ],
+      "steps": [
+        {
+          "title_ja": "学習の進め方",
+          "body_ja": "下の参考リンクを読み、自分の言葉で3行要約する。"
+        },
+        {
+          "title_ja": "実践",
+          "body_ja": "今日できる小さなアウトプットを1つ作る。"
+        }
+      ],
+      "practice_ja": "要約メモを残したらクリア（ボスはマップから挑戦）。",
+      "resources": [
+        {
+          "title_ja": "参考資料",
+          "url": "https://lawsofux.com/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l1": {
+      "summary_ja": "傾聴と共感はケアの基礎。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000078074.html",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l2": {
+      "summary_ja": "からだの基礎知識への入口。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l3": {
+      "summary_ja": "観察とバイタルの意味を知る。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l4": {
+      "summary_ja": "安全・衛生の基本を確認する。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iryou/kansen/index.html",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l5": {
+      "summary_ja": "週次確認：観察メモの振り返り。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l6": {
+      "summary_ja": "多職種連携のイメージを持つ。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l7": {
+      "summary_ja": "シミュレーションで判断練習。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l8": {
+      "summary_ja": "月次確認：ケース振り返り。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l9": {
+      "summary_ja": "記録の書き方を練習する。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l10": {
+      "summary_ja": "倫理とプライバシーを学ぶ。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l11": {
+      "summary_ja": "自己ケアも含めた持続可能性。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "nu_l12": {
+      "summary_ja": "最終確認：看護への第一歩をまとめる。",
+      "goals_ja": [
+        "公式情報にあたる",
+        "自分の生活に置き換えて考える"
+      ],
+      "steps": [
+        {
+          "title_ja": "読む",
+          "body_ja": "信頼できる一次情報を読む。"
+        },
+        {
+          "title_ja": "まとめる",
+          "body_ja": "重要点を3つノートに書く。"
+        }
+      ],
+      "practice_ja": "3つの要点メモを書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "参考（厚労省など）",
+          "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000078074.html",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l1": {
+      "summary_ja": "わかりやすく説明する練習。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l2": {
+      "summary_ja": "たとえ話で理解を助ける。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l3": {
+      "summary_ja": "学習目標を具体的に書く。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l4": {
+      "summary_ja": "問いかけで動機づける。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l5": {
+      "summary_ja": "週次：ミニ授業の振り返り。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l6": {
+      "summary_ja": "フィードバックの型を使う。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l7": {
+      "summary_ja": "45分の授業案を設計する。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l8": {
+      "summary_ja": "月次：模擬授業レビュー。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l9": {
+      "summary_ja": "つまずき対応をシナリオ化。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l10": {
+      "summary_ja": "クラスルールを共に作る。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l11": {
+      "summary_ja": "学びの記録を残す。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "te_l12": {
+      "summary_ja": "最終確認：教育者としての計画。",
+      "goals_ja": [
+        "教材を読む",
+        "短い実践をする"
+      ],
+      "steps": [
+        {
+          "title_ja": "インプット",
+          "body_ja": "参考ページを読み要点を抜く。"
+        },
+        {
+          "title_ja": "アウトプット",
+          "body_ja": "誰かに説明するかメモに書く。"
+        }
+      ],
+      "practice_ja": "実践メモを残したらクリア。",
+      "resources": [
+        {
+          "title_ja": "文部科学省",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "stub_l1": {
+      "summary_ja": "その職業の仕事内容・必要な力・一日の流れを調べる。",
+      "goals_ja": [
+        "信頼できる情報源で調べる",
+        "自分の興味と結びつける"
+      ],
+      "steps": [
+        {
+          "title_ja": "調べる",
+          "body_ja": "仕事内容、必要なスキル、向いている人をメモする。"
+        },
+        {
+          "title_ja": "体験",
+          "body_ja": "無料の入門記事や動画を1つ学ぶ。"
+        },
+        {
+          "title_ja": "振り返り",
+          "body_ja": "向いている点・不安な点・次に学ぶことを書く。"
+        }
+      ],
+      "practice_ja": "調べ学習メモ（5行以上）を書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "ハローワーク職業検索",
+          "url": "https://www.mhlw.go.jp/www2/topics/jobsearch/index.htm",
+          "kind": "docs"
+        }
+      ]
+    },
+    "stub_l2": {
+      "summary_ja": "基礎スキルを1つ選び、今日30分練習する。",
+      "goals_ja": [
+        "信頼できる情報源で調べる",
+        "自分の興味と結びつける"
+      ],
+      "steps": [
+        {
+          "title_ja": "調べる",
+          "body_ja": "仕事内容、必要なスキル、向いている人をメモする。"
+        },
+        {
+          "title_ja": "体験",
+          "body_ja": "無料の入門記事や動画を1つ学ぶ。"
+        },
+        {
+          "title_ja": "振り返り",
+          "body_ja": "向いている点・不安な点・次に学ぶことを書く。"
+        }
+      ],
+      "practice_ja": "調べ学習メモ（5行以上）を書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "ハローワーク職業検索",
+          "url": "https://www.mext.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    },
+    "stub_l3": {
+      "summary_ja": "調べた内容と練習の振り返りをまとめ、第一歩を宣言する。",
+      "goals_ja": [
+        "信頼できる情報源で調べる",
+        "自分の興味と結びつける"
+      ],
+      "steps": [
+        {
+          "title_ja": "調べる",
+          "body_ja": "仕事内容、必要なスキル、向いている人をメモする。"
+        },
+        {
+          "title_ja": "体験",
+          "body_ja": "無料の入門記事や動画を1つ学ぶ。"
+        },
+        {
+          "title_ja": "振り返り",
+          "body_ja": "向いている点・不安な点・次に学ぶことを書く。"
+        }
+      ],
+      "practice_ja": "調べ学習メモ（5行以上）を書いたらクリア。",
+      "resources": [
+        {
+          "title_ja": "ハローワーク職業検索",
+          "url": "https://www.mhlw.go.jp/",
+          "kind": "docs"
+        }
+      ]
+    }
+  }
+}

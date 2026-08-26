@@ -462,21 +462,116 @@
     const box = document.getElementById("nextLessonBox");
     if (!box) return;
     const les = journeyStatus.next_lesson;
+    const boss = journeyStatus.next_boss;
+    box.innerHTML = "";
     if (!les) {
-      box.innerHTML = '<p class="hint" style="margin:0">次のレッスンはありません。マップのボスに挑戦しよう。</p>';
-      return;
+      const p = document.createElement("p");
+      p.className = "hint";
+      p.style.margin = "0";
+      p.textContent = boss
+        ? "学習レッスンは一段落。マップでボスに挑戦しよう。"
+        : "次のレッスンはありません。マップを確認しよう。";
+      box.appendChild(p);
+    } else {
+      const left = document.createElement("div");
+      left.innerHTML =
+        "<strong>" +
+        (les.title_ja || les.id) +
+        '</strong><div class="hint">+' +
+        (les.exp || 0) +
+        " EXP ・ 教材あり</div>";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "学ぶ";
+      btn.onclick = () => openStudyLesson(les.id);
+      box.appendChild(left);
+      box.appendChild(btn);
     }
-    box.innerHTML =
-      "<div><strong>" +
-      (les.title_ja || les.id) +
-      '</strong><div class="hint">+' +
-      (les.exp || 0) +
-      " EXP</div></div>";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = "クリア";
-    btn.onclick = () => completeJourneyLesson(les.id);
-    box.appendChild(btn);
+    if (boss) {
+      const hint = document.createElement("div");
+      hint.className = "next-boss-hint";
+      hint.style.flexBasis = "100%";
+      hint.textContent =
+        "ボス解放中：" +
+        (boss.title_ja || boss.id) +
+        "（マップのボス欄から挑戦。負けても学習進捗は消えない）";
+      box.appendChild(hint);
+    }
+  }
+
+  let currentStudyLessonId = null;
+
+  async function openStudyLesson(lessonId) {
+    try {
+      const les =
+        (journeyMap.lessons || []).find((x) => x.id === lessonId) ||
+        (await api("/journey/lessons/" + encodeURIComponent(lessonId)));
+      currentStudyLessonId = lessonId;
+      document.getElementById("studyTitle").textContent = les.title_ja || lessonId;
+      document.getElementById("studyExp").textContent = "+" + (les.exp || 0) + " 旅EXP";
+      document.getElementById("studySummary").textContent = les.summary_ja || "";
+      const goals = document.getElementById("studyGoals");
+      goals.innerHTML = "";
+      (les.goals_ja || []).forEach((g) => {
+        const li = document.createElement("li");
+        li.textContent = g;
+        goals.appendChild(li);
+      });
+      const steps = document.getElementById("studySteps");
+      steps.innerHTML = "";
+      (les.steps || []).forEach((s, i) => {
+        const div = document.createElement("div");
+        div.className = "study-step";
+        div.innerHTML =
+          "<strong>" +
+          (i + 1) +
+          ". " +
+          (s.title_ja || "ステップ") +
+          "</strong><p>" +
+          (s.body_ja || "") +
+          "</p>";
+        steps.appendChild(div);
+      });
+      const res = document.getElementById("studyResources");
+      res.innerHTML = "";
+      const resources = les.resources || [];
+      if (!resources.length) {
+        res.innerHTML = '<p class="hint">参考リンクは準備中。まずは上のステップを実践しよう。</p>';
+      } else {
+        resources.forEach((r) => {
+          const a = document.createElement("a");
+          a.href = r.url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = (r.kind ? "[" + r.kind + "] " : "") + (r.title_ja || r.url);
+          res.appendChild(a);
+        });
+      }
+      document.getElementById("studyPractice").textContent = les.practice_ja || "";
+      const enrich = document.getElementById("studyEnrich");
+      if (les.detail_ja) {
+        enrich.style.display = "block";
+        enrich.textContent = "AI補足：" + les.detail_ja;
+      } else {
+        enrich.style.display = "none";
+        enrich.textContent = "";
+      }
+      const doneBtn = document.getElementById("studyCompleteBtn");
+      if (doneBtn) {
+        doneBtn.style.display = les.completed ? "none" : "inline-block";
+        doneBtn.disabled = !(les.available || les.completed === false);
+        if (!les.available) doneBtn.disabled = true;
+        if (les.available) doneBtn.disabled = false;
+      }
+      document.getElementById("studyModal").classList.add("open");
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  function closeStudyModal() {
+    document.getElementById("studyModal").classList.remove("open");
+    currentStudyLessonId = null;
   }
 
   function renderSkills() {
@@ -639,8 +734,8 @@
       if (!les.completed && les.available) {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.textContent = "クリア";
-        btn.onclick = () => completeJourneyLesson(les.id);
+        btn.textContent = "学ぶ";
+        btn.onclick = () => openStudyLesson(les.id);
         actions.appendChild(btn);
       }
       list.appendChild(row);
@@ -990,6 +1085,25 @@
     const rewardClose = document.getElementById("rewardCloseBtn");
     if (rewardClose) {
       rewardClose.onclick = () => document.getElementById("rewardModal").classList.remove("open");
+    }
+    const studyClose = document.getElementById("studyCloseBtn");
+    if (studyClose) studyClose.onclick = () => closeStudyModal();
+    const studyComplete = document.getElementById("studyCompleteBtn");
+    if (studyComplete) {
+      studyComplete.onclick = async () => {
+        if (!currentStudyLessonId) return;
+        const id = currentStudyLessonId;
+        closeStudyModal();
+        await completeJourneyLesson(id);
+      };
+    }
+    const studyEnrichBtn = document.getElementById("studyEnrichBtn");
+    if (studyEnrichBtn) {
+      studyEnrichBtn.onclick = async () => {
+        if (!currentStudyLessonId) return;
+        await enrichLesson(currentStudyLessonId);
+        await openStudyLesson(currentStudyLessonId);
+      };
     }
     document.getElementById("logoutBtn").onclick = () => {
       LunaAuth.clearToken();
