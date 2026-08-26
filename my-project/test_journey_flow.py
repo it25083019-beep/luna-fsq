@@ -38,6 +38,18 @@ def test_catalog_has_full_and_stub():
     print("OK catalog")
 
 
+def test_unselected_status_does_not_crash():
+    state = fresh()
+    st = journey_status(state)
+    assert st["selected"] is False
+    assert st["class_ja"] is None
+    assert st["classes"]
+    assert st["careers"]
+    mmap = list_journey_map(state)
+    assert mmap["selected"] is False
+    print("OK unselected status")
+
+
 def test_select_complete_rank_gear():
     state = fresh()
     st = select_journey(state, class_id="mage", career_id="software_engineer")
@@ -166,6 +178,7 @@ def test_enrich_caches_detail():
 
 if __name__ == "__main__":
     test_catalog_has_full_and_stub()
+    test_unselected_status_does_not_crash()
     test_select_complete_rank_gear()
     test_stage_lock_and_weekly_boss_gate()
     test_final_boss_requires_progress_and_rank()

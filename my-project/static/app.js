@@ -280,27 +280,26 @@
     loadJourney().catch((e) => setErr(e.message));
   }
 
-  async function loadJourney() {
-    const [st, mp] = await Promise.all([api("/journey/status"), api("/journey/map")]);
-    journeyStatus = st || { selected: false };
-    journeyMap = mp || { selected: false, stages: [], lessons: [], bosses: [] };
-    if (st.class_id) selectedClass = st.class_id;
-    applyJourneyUi();
-  }
-
   function showFsqOnboarding(show) {
     const onboard = document.getElementById("fsq-onboard");
     const sub = document.getElementById("fsqSubnav");
     const sections = ["fsq-home", "fsq-map", "fsq-career"];
-    if (onboard) onboard.style.display = show ? "block" : "none";
     if (sub) sub.style.display = show ? "none" : "flex";
+    if (onboard) {
+      onboard.classList.toggle("active", !!show);
+      onboard.style.display = "";
+    }
     sections.forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
       if (show) el.classList.remove("active");
-      else if (id === "fsq-home") el.classList.add("active");
     });
-    if (!show) switchFsqSub("home");
+    if (!show) {
+      document.querySelectorAll(".fsq-sub").forEach((b) => b.classList.toggle("active", b.dataset.fsq === "home"));
+      const home = document.getElementById("fsq-home");
+      if (home) home.classList.add("active");
+      document.querySelectorAll("#fsq-map, #fsq-career").forEach((el) => el.classList.remove("active"));
+    }
   }
 
   function applyJourneyUi() {
@@ -308,8 +307,10 @@
     showFsqOnboarding(needOnboard);
     if (needOnboard) {
       renderClassPicker();
-      document.getElementById("onboardClassStep").style.display = onboardStep === "class" ? "block" : "none";
-      document.getElementById("onboardCareerStep").style.display = onboardStep === "career" ? "block" : "none";
+      const classStep = document.getElementById("onboardClassStep");
+      const careerStep = document.getElementById("onboardCareerStep");
+      if (classStep) classStep.style.display = onboardStep === "class" ? "block" : "none";
+      if (careerStep) careerStep.style.display = onboardStep === "career" ? "block" : "none";
       if (onboardStep === "career") renderCareerPicker();
       return;
     }
@@ -320,6 +321,28 @@
     renderLessons();
     renderBosses();
     renderCareerPortfolio();
+  }
+
+  async function loadJourney() {
+    try {
+      const [st, mp] = await Promise.all([api("/journey/status"), api("/journey/map")]);
+      journeyStatus = st || { selected: false, classes: [], careers: [] };
+      journeyMap = mp || { selected: false, stages: [], lessons: [], bosses: [] };
+      if (st && st.class_id) selectedClass = st.class_id;
+    } catch (e) {
+      setErr(e.message);
+      try {
+        const cat = await api("/journey/careers");
+        journeyStatus = Object.assign({ selected: false }, journeyStatus, {
+          classes: cat.classes || [],
+          careers: cat.careers || [],
+        });
+      } catch (_) {
+        journeyStatus = Object.assign({ selected: false, classes: [], careers: [] }, journeyStatus);
+      }
+      journeyMap = { selected: false, stages: [], lessons: [], bosses: [] };
+    }
+    applyJourneyUi();
   }
 
   function renderClassPicker() {

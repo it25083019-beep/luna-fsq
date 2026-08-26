@@ -224,7 +224,7 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "selected": bool(j.get("class_id") and j.get("career_id")),
         "class_id": j.get("class_id"),
-        "class_ja": (cat_classes.get(j.get("class_id") or {}) or {}).get("label_ja"),
+        "class_ja": (cat_classes.get(j.get("class_id") or "") or {}).get("label_ja"),
         "career_id": j.get("career_id"),
         "career_title_ja": (career or {}).get("title_ja"),
         "rank_id": j.get("rank_id"),
