@@ -281,6 +281,49 @@ def test_auto_true_weekly_pattern():
     print("OK true weekly pattern + reject Thursday monthly auto")
 
 
+def test_collapse_same_weekday_time_slot_clones():
+    """JP/AI title clones on the same Mon+time must collapse to one series."""
+    user = fresh_user()
+    add_event(
+        user,
+        title="Đi học",
+        event_date="2026-08-24",
+        event_time="21:20",
+        recurrence="weekly",
+    )
+    add_event(
+        user,
+        title="学校の授業",
+        event_date="2026-08-24",
+        event_time="21:20",
+        recurrence="weekly",
+    )
+    add_event(
+        user,
+        title="Works",
+        event_date="2026-08-24",
+        event_time="22:00",
+        event_end_time="08:00",
+        recurrence="weekly",
+    )
+    add_event(
+        user,
+        title="夜間アルバイト",
+        event_date="2026-08-24",
+        event_time="22:00",
+        event_end_time="08:00",
+        recurrence="weekly",
+    )
+    # Trigger cleanup via list
+    items = titles_on(user, "2026-08-24")
+    titles = [t[0] for t in items]
+    assert len(active_templates(user)) == 2, active_templates(user)
+    assert len(titles) == 2, titles
+    assert "Đi học" in titles or "学校の授業" in titles
+    assert "Works" in titles or "夜間アルバイト" in titles
+    print("OK same weekday+time slot clones collapsed")
+
+
 def test_one_year_horizon_and_extend_prompt():
     from schedule_service import extend_recurring_horizons
 
@@ -326,6 +369,7 @@ if __name__ == "__main__":
     test_spam_save_same_day_recurring()
     test_auto_mixed_weekdays_no_false_weekly()
     test_auto_true_weekly_pattern()
+    test_collapse_same_weekday_time_slot_clones()
     test_one_year_horizon_and_extend_prompt()
     print("\nALL SCHEDULE FLOW TESTS PASSED")
 

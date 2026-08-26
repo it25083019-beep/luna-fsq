@@ -538,10 +538,14 @@
       const editBtn = document.createElement("button");
       editBtn.textContent = "編集";
       editBtn.onclick = () => openEditEvent(ev);
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "削除";
+      delBtn.className = "danger";
+      delBtn.onclick = () => deleteScheduleEvent(ev.id);
       acts.appendChild(doneBtn);
       acts.appendChild(editBtn);
+      acts.appendChild(delBtn);
       row.appendChild(acts);
-      attachSwipeDelete(row, () => deleteScheduleEvent(ev.id));
       el.appendChild(row);
     });
   }
@@ -610,23 +614,14 @@
     if (!id) return;
     const ev = (allScheduleEvents || []).find((e) => e.id === id);
     const isRecurring = !!(ev && (ev.recurrence_id || ev.recurrence || String(id).startsWith("rec-")));
+    if (!confirm("この予定を削除しますか？")) return;
     let scope = "this";
     if (isRecurring) {
-      const delAll = confirm(
-        "繰り返し予定です。\n\n同じ曜日のこれから先の予定もすべて削除しますか？\n\nOK = すべて削除\nキャンセル = この日だけ削除"
-      );
-      // If user cancels the confirm entirely we still need a second confirm for "this day"?
-      // Browser confirm: OK=all, Cancel=this day only — but Cancel also means "don't delete all".
-      // Use a clearer two-step:
-      if (delAll) {
-        if (!confirm("本当にすべての繰り返し予定を削除しますか？")) return;
-        scope = "all";
-      } else {
-        if (!confirm("この日の予定だけ削除しますか？")) return;
-        scope = "this";
-      }
-    } else {
-      if (!confirm("この予定を削除しますか？")) return;
+      scope = confirm(
+        "同じ曜日のこれから先の予定もすべて削除しますか？\n\nOK = すべて削除\nキャンセル = この日だけ"
+      )
+        ? "all"
+        : "this";
     }
     try {
       await api("/schedule/events/" + id + "?scope=" + encodeURIComponent(scope), { method: "DELETE" });

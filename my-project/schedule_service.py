@@ -192,6 +192,27 @@ def _collapse_duplicate_recurring_series(user: Dict[str, Any]) -> None:
                     t["active"] = False
                     changed = True
 
+    # Same weekday + same time slot = one series only (e.g. 「Đi học」and
+    # AI/JP clone 「学校の授業」 both Mon 21:20). Keep the oldest.
+    slot_groups: Dict[Tuple[int, Optional[str], Optional[str]], List[Dict[str, Any]]] = defaultdict(list)
+    for t in templates:
+        if not t.get("active", True):
+            continue
+        if (t.get("recurrence") or "weekly") != "weekly":
+            continue
+        try:
+            wd = int(t.get("weekday") if t.get("weekday") is not None else _parse_date(t["start_date"]).weekday())
+        except (TypeError, ValueError, KeyError):
+            continue
+        slot_groups[(wd, t.get("time"), t.get("end_time"))].append(t)
+    for group in slot_groups.values():
+        if len(group) < 2:
+            continue
+        group.sort(key=lambda t: (t.get("created_at") or "", t.get("start_date") or "", t.get("id") or ""))
+        for t in group[1:]:
+            t["active"] = False
+            changed = True
+
     if changed:
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
         _mark_schedule_dirty(user)
