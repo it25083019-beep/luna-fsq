@@ -35,6 +35,13 @@ from life_dashboard import (
     save_health_profile,
     save_mental_checkin,
     save_money_profile,
+    add_money_spend,
+)
+from goals_service import (
+    add_goal,
+    delete_goal,
+    goals_dashboard,
+    update_goal,
 )
 from schedule_service import (
     add_event,
@@ -75,6 +82,9 @@ from schemas import (
     HealthProfileUpdate,
     HealthMentalCheckin,
     MoneyProfileUpdate,
+    MoneySpendCreate,
+    GoalCreate,
+    GoalUpdate,
     JourneySelectRequest,
     JourneyBossChallenge,
     JourneyLessonEnrich,
@@ -583,6 +593,68 @@ def life_money_profile_update(
     note = payload.pop("note", None)
     try:
         dash = save_money_profile(brain, payload, note=note)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "dashboard": dash}
+
+
+@app.post("/life/money/spend")
+def life_money_spend(
+    req: MoneySpendCreate,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    try:
+        dash = add_money_spend(
+            brain,
+            amount=req.amount,
+            note=req.note,
+            on_date=req.date,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "dashboard": dash}
+
+
+@app.get("/life/goals/dashboard")
+def life_goals_dashboard(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    return goals_dashboard(brain)
+
+
+@app.post("/life/goals")
+def life_goals_create(req: GoalCreate, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        dash = add_goal(brain, req.model_dump())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "dashboard": dash}
+
+
+@app.patch("/life/goals/{goal_id}")
+def life_goals_update(
+    goal_id: str,
+    req: GoalUpdate,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    try:
+        dash = update_goal(brain, goal_id, req.model_dump(exclude_unset=True))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "dashboard": dash}
+
+
+@app.delete("/life/goals/{goal_id}")
+def life_goals_delete(goal_id: str, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        dash = delete_goal(brain, goal_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     save_user_brain(current.public_id, brain)

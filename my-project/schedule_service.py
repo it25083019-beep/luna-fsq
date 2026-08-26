@@ -1227,10 +1227,6 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
     ev = evaluate_health(health)
     score = int(ev.get("score") or 0)
     status = ev.get("status_ja") or "注意"
-    goals_done = int(health.get("goals_done") or 0)
-    goals_total = max(int(health.get("goals_total") or 5), 1)
-    rpg = user.get("rpg") or {}
-    active_quests = len(rpg.get("active_quests") or [])
     today_items = sorted(
         (sched.get("today_open") or []) + (sched.get("today_done") or []),
         key=lambda e: (e.get("time") or "99:99", e.get("title") or ""),
@@ -1240,6 +1236,9 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
     remind = mental_reminder_due(health)
     if remind and not user.get("pending_notification"):
         user["pending_notification"] = "LUNAが今日の気分を聞きたいよ"
+    from goals_service import home_goals_summary
+
+    goals_sum = home_goals_summary(user)
     return {
         "schedule": {
             "open_count": today_open_n,
@@ -1254,11 +1253,7 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
             "mental_needed": needed,
             "mental_reminder": remind,
         },
-        "goals": {
-            "done": goals_done or active_quests,
-            "total": goals_total,
-            "label": str(goals_done or active_quests) + "/" + str(goals_total) + " 達成",
-        },
+        "goals": goals_sum,
         "date_ja": f"{date.today().month}月{date.today().day}日",
         "pending_notification": user.get("pending_notification"),
     }

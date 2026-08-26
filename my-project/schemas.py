@@ -224,6 +224,29 @@ class MoneyProfileUpdate(BaseModel):
     note: Optional[str] = Field(default=None, max_length=2000)
 
 
+class MoneySpendCreate(BaseModel):
+    amount: int = Field(ge=1)
+    note: Optional[str] = Field(default=None, max_length=200)
+    date: Optional[str] = Field(default=None, max_length=10)
+
+
+class GoalCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=80)
+    current: Optional[float] = Field(default=0, ge=0)
+    target: Optional[float] = Field(default=0, ge=0)
+    unit: Optional[str] = Field(default="円", max_length=12)
+    note: Optional[str] = Field(default=None, max_length=200)
+
+
+class GoalUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=80)
+    current: Optional[float] = Field(default=None, ge=0)
+    target: Optional[float] = Field(default=None, ge=0)
+    unit: Optional[str] = Field(default=None, max_length=12)
+    note: Optional[str] = Field(default=None, max_length=200)
+    done: Optional[bool] = None
+
+
 class JourneySelectRequest(BaseModel):
     class_id: str = Field(min_length=1, max_length=32)
     career_id: str = Field(min_length=1, max_length=64)

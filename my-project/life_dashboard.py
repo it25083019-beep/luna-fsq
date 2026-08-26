@@ -140,15 +140,17 @@ def _default_categories(expense: int) -> List[Dict[str, Any]]:
 
 
 def money_dashboard(user: Dict[str, Any]) -> Dict[str, Any]:
-    from money_eval import evaluate_money, profile_snapshot
+    from money_eval import evaluate_money, profile_snapshot, spend_pace_snapshot
 
     ensure_life_modules(user)
     summary = summarize_module(user, "money")
     structured = dict(summary.get("structured") or {})
     baseline = summary.get("baseline") or {}
     evaluation = evaluate_money(user, structured)
+    pace = spend_pace_snapshot(structured)
     return {
         **evaluation,
+        **pace,
         "profile": profile_snapshot(structured),
         "baseline": baseline,
         "notes": (summary.get("notes") or [])[-6:],
@@ -173,5 +175,28 @@ def save_money_profile(
         "money",
         structured,
         note or "お金プロフィールを更新",
+    )
+    return money_dashboard(user)
+
+
+def add_money_spend(
+    user: Dict[str, Any],
+    *,
+    amount: int,
+    note: Optional[str] = None,
+    on_date: Optional[str] = None,
+) -> Dict[str, Any]:
+    from money_eval import append_spend_entry, apply_money_evaluation
+
+    ensure_life_modules(user)
+    row = user["life_modules"]["money"]
+    structured = dict(row.get("structured") or {})
+    append_spend_entry(structured, amount=amount, note=note or "", on_date=on_date)
+    apply_money_evaluation(user, structured)
+    update_module_structured(
+        user,
+        "money",
+        structured,
+        note or f"今日の支出 +{int(amount):,}円",
     )
     return money_dashboard(user)

@@ -375,6 +375,19 @@
     .money-fund-inputs{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.35rem}
     .money-saved-hint{margin:.45rem 0 0;font-size:.78rem;font-weight:700;color:var(--lilac-deep);min-height:1.1em;opacity:0;transition:opacity .2s ease}
     .money-saved-hint.show{opacity:1}
+    .pace-warn.warn{background:linear-gradient(135deg,#fff0f3,#fff);border:1px solid rgba(224,122,138,.25)}
+    .pace-warn.info{opacity:.95}
+    .goal-row{padding:.55rem 0;border-bottom:1px solid rgba(155,126,217,.12)}
+    .goal-row:last-child{border-bottom:none}
+    .goal-row .top{display:flex;justify-content:space-between;gap:.4rem;align-items:baseline;margin-bottom:.25rem}
+    .goal-row .name{font-size:.82rem;font-weight:700;color:var(--lilac-deep)}
+    .goal-row .pct{font-size:.72rem;font-weight:800;color:var(--text)}
+    .goal-row .bar{height:8px;background:rgba(155,126,217,.15);border-radius:999px;overflow:hidden}
+    .goal-row .bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--mint),var(--lilac-deep));border-radius:999px}
+    .goal-row .meta{font-size:.7rem;color:var(--muted);margin-top:.25rem}
+    .goal-row .acts{display:flex;gap:.3rem;margin-top:.4rem;flex-wrap:wrap}
+    .goal-row .acts button{border:none;background:var(--ghost-bg);color:var(--lilac-deep);padding:.3rem .5rem;border-radius:999px;font-size:.68rem;cursor:pointer;font-weight:700}
+    .goal-row .acts .danger{color:var(--danger);background:rgba(224,122,138,.12)}
     .prog{height:6px;border-radius:999px;background:var(--input-bg);overflow:hidden;margin-top:.25rem}
     .prog span{display:block;height:100%;border-radius:inherit}
     .prog.in span{background:linear-gradient(90deg,#6ec9b8,#1bb874)}
@@ -480,7 +493,7 @@
           <div class="status-row">
             <button type="button" class="status-card" data-open="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
             <button type="button" class="status-card" data-open="health"><div class="ico">💚</div><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
-            <button type="button" class="status-card" data-open="money"><div class="ico">🎯</div><div class="label">目標</div><div class="val" id="stGoals">—</div></button>
+            <button type="button" class="status-card" data-open="goals"><div class="ico">🎯</div><div class="label">目標</div><div class="val" id="stGoals">—</div></button>
           </div>
           <div class="home-today">
             <h3>今日の予定 <button type="button" data-open="schedule">カレンダー</button></h3>
@@ -623,6 +636,18 @@
             <p class="money-saved-hint" id="moneySavedHint" aria-live="polite"></p>
           </div>
           <div class="dash-card">
+            <h4>今日の支出</h4>
+            <p class="hint" id="moneyTodaySpentLine" style="margin:0 0 .35rem">今日 —</p>
+            <p class="hint" id="moneyPaceLine" style="margin:0 0 .45rem"></p>
+            <div class="bubble compact" id="moneyPaceWarn" style="margin:0 0 .55rem">月の支出を入れると、今日の使い方と残り日数の目安を出せるよ</div>
+            <div class="time-row">
+              <div><label>金額（円）</label><input id="editTodaySpend" type="number" min="1" step="100" placeholder="例：800" /></div>
+              <div><label>メモ（任意）</label><input id="editTodaySpendNote" type="text" placeholder="昼食など" /></div>
+            </div>
+            <div class="row" style="margin-top:.45rem"><button type="button" class="save" id="addSpendBtn">今日の支出を記録</button></div>
+            <p class="local-err" id="spendFormErr"></p>
+          </div>
+          <div class="dash-card">
             <h4>LUNAからのアドバイス</h4>
             <div class="bubble compact" id="moneyMessage" style="margin:0 0 .45rem">収支を入力すると提案します。</div>
             <p class="hint" id="moneyRuleLine" style="margin:0 0 .35rem"></p>
@@ -647,6 +672,37 @@
         <div class="consult-row">
           <button type="button" class="consult-btn blue" data-ask="今月の支出を整理したい">📊 支出を整理</button>
           <button type="button" class="consult-btn pink" data-ask="貯金目標について相談したい">👛 貯金目標</button>
+        </div>
+      </div>
+
+      <!-- Goals subview -->
+      <div id="sub-goals" class="subview hidden">
+        <div class="subview-head"><button type="button" data-back="goals">←</button><h2>目標</h2><span style="width:2rem"></span></div>
+        <div class="module-hero">
+          <div class="dash-card">
+            <p class="hint" id="goalsSummaryLine" style="margin:0">いくつでも追加できます。進捗を記録しよう。</p>
+            <p class="money-saved-hint" id="goalsSavedHint" aria-live="polite"></p>
+          </div>
+          <div class="dash-card">
+            <h4>進捗一覧</h4>
+            <div id="goalsList"><p class="hint">まだ目標がありません。</p></div>
+          </div>
+        </div>
+        <div class="edit-panel">
+          <h4>新しい目標</h4>
+          <label>タイトル</label><input id="goalTitle" type="text" placeholder="例：新しいイヤホン / 毎日運動" />
+          <div class="time-row">
+            <div><label>現在</label><input id="goalCurrent" type="number" min="0" step="1" value="0" /></div>
+            <div><label>目標値</label><input id="goalTarget" type="number" min="0" step="1" placeholder="例：15000" /></div>
+          </div>
+          <label>単位</label><input id="goalUnit" type="text" value="円" placeholder="円 / 回 / %" />
+          <label>メモ（任意）</label><input id="goalNote" type="text" placeholder="メモ" />
+          <p class="local-err" id="goalsFormErr"></p>
+          <div class="row"><button type="button" class="save" id="addGoalBtn">目標を追加</button></div>
+        </div>
+        <div class="consult-row">
+          <button type="button" class="consult-btn blue" data-open="money">👛 お金・家計を見る</button>
+          <button type="button" class="consult-btn pink" data-ask="目標の進め方を相談したい">💬 進め方を相談</button>
         </div>
       </div>
 

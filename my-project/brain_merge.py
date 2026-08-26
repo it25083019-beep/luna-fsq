@@ -47,6 +47,20 @@ def merge_life_modules(base_lm: Dict[str, Any], incoming: Any) -> Dict[str, Any]
                 row["structured"]["events"] = list(b_ev)
                 if not g.get("updated_at"):
                     row["updated_at"] = b.get("updated_at")
+        if key == "goals":
+            b_items = (b.get("structured") or {}).get("items")
+            g_items = (g.get("structured") or {}).get("items")
+            if isinstance(b_items, list) and b_items and (not isinstance(g_items, list) or len(g_items) == 0):
+                row["structured"]["items"] = list(b_items)
+                if not g.get("updated_at"):
+                    row["updated_at"] = b.get("updated_at")
+        if key == "money":
+            b_log = (b.get("structured") or {}).get("spend_log")
+            g_log = (g.get("structured") or {}).get("spend_log")
+            if isinstance(b_log, list) and b_log and (not isinstance(g_log, list) or len(g_log) == 0):
+                row["structured"]["spend_log"] = list(b_log)
+                if not g.get("updated_at"):
+                    row["updated_at"] = b.get("updated_at")
         if not meaningful_structured(row["structured"]) and meaningful_structured(b.get("structured")):
             row["structured"] = dict(b.get("structured") or {})
             row["updated_at"] = b.get("updated_at")

@@ -207,6 +207,7 @@
     }
     if (name === "health") loadHealthView();
     if (name === "money") loadMoneyView();
+    if (name === "goals") loadGoalsView();
   }
 
   function closeSubview(name) {
@@ -215,7 +216,7 @@
   }
 
   function closeAllSubviews() {
-    ["schedule", "health", "money"].forEach(closeSubview);
+    ["schedule", "health", "money", "goals"].forEach(closeSubview);
     document.body.classList.remove("subview-open");
   }
 
@@ -261,7 +262,7 @@
   function switchTab(name) {
     currentTab = name;
     setNavActive(name);
-    if (name === "health" || name === "money") {
+    if (name === "health" || name === "money" || name === "goals") {
       document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
       document.getElementById("tab-luna").classList.add("active");
       closeAllSubviews();
@@ -1179,6 +1180,15 @@
     } catch (_) {}
   }
 
+  function chipRouteForLabel(label) {
+    const t = String(label || "");
+    if (t.includes("健康に追記")) return { type: "subview", name: "health" };
+    if (t.includes("予定を整理")) return { type: "subview", name: "schedule" };
+    if (t.includes("欲しいもの")) return { type: "subview", name: "goals" };
+    if (t.includes("自分で") || t.includes("自由")) return { type: "focus" };
+    return { type: "chat" };
+  }
+
   function renderChips(list) {
     const chipsEl = document.getElementById("chips");
     chipsEl.innerHTML = "";
@@ -1188,8 +1198,14 @@
       b.className = "chip";
       b.textContent = label;
       b.onclick = () => {
-        if (label.includes("自分で") || label.includes("自由")) {
+        const route = chipRouteForLabel(label);
+        if (route.type === "focus") {
           document.getElementById("message").focus();
+          return;
+        }
+        if (route.type === "subview") {
+          openSubview(route.name);
+          setNavActive("luna");
           return;
         }
         sendMessage(label);
@@ -1920,6 +1936,37 @@
     if (rule) rule.textContent = d.rule_ja || "";
     renderSuggestList("moneyTips", d.tips_ja || []);
 
+    const todayLine = document.getElementById("moneyTodaySpentLine");
+    if (todayLine) {
+      todayLine.textContent =
+        "今日 " +
+        fmtYen(d.today_spent || 0) +
+        " ／ 目安 " +
+        fmtYen(d.daily_budget || 0) +
+        "/日";
+    }
+    const paceLine = document.getElementById("moneyPaceLine");
+    if (paceLine) {
+      paceLine.textContent =
+        "今月累計 " +
+        fmtYen(d.month_spent || 0) +
+        " ／ 残り予算 " +
+        fmtYen(d.remaining_budget || 0) +
+        "（残り" +
+        (d.days_left ?? "—") +
+        "日・目安 " +
+        fmtYen(d.recommended_daily || 0) +
+        "/日）";
+    }
+    const paceWarn = document.getElementById("moneyPaceWarn");
+    if (paceWarn) {
+      paceWarn.textContent = d.pace_warning_ja || "";
+      paceWarn.classList.remove("warn", "info");
+      if (d.pace_level === "warn") paceWarn.classList.add("warn", "pace-warn");
+      else if (d.pace_level === "info") paceWarn.classList.add("info", "pace-warn");
+      else paceWarn.classList.add("pace-warn");
+    }
+
     const bars = document.getElementById("moneyFundsBars");
     if (bars) {
       bars.innerHTML = "";
@@ -1949,6 +1996,156 @@
     setInputVal("editMoneyExpense", p.monthly_expense != null ? p.monthly_expense : d.monthly_expense);
     setInputVal("editPurchaseName", p.purchase_name || d.purchase_name || "");
     renderMoneyFundInputs(d.funds || [], p);
+  }
+
+  async function addTodaySpend() {
+    const err = document.getElementById("spendFormErr");
+    if (err) err.textContent = "";
+    const amount = numOrNull("editTodaySpend");
+    if (amount == null || amount <= 0) {
+      if (err) err.textContent = "金額を入力してね";
+      return;
+    }
+    try {
+      const res = await api("/life/money/spend", {
+        method: "POST",
+        body: JSON.stringify({
+          amount: Math.round(amount),
+          note: strOrNull("editTodaySpendNote") || "",
+        }),
+      });
+      renderMoneyDashboard(res.dashboard || res);
+      setInputVal("editTodaySpend", "");
+      setInputVal("editTodaySpendNote", "");
+      const hint = document.getElementById("moneySavedHint");
+      if (hint) {
+        hint.textContent = "今日の支出を記録したよ";
+        hint.classList.add("show");
+        setTimeout(() => hint.classList.remove("show"), 2200);
+      }
+    } catch (e) {
+      if (err) err.textContent = (e && e.message) || "記録に失敗しました";
+    }
+  }
+
+  async function loadGoalsView() {
+    try {
+      const d = await api("/life/goals/dashboard");
+      renderGoalsDashboard(d);
+    } catch (e) {
+      const box = document.getElementById("goalsList");
+      if (box) box.innerHTML = '<p class="hint">読み込みに失敗しました</p>';
+    }
+  }
+
+  function renderGoalsDashboard(d) {
+    const sum = document.getElementById("goalsSummaryLine");
+    if (sum) sum.textContent = d.label || "目標なし";
+    const list = document.getElementById("goalsList");
+    if (!list) return;
+    const items = d.items || [];
+    if (!items.length) {
+      list.innerHTML = '<p class="hint">まだ目標がありません。下から追加してね。</p>';
+      return;
+    }
+    list.innerHTML = "";
+    items.forEach((g) => {
+      const row = document.createElement("div");
+      row.className = "goal-row";
+      const unit = g.unit || "";
+      row.innerHTML =
+        '<div class="top"><span class="name"></span><span class="pct">' +
+        (g.pct ?? 0) +
+        "%</span></div>" +
+        '<div class="bar"><span style="width:' +
+        (g.pct ?? 0) +
+        '%"></span></div>' +
+        '<div class="meta"></div>' +
+        '<div class="acts">' +
+        '<button type="button" data-act="prog">進捗を更新</button>' +
+        '<button type="button" data-act="del" class="danger">削除</button>' +
+        "</div>";
+      row.querySelector(".name").textContent = g.title || "目標";
+      row.querySelector(".meta").textContent =
+        String(g.current ?? 0) + unit + " / " + String(g.target ?? 0) + unit + (g.note ? " · " + g.note : "");
+      row.querySelector('[data-act="prog"]').onclick = () => updateGoalProgress(g);
+      row.querySelector('[data-act="del"]').onclick = () => removeGoal(g.id);
+      list.appendChild(row);
+    });
+  }
+
+  async function addGoalFromForm() {
+    const err = document.getElementById("goalsFormErr");
+    if (err) err.textContent = "";
+    const title = strOrNull("goalTitle");
+    if (!title) {
+      if (err) err.textContent = "タイトルを入力してね";
+      return;
+    }
+    try {
+      const res = await api("/life/goals", {
+        method: "POST",
+        body: JSON.stringify({
+          title,
+          current: numOrNull("goalCurrent") || 0,
+          target: numOrNull("goalTarget") || 0,
+          unit: strOrNull("goalUnit") || "円",
+          note: strOrNull("goalNote") || "",
+        }),
+      });
+      renderGoalsDashboard(res.dashboard || res);
+      setInputVal("goalTitle", "");
+      setInputVal("goalCurrent", "0");
+      setInputVal("goalTarget", "");
+      setInputVal("goalNote", "");
+      const hint = document.getElementById("goalsSavedHint");
+      if (hint) {
+        hint.textContent = "目標を追加したよ";
+        hint.classList.add("show");
+        setTimeout(() => hint.classList.remove("show"), 2200);
+      }
+      refreshHomeStatus().catch(() => {});
+    } catch (e) {
+      if (err) err.textContent = (e && e.message) || "追加に失敗しました";
+    }
+  }
+
+  async function updateGoalProgress(g) {
+    const raw = prompt(
+      "現在の進捗（" + (g.unit || "") + "）",
+      String(g.current != null ? g.current : 0)
+    );
+    if (raw == null) return;
+    const n = Number(String(raw).replace(/,/g, ""));
+    if (!Number.isFinite(n) || n < 0) {
+      alert("数値を入力してね");
+      return;
+    }
+    try {
+      const res = await api("/life/goals/" + encodeURIComponent(g.id), {
+        method: "PATCH",
+        body: JSON.stringify({ current: n }),
+      });
+      renderGoalsDashboard(res.dashboard || res);
+      refreshHomeStatus().catch(() => {});
+    } catch (e) {
+      alert((e && e.message) || "更新に失敗しました");
+    }
+  }
+
+  async function removeGoal(id) {
+    if (!confirm("この目標を削除しますか？")) return;
+    try {
+      const res = await api("/life/goals/" + encodeURIComponent(id), { method: "DELETE" });
+      renderGoalsDashboard(res.dashboard || res);
+      refreshHomeStatus().catch(() => {});
+    } catch (e) {
+      alert((e && e.message) || "削除に失敗しました");
+    }
+  }
+
+  function refreshHomeStatus() {
+    return loadHomeSummary();
   }
 
   async function saveMoneyMetrics() {
@@ -2047,7 +2244,7 @@
     document.querySelectorAll("[data-open]").forEach((el) => {
       el.onclick = () => {
         const name = el.dataset.open;
-        if (name === "health" || name === "money") switchTab(name);
+        if (name === "health" || name === "money" || name === "goals") switchTab(name);
         else {
           setNavActive("luna");
           openSubview(name);
@@ -2116,6 +2313,10 @@
     }
     const saveMoneyBtn = document.getElementById("saveMoneyBtn");
     if (saveMoneyBtn) saveMoneyBtn.onclick = () => saveMoneyMetrics();
+    const addSpendBtn = document.getElementById("addSpendBtn");
+    if (addSpendBtn) addSpendBtn.onclick = () => addTodaySpend();
+    const addGoalBtn = document.getElementById("addGoalBtn");
+    if (addGoalBtn) addGoalBtn.onclick = () => addGoalFromForm();
     document.getElementById("sendBtn").onclick = () => sendMessage(document.getElementById("message").value);
     document.getElementById("message").onkeydown = (e) => {
       if (e.key === "Enter") {

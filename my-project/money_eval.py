@@ -360,6 +360,108 @@ def sanitize_money_profile(payload: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def _calendar_days_in_month(d) -> int:
+    import calendar
+
+    return calendar.monthrange(d.year, d.month)[1]
+
+
+def spend_pace_snapshot(structured: Dict[str, Any], *, today=None) -> Dict[str, Any]:
+    """Compute today spend + remaining-day budget warnings from spend_log."""
+    from datetime import date, timedelta
+
+    today = today or date.today()
+    today_s = today.isoformat()
+    month_prefix = today_s[:7]
+    days_in_month = _calendar_days_in_month(today)
+    days_left = max(1, days_in_month - today.day + 1)
+    expense = _parse_yen(structured.get("monthly_expense")) or 0
+    daily_budget = int(round(expense / days_in_month)) if expense > 0 else 0
+
+    log = structured.get("spend_log") if isinstance(structured.get("spend_log"), list) else []
+    today_spent = 0
+    month_spent = 0
+    for row in log:
+        if not isinstance(row, dict):
+            continue
+        d = str(row.get("date") or "")
+        amt = _parse_yen(row.get("amount")) or 0
+        if d == today_s:
+            today_spent += amt
+        if d.startswith(month_prefix):
+            month_spent += amt
+
+    remaining_budget = max(0, expense - month_spent) if expense > 0 else 0
+    recommended_daily = int(remaining_budget / days_left) if expense > 0 else 0
+
+    warn = ""
+    level = "ok"
+    if expense <= 0:
+        warn = "月の支出を入れると、今日の使い方と残り日数の目安を出せるよ"
+        level = "info"
+    elif today_spent > daily_budget * 1.2 and daily_budget > 0:
+        warn = (
+            f"今日はすでに約{today_spent:,}円使っているよ（目安{daily_budget:,}円/日）。"
+            f"残り{days_left}日は約{recommended_daily:,}円/日までだと月の計画に近づくよ"
+        )
+        level = "warn"
+    elif month_spent > expense * (today.day / days_in_month) * 1.15 and expense > 0:
+        warn = (
+            f"今月のペースが少し早いよ（累計約{month_spent:,}円 / 予算{expense:,}円）。"
+            f"残り{days_left}日は約{recommended_daily:,}円/日が目安"
+        )
+        level = "warn"
+    elif today_spent > 0 and recommended_daily > 0:
+        warn = f"今日の支出は約{today_spent:,}円。残り{days_left}日の目安は約{recommended_daily:,}円/日"
+        level = "ok"
+    elif recommended_daily > 0:
+        warn = f"今日はまだ未記録。月予算から見ると1日あたり約{daily_budget:,}円が目安"
+        level = "ok"
+
+    return {
+        "today": today_s,
+        "today_spent": today_spent,
+        "month_spent": month_spent,
+        "monthly_expense": expense,
+        "daily_budget": daily_budget,
+        "days_left": days_left,
+        "days_in_month": days_in_month,
+        "remaining_budget": remaining_budget,
+        "recommended_daily": recommended_daily,
+        "pace_warning_ja": warn,
+        "pace_level": level,
+    }
+
+
+def append_spend_entry(
+    structured: Dict[str, Any],
+    *,
+    amount: int,
+    note: str = "",
+    on_date: Optional[str] = None,
+) -> Dict[str, Any]:
+    from datetime import date, timedelta
+
+    amt = _parse_yen(amount)
+    if amt is None or amt <= 0:
+        raise ValueError("amount must be positive")
+    day = (on_date or date.today().isoformat()).strip()[:10]
+    if len(day) != 10:
+        raise ValueError("invalid date")
+    log = list(structured.get("spend_log") or []) if isinstance(structured.get("spend_log"), list) else []
+    log.append(
+        {
+            "date": day,
+            "amount": amt,
+            "note": (note or "").strip()[:200],
+        }
+    )
+    cutoff = (date.today() - timedelta(days=60)).isoformat()
+    log = [r for r in log if isinstance(r, dict) and str(r.get("date") or "") >= cutoff]
+    structured["spend_log"] = log[-200:]
+    return structured
+
+
 def profile_snapshot(structured: Dict[str, Any]) -> Dict[str, Any]:
     snap = {k: structured.get(k) for k in (*BASE_KEYS, *FUND_KEYS)}
     return snap

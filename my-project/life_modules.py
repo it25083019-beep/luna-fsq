@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-MODULE_KEYS = ("health", "money", "schedule")
+MODULE_KEYS = ("health", "money", "schedule", "goals")
 
 MODULE_META = {
     "health": {
@@ -32,6 +32,11 @@ MODULE_META = {
         "title_ja": "スケジュール",
         "hint_ja": "授業・バイト・締切。後から予定を足せます。",
         "profile_keys": ("time_weekday", "time_weekend", "study_future", "goals"),
+    },
+    "goals": {
+        "title_ja": "目標",
+        "hint_ja": "欲しいもの・達成したいこと。いくつでも追加できます。",
+        "profile_keys": (),
     },
 }
 
