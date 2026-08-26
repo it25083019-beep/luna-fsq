@@ -361,27 +361,13 @@
               <div><label>終了（24h）</label><input id="addEndTime" type="text" placeholder="HH:MM" inputmode="numeric" /></div>
             </div>
             <label>メモ（任意）</label><input id="addNote" type="text" placeholder="詳細メモ" />
-            <label>繰り返し</label>
-            <select id="addRecurrence" style="width:100%;padding:.55rem .65rem;border:none;background:var(--input-bg);border-radius:12px;margin-bottom:.35rem">
-              <option value="">なし（1回のみ）</option>
-              <option value="weekly">毎週</option>
-              <option value="monthly">毎月</option>
-            </select>
+            <p class="hint" style="margin:.2rem 0 .55rem">保存時に「同じ曜日へ今後も繰り返すか」を確認します。</p>
             <div class="row">
               <button type="button" class="save" id="addSaveBtn">保存</button>
               <button type="button" id="addCancelBtn">キャンセル</button>
             </div>
           </div>
           <div id="dayEventList"></div>
-        </div>
-        <div class="similar-prompt" id="similarPrompt">
-          <h4>✨ 似た予定も追加しますか？</h4>
-          <p class="hint" id="similarHint" style="margin:0 0 .35rem">入力した予定をもとに、似たスケジュールを提案できます。</p>
-          <div id="suggestList"></div>
-          <div class="row">
-            <button type="button" class="yes" id="applySuggestBtn">はい、追加する</button>
-            <button type="button" class="no" id="dismissSuggestBtn">今はしない</button>
-          </div>
         </div>
       </div>
 

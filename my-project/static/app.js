@@ -63,11 +63,28 @@
   const errEl = document.getElementById("err");
   const lunaMainView = document.getElementById("lunaMainView");
   const settingsView = document.getElementById("settingsView");
-  let scheduleSuggestions = [];
   let calCursor = new Date();
   let selectedDate = null;
   let allScheduleEvents = [];
   let datesWithEvents = new Set();
+
+  const WEEKDAY_JA = ["日", "月", "火", "水", "木", "金", "土"];
+
+  function weekdayJaFromIso(iso) {
+    const d = new Date(iso + "T12:00:00");
+    return WEEKDAY_JA[d.getDay()] || "";
+  }
+
+  function askRepeatSameWeekday(iso) {
+    const wd = weekdayJaFromIso(iso);
+    return confirm(
+      "この予定を、これから先の同じ曜日にも繰り返しますか？\n\n" +
+        "OK = 今後も毎週「" +
+        wd +
+        "曜日」に同じ予定を入れる\n" +
+        "キャンセル = この日だけ"
+    );
+  }
   const chartInstances = {};
 
   function fmtYen(n) {
@@ -110,7 +127,6 @@
     document.getElementById("sub-" + name).classList.remove("hidden");
     if (name === "schedule") {
       selectedDate = todayIso();
-      hideSimilarPrompt();
       loadScheduleView();
     }
     if (name === "health") loadHealthView();
@@ -417,7 +433,6 @@
     calCursor = new Date(parts[0], parts[1] - 1, 1);
     const dateInput = document.getElementById("addDate");
     if (dateInput) dateInput.value = iso;
-    hideSimilarPrompt();
     renderCalendar();
     renderDayEvents();
   }
@@ -438,7 +453,7 @@
       row.className = "todo-row" + (ev.done ? " done" : "");
       const time = ev.time || ev.end_time ? formatTimeRange(ev) + " · " : "";
       const recur = ev.recurrence
-        ? '<span class="recur-tag">' + (ev.recurrence === "monthly" ? "🔁毎月" : "🔁毎週") + "</span>"
+        ? '<span class="recur-tag">🔁同じ' + weekdayJaFromIso(ev.date || selectedDate) + "曜</span>"
         : "";
       row.innerHTML = '<span style="flex:1">' + time + ev.title + recur + "</span>";
       const acts = document.createElement("div");
@@ -452,7 +467,6 @@
       acts.appendChild(doneBtn);
       acts.appendChild(editBtn);
       row.appendChild(acts);
-      // swipe left to delete (no delete button)
       attachSwipeDelete(row, () => deleteScheduleEvent(ev.id));
       el.appendChild(row);
     });
@@ -466,8 +480,6 @@
     document.getElementById("addTime").value = ev.time || "";
     document.getElementById("addEndTime").value = ev.end_time || "";
     document.getElementById("addNote").value = ev.note || "";
-    document.getElementById("addRecurrence").value = "";
-    document.getElementById("addRecurrence").disabled = true;
     document.getElementById("addForm").classList.add("open");
     document.getElementById("addSaveBtn").textContent = "更新";
   }
@@ -479,59 +491,9 @@
     document.getElementById("addTime").value = "";
     document.getElementById("addEndTime").value = "";
     document.getElementById("addNote").value = "";
-    document.getElementById("addRecurrence").value = "";
-    document.getElementById("addRecurrence").disabled = false;
     document.getElementById("addDate").value = keepDate || selectedDate || todayIso();
     document.getElementById("addSaveBtn").textContent = "保存";
     document.getElementById("addForm").classList.remove("open");
-  }
-
-  function hideSimilarPrompt() {
-    const box = document.getElementById("similarPrompt");
-    if (box) box.classList.remove("open");
-  }
-
-  async function showSimilarPrompt() {
-    try {
-      const sug = await api("/schedule/suggestions");
-      scheduleSuggestions = sug.suggestions || [];
-      const box = document.getElementById("similarPrompt");
-      const list = document.getElementById("suggestList");
-      const hint = document.getElementById("similarHint");
-      if (!box || !list) return;
-      if (!scheduleSuggestions.length) {
-        box.classList.remove("open");
-        return;
-      }
-      if (hint) {
-        hint.textContent =
-          "入力した予定をもとに " + scheduleSuggestions.length + " 件の似たスケジュールを提案します。追加しますか？";
-      }
-      list.innerHTML = "";
-      scheduleSuggestions.forEach((s) => {
-        const row = document.createElement("div");
-        row.className = "suggest-item";
-        const srcTag = s.source === "ai" ? "🤖" : "📊";
-        const rec = s.recurrence ? " · " + (s.recurrence === "monthly" ? "毎月" : "毎週") : "";
-        row.innerHTML =
-          "<span>" +
-          srcTag +
-          " " +
-          s.date +
-          " " +
-          formatTimeRange(s) +
-          " " +
-          s.title +
-          rec +
-          '<br><small style="color:var(--muted)">' +
-          (s.reason_ja || "") +
-          "</small></span>";
-        list.appendChild(row);
-      });
-      box.classList.add("open");
-    } catch (_) {
-      hideSimilarPrompt();
-    }
   }
 
   async function loadScheduleView(opts) {
@@ -574,7 +536,7 @@
     let scope = "this";
     if (isRecurring) {
       const delAll = confirm(
-        "繰り返し予定です。\n\n自動で入っているすべての日付も削除しますか？\n\nOK = すべて削除\nキャンセル = この日だけ削除"
+        "繰り返し予定です。\n\n同じ曜日のこれから先の予定もすべて削除しますか？\n\nOK = すべて削除\nキャンセル = この日だけ削除"
       );
       // If user cancels the confirm entirely we still need a second confirm for "this day"?
       // Browser confirm: OK=all, Cancel=this day only — but Cancel also means "don't delete all".
@@ -606,7 +568,6 @@
     const time = (document.getElementById("addTime").value || "").trim();
     const endTime = (document.getElementById("addEndTime").value || "").trim();
     const note = document.getElementById("addNote").value.trim();
-    const recurrence = document.getElementById("addRecurrence").value || null;
     if (!title || !date) return;
     // Accept both `8:00` and `08:00`, but normalize to `HH:MM` before saving.
     const TIME_RE = /^(\d{1,2}):([0-5]\d)$/;
@@ -633,9 +594,8 @@
         const isRecurring = !!(recurrenceId || String(editId).startsWith("rec-"));
         let scope = "this";
         if (isRecurring) {
-          // OK = update whole series, Cancel = this day only
           const editAll = confirm(
-            "繰り返し予定です。\n\n自動で入っているすべての日付も変更しますか？\n\nOK = すべて変更\nキャンセル = この日だけ変更"
+            "繰り返し予定です。\n\n同じ曜日のこれから先の予定もすべて変更しますか？\n\nOK = すべて変更\nキャンセル = この日だけ変更"
           );
           scope = editAll ? "all" : "this";
         }
@@ -654,6 +614,8 @@
         resetAddForm(date);
         await loadScheduleView();
       } else {
+        // Simple rule: ask once — repeat on the same weekday forever, or this day only.
+        const recurrence = askRepeatSameWeekday(date) ? "weekly" : null;
         await api("/schedule/events", {
           method: "POST",
           body: JSON.stringify({
@@ -668,21 +630,7 @@
         selectedDate = date;
         resetAddForm(date);
         await loadScheduleView();
-        await showSimilarPrompt();
       }
-    } catch (e) {
-      setErr(e.message);
-    }
-  }
-
-  async function applySuggestions() {
-    try {
-      await api("/schedule/suggestions/apply", {
-        method: "POST",
-        body: JSON.stringify({ apply_all: true }),
-      });
-      hideSimilarPrompt();
-      await loadScheduleView();
     } catch (e) {
       setErr(e.message);
     }
@@ -1299,9 +1247,6 @@
     };
     document.getElementById("addCancelBtn").onclick = () => resetAddForm(selectedDate || todayIso());
     document.getElementById("addSaveBtn").onclick = () => addScheduleEvent();
-    document.getElementById("applySuggestBtn").onclick = () => applySuggestions();
-    const dismiss = document.getElementById("dismissSuggestBtn");
-    if (dismiss) dismiss.onclick = () => hideSimilarPrompt();
     document.getElementById("calPrev").onclick = () => shiftCalendarMonth(-1);
     document.getElementById("calNext").onclick = () => shiftCalendarMonth(1);
     const saveHealthBtn = document.getElementById("saveHealthBtn");
