@@ -340,3 +340,123 @@ def capture_life_from_chat(
         llm_updates = game_state.get("life_updates")
     merged = _merge_updates(hints, llm_updates)
     return apply_life_updates(user, merged)
+
+
+def compose_companion_dialogue(
+    user: Dict[str, Any],
+    user_text: str,
+    applied: Optional[List[str]] = None,
+) -> Dict[str, str]:
+    """Warm companion line: acknowledge save (if any) + empathize + one suggestion.
+
+    Returns {{dialogue, emotion}}.
+    """
+    name = (user.get("user_display_name") or "").strip()
+    gender = str((user.get("life_profile") or {}).get("gender") or "")
+    if name:
+        if gender == "male" or "男" in gender:
+            who = f"{name}くん"
+        elif gender == "female" or "女" in gender:
+            who = f"{name}さん"
+        else:
+            who = f"{name}さん"
+    else:
+        who = "あなた"
+    cname = user.get("companion_name") or "LUNA"
+    msg = (user_text or "").strip()
+    applied = applied or []
+    emotion = "happy"
+
+    # What we recorded (spoken Japanese)
+    ack_bits: List[str] = []
+    for tag in applied:
+        if tag.startswith("気分→"):
+            ack_bits.append(f"今日の気分「{tag.replace('気分→', '')}」を残したよ")
+        elif tag.startswith("支出+"):
+            ack_bits.append(f"{tag.replace('支出+', '')}の支出を記録したよ")
+        elif tag == "予定を追加":
+            ack_bits.append("予定に追加したよ")
+        elif tag.startswith("目標「"):
+            ack_bits.append(f"{tag}を目標リストに入れたよ")
+        elif tag == "目標の進捗":
+            ack_bits.append("目標の進捗を更新したよ")
+        elif tag.endswith("メモ"):
+            ack_bits.append("メモも残したよ")
+    ack = "。".join(ack_bits[:2])
+    if ack:
+        ack = ack + "。"
+
+    # Empathy + suggestion by topic
+    if re.search(r"疲れ|つらい|しんど|眠い|疲れた|落ち込み|不安|mệt|tired|buồn", msg, re.I):
+        body = (
+            f"{who}、話してくれてありがとう。無理しないでね。"
+            f"今は深呼吸を1回、水を一口。少し横になれるなら10分だけ休もう。{cname}がそばにいるよ。"
+        )
+        emotion = "sad"
+    elif re.search(r"元気|調子いい|嬉しい|たのしい|楽しい|やった|happy", msg, re.I):
+        body = (
+            f"{who}、それ聞いてこちらまでうれしいよ！"
+            f"その勢いのまま、今日のごほうびを一つ決めてみない？"
+        )
+        emotion = "cheer"
+    elif re.search(r"使った|買った|払った|円|支出|tiêu|spent", msg, re.I):
+        body = (
+            f"{who}、お金の話もちゃんと受け止めたよ。"
+            f"今月の残り日数を意識して、今日はこのあとは飲み物だけにする、みたいな小さなルールがおすすめだよ。"
+        )
+        emotion = "think"
+    elif re.search(r"予定|スケジュール|バイト|会議|テスト|授業", msg, re.I):
+        body = (
+            f"{who}、予定を共有してくれてありがとう。"
+            f"始める30分前に持ち物チェックだけ入れておくと安心だよ。一緒に進めよう。"
+        )
+        emotion = "think"
+    elif re.search(r"欲しい|目標|貯金", msg, re.I):
+        body = (
+            f"{who}、その目標いいね。"
+            f"まずは今週、小さな金額でも一歩進めると気持ちが続くよ。応援してる。"
+        )
+        emotion = "cheer"
+    elif re.search(r"勉強|宿題", msg, re.I):
+        body = (
+            f"{who}、勉強がんばってるね。"
+            f"15分集中→3分休憩、を1セットやってみよう。終わったら教えてね。"
+        )
+        emotion = "cheer"
+    elif re.search(r"おはよう|こんにちは|こんばんは", msg):
+        body = f"{who}、こんにちは。{cname}だよ。今日の調子、短くでも聞かせてくれる？"
+        emotion = "wave"
+    else:
+        body = (
+            f"{who}、話してくれてありがとう。ちゃんと受け取ったよ。"
+            f"いちばん気になることを一つだけ教えてくれたら、一緒に次の一歩を考えよう。"
+        )
+        emotion = "happy"
+
+    if ack:
+        # Record confirm first, then companion reaction (feels like a real partner)
+        dialogue = f"{ack}{body}"
+    else:
+        dialogue = body
+
+    # Keep readable length
+    if len(dialogue) > 160:
+        dialogue = dialogue[:157] + "…"
+    return {"dialogue": dialogue, "emotion": emotion}
+
+
+def enrich_dialogue_with_capture(
+    dialogue: str,
+    user: Dict[str, Any],
+    user_text: str,
+    applied: List[str],
+) -> str:
+    """If we saved facts but the model forgot to acknowledge, prepend a soft ack + keep warmth."""
+    text = (dialogue or "").strip()
+    if not applied:
+        return text
+    if re.search(r"記録|メモ|残した|入れた|更新した|わかったよ|ノート", text):
+        return text
+    composed = compose_companion_dialogue(user, user_text, applied)
+    # Prefer our companion line when capture happened — clearer partner feel
+    return composed["dialogue"]

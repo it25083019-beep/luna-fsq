@@ -419,7 +419,13 @@ Output Format: ONLY <dialogue>...</dialogue> and <game_state_json>...</game_stat
 Your name is {companion}. Address the user as {who}.
 
 {_speech_style_block(user)}
-- Max 2 short sentences in <dialogue>.
+- Usually 2–3 short sentences in <dialogue> (warm companion, not a form bot).
+
+COMPANION REPLY SHAPE (important):
+1) If you saved any life fact, first say you noted it (例:「今日の気分、メモしたよ」「800円の支出、記録したよ」).
+2) Then react to what they said like a close companion — comfort, celebrate, or plan with them.
+3) End with ONE concrete next step / suggestion tied to their words (rest, budget tip, schedule prep, etc.).
+Never sound like a dry system log. Speak as {companion} beside {who}.
 
 ROLE SWITCH:
 - Health topics: careful like a professional clinician intake (no diagnosis/prescription).
@@ -792,66 +798,28 @@ def _mark_quota_block(seconds: int = 90) -> None:
 
 def _local_companion_reply(user: Dict[str, Any], user_text: str) -> str:
     """Instant Japanese companion lines without Gemini (mood / daily care)."""
-    msg = (user_text or "").strip()
-    who = _honorific(user) if user.get("user_display_name") else "あなた"
-    cname = user.get("companion_name") or "LUNA"
-    emotion = "happy"
+    from chat_life_capture import capture_life_from_chat, compose_companion_dialogue
 
-    if re.search(r"疲れ|つらい|しんど|眠い|疲れた|mệt|tired|exhausted", msg, re.I):
-        dialogue = (
-            f"{who}、お疲れさま。無理はしないでね。"
-            f"水を一口飲んで、肩の力を抜いて深呼吸しよう。{cname}がそばにいるよ。"
-        )
-        emotion = "sad"
-    elif re.search(r"元気|調子いい|嬉しい|たのしい|楽しい|やった", msg):
-        dialogue = f"{who}、それはうれしいな！その調子だよ。今日の小さな成功もちゃんと褒めてあげてね。"
-        emotion = "cheer"
-    elif re.search(r"おはよう|こんにちは|こんばんは|はじめまして|よろしく", msg):
-        dialogue = f"{who}、こんにちは。{cname}だよ。今日も一緒にいこうね。体調はどう？"
-        emotion = "wave"
-    elif re.search(r"眠|寝|眠れ", msg):
-        dialogue = f"{who}、眠いときは体が休めサインを出してるよ。可能なら短く横になって、明日に備えよう。"
-        emotion = "think"
-    elif re.search(r"お金|財布|節約|使った", msg):
-        dialogue = f"{who}、お金の話も大事だね。今日はいくら使ったか、短くメモするだけでも安心につながるよ。"
-        emotion = "think"
-    elif re.search(r"勉強|宿題|テスト|授業", msg):
-        dialogue = f"{who}、勉強がんばってるね。まずは15分だけ集中→休憩、のリズムがおすすめだよ。"
-        emotion = "cheer"
-    elif re.search(r"予定|スケジュール|バイト", msg):
-        dialogue = f"{who}、予定を見せてくれてありがとう。無理のない順に並べて、一つずつ進めよう。"
-        emotion = "think"
-    elif len(msg) <= 40:
-        dialogue = (
-            f"{who}、話してくれてありがとう。ちゃんと受け取ったよ。"
-            f"今は少し混み合っているけど、{cname}はそばにいるからね。"
-        )
-        emotion = "happy"
-    else:
-        dialogue = (
-            f"{who}、長い話もありがとう。要点だけ整理すると楽になるよ。"
-            f"一番つらい点を一言で教えてくれる？"
-        )
-        emotion = "think"
-
+    # Capture first so the spoken line can confirm what we saved.
+    try:
+        applied = capture_life_from_chat(user, user_text or "", None)
+    except Exception:
+        applied = []
+    composed = compose_companion_dialogue(user, user_text or "", applied)
     return _pack_reply(
-        dialogue,
+        composed["dialogue"],
         {
-            "emotion": emotion,
+            "emotion": composed.get("emotion") or "happy",
             "user_display_name": user.get("user_display_name"),
             "companion_name": user.get("companion_name"),
+            "life_saved": applied,
         },
     )
 
 
 def _persist_local_turn(user_id: str, user: Dict[str, Any], user_text: str, ai_reply: str) -> str:
+    """Persist a local companion turn. Capture is done inside _local_companion_reply."""
     user.setdefault("chat_history", [])
-    try:
-        from chat_life_capture import capture_life_from_chat
-
-        capture_life_from_chat(user, user_text or "", None)
-    except Exception:
-        pass
     user["chat_history"].append({"role": "user", "content": user_text})
     user["chat_history"].append({"role": "model", "content": ai_reply})
     save_user_brain(user_id, user)
@@ -1015,7 +983,7 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
                 history_contents=_history_to_contents(history, limit=6),
                 user_text=user_text,
                 temperature=0.6,
-                max_tokens=180,
+                max_tokens=220,
             )
 
             # If provider returned plain Japanese without XML tags, wrap it.
@@ -1031,10 +999,21 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
                 save_core_brain(core)
             else:
                 _apply_user_fields_from_game_state(user, game_state)
+                applied: list = []
                 try:
-                    from chat_life_capture import capture_life_from_chat
+                    from chat_life_capture import capture_life_from_chat, enrich_dialogue_with_capture
 
-                    capture_life_from_chat(user, user_text or "", game_state)
+                    applied = capture_life_from_chat(user, user_text or "", game_state)
+                    if applied:
+                        dialogue, gs = parse_ai_reply(ai_reply)
+                        dialogue = enrich_dialogue_with_capture(
+                            dialogue, user, user_text or "", applied
+                        )
+                        gs = dict(gs or {})
+                        gs["life_saved"] = applied
+                        if "emotion" not in gs:
+                            gs["emotion"] = "happy"
+                        ai_reply = _pack_reply(dialogue, gs)
                 except Exception:
                     pass
                 user["chat_history"].append({"role": "user", "content": user_text})
