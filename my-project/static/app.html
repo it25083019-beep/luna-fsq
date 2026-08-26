@@ -61,7 +61,8 @@
     .bubble::before{content:"";position:absolute;top:-8px;left:18%;width:16px;height:16px;background:var(--card);transform:rotate(45deg);border-radius:3px}
     .bubble .who{display:inline-block;font-size:.68rem;background:var(--lilac);color:#fff;padding:.12rem .5rem;border-radius:999px;margin-bottom:.4rem}
     .status-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:0 1rem .75rem}
-    .status-card{background:var(--card);border-radius:16px;padding:.7rem .55rem;text-align:center;box-shadow:var(--shadow);border:none;cursor:pointer;color:var(--text)}
+    .status-card{background:var(--card);border-radius:16px;padding:.55rem .4rem .7rem;text-align:center;box-shadow:var(--shadow);border:none;cursor:pointer;color:var(--text);transition:transform .2s ease, box-shadow .2s ease}
+    .status-card:hover,.status-card:focus-visible{transform:translateY(-3px);box-shadow:0 12px 28px rgba(120,90,180,.22)}
     .status-card:nth-child(1){background:var(--st1)} .status-card:nth-child(2){background:var(--st2)} .status-card:nth-child(3){background:var(--st3)}
     .status-card .ico{font-size:1.15rem;margin-bottom:.15rem}
     .status-card .label{font-size:.72rem;color:var(--muted)}
@@ -340,8 +341,29 @@
     .menu-list button{border:none;background:var(--card);padding:.85rem 1rem;border-radius:16px;text-align:left;font-size:.88rem;font-weight:700;color:var(--lilac-deep);box-shadow:var(--shadow);cursor:pointer}
     .dash-card{margin:0 1rem .75rem;padding:.85rem;background:var(--card);border-radius:18px;box-shadow:var(--shadow)}
     .dash-card h4{margin:0 0 .5rem;font-size:.82rem;color:var(--lilac-deep)}
-    .health-hero{display:grid;grid-template-columns:88px 1fr;gap:.65rem;align-items:center;margin-bottom:.65rem}
-    .health-hero img{width:88px;height:88px;object-fit:contain;border-radius:18px;background:#fff;padding:.2rem}
+    .health-hero{display:grid;grid-template-columns:96px 1fr;gap:.65rem;align-items:center;margin-bottom:.65rem}
+    .health-hero img{width:96px;height:96px;object-fit:contain;border-radius:18px;background:#fff;padding:.15rem;will-change:transform}
+    .health-hero.wide{grid-template-columns:1fr;gap:.55rem}
+    .health-hero.wide img{width:100%;height:auto;max-height:140px;object-fit:contain;padding:.1rem;animation:uiBob 2.8s ease-in-out infinite}
+    .health-hero.portrait{grid-template-columns:112px 1fr}
+    .health-hero.portrait img{width:112px;height:148px;object-fit:cover;object-position:top center;animation:uiSway 3.4s ease-in-out infinite;transform-origin:50% 85%}
+    .module-banner{margin:0 1rem .75rem;background:linear-gradient(160deg,#f4ecff,#fff);border-radius:18px;padding:.7rem .75rem;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .module-banner img{width:min(100%,220px);max-height:140px;object-fit:contain;border-radius:14px;animation:uiBob 3s ease-in-out infinite;filter:drop-shadow(0 8px 14px rgba(120,90,180,.18))}
+    .status-card .ico-img{width:3.2rem;height:3.2rem;margin:0 auto .25rem;display:block;object-fit:contain;border-radius:12px;background:rgba(255,255,255,.7);animation:uiIdle 2.6s ease-in-out infinite;transition:transform .2s ease;filter:drop-shadow(0 4px 8px rgba(120,90,180,.16))}
+    .status-card:hover .ico-img,.status-card:focus-visible .ico-img{animation:none;transform:translateY(-4px) scale(1.12)}
+    .status-card:nth-child(2) .ico-img{animation-delay:.25s}
+    .status-card:nth-child(3) .ico-img{animation-delay:.5s}
+    .subview:not(.hidden) .module-banner,
+    .subview:not(.hidden) .dash-card:first-child{animation:uiEnter .5s cubic-bezier(.2,.8,.2,1) both}
+    @keyframes uiIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+    @keyframes uiBob{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.02)}}
+    @keyframes uiSway{0%,100%{transform:translateY(0) rotate(0)}35%{transform:translateY(-7px) rotate(-2.5deg)}70%{transform:translateY(-3px) rotate(2.5deg)}}
+    @keyframes uiEnter{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+    @media (prefers-reduced-motion:reduce){
+      .health-hero.wide img,.health-hero.portrait img,.module-banner img,.status-card .ico-img,
+      .subview:not(.hidden) .module-banner,.subview:not(.hidden) .dash-card:first-child,
+      .status-card{animation:none;transition:none}
+    }
     .score-ring{text-align:center}
     .score-ring strong{display:block;font-size:2rem;color:var(--lilac-deep);line-height:1}
     .score-ring span{font-size:.72rem;color:var(--muted)}
@@ -464,9 +486,9 @@
             <button type="button" id="mentalRemindBtn">答える</button>
           </div>
           <div class="status-row">
-            <button type="button" class="status-card" data-open="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
-            <button type="button" class="status-card" data-open="health"><div class="ico">💚</div><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
-            <button type="button" class="status-card" data-open="money"><div class="ico">🎯</div><div class="label">目標</div><div class="val" id="stGoals">—</div></button>
+            <button type="button" class="status-card" data-open="schedule"><img class="ico-img" src="/static/ui/schedule-luna.png?v=2" alt="" /><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
+            <button type="button" class="status-card" data-open="health"><img class="ico-img" src="/static/ui/health-luna.png?v=2" alt="" /><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
+            <button type="button" class="status-card" data-open="money"><img class="ico-img" src="/static/ui/money-luna.png?v=2" alt="" /><div class="label">目標</div><div class="val" id="stGoals">—</div></button>
           </div>
           <div class="home-today">
             <h3>今日の予定 <button type="button" data-open="schedule">カレンダー</button></h3>
@@ -493,6 +515,9 @@
           <button type="button" data-back="schedule">←</button>
           <h2>スケジュール</h2>
           <span style="width:2rem"></span>
+        </div>
+        <div class="module-banner">
+          <img src="/static/ui/schedule-luna.png?v=2" alt="スケジュール" />
         </div>
         <div class="cal-wrap">
           <div class="cal-nav">
@@ -538,8 +563,8 @@
         <div class="subview-head"><button type="button" data-back="health">←</button><h2>ヘルスケア</h2><span style="width:2rem"></span></div>
         <div class="module-hero">
           <div class="dash-card">
-            <div class="health-hero">
-              <img src="/static/live2d/luna-expressions/luna-happy.png" alt="LUNA" />
+            <div class="health-hero wide">
+              <img src="/static/ui/health-luna.png?v=2" alt="LUNA" />
               <div class="score-ring"><span id="healthStatus">—</span><strong id="healthScoreBig">—</strong><span>健康スコア</span></div>
             </div>
             <p class="hint" id="healthBmiLine" style="margin:.35rem 0 0">BMI —</p>
@@ -597,8 +622,8 @@
         <div class="subview-head"><button type="button" data-back="money">←</button><h2>お金・ゆとり</h2><span style="width:2rem"></span></div>
         <div class="module-hero">
           <div class="dash-card">
-            <div class="health-hero">
-              <img src="/static/live2d/luna-expressions/luna-happy.png" alt="LUNA" />
+            <div class="health-hero portrait">
+              <img src="/static/ui/money-luna.png?v=2" alt="LUNA" />
               <div class="score-ring"><span id="moneyStatus">—</span><strong id="moneyScoreBig">—</strong><span>お金スコア</span></div>
             </div>
             <p class="hint" id="moneyAgeLine" style="margin:.35rem 0 0">—</p>

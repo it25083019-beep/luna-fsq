@@ -26,8 +26,17 @@
     .top{text-align:center;margin-bottom:.25rem}
     .top h1{margin:0;font-family:"Zen Maru Gothic",sans-serif;font-size:1.15rem;color:var(--lilac-deep);font-weight:700}
     .hero{display:flex;justify-content:center;margin:.4rem 0 .2rem}
-    .hero img{height:min(42vh,300px);width:auto;max-width:100%;object-fit:contain;background:transparent;filter:drop-shadow(0 12px 22px rgba(120,90,180,.22));animation:float 3.8s ease-in-out infinite}
-    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .hero img{height:min(46vh,320px);width:auto;max-width:100%;object-fit:contain;background:transparent;filter:drop-shadow(0 14px 26px rgba(120,90,180,.28));
+      animation:loginFloat 2.8s ease-in-out infinite;transform-origin:50% 80%}
+    @keyframes loginFloat{
+      0%,100%{transform:translateY(0) rotate(0)}
+      25%{transform:translateY(-12px) rotate(-2deg)}
+      50%{transform:translateY(-4px) rotate(2deg)}
+      75%{transform:translateY(-14px) rotate(-1deg)}
+    }
+    @media (prefers-reduced-motion:reduce){
+      .hero img{animation:none}
+    }
     .panel{background:var(--card);border-radius:28px;padding:1.15rem 1.15rem 1.35rem;box-shadow:var(--shadow)}
     .panel h2{margin:0 0 .85rem;font-size:1.05rem;color:var(--lilac-deep);text-align:center}
     label{display:block;font-size:.75rem;color:var(--muted);margin:.55rem 0 .25rem}
@@ -53,7 +62,7 @@
   <div class="shell">
     <div class="top"><h1>ログイン</h1></div>
     <div class="hero">
-      <img src="/static/live2d/luna-expressions/luna-wave.png" alt="LUNA" id="heroLuna" />
+      <img src="/static/ui/login-luna.png?v=2" alt="LUNA" id="heroLuna" />
     </div>
     <section class="panel" id="authPanel">
       <h2 id="authTitle">LUNAへようこそ</h2>
@@ -137,7 +146,7 @@
         ? "/static/live2d/luna-expressions/luna-think.png"
         : registerMode
           ? "/static/live2d/luna-expressions/luna-happy.png"
-          : "/static/live2d/luna-expressions/luna-wave.png";
+          : "/static/ui/login-luna.png?v=2";
       document.getElementById("toggleMode").classList.toggle("hidden", forgotMode || resetMode);
       document.getElementById("forgotBtn").classList.toggle("hidden", forgotMode || resetMode);
       document.getElementById("backToLoginWrap").classList.toggle("hidden", login);
