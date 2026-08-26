@@ -449,6 +449,17 @@ NOTIFICATION RULES (do NOT ask interval preference):
 - During study/work: set pending_notification for mid-task break/progress.
 - Before scheduled events in timetable: use schedule_reminders / pending_notification.
 
+LIFE DATA CAPTURE (additive — never delete existing user data):
+When the user mentions facts about mood, spending, schedule, or goals, put them in game_state_json under life_updates.
+Use ONLY these keys when confident:
+- mental_status: one of 元気/普通/疲れ/落ち込み/不安
+- spend: {{"amount": number, "note": "short", "date": "YYYY-MM-DD"}}  (today's spending)
+- schedule_add: {{"title": "...", "date": "YYYY-MM-DD", "time": "HH:MM" or null}}
+- goal_add: {{"title": "...", "target": number, "current": 0, "unit": "円"}}
+- goal_progress: {{"title": "...", "current": number}}
+- notes: {{"health"|"money"|"schedule"|"goals": "free text memo"}}
+If unsure, omit life_updates. Never wipe calendars, funds, or goals.
+
 
 # PRIVACY
 - You only know THIS user. Never invent or reference other users' private data.
@@ -835,6 +846,12 @@ def _local_companion_reply(user: Dict[str, Any], user_text: str) -> str:
 
 def _persist_local_turn(user_id: str, user: Dict[str, Any], user_text: str, ai_reply: str) -> str:
     user.setdefault("chat_history", [])
+    try:
+        from chat_life_capture import capture_life_from_chat
+
+        capture_life_from_chat(user, user_text or "", None)
+    except Exception:
+        pass
     user["chat_history"].append({"role": "user", "content": user_text})
     user["chat_history"].append({"role": "model", "content": ai_reply})
     save_user_brain(user_id, user)
@@ -1014,6 +1031,12 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
                 save_core_brain(core)
             else:
                 _apply_user_fields_from_game_state(user, game_state)
+                try:
+                    from chat_life_capture import capture_life_from_chat
+
+                    capture_life_from_chat(user, user_text or "", game_state)
+                except Exception:
+                    pass
                 user["chat_history"].append({"role": "user", "content": user_text})
                 user["chat_history"].append({"role": "model", "content": ai_reply})
                 save_user_brain(user_id, user)
