@@ -6,18 +6,22 @@ import random
 from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
 
 load_dotenv()
+
+from llm_client import active_backend_label, complete_chat, provider_name
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.5-flash")
 
-if not GOOGLE_API_KEY:
-    raise ValueError("Missing GOOGLE_API_KEY in .env")
+# Gemini client is optional when using openai_compatible / groq / ollama.
+client = None
+if provider_name() == "gemini":
+    if not GOOGLE_API_KEY:
+        raise ValueError("Missing GOOGLE_API_KEY in .env (or set LLM_PROVIDER=groq/ollama/openai_compatible)")
+    from google import genai
 
-client = genai.Client(api_key=GOOGLE_API_KEY)
+    client = genai.Client(api_key=GOOGLE_API_KEY)
 
 
 class LunaAiError(Exception):
@@ -299,12 +303,16 @@ def get_brain_status(user_id: str) -> Dict[str, Any]:
     }
 
 
-def _history_to_contents(history: List[Dict[str, str]], limit: int = 6) -> List[types.Content]:
-    contents: List[types.Content] = []
+def _history_to_contents(history: List[Dict[str, str]], limit: int = 6):
+    """Gemini Content list; empty when not using gemini."""
+    if provider_name() != "gemini":
+        return []
+    from google.genai import types
+
+    contents = []
     for turn in history[-limit:]:
         role = "user" if turn.get("role") == "user" else "model"
         text = turn.get("content", "")
-        # Keep prompts light: only feed dialogue text into model history when possible
         if "<dialogue>" in text:
             m = re.search(r"<dialogue>\s*(.*?)\s*</dialogue>", text, re.DOTALL | re.IGNORECASE)
             if m:
@@ -980,21 +988,22 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
         system_prompt = _build_user_system_prompt(blueprint, policy, core, user)
         history = user.get("chat_history", [])
 
-    chat_session = client.chats.create(
-        model=MODEL_NAME,
-        history=_history_to_contents(history, limit=6),
-        config=types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            temperature=0.6,
-            max_output_tokens=180,
-        ),
-    )
-
+    chat_session = None  # legacy var unused; routed via llm_client
     last_error: Optional[Exception] = None
     for i in range(max_retries):
         try:
-            response = chat_session.send_message(user_text)
-            ai_reply = response.text if response.text else ""
+            ai_reply = complete_chat(
+                system_prompt,
+                history_dicts=history,
+                history_contents=_history_to_contents(history, limit=6),
+                user_text=user_text,
+                temperature=0.6,
+                max_tokens=180,
+            )
+
+            # If provider returned plain Japanese without XML tags, wrap it.
+            if ai_reply and "<dialogue>" not in ai_reply:
+                ai_reply = _pack_reply(ai_reply, {})
 
             _, game_state = parse_ai_reply(ai_reply)
 
@@ -1047,7 +1056,28 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
 def generate_json_task(system_instruction: str, user_prompt: str) -> Optional[Any]:
     """One-shot JSON completion (no chat history). Returns None on failure."""
     try:
-        response = client.models.generate_content(
+        if provider_name() == "openai_compatible":
+            raw = complete_chat(
+                system_instruction + "\nRespond with JSON only.",
+                history_dicts=[],
+                user_text=user_prompt,
+                temperature=0.35,
+                max_tokens=400,
+            )
+            text = (raw or "").strip()
+            if text.startswith("```"):
+                text = re.sub(r"^```(?:json)?\s*", "", text)
+                text = re.sub(r"\s*```$", "", text)
+            return json.loads(text) if text else None
+
+        from google.genai import types
+
+        gclient = client
+        if gclient is None:
+            from llm_client import _get_gemini
+
+            gclient = _get_gemini()
+        response = gclient.models.generate_content(
             model=MODEL_NAME,
             contents=user_prompt,
             config=types.GenerateContentConfig(

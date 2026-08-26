@@ -198,10 +198,17 @@ def login_page():
 
 @app.get("/health")
 def health():
+    try:
+        from llm_client import active_backend_label
+
+        backend = active_backend_label()
+    except Exception:
+        backend = {"provider": os.getenv("LLM_PROVIDER", "gemini")}
     return {
         "ok": True,
         "env": os.getenv("ENV", "dev"),
-        "model": os.getenv("MODEL_NAME", "gemini-2.5-flash"),
+        "llm": backend,
+        "model": backend.get("model") or os.getenv("MODEL_NAME", "gemini-2.5-flash"),
         "db": (
             "postgres"
             if "postgres" in os.getenv("DATABASE_URL", "").lower()
