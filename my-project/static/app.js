@@ -347,6 +347,36 @@
       .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
   }
 
+  function isoFromYmd(y, m0, d) {
+    return y + "-" + String(m0 + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  }
+
+  function clampDayInMonth(y, m0, day) {
+    const max = new Date(y, m0 + 1, 0).getDate();
+    return Math.min(Math.max(1, day || 1), max);
+  }
+
+  function shiftCalendarMonth(delta) {
+    const prevDay = selectedDate ? Number(selectedDate.split("-")[2]) : 1;
+    const next = new Date(calCursor.getFullYear(), calCursor.getMonth() + delta, 1);
+    calCursor = next;
+    const y = next.getFullYear();
+    const m0 = next.getMonth();
+    const today = todayIso();
+    const monthPrefix = y + "-" + String(m0 + 1).padStart(2, "0");
+    // Keep month grid and day panel in lockstep — this was the desync bug.
+    const nextIso = today.startsWith(monthPrefix)
+      ? today
+      : isoFromYmd(y, m0, clampDayInMonth(y, m0, prevDay));
+    selectedDate = nextIso;
+    const dateInput = document.getElementById("addDate");
+    if (dateInput) dateInput.value = nextIso;
+    renderCalendar();
+    renderDayEvents();
+    // Refresh expansion around the browsed month.
+    loadScheduleView({ preserveCursor: true });
+  }
+
   function renderCalendar() {
     const y = calCursor.getFullYear();
     const m = calCursor.getMonth();
@@ -368,7 +398,7 @@
       grid.appendChild(blank);
     }
     for (let d = 1; d <= daysInMonth; d++) {
-      const iso = y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+      const iso = isoFromYmd(y, m, d);
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "cal-day";
@@ -383,8 +413,11 @@
 
   function selectCalendarDay(iso) {
     selectedDate = iso;
+    const parts = iso.split("-").map(Number);
+    calCursor = new Date(parts[0], parts[1] - 1, 1);
     const dateInput = document.getElementById("addDate");
     if (dateInput) dateInput.value = iso;
+    hideSimilarPrompt();
     renderCalendar();
     renderDayEvents();
   }
@@ -501,17 +534,18 @@
     }
   }
 
-  async function loadScheduleView() {
+  async function loadScheduleView(opts) {
+    const preserveCursor = !!(opts && opts.preserveCursor);
     try {
-      const data = await api("/schedule/events");
+      const focus = selectedDate || document.getElementById("addDate")?.value || todayIso();
+      const data = await api("/schedule/events?date=" + encodeURIComponent(focus));
       allScheduleEvents = data.events || [];
       datesWithEvents = new Set(data.dates_with_events || []);
-      const inputDate = document.getElementById("addDate")?.value;
-      // Keep user-selected day stable across refresh.
-      if (!selectedDate && inputDate) selectedDate = inputDate;
-      if (!selectedDate) selectedDate = data.today || todayIso();
-      const parts = selectedDate.split("-").map(Number);
-      calCursor = new Date(parts[0], parts[1] - 1, 1);
+      if (!selectedDate) selectedDate = focus || data.today || todayIso();
+      if (!preserveCursor) {
+        const parts = selectedDate.split("-").map(Number);
+        calCursor = new Date(parts[0], parts[1] - 1, 1);
+      }
       document.getElementById("addDate").value = selectedDate;
       renderCalendar();
       renderDayEvents();
@@ -1268,14 +1302,8 @@
     document.getElementById("applySuggestBtn").onclick = () => applySuggestions();
     const dismiss = document.getElementById("dismissSuggestBtn");
     if (dismiss) dismiss.onclick = () => hideSimilarPrompt();
-    document.getElementById("calPrev").onclick = () => {
-      calCursor.setMonth(calCursor.getMonth() - 1);
-      renderCalendar();
-    };
-    document.getElementById("calNext").onclick = () => {
-      calCursor.setMonth(calCursor.getMonth() + 1);
-      renderCalendar();
-    };
+    document.getElementById("calPrev").onclick = () => shiftCalendarMonth(-1);
+    document.getElementById("calNext").onclick = () => shiftCalendarMonth(1);
     const saveHealthBtn = document.getElementById("saveHealthBtn");
     if (saveHealthBtn) saveHealthBtn.onclick = () => saveHealthMetrics();
     const saveMoneyBtn = document.getElementById("saveMoneyBtn");
