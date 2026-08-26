@@ -203,3 +203,18 @@ class HealthProfileUpdate(BaseModel):
 
 class HealthMentalCheckin(BaseModel):
     status: str = Field(min_length=1, max_length=20)
+
+
+class MoneyProfileUpdate(BaseModel):
+    monthly_income: Optional[int] = Field(default=None, ge=0)
+    monthly_expense: Optional[int] = Field(default=None, ge=0)
+    purchase_name: Optional[str] = Field(default=None, max_length=80)
+    purchase_current: Optional[int] = Field(default=None, ge=0)
+    purchase_target: Optional[int] = Field(default=None, ge=0)
+    emergency_current: Optional[int] = Field(default=None, ge=0)
+    emergency_target: Optional[int] = Field(default=None, ge=0)
+    reserve_current: Optional[int] = Field(default=None, ge=0)
+    reserve_target: Optional[int] = Field(default=None, ge=0)
+    invest_current: Optional[int] = Field(default=None, ge=0)
+    invest_target: Optional[int] = Field(default=None, ge=0)
+    note: Optional[str] = Field(default=None, max_length=2000)

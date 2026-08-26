@@ -34,6 +34,7 @@ from life_dashboard import (
     money_dashboard,
     save_health_profile,
     save_mental_checkin,
+    save_money_profile,
 )
 from schedule_service import (
     add_event,
@@ -73,6 +74,7 @@ from schemas import (
     LifeDashboardUpdate,
     HealthProfileUpdate,
     HealthMentalCheckin,
+    MoneyProfileUpdate,
 )
 from suggestions import get_suggested_replies
 from career_engine import load_taxonomy, suggest_careers, rpg_class_label
@@ -513,6 +515,22 @@ def life_money_dashboard(current: User = Depends(get_current_user)):
     return money_dashboard(brain)
 
 
+@app.patch("/life/money/profile")
+def life_money_profile_update(
+    req: MoneyProfileUpdate,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    payload = req.model_dump(exclude_unset=True)
+    note = payload.pop("note", None)
+    try:
+        dash = save_money_profile(brain, payload, note=note)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "dashboard": dash}
+
+
 @app.patch("/life/{module}/dashboard")
 def life_dashboard_update(
     module: str,
@@ -524,8 +542,11 @@ def life_dashboard_update(
     brain = load_user_brain(current.public_id)
     try:
         if module == "health":
-            # Prefer profile fields; fall back to raw structured merge for compatibility.
             dash = save_health_profile(brain, req.structured or {}, note=req.note)
+            save_user_brain(current.public_id, brain)
+            return {"ok": True, "dashboard": dash}
+        if module == "money":
+            dash = save_money_profile(brain, req.structured or {}, note=req.note)
             save_user_brain(current.public_id, brain)
             return {"ok": True, "dashboard": dash}
         update_module_structured(brain, module, req.structured, req.note)

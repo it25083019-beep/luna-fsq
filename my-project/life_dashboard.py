@@ -140,45 +140,38 @@ def _default_categories(expense: int) -> List[Dict[str, Any]]:
 
 
 def money_dashboard(user: Dict[str, Any]) -> Dict[str, Any]:
+    from money_eval import evaluate_money, profile_snapshot
+
+    ensure_life_modules(user)
     summary = summarize_module(user, "money")
     structured = dict(summary.get("structured") or {})
     baseline = summary.get("baseline") or {}
-
-    income = _parse_int(structured.get("income"), _parse_int(baseline.get("money_income"), 120000))
-    expense = _parse_int(structured.get("expense"), _parse_int(baseline.get("money_expense"), 90000))
-    income_goal = max(income, _parse_int(structured.get("income_goal"), int(income * 1.08)))
-    expense_budget = max(expense, _parse_int(structured.get("expense_budget"), int(expense * 1.15)))
-    savings_total = _parse_int(structured.get("savings_total"), 2500000)
-    savings_target = max(savings_total, _parse_int(structured.get("savings_target"), 3000000))
-
-    balance_history = structured.get("balance_history") or _default_balance_history(
-        _parse_int(structured.get("current_balance"), 45678)
-    )
-    categories = structured.get("expense_categories") or _default_categories(expense)
-    accounts = structured.get("accounts") or [
-        {"name": "定期預金A", "amount": int(savings_total * 0.4), "pct": 70},
-        {"name": "投資信託B", "amount": int(savings_total * 0.32), "pct": 55},
-        {"name": "つみたてC", "amount": int(savings_total * 0.28), "pct": 48},
-    ]
-
-    message = structured.get("message_ja") or "今月の予算は大丈夫かな？一緒に家計簿をチェックしよう！"
-    notes = (summary.get("notes") or [])[-6:]
-
+    evaluation = evaluate_money(user, structured)
     return {
-        "income": income,
-        "expense": expense,
-        "income_goal": income_goal,
-        "expense_budget": expense_budget,
-        "income_pct": min(100, int(income / max(1, income_goal) * 100)),
-        "expense_pct": min(100, int(expense / max(1, expense_budget) * 100)),
-        "savings_total": savings_total,
-        "savings_target": savings_target,
-        "savings_pct": min(100, int(savings_total / max(1, savings_target) * 100)),
-        "current_balance": _parse_int(structured.get("current_balance"), balance_history[-1]["balance"]),
-        "balance_history": balance_history,
-        "expense_categories": categories,
-        "accounts": accounts,
-        "message_ja": message,
-        "notes": notes,
+        **evaluation,
+        "profile": profile_snapshot(structured),
         "baseline": baseline,
+        "notes": (summary.get("notes") or [])[-6:],
     }
+
+
+def save_money_profile(
+    user: Dict[str, Any],
+    profile: Dict[str, Any],
+    note: Optional[str] = None,
+) -> Dict[str, Any]:
+    from money_eval import apply_money_evaluation, sanitize_money_profile
+
+    clean = sanitize_money_profile(profile)
+    ensure_life_modules(user)
+    row = user["life_modules"]["money"]
+    structured = dict(row.get("structured") or {})
+    structured.update(clean)
+    apply_money_evaluation(user, structured)
+    update_module_structured(
+        user,
+        "money",
+        structured,
+        note or "お金プロフィールを更新",
+    )
+    return money_dashboard(user)

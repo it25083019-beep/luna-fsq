@@ -236,10 +236,17 @@
     .water-row{display:flex;gap:.25rem;justify-content:center;margin:.35rem 0 .15rem}
     .water-glass{width:1.35rem;height:1.8rem;border-radius:0 0 6px 6px;border:2px solid var(--lilac);background:rgba(155,126,217,.08);position:relative;overflow:hidden}
     .water-glass.fill::after{content:"";position:absolute;left:0;right:0;bottom:0;height:72%;background:linear-gradient(180deg,#7ec8ff,#4a9fe8)}
-    .money-cards{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.65rem}
-    .money-card{background:var(--card);border-radius:16px;padding:.7rem;box-shadow:var(--shadow)}
-    .money-card .label{font-size:.68rem;color:var(--muted)}
-    .money-card strong{display:block;font-size:1rem;margin:.15rem 0;color:var(--lilac-deep)}
+    .money-fund{margin:.45rem 0;padding:.55rem .15rem 0;border-top:1px solid rgba(155,126,217,.12)}
+    .money-fund:first-child{border-top:none;padding-top:0}
+    .money-fund .top{display:flex;justify-content:space-between;gap:.4rem;align-items:baseline;margin-bottom:.25rem}
+    .money-fund .name{font-size:.8rem;font-weight:700;color:var(--lilac-deep)}
+    .money-fund .pct{font-size:.72rem;font-weight:800;color:var(--text)}
+    .money-fund .bar{height:8px;background:rgba(155,126,217,.15);border-radius:999px;overflow:hidden}
+    .money-fund .bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--lilac),var(--lilac-deep));border-radius:999px}
+    .money-fund .meta{font-size:.7rem;color:var(--muted);margin-top:.25rem}
+    .money-fund-inputs{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.35rem}
+    .money-saved-hint{margin:.45rem 0 0;font-size:.78rem;font-weight:700;color:var(--lilac-deep);min-height:1.1em;opacity:0;transition:opacity .2s ease}
+    .money-saved-hint.show{opacity:1}
     .prog{height:6px;border-radius:999px;background:var(--input-bg);overflow:hidden;margin-top:.25rem}
     .prog span{display:block;height:100%;border-radius:inherit}
     .prog.in span{background:linear-gradient(90deg,#6ec9b8,#1bb874)}
@@ -473,44 +480,39 @@
 
       <!-- Money subview -->
       <div id="sub-money" class="subview hidden">
-        <div class="subview-head"><button type="button" data-back="money">←</button><h2>お金・家計</h2><span style="width:2rem"></span></div>
+        <div class="subview-head"><button type="button" data-back="money">←</button><h2>お金・ゆとり</h2><span style="width:2rem"></span></div>
         <div class="module-hero">
-          <div class="money-cards">
-            <div class="money-card">
-              <div class="label">収入</div>
-              <strong id="moneyIn">—</strong>
-              <div class="prog in"><span id="moneyInBar" style="width:0%"></span></div>
+          <div class="dash-card">
+            <div class="health-hero">
+              <img src="/static/live2d/luna-expressions/luna-happy.png" alt="LUNA" />
+              <div class="score-ring"><span id="moneyStatus">—</span><strong id="moneyScoreBig">—</strong><span>お金スコア</span></div>
             </div>
-            <div class="money-card">
-              <div class="label">支出</div>
-              <strong id="moneyOut">—</strong>
-              <div class="prog out"><span id="moneyOutBar" style="width:0%"></span></div>
-            </div>
+            <p class="hint" id="moneyAgeLine" style="margin:.35rem 0 0">—</p>
+            <p class="hint" id="moneyRoomLine" style="margin:.2rem 0 0">—</p>
+            <p class="money-saved-hint" id="moneySavedHint" aria-live="polite"></p>
           </div>
           <div class="dash-card">
-            <h4>貯蓄合計 <strong id="moneySavings" style="float:right;color:var(--lilac-deep)">—</strong></h4>
-            <div class="hint" style="margin-bottom:.45rem">目標達成率: <span id="moneySavingsPct">—</span></div>
-            <div class="chart-box" style="height:130px"><canvas id="moneyBalanceChart"></canvas></div>
+            <h4>LUNAからのアドバイス</h4>
+            <div class="bubble compact" id="moneyMessage" style="margin:0 0 .45rem">収支を入力すると提案します。</div>
+            <p class="hint" id="moneyRuleLine" style="margin:0 0 .35rem"></p>
+            <ul class="suggest-list" id="moneyTips"></ul>
           </div>
           <div class="dash-card">
-            <h4>週間支出内訳</h4>
-            <div class="chart-box tall"><canvas id="moneyCategoryChart"></canvas></div>
+            <h4>資金の進み具合</h4>
+            <div id="moneyFundsBars"></div>
           </div>
-          <div class="dash-card">
-            <h4>口座・資産</h4>
-            <div id="moneyAccounts"></div>
-          </div>
-          <div class="bubble compact" id="moneyMessage" style="margin:0">今月の予算は大丈夫かな？一緒に家計簿をチェックしよう！</div>
         </div>
         <div class="edit-panel">
-          <h4>収支を手動で編集</h4>
-          <label>今月の収入</label><input id="editMoneyIn" type="number" min="0" />
-          <label>今月の支出</label><input id="editMoneyOut" type="number" min="0" />
-          <label>貯蓄合計</label><input id="editMoneySavings" type="number" min="0" />
-          <label>現在の残高</label><input id="editMoneyBalance" type="number" />
-          <div class="row"><button type="button" class="save" id="saveMoneyBtn">保存</button></div>
+          <h4>お金プロフィール</h4>
+          <div class="time-row">
+            <div><label>月の収入（円）</label><input id="editMoneyIncome" type="number" min="0" step="1000" /></div>
+            <div><label>月の支出（円）</label><input id="editMoneyExpense" type="number" min="0" step="1000" /></div>
+          </div>
+          <label>欲しいもの・目標の名前</label><input id="editPurchaseName" type="text" placeholder="例：新しいイヤホン" />
+          <div id="moneyFundInputs"></div>
+          <p class="local-err" id="moneyFormErr"></p>
+          <div class="row"><button type="button" class="save" id="saveMoneyBtn">保存して評価</button></div>
         </div>
-        <div class="sched-section"><h3>メモ・追記</h3><div id="moneyNotes" class="hint" style="line-height:1.6"></div></div>
         <div class="consult-row">
           <button type="button" class="consult-btn blue" data-ask="今月の支出を整理したい">📊 支出を整理</button>
           <button type="button" class="consult-btn pink" data-ask="貯金目標について相談したい">👛 貯金目標</button>

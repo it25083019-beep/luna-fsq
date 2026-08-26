@@ -950,122 +950,131 @@
     } catch (_) {}
   }
 
+  function setMoneyFormErr(msg) {
+    const el = document.getElementById("moneyFormErr");
+    if (el) el.textContent = msg || "";
+    if (msg) setErr(msg);
+    else setErr("");
+  }
+
+  function renderMoneyFundInputs(funds, profile) {
+    const box = document.getElementById("moneyFundInputs");
+    if (!box) return;
+    box.innerHTML = "";
+    (funds || []).forEach((f) => {
+      const wrap = document.createElement("div");
+      wrap.className = "money-fund";
+      const curId = "editFund_" + f.key + "_current";
+      const tgtId = "editFund_" + f.key + "_target";
+      const curVal = profile && profile[f.key + "_current"] != null ? profile[f.key + "_current"] : f.current;
+      const tgtVal = profile && profile[f.key + "_target"] != null ? profile[f.key + "_target"] : f.target;
+      wrap.innerHTML =
+        '<div class="top"><span class="name">' +
+        (f.label_ja || f.key) +
+        '</span><span class="hint">' +
+        (f.hint_ja || "") +
+        "</span></div>" +
+        '<div class="money-fund-inputs">' +
+        "<div><label>いま（円）</label><input id=\"" +
+        curId +
+        '" type="number" min="0" step="1000" /></div>' +
+        "<div><label>目標（円）</label><input id=\"" +
+        tgtId +
+        '" type="number" min="0" step="1000" /></div>' +
+        "</div>";
+      box.appendChild(wrap);
+      setInputVal(curId, curVal);
+      setInputVal(tgtId, tgtVal);
+    });
+  }
+
+  function renderMoneyDashboard(d) {
+    if (!d) return;
+    const scoreEl = document.getElementById("moneyScoreBig");
+    if (scoreEl) scoreEl.textContent = d.score ?? "—";
+    const st = document.getElementById("moneyStatus");
+    if (st) st.textContent = d.status_ja || "—";
+    const ageLine = document.getElementById("moneyAgeLine");
+    if (ageLine) ageLine.textContent = d.age_label_ja || "—";
+    const roomLine = document.getElementById("moneyRoomLine");
+    if (roomLine) roomLine.textContent = d.room_note_ja || "—";
+    const msg = document.getElementById("moneyMessage");
+    if (msg) msg.textContent = d.message_ja || "";
+    const rule = document.getElementById("moneyRuleLine");
+    if (rule) rule.textContent = d.rule_ja || "";
+    renderSuggestList("moneyTips", d.tips_ja || []);
+
+    const bars = document.getElementById("moneyFundsBars");
+    if (bars) {
+      bars.innerHTML = "";
+      (d.funds || []).forEach((f) => {
+        const row = document.createElement("div");
+        row.className = "money-fund";
+        row.innerHTML =
+          '<div class="top"><span class="name">' +
+          (f.label_ja || f.key) +
+          '</span><span class="pct">' +
+          (f.pct ?? 0) +
+          "%</span></div>" +
+          '<div class="bar"><span style="width:' +
+          (f.pct ?? 0) +
+          '%"></span></div>' +
+          '<div class="meta">' +
+          fmtYen(f.current) +
+          " / " +
+          fmtYen(f.target) +
+          "</div>";
+        bars.appendChild(row);
+      });
+    }
+
+    const p = d.profile || {};
+    setInputVal("editMoneyIncome", p.monthly_income != null ? p.monthly_income : d.monthly_income);
+    setInputVal("editMoneyExpense", p.monthly_expense != null ? p.monthly_expense : d.monthly_expense);
+    setInputVal("editPurchaseName", p.purchase_name || d.purchase_name || "");
+    renderMoneyFundInputs(d.funds || [], p);
+  }
+
   async function loadMoneyView() {
     try {
       const d = await api("/life/money/dashboard");
-      document.getElementById("moneyIn").textContent = fmtYen(d.income);
-      document.getElementById("moneyOut").textContent = fmtYen(d.expense);
-      document.getElementById("moneyInBar").style.width = (d.income_pct || 0) + "%";
-      document.getElementById("moneyOutBar").style.width = (d.expense_pct || 0) + "%";
-      document.getElementById("moneySavings").textContent = fmtYen(d.savings_total);
-      document.getElementById("moneySavingsPct").textContent = (d.savings_pct || 0) + "%";
-      document.getElementById("moneyMessage").textContent = d.message_ja || "";
-      document.getElementById("editMoneyIn").value = d.income;
-      document.getElementById("editMoneyOut").value = d.expense;
-      document.getElementById("editMoneySavings").value = d.savings_total;
-      document.getElementById("editMoneyBalance").value = d.current_balance;
-
-      const balLabels = (d.balance_history || []).map((x) => x.month);
-      const balData = (d.balance_history || []).map((x) => x.balance);
-      makeChart("moneyBalance", "moneyBalanceChart", {
-        type: "line",
-        data: {
-          labels: balLabels,
-          datasets: [
-            {
-              data: balData,
-              borderColor: "#497cff",
-              backgroundColor: "rgba(73,124,255,.12)",
-              fill: true,
-              tension: 0.35,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { grid: { display: false } } },
-        },
-      });
-
-      const cats = d.expense_categories || [];
-      makeChart("moneyCategory", "moneyCategoryChart", {
-        type: "bar",
-        data: {
-          labels: cats.map((c) => c.name),
-          datasets: [
-            {
-              data: cats.map((c) => c.amount),
-              backgroundColor: ["#9b7ed9", "#f0a8c8", "#6ec9b8", "#e8b86d", "#497cff"],
-              borderRadius: 8,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
-        },
-      });
-
-      const accEl = document.getElementById("moneyAccounts");
-      if (accEl) {
-        accEl.innerHTML = "";
-        (d.accounts || []).forEach((a) => {
-          const row = document.createElement("div");
-          row.className = "account-row";
-          row.innerHTML =
-            "<span>" +
-            a.name +
-            '</span><div class="bar"><span style="width:' +
-            (a.pct || 0) +
-            '%"></span></div><strong>' +
-            fmtYen(a.amount) +
-            "</strong>";
-          accEl.appendChild(row);
-        });
-      }
-
-      const lines = [];
-      Object.entries(d.baseline || {}).forEach(([k, v]) => lines.push("・" + k + ": " + v));
-      (d.notes || []).forEach((n) => lines.push("＋ " + n.text));
-      document.getElementById("moneyNotes").textContent = lines.length ? lines.join("\n") : "追記はLUNAに話すか、メニューから追加できます。";
+      renderMoneyDashboard(d);
     } catch (e) {
       setErr(e.message);
     }
   }
 
   async function saveMoneyMetrics() {
+    setMoneyFormErr("");
+    const payload = {
+      monthly_income: numOrNull("editMoneyIncome"),
+      monthly_expense: numOrNull("editMoneyExpense"),
+      purchase_name: strOrNull("editPurchaseName"),
+    };
+    ["purchase", "emergency", "reserve", "invest"].forEach((key) => {
+      const curEl = document.getElementById("editFund_" + key + "_current");
+      const tgtEl = document.getElementById("editFund_" + key + "_target");
+      if (curEl) payload[key + "_current"] = numOrNull("editFund_" + key + "_current");
+      if (tgtEl) payload[key + "_target"] = numOrNull("editFund_" + key + "_target");
+    });
     try {
-      const income = Number(document.getElementById("editMoneyIn").value);
-      const expense = Number(document.getElementById("editMoneyOut").value);
-      const savings = Number(document.getElementById("editMoneySavings").value);
-      const balance = Number(document.getElementById("editMoneyBalance").value);
-      await api("/life/money/dashboard", {
+      const res = await api("/life/money/profile", {
         method: "PATCH",
-        body: JSON.stringify({
-          structured: {
-            income,
-            expense,
-            savings_total: savings,
-            current_balance: balance,
-            balance_history: [
-              { month: "1月", balance: Math.round(balance * 0.85) },
-              { month: "2月", balance: Math.round(balance * 0.9) },
-              { month: "3月", balance: Math.round(balance * 0.94) },
-              { month: "4月", balance: Math.round(balance * 0.97) },
-              { month: "5月", balance },
-            ],
-          },
-          note: "家計数値を手動更新",
-        }),
+        body: JSON.stringify(payload),
       });
-      await loadMoneyView();
+      renderMoneyDashboard(res.dashboard || res);
+      setMoneyFormErr("");
+      const moneyView = document.getElementById("sub-money");
+      if (moneyView) moneyView.scrollTo({ top: 0, behavior: "smooth" });
+      const hint = document.getElementById("moneySavedHint");
+      if (hint) {
+        hint.textContent = "保存しました。上の評価を確認してね。";
+        hint.classList.add("show");
+        setTimeout(() => hint.classList.remove("show"), 3500);
+      }
       await loadHomeSummary();
     } catch (e) {
-      setErr(e.message);
+      setMoneyFormErr(e.message);
     }
   }
 
