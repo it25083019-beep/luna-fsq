@@ -29,6 +29,8 @@
     { left: "78%", top: "20%" },
     { left: "88%", top: "60%" },
   ];
+  const MAP_LANDMARKS = ["⛺", "🌲", "⛰", "🏰", "👹"];
+  let lastMapStageIdx = -1;
   const BOSS_LABEL = { weekly: "週次ボス", monthly: "月次ボス", career_final: "最終ボス" };
   const EVOLUTION_RANKS = [
     { id: "novice", label: "見習い" },
@@ -512,18 +514,51 @@
       if (standee) wrap.classList.add("standee");
       img.src = evo;
       img.alt = (ap.class_label_ja || classLabel(classId)) + " " + (ap.rank_label_ja || journeyStatus.rank_ja || "");
+      const reflect = document.getElementById("homeAvatarReflect");
+      if (reflect) reflect.src = evo;
     } else if (ap.sprite) {
       img.src = ap.sprite;
+      const reflect = document.getElementById("homeAvatarReflect");
+      if (reflect) reflect.src = ap.sprite;
     }
     const alive = document.getElementById("homeHeroAlive");
     if (alive) {
       alive.className = "hero-alive class-" + (classId || "swordsman");
     }
     renderHeldProps(appearance, classId);
+    applyHeroShowcaseFx(classId, rankId);
     const tag = document.getElementById("homeAvatarClass");
     if (tag) tag.textContent = ap.class_label_ja || classLabel(ap.class_id) || "—";
     const emblem = document.getElementById("homeAvatarEmblem");
     if (emblem) emblem.textContent = ap.class_emblem_ja || (ap.class_label_ja || "旅")[0] || "旅";
+  }
+
+  function applyHeroShowcaseFx(classId, rankId) {
+    const showcase = document.getElementById("heroShowcase");
+    if (!showcase) return;
+    showcase.dataset.rank = rankId || "novice";
+    showcase.className = "hero-showcase class-" + (classId || "swordsman");
+    const stage = document.getElementById("heroStage");
+    if (stage && !stage.dataset.wowBound) {
+      stage.dataset.wowBound = "1";
+      const cheer = () => {
+        stage.classList.remove("hero-cheer");
+        void stage.offsetWidth;
+        stage.classList.add("hero-cheer");
+        const burst = document.createElement("span");
+        burst.className = "hero-burst";
+        stage.appendChild(burst);
+        burst.addEventListener("animationend", () => burst.remove());
+        if (luna) luna.applyEmotion("cheer", 900);
+      };
+      stage.addEventListener("click", cheer);
+      stage.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          cheer();
+        }
+      });
+    }
   }
 
   function renderHeldProps(appearance, classId) {
@@ -1366,30 +1401,51 @@
         (bossHere ? " boss" : "");
       node.style.left = pos.left;
       node.style.top = pos.top;
-      const icon = bossHere ? "👹" : r.cleared ? "⚑" : r.current ? "★" : !r.unlocked ? "🔒" : "◆";
+      const landmarkIcon = bossHere ? "👹" : !r.unlocked ? "🔒" : r.cleared ? "⚑" : r.current ? "★" : MAP_LANDMARKS[i] || "◆";
       node.innerHTML =
-        '<span class="flag">' +
-        icon +
+        '<span class="pedestal"></span><span class="landmark">' +
+        landmarkIcon +
         "</span>" +
         (r.label_ja || r.id) +
         (r.progress ? '<div class="hint" style="color:#fff;opacity:.9">' + r.progress + "</div>" : "");
       path.appendChild(node);
     });
     const svg = document.getElementById("mapRouteSvg");
-    if (svg && pts.length > 1) {
-      let d = "M " + pts[0].x + " " + pts[0].y;
-      for (let i = 1; i < pts.length; i++) {
-        const prev = pts[i - 1];
-        const cur = pts[i];
-        const mx = (prev.x + cur.x) / 2;
-        d += " Q " + mx + " " + (prev.y - 8) + " " + cur.x + " " + cur.y;
-      }
-      svg.innerHTML = '<path d="' + d + '" />';
-    } else if (svg) {
-      svg.innerHTML = "";
-    }
+    const svgGlow = document.getElementById("mapRouteGlow");
+    const pathMarkup =
+      pts.length > 1
+        ? (function () {
+            let d = "M " + pts[0].x + " " + pts[0].y;
+            for (let i = 1; i < pts.length; i++) {
+              const prev = pts[i - 1];
+              const cur = pts[i];
+              const mx = (prev.x + cur.x) / 2;
+              d += " Q " + mx + " " + (prev.y - 8) + " " + cur.x + " " + cur.y;
+            }
+            return d;
+          })()
+        : "";
+    if (svg) svg.innerHTML = pathMarkup ? '<path d="' + pathMarkup + '" />' : "";
+    if (svgGlow) svgGlow.innerHTML = pathMarkup ? '<path d="' + pathMarkup + '" />' : "";
     const cur = list.find((r) => r.current) || list[0];
     const curIdx = Math.max(0, list.indexOf(cur));
+    const mapWorld = document.getElementById("mapWorld");
+    if (mapWorld) {
+      mapWorld.className = "map-world map-biome-" + Math.min(curIdx, 4);
+    }
+    if (curIdx !== lastMapStageIdx && lastMapStageIdx >= 0 && curIdx >= 0) {
+      const pulsePos = MAP_POSITIONS[curIdx] || MAP_POSITIONS[0];
+      const strip = document.querySelector(".map-strip");
+      if (strip) {
+        const pulse = document.createElement("span");
+        pulse.className = "map-travel-pulse";
+        pulse.style.left = pulsePos.left;
+        pulse.style.top = pulsePos.top;
+        strip.appendChild(pulse);
+        pulse.addEventListener("animationend", () => pulse.remove());
+      }
+    }
+    lastMapStageIdx = curIdx;
     const lbl = document.getElementById("mapRegionLabel");
     if (lbl) {
       lbl.textContent =

@@ -308,8 +308,34 @@
     .rpg-status-top{position:relative;z-index:1;margin-top:.45rem}
     .rpg-status-top .role{font-size:1.15rem;font-weight:800;margin:.1rem 0}
     .rpg-status-top .small{font-size:.7rem;opacity:.88;line-height:1.4}
-    .hero-showcase{position:relative;z-index:1;margin-top:.35rem;padding:0 .15rem .2rem;min-height:340px}
-    .hero-stage{position:relative;display:flex;flex-direction:column;align-items:center;z-index:2;padding:0 4.6rem 0}
+    .hero-showcase{position:relative;z-index:1;margin-top:.35rem;padding:0 .15rem .2rem;min-height:360px}
+    .hero-showcase[data-rank="intermediate"] .stage-aura{background:radial-gradient(circle,rgba(255,200,120,.35),rgba(94,207,192,.15) 45%,transparent 70%)}
+    .hero-showcase[data-rank="veteran"] .stage-aura{background:radial-gradient(circle,rgba(120,200,255,.38),rgba(180,140,255,.18) 45%,transparent 70%)}
+    .hero-showcase[data-rank="saint"] .stage-aura{background:radial-gradient(circle,rgba(255,240,150,.45),rgba(255,200,80,.25) 40%,transparent 68%);animation:auraPulse 2.2s ease-in-out infinite,saintGlow 4s ease-in-out infinite}
+    @keyframes saintGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.15)}}
+    .hero-showcase[data-rank="saint"] .hero-alive{animation:heroIdle 2.4s ease-in-out infinite,heroSaintFloat 5s ease-in-out infinite}
+    @keyframes heroSaintFloat{0%,100%{filter:drop-shadow(0 14px 18px rgba(0,0,0,.45))}50%{filter:drop-shadow(0 18px 28px rgba(255,210,122,.55))}}
+    .hero-stage{position:relative;display:flex;flex-direction:column;align-items:center;z-index:2;padding:0 4.6rem 0;cursor:pointer}
+    .hero-theater-bg{position:absolute;inset:-20px -10px 40px;pointer-events:none;z-index:0;overflow:hidden;border-radius:50% 50% 0 0}
+    .hero-theater-bg .tb{position:absolute;border-radius:50%;filter:blur(18px);opacity:.55;animation:theaterDrift 8s ease-in-out infinite}
+    .hero-theater-bg .tb1{width:120px;height:120px;left:8%;top:20%;background:rgba(212,168,75,.35)}
+    .hero-theater-bg .tb2{width:90px;height:90px;right:10%;top:35%;background:rgba(31,122,110,.4);animation-delay:-2.5s}
+    .hero-theater-bg .tb3{width:70px;height:70px;left:42%;top:8%;background:rgba(120,180,255,.28);animation-delay:-4s}
+    .hero-showcase.class-mage .hero-theater-bg .tb1{background:rgba(138,92,246,.35)}
+    .hero-showcase.class-archer .hero-theater-bg .tb2{background:rgba(50,196,141,.38)}
+    @keyframes theaterDrift{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(6px,-8px) scale(1.08)}}
+    .hero-spotlight{position:absolute;left:50%;top:-8%;transform:translateX(-50%);width:180px;height:200px;background:conic-gradient(from 180deg at 50% 0%,transparent 35%,rgba(255,240,200,.22) 50%,transparent 65%);pointer-events:none;z-index:1;animation:spotSweep 6s ease-in-out infinite}
+    @keyframes spotSweep{0%,100%{opacity:.65;transform:translateX(-50%) rotate(-4deg)}50%{opacity:1;transform:translateX(-50%) rotate(4deg)}}
+    .stage-platform{position:relative;width:170px;height:36px;margin-top:-6px;z-index:1}
+    .stage-platform::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse,rgba(212,168,75,.55) 0%,rgba(80,60,30,.25) 45%,transparent 72%);box-shadow:0 10px 32px rgba(0,0,0,.35), inset 0 2px 8px rgba(255,240,200,.35)}
+    .platform-ring{position:absolute;left:50%;top:50%;width:140%;height:140%;transform:translate(-50%,-50%);border-radius:50%;border:1px dashed rgba(255,230,150,.35);animation:platformSpin 12s linear infinite}
+    @keyframes platformSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+    .hero-reflection{position:absolute;left:50%;bottom:58px;transform:translateX(-50%) scaleY(-1);width:min(160px,44vw);height:48px;opacity:.22;pointer-events:none;z-index:0;mask-image:linear-gradient(to bottom,rgba(0,0,0,.5),transparent);-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.5),transparent)}
+    .hero-reflection img{width:100%;height:100%;object-fit:contain;object-position:center top;filter:blur(1px)}
+    .hero-stage.hero-cheer .hero-alive{animation:heroCheer .65s ease!important}
+    @keyframes heroCheer{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-14px) scale(1.05)}55%{transform:translateY(-6px) scale(1.02)}100%{transform:translateY(0) scale(1)}}
+    .hero-burst{position:absolute;left:50%;top:42%;width:8px;height:8px;border-radius:50%;background:#fff38d;pointer-events:none;z-index:6;opacity:0;transform:translate(-50%,-50%) scale(.4);animation:burstPop .7s ease forwards}
+    @keyframes burstPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}25%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(2.8)}}
     .stage-aura{position:absolute;left:50%;top:8%;transform:translateX(-50%);width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(255,230,150,.28),rgba(120,160,255,.12) 45%,transparent 70%);pointer-events:none;animation:auraPulse 3.2s ease-in-out infinite;z-index:0}
     @keyframes auraPulse{0%,100%{opacity:.7;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.06)}}
     .stage-floor{width:150px;height:26px;margin-top:-10px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,210,122,.65),rgba(80,60,160,.15) 55%,transparent 72%);box-shadow:0 8px 28px rgba(0,0,0,.25);z-index:1}
@@ -359,7 +385,7 @@
     .map-avatar.alive img{animation:mapIdle 2.6s ease-in-out infinite}
     @keyframes mapIdle{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-3px) rotate(1deg)}}
     @media (prefers-reduced-motion:reduce){
-      .stage-aura,.hero-alive,.stage-floor,.held-prop,.life-fx .spark,.gear-orbit .gear-slot,.map-avatar.alive img{animation:none!important}
+      .stage-aura,.hero-alive,.stage-floor,.held-prop,.life-fx .spark,.gear-orbit .gear-slot,.map-avatar.alive img,.hero-spotlight,.platform-ring,.map-cloud,.map-sun,.map-avatar .av-ring{animation:none!important}
     }
     .hero-showcase .hero-nameplate{margin-top:.55rem;letter-spacing:.14em}
     .gear-orbit{position:absolute;inset:8px 0 90px;z-index:3;pointer-events:none}
@@ -526,9 +552,47 @@
     .evo-cell.reached:not(.current){opacity:.85}
     .class-btn .class-preview{width:100%;max-width:64px;height:72px;object-fit:contain;object-position:center bottom;border-radius:10px;display:block;margin:0 auto .2rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,.2));background:radial-gradient(ellipse at 50% 85%,rgba(120,100,200,.15),transparent)}
     .evo-cell img{width:100%;max-width:72px;height:78px;object-fit:contain;object-position:center bottom;border-radius:10px;display:block;margin:0 auto .2rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,.2));background:transparent}
-    .map-world{position:relative;border-radius:22px;overflow:hidden;margin:.65rem 0;box-shadow:0 14px 36px rgba(20,40,30,.25);min-height:240px;background:
-      radial-gradient(ellipse 90% 50% at 70% 20%,rgba(255,255,220,.35),transparent 55%),
-      linear-gradient(180deg,#7ec8f0 0%,#87c98a 36%,#4a9a55 72%,#2f6b3a 100%)}
+    .map-world{position:relative;border-radius:22px;overflow:hidden;margin:.65rem 0;box-shadow:0 14px 36px rgba(20,40,30,.25);min-height:280px;background:#2f6b3a;
+      transform:perspective(900px) rotateX(2deg);transform-origin:center top}
+    .map-sky{position:absolute;inset:0 0 55%;background:linear-gradient(180deg,#5eb8f0 0%,#9ed4f5 55%,#b8e8c0 100%);z-index:0}
+    .map-sun{position:absolute;right:14%;top:10%;width:42px;height:42px;border-radius:50%;background:radial-gradient(circle,#fff9c8,#ffd27a 45%,rgba(255,210,122,0) 70%);box-shadow:0 0 24px rgba(255,220,120,.65);animation:sunPulse 4s ease-in-out infinite}
+    @keyframes sunPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+    .map-cloud{position:absolute;background:rgba(255,255,255,.82);border-radius:999px;filter:blur(.5px);opacity:.88;animation:cloudDrift linear infinite}
+    .map-cloud.c1{width:56px;height:18px;left:-10%;top:18%;box-shadow:22px 4px 0 rgba(255,255,255,.75);animation-duration:28s}
+    .map-cloud.c2{width:44px;height:14px;left:-20%;top:32%;animation-duration:36s;animation-delay:-8s}
+    .map-cloud.c3{width:38px;height:12px;left:-15%;top:8%;animation-duration:42s;animation-delay:-14s}
+    @keyframes cloudDrift{from{transform:translateX(0)}to{transform:translateX(420px)}}
+    .map-mountains{position:absolute;left:0;right:0;top:28%;height:38%;z-index:1;pointer-events:none;
+      background:
+        linear-gradient(165deg,transparent 40%,rgba(70,100,80,.55) 40% 42%,transparent 42%),
+        linear-gradient(195deg,transparent 52%,rgba(55,85,70,.6) 52% 54%,transparent 54%),
+        linear-gradient(175deg,transparent 35%,rgba(90,120,95,.45) 35% 37%,transparent 37%)}
+    .map-terrain{position:absolute;inset:38% 0 0;z-index:1;pointer-events:none;
+      background:linear-gradient(180deg,#87c98a 0%,#4a9a55 55%,#2f6b3a 100%)}
+    .map-world.map-biome-1 .map-terrain{background:linear-gradient(180deg,#6db87a 0%,#3d8f52 55%,#245a32 100%)}
+    .map-world.map-biome-2 .map-terrain{background:linear-gradient(180deg,#8fbf6a 0%,#6a9a45 50%,#4a7030 100%)}
+    .map-world.map-biome-3 .map-terrain{background:linear-gradient(180deg,#7aa8c8 0%,#5a8090 50%,#3a5060 100%)}
+    .map-world.map-biome-4 .map-terrain{background:linear-gradient(180deg,#9a7ac8 0%,#5a4080 50%,#2a2040 100%)}
+    .map-world.map-biome-1 .map-sky{background:linear-gradient(180deg,#4a9a78 0%,#7ec8a0 55%,#a8e0b8 100%)}
+    .map-world.map-biome-3 .map-mountains{background:
+        linear-gradient(165deg,transparent 38%,rgba(180,200,220,.7) 38% 40%,transparent 40%),
+        linear-gradient(195deg,transparent 48%,rgba(160,180,200,.65) 48% 50%,transparent 50%)}
+    .map-fog{position:absolute;inset:0;z-index:2;pointer-events:none;background:
+      radial-gradient(ellipse 40% 30% at 78% 55%,rgba(255,255,255,.35),transparent 70%),
+      radial-gradient(ellipse 35% 25% at 12% 60%,rgba(255,255,255,.28),transparent 70%)}
+    .map-route-glow path{fill:none;stroke:rgba(255,210,122,.35);stroke-width:5;stroke-linecap:round;filter:blur(3px)}
+    .map-node .pedestal{display:block;width:34px;height:10px;margin:0 auto .15rem;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,.45),rgba(60,40,20,.25) 70%,transparent 72%)}
+    .map-node .landmark{display:block;width:34px;height:34px;margin:0 auto .2rem;border-radius:12px;line-height:34px;font-size:1rem;background:rgba(20,16,48,.5);border:2px solid rgba(255,255,255,.55);box-shadow:0 6px 14px rgba(0,0,0,.3)}
+    .map-node.current .landmark{background:linear-gradient(135deg,#ffd27a,#fff38d);border-color:#fff;box-shadow:0 0 0 3px rgba(255,210,122,.35),0 0 20px rgba(255,210,122,.5);animation:flagPulse 1.8s ease-in-out infinite}
+    .map-node.cleared .landmark{background:linear-gradient(135deg,#6de8b8,#2bb87a);border-color:#fff}
+    .map-node.boss .landmark{background:linear-gradient(135deg,#ff7a7a,#ffb06a);animation:bossPulse 1.4s ease-in-out infinite}
+    .map-node.locked .landmark{filter:grayscale(.5);opacity:.55}
+    .map-node.locked::after{content:"";position:absolute;inset:-8px -12px;border-radius:16px;background:rgba(20,30,40,.25);backdrop-filter:blur(2px);z-index:-1}
+    .map-avatar .av-shadow{position:absolute;left:50%;bottom:-4px;width:46px;height:10px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.45),transparent 70%);z-index:-1}
+    .map-avatar .av-ring{position:absolute;left:50%;bottom:-2px;width:52px;height:52px;transform:translate(-50%,50%);border-radius:50%;border:2px solid rgba(255,210,122,.5);animation:avRing 2s ease-out infinite}
+    @keyframes avRing{0%{transform:translate(-50%,50%) scale(.7);opacity:.8}100%{transform:translate(-50%,50%) scale(1.35);opacity:0}}
+    .map-travel-pulse{position:absolute;width:14px;height:14px;border-radius:50%;background:rgba(255,240,180,.85);pointer-events:none;z-index:4;transform:translate(-50%,-50%);animation:travelPulse 1.2s ease-out forwards}
+    @keyframes travelPulse{0%{opacity:1;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.2)}}
     .map-world::before{content:"";position:absolute;inset:0;background:
       radial-gradient(circle at 18% 70%,rgba(60,120,50,.35) 0 18px,transparent 19px),
       radial-gradient(circle at 82% 55%,rgba(60,120,50,.3) 0 22px,transparent 23px),
@@ -536,9 +600,9 @@
     .map-world::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(10,30,20,.28));pointer-events:none;z-index:3}
     .map-hud{position:relative;z-index:4;display:flex;justify-content:space-between;align-items:center;padding:.55rem .65rem;color:#fff;font-size:.62rem;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.35)}
     .map-hud .pill{background:rgba(20,16,48,.55);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:.25rem .55rem;backdrop-filter:blur(4px)}
-    .map-strip{margin:0;padding:0;border-radius:0;background:transparent;min-height:190px;box-shadow:none;position:relative;z-index:2}
-    .map-path{position:relative;height:180px;z-index:2}
-    .map-node{width:72px;font-size:.58rem;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);font-weight:800}
+    .map-strip{margin:0;padding:0;border-radius:0;background:transparent;min-height:220px;box-shadow:none;position:relative;z-index:3}
+    .map-path{position:relative;height:210px;z-index:3}
+    .map-node{position:absolute;width:72px;font-size:.58rem;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);font-weight:800;transform:translateX(-50%)}
     .map-node .dot{width:20px;height:20px;border-width:3px;box-shadow:0 2px 6px rgba(0,0,0,.25);background:#fff}
     .map-node.current .dot{width:24px;height:24px;background:linear-gradient(135deg,#ffd27a,#fff38d)}
     .map-node.boss .dot{background:linear-gradient(135deg,#ff7a7a,#ffd27a)}
@@ -1147,10 +1211,13 @@
                   <div class="exp-label" style="margin-top:.1rem;margin-bottom:0"><span id="homeLvLabel">Lv.1</span><span></span></div>
                 </div>
               </div>
-              <div class="hero-showcase">
+              <div class="hero-showcase" id="heroShowcase">
                 <div class="gear-orbit" id="homeGearPanel" aria-label="装備"></div>
-                  <div class="hero-stage">
+                  <div class="hero-stage" id="heroStage" role="button" tabindex="0" aria-label="キャラクターをタップ">
+                  <div class="hero-theater-bg" aria-hidden="true"><span class="tb tb1"></span><span class="tb tb2"></span><span class="tb tb3"></span></div>
+                  <div class="hero-spotlight" aria-hidden="true"></div>
                   <div class="stage-aura" aria-hidden="true"></div>
+                  <div class="hero-reflection" aria-hidden="true"><img id="homeAvatarReflect" alt="" /></div>
                   <div class="hero-avatar standee" id="homeAvatarWrap">
                     <div class="hero-alive" id="homeHeroAlive">
                       <div class="held-props" id="homeHeldProps" aria-hidden="true"></div>
@@ -1165,6 +1232,7 @@
                     <span class="class-tag" id="homeAvatarClass">—</span>
                     <span class="class-emblem" id="homeAvatarEmblem">剣</span>
                   </div>
+                  <div class="stage-platform" aria-hidden="true"><span class="platform-ring"></span></div>
                   <div class="stage-floor" aria-hidden="true"></div>
                   <div class="hero-nameplate" id="homeNameplate">PARTY</div>
                 </div>
@@ -1207,7 +1275,16 @@
         </div>
         <div id="fsq-map" class="fsq-section">
           <div class="content" style="padding-top:.65rem">
-            <div class="map-world">
+            <div class="map-world" id="mapWorld">
+              <div class="map-sky" aria-hidden="true">
+                <div class="map-sun"></div>
+                <div class="map-cloud c1"></div>
+                <div class="map-cloud c2"></div>
+                <div class="map-cloud c3"></div>
+              </div>
+              <div class="map-mountains" aria-hidden="true"></div>
+              <div class="map-terrain" aria-hidden="true"></div>
+              <div class="map-fog" aria-hidden="true"></div>
               <div class="map-deco map-deco-a" aria-hidden="true"></div>
               <div class="map-deco map-deco-b" aria-hidden="true"></div>
               <div class="map-deco map-deco-c" aria-hidden="true"></div>
@@ -1216,9 +1293,14 @@
                 <span class="pill" id="mapHudExp">EXP —</span>
               </div>
               <div class="map-strip">
+                <svg class="map-route map-route-glow" id="mapRouteGlow" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
                 <svg class="map-route" id="mapRouteSvg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
                 <div class="map-path" id="mapPath"></div>
-                <div class="map-avatar" id="mapAvatar" hidden><img id="mapAvatarImg" alt="" /></div>
+                <div class="map-avatar" id="mapAvatar" hidden>
+                  <span class="av-shadow" aria-hidden="true"></span>
+                  <span class="av-ring" aria-hidden="true"></span>
+                  <img id="mapAvatarImg" alt="" />
+                </div>
               </div>
               <div class="map-legend">
                 <span><i class="lg-dot cur"></i>現在地</span>
