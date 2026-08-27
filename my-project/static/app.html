@@ -394,7 +394,12 @@
     .study-pane.active{display:block}
     .study-problem{border:2px solid #e8d4a8;border-radius:16px;padding:.75rem .8rem;background:linear-gradient(180deg,#fff9ef,#fff);margin-bottom:.55rem}
     .study-problem .lab{font-size:.62rem;font-weight:900;color:#8a5a10;margin-bottom:.35rem;letter-spacing:.04em}
-    .study-problem p{margin:0;font-size:.8rem;line-height:1.55;color:#3a3f63;white-space:pre-wrap}
+    .study-problem p{margin:0;font-size:.78rem;line-height:1.55;color:#3a3f63;white-space:pre-wrap}
+    .study-samples{margin:0 0 .65rem}
+    .study-sample{border:1px solid #e2e5ff;border-radius:12px;padding:.55rem .65rem;margin-bottom:.4rem;background:#f7f8ff}
+    .study-sample .sl{font-size:.62rem;font-weight:900;color:var(--lilac-deep);margin-bottom:.25rem}
+    .study-sample pre{margin:0 0 .35rem;padding:.45rem .5rem;background:#12162a;color:#e8ecff;border-radius:8px;font-size:.68rem;overflow:auto;white-space:pre-wrap}
+    .study-sample .note{font-size:.62rem;color:var(--muted);margin:0}
     .study-workspace{margin:.35rem 0 .55rem}
     .study-workspace label{display:block;font-size:.68rem;font-weight:800;margin-bottom:.3rem;color:#445}
     .study-workspace textarea{width:100%;min-height:160px;border:1px solid #cfd5ff;border-radius:14px;padding:.7rem .75rem;font-size:.78rem;line-height:1.5;resize:vertical;box-sizing:border-box;font-family:inherit}
@@ -1073,17 +1078,29 @@
           <div class="study-pane active" id="studyPaneProblem">
             <div class="study-problem">
               <div class="lab">QUEST / 課題</div>
+              <h4 id="studyProblemTitle" style="margin:0 0 .4rem;font-size:.88rem"></h4>
               <p id="studyProblemText">—</p>
             </div>
+            <div id="studySamples" class="study-samples"></div>
             <div class="section-title" style="margin-bottom:.35rem"><span>🎯 ゴール</span></div>
             <ul class="study-goals" id="studyGoals"></ul>
+            <button type="button" class="primary" id="studyGoWorkBtn" style="width:100%;margin-top:.35rem;border:none;border-radius:999px;padding:.55rem .8rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff">解答スペースへ書く →</button>
           </div>
           <div class="study-pane" id="studyPaneWork">
             <div class="study-workspace">
-              <label for="studyAnswer">ここに解答を書く（途中保存OK）</label>
-              <textarea id="studyAnswer" placeholder="考えた手順・コード・メモを書いて提出しよう"></textarea>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem;margin-bottom:.35rem;flex-wrap:wrap">
+                <label for="studyAnswer" style="margin:0">解答コード入力欄</label>
+                <label style="font-size:.65rem;font-weight:700;display:flex;align-items:center;gap:.25rem">使用する言語
+                  <select id="studyLang" style="border:1px solid #cfd5ff;border-radius:8px;padding:.2rem .35rem;font-size:.65rem">
+                    <option value="python">Python</option>
+                    <option value="javascript">JavaScript</option>
+                  </select>
+                </label>
+              </div>
+              <textarea id="studyAnswer" placeholder="ここにコード／解答を書く（途中保存OK）"></textarea>
             </div>
-            <p class="hint" id="studyAnswerHint">24文字以上書いて提出するとスキルを獲得できます。</p>
+            <p class="hint" id="studyAnswerHint">課題を読んでから書いて提出するとスキルを獲得できます。</p>
+            <button type="button" class="ghost" id="studyLoadStarterBtn" style="width:100%;margin-bottom:.35rem;border:none;border-radius:999px;padding:.45rem .8rem;font-weight:800;cursor:pointer;background:#eef0ff;color:var(--lilac-deep)">スターターコードを入れる</button>
           </div>
           <div class="study-pane" id="studyPaneGuide">
             <p class="study-hint-meta" id="studyHintMeta">詰まったら、正しい方法のガイドを1つずつ開けます。</p>

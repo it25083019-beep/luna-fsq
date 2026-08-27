@@ -1,0 +1,393 @@
+{
+  "version": "1.0",
+  "problems": {
+    "se_l1": {
+      "workspace_type": "code",
+      "problem_title_ja": "学習ログを1行出力する",
+      "problem_ja": "あなたは学習習慣アプリのログ機能を作ります。\n標準入力から「日付」「学んだこと」「明日やること」を受け取り、指定フォーマットで1行出力するプログラムを作成してください。",
+      "input_format_ja": "入力は3行です。\n1行目: 日付（例: 2026-08-27）\n2行目: 学んだこと\n3行目: 明日やること",
+      "output_format_ja": "次の形式で1行出力してください。\n[日付] 学んだこと / 明日: 明日やること\n末尾に改行を入れてください。",
+      "constraints_ja": "各行は1文字以上100文字以下。",
+      "samples": [
+        {
+          "label_ja": "入力例1",
+          "input": "2026-08-27\nポモドーロを試した\nカレンダーに枠を置く\n",
+          "output": "[2026-08-27] ポモドーロを試した / 明日: カレンダーに枠を置く\n"
+        }
+      ],
+      "method_guides": [
+        {
+          "level": 1,
+          "title_ja": "入力の読み方",
+          "body_ja": "まずは標準入力を3行読む。Pythonなら input() を3回。",
+          "source_ja": "Paiza FAQ / 標準入力"
+        },
+        {
+          "level": 2,
+          "title_ja": "文字列の結合",
+          "body_ja": "f-string や + でフォーマットを組み立て、print する。",
+          "source_ja": "公式ドキュメントの定石"
+        },
+        {
+          "level": 3,
+          "title_ja": "改行に注意",
+          "body_ja": "余計な空行を出さない。期待出力と完全一致を目指す。",
+          "source_ja": "ジャッジの基本"
+        }
+      ],
+      "check_keywords": [
+        "input",
+        "print",
+        "日付",
+        "ログ"
+      ],
+      "starter_code": {
+        "python": "# 学習ログを1行に整形して出力する\ndate = input().strip()\nlearned = input().strip()\ntomorrow = input().strip()\n# TODO: 指定フォーマットで出力\n",
+        "javascript": "# 学習ログを1行に整形して出力する\ndate = input().strip()\nlearned = input().strip()\ntomorrow = input().strip()\n# TODO: 指定フォーマットで出力\n"
+      },
+      "min_answer_chars": 40
+    },
+    "se_l2": {
+      "workspace_type": "code",
+      "problem_title_ja": "タスクを分解して番号付きで出力する",
+      "problem_ja": "大きな作業名が1行で与えられます。続けて分解タスクが複数行で与えられるので、\n検証可能なタスク一覧を「1. …」形式で出力するプログラムを作成してください。",
+      "input_format_ja": "1行目: 作業名\n2行目: タスク数 N\n続く N 行: タスク文",
+      "output_format_ja": "1行目に作業名を [作業] 付きで出し、続けて番号付きタスクを出力。",
+      "constraints_ja": "1 ≦ N ≦ 20",
+      "samples": [
+        {
+          "label_ja": "入力例1",
+          "input": "ログイン機能\n3\nメール入力欄を置く\n送信時に検証する\nエラーを表示する\n",
+          "output": "[作業] ログイン機能\n1. メール入力欄を置く\n2. 送信時に検証する\n3. エラーを表示する\n"
+        }
+      ],
+      "method_guides": [
+        {
+          "level": 1,
+          "title_ja": "全体像を掴む",
+          "body_ja": "まず N を読み、ループでタスクを配列に入れる。",
+          "source_ja": "アルゴリズム入門の定石"
+        },
+        {
+          "level": 2,
+          "title_ja": "番号付け",
+          "body_ja": "enumerate で 1 始まりの番号を付ける。",
+          "source_ja": "Python 公式"
+        },
+        {
+          "level": 3,
+          "title_ja": "検証可能性",
+          "body_ja": "タスク文は入力のまま使い、勝手に要約しない。",
+          "source_ja": "要件分解の基本"
+        }
+      ],
+      "check_keywords": [
+        "for",
+        "enumerate",
+        "タスク",
+        "N"
+      ],
+      "starter_code": {
+        "python": "title = input().strip()\nn = int(input())\ntasks = [input().strip() for _ in range(n)]\n# TODO: 指定フォーマットで出力\n",
+        "javascript": "title = input().strip()\nn = int(input())\ntasks = [input().strip() for _ in range(n)]\n# TODO: 指定フォーマットで出力\n"
+      },
+      "min_answer_chars": 40
+    },
+    "se_l4": {
+      "workspace_type": "code",
+      "problem_title_ja": "ハンカチの種類数（回転・反転同一視）",
+      "problem_ja": "パイザさんは、白黒のハンカチをたくさん持っています。コレクションの中には同じ柄のハンカチもあるため、何種類のハンカチを持っているかが気になりました。\n\nそれぞれのハンカチの大きさと模様は、縦が H マス横が W マスの HxW マスで表され、各マス目について '#' は黒色、'.' は白色で塗りつぶされていることを表します。\n\nN 枚のハンカチの情報が与えられるので、何種類のハンカチを持っているかを求めるプログラムを作成してください。\n\n回転・反転するとすべて同じ模様になるものは同一種類とします。\n\nハンカチの大きさはすべて同じでないこともあることに注意してください。",
+      "input_format_ja": "入力は次のフォーマットで与えられます。\nN\nX_1\nX_2\n...\nX_N\n\n・1 行目: ハンカチの枚数 N\n・続く各 X_k:\nH W\np_1\n...\np_H\n（H 行の各 p_i は長さ W の '.' / '#' 文字列）",
+      "output_format_ja": "所持しているハンカチの種類数を整数1行で出力してください。\n末尾に改行を入れ、余計な文字・空行を含めないでください。",
+      "constraints_ja": "1 ≦ N ≦ 10\n1 ≦ H_i, W_i ≦ 100\np は '.' または '#'",
+      "samples": [
+        {
+          "label_ja": "入力例1",
+          "input": "5\n3 3\n.#.\n###\n##.\n3 3\n...\n###\n#..\n3 3\n.#.\n###\n.##\n3 3\n..#\n###\n...\n3 3\n...\n###\n#..\n",
+          "output": "1\n",
+          "note_ja": "回転・反転で同一とみなせるため種類は1。"
+        },
+        {
+          "label_ja": "入力例2",
+          "input": "5\n3 2\n##\n..\n.#\n3 2\n.#\n##\n#.\n2 1\n.\n#\n2 1\n#\n.\n2 3\n#..\n.##\n",
+          "output": "3\n"
+        }
+      ],
+      "method_guides": [
+        {
+          "level": 1,
+          "title_ja": "同一視の定義を決める",
+          "body_ja": "各ハンカチについて、回転0/90/180/270と左右反転後の回転をすべて生成し、その中の『辞書順最小』を正規形にする。",
+          "source_ja": "競技プログラミング定石（正規化）"
+        },
+        {
+          "level": 2,
+          "title_ja": "集合で種類を数える",
+          "body_ja": "正規形（タプルや文字列化）を set に入れて len(set) が答え。",
+          "source_ja": "AtCoder/Paiza 解説でよくある手法"
+        },
+        {
+          "level": 3,
+          "title_ja": "サイズが違う場合",
+          "body_ja": "H,W が異なる模様は回転しても一致しない。正規形に H,W も含めるか、グリッドそのものをキーにする。",
+          "source_ja": "問題文の注意点"
+        },
+        {
+          "level": 4,
+          "title_ja": "実装の切り分け",
+          "body_ja": "rotate / flip / canonicalize / read_one を関数に分けるとデバッグしやすい。",
+          "source_ja": "フォーラムの定石"
+        }
+      ],
+      "check_keywords": [
+        "rotate",
+        "set",
+        "grid",
+        "H",
+        "W",
+        "正規"
+      ],
+      "starter_code": {
+        "python": "import sys\n\ndef rotate(g):\n    # 90度右回転\n    h, w = len(g), len(g[0])\n    return [''.join(g[h-1-r][c] for r in range(h)) for c in range(w)]\n\ndef flip(g):\n    return [row[::-1] for row in g]\n\ndef canonicalize(g):\n    forms = []\n    cur = g\n    for _ in range(4):\n        forms.append(tuple(cur))\n        forms.append(tuple(flip(cur)))\n        cur = rotate(cur)\n    return min(forms)\n\n# TODO: N 枚読んで種類数を出力\n",
+        "javascript": "import sys\n\ndef rotate(g):\n    # 90度右回転\n    h, w = len(g), len(g[0])\n    return [''.join(g[h-1-r][c] for r in range(h)) for c in range(w)]\n\ndef flip(g):\n    return [row[::-1] for row in g]\n\ndef canonicalize(g):\n    forms = []\n    cur = g\n    for _ in range(4):\n        forms.append(tuple(cur))\n        forms.append(tuple(flip(cur)))\n        cur = rotate(cur)\n    return min(forms)\n\n# TODO: N 枚読んで種類数を出力\n"
+      },
+      "min_answer_chars": 40
+    },
+    "se_l6": {
+      "workspace_type": "code",
+      "problem_title_ja": "配列の合計と平均を出力する",
+      "problem_ja": "N 個の整数が与えられます。合計と平均（小数第1位まで）を出力するプログラムを作成してください。",
+      "input_format_ja": "1行目: N\n2行目: N個の整数（空白区切り）",
+      "output_format_ja": "1行目: 合計\n2行目: 平均（小数第1位、四捨五入ではなくフォーマットで1桁）",
+      "constraints_ja": "1 ≦ N ≦ 100 / 各値は 0〜1000",
+      "samples": [
+        {
+          "label_ja": "入力例1",
+          "input": "3\n10 20 30\n",
+          "output": "60\n20.0\n"
+        }
+      ],
+      "method_guides": [
+        {
+          "level": 1,
+          "title_ja": "合計",
+          "body_ja": "sum(list) を使う。",
+          "source_ja": "Python 標準"
+        },
+        {
+          "level": 2,
+          "title_ja": "平均",
+          "body_ja": "合計/N。f'{avg:.1f}' で1桁表示。",
+          "source_ja": "書式指定の定石"
+        }
+      ],
+      "check_keywords": [
+        "sum",
+        "平均",
+        "N"
+      ],
+      "starter_code": {
+        "python": "n = int(input())\nvals = list(map(int, input().split()))\n# TODO\n",
+        "javascript": "n = int(input())\nvals = list(map(int, input().split()))\n# TODO\n"
+      },
+      "min_answer_chars": 40
+    },
+    "se_l7": {
+      "workspace_type": "code",
+      "problem_title_ja": "HTML風タグを数える",
+      "problem_ja": "1行の文字列 S が与えられます。'<…>' 形式のタグが何個あるかを数えて出力してください（入れ子なし・単純カウント）。",
+      "input_format_ja": "1行: 文字列 S",
+      "output_format_ja": "タグ数（整数1行）",
+      "constraints_ja": "1 ≦ |S| ≦ 200",
+      "samples": [
+        {
+          "label_ja": "入力例1",
+          "input": "Hello <b>world</b>!\n",
+          "output": "2\n"
+        }
+      ],
+      "method_guides": [
+        {
+          "level": 1,
+          "title_ja": "走査",
+          "body_ja": "文字を見て '<' と '>' のペアを数える。",
+          "source_ja": "パーサ入門"
+        },
+        {
+          "level": 2,
+          "title_ja": "単純化",
+          "body_ja": "この問題は入れ子なし。スタック不要でも解ける。",
+          "source_ja": "問題の簡略化"
+        }
+      ],
+      "check_keywords": [
+        "tag",
+        "count",
+        "string"
+      ],
+      "starter_code": {
+        "python": "s = input().strip()\n# TODO: <...> の個数\n",
+        "javascript": "s = input().strip()\n# TODO: <...> の個数\n"
+      },
+      "min_answer_chars": 40
+    },
+    "se_l7b": {
+      "workspace_type": "code",
+      "problem_title_ja": "フォームイベントのログを整形する",
+      "problem_ja": "Webページのフォームで発生したイベントログが時系列で与えられます。\n各ログは「イベント名 値」です。submit が来た時点までの入力値をまとめ、\n指定フォーマットで1行出力するプログラムを作成してください。\n\nこれはブラウザの input / change / submit イベントを扱う練習課題です。",
+      "input_format_ja": "1行目: ログ行数 N\n続く N 行: EVENT VALUE\nEVENT は input / change / submit のいずれか。\nsubmit の VALUE はボタン名。",
+      "output_format_ja": "submit が出現した行で、その時点の最新 input/change 値を使って\nsubmit=<btn> name=<name> email=<email>\nの形式で1行出力（無い項目は空文字）。submit が複数なら行を複数出す。",
+      "constraints_ja": "1 ≦ N ≦ 100",
+      "samples": [
+        {
+          "label_ja": "入力例1",
+          "input": "5\ninput name=taro\ninput email=a@b.c\nchange email=a@b.co\nsubmit send\ninput name=jiro\n",
+          "output": "submit=send name=taro email=a@b.co\n"
+        }
+      ],
+      "method_guides": [
+        {
+          "level": 1,
+          "title_ja": "状態を持つ",
+          "body_ja": "name/email などの現在値を辞書で保持し、input/change で更新する。",
+          "source_ja": "フロントイベント処理の定石"
+        },
+        {
+          "level": 2,
+          "title_ja": "submit で確定",
+          "body_ja": "submit が来たら現在の辞書を1行に整形して出力する。",
+          "source_ja": "フォーム送信のモデル化"
+        },
+        {
+          "level": 3,
+          "title_ja": "キーの更新",
+          "body_ja": "VALUE が key=value 形式。split('=', 1) で分ける。",
+          "source_ja": "文字列処理 FAQ"
+        }
+      ],
+      "check_keywords": [
+        "submit",
+        "input",
+        "dict",
+        "form",
+        "event"
+      ],
+      "starter_code": {
+        "python": "n = int(input())\nstate = {}\nfor _ in range(n):\n    parts = input().split(None, 1)\n    event = parts[0]\n    payload = parts[1] if len(parts) > 1 else \"\"\n    # TODO: input/change で state 更新、submit で出力\n",
+        "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf8').trim().split(/\\n/);\nlet n = Number(lines[0]);\nlet state = {};\n// TODO\n"
+      },
+      "min_answer_chars": 40
+    },
+    "se_l7c": {
+      "workspace_type": "code",
+      "problem_title_ja": "静的ページのリンク数を数える",
+      "problem_ja": "HTML風テキストが複数行で与えられます。href=\"...\" の出現回数を数えて出力してください。",
+      "input_format_ja": "1行目: 行数 N / 続く N 行: テキスト",
+      "output_format_ja": "href の個数（整数1行）",
+      "constraints_ja": "1 ≦ N ≦ 50",
+      "samples": [
+        {
+          "label_ja": "入力例1",
+          "input": "2\n<a href=\"/a\">A</a>\n<a href='/b'>B</a>\n",
+          "output": "2\n"
+        }
+      ],
+      "method_guides": [
+        {
+          "level": 1,
+          "title_ja": "正規表現",
+          "body_ja": "re.findall(r'href\\\\s*=', text, re.I) など。",
+          "source_ja": "MDN / Python re"
+        },
+        {
+          "level": 2,
+          "title_ja": "単純カウント",
+          "body_ja": "文字列 'href=' と \"href=\" を数えてもよい。",
+          "source_ja": "簡易解法"
+        }
+      ],
+      "check_keywords": [
+        "href",
+        "count",
+        "html"
+      ],
+      "starter_code": {
+        "python": "n = int(input())\ntext = '\\n'.join(input() for _ in range(n))\n# TODO\n",
+        "javascript": "n = int(input())\ntext = '\\n'.join(input() for _ in range(n))\n# TODO\n"
+      },
+      "min_answer_chars": 40
+    },
+    "se_l10": {
+      "workspace_type": "code",
+      "problem_title_ja": "JSON風キーを抽出する",
+      "problem_ja": "1行の JSON 風オブジェクト（ネストなし）からキー名をすべて抽出し、辞書順で出力してください。",
+      "input_format_ja": "1行: {\"a\":1,\"b\":2} のような文字列",
+      "output_format_ja": "キーを1行ずつ辞書順",
+      "constraints_ja": "キーは英小文字のみ",
+      "samples": [
+        {
+          "label_ja": "入力例1",
+          "input": "{\"name\":\"luna\",\"lv\":2}\n",
+          "output": "lv\nname\n"
+        }
+      ],
+      "method_guides": [
+        {
+          "level": 1,
+          "title_ja": "正規表現",
+          "body_ja": "キーは \"name\": のように並ぶ。正規表現で \"([a-z]+)\" を取る。",
+          "source_ja": "JSON基礎"
+        },
+        {
+          "level": 2,
+          "title_ja": "ソート",
+          "body_ja": "sorted(set(keys)) で出力。",
+          "source_ja": "定石"
+        }
+      ],
+      "check_keywords": [
+        "json",
+        "key",
+        "sorted"
+      ],
+      "starter_code": {
+        "python": "import re\ns = input().strip()\n# TODO\n",
+        "javascript": "import re\ns = input().strip()\n# TODO\n"
+      },
+      "min_answer_chars": 40
+    },
+    "se_l11": {
+      "workspace_type": "code",
+      "problem_title_ja": "デバッグログのERROR行を数える",
+      "problem_ja": "ログが複数行与えられます。'ERROR' を含む行数を出力してください。",
+      "input_format_ja": "1行目 N / 続く N 行ログ",
+      "output_format_ja": "ERROR行数",
+      "constraints_ja": "1 ≦ N ≦ 200",
+      "samples": [
+        {
+          "label_ja": "入力例1",
+          "input": "3\nINFO ok\nERROR fail\nWARN x\n",
+          "output": "1\n"
+        }
+      ],
+      "method_guides": [
+        {
+          "level": 1,
+          "title_ja": "行ごと判定",
+          "body_ja": "'ERROR' in line",
+          "source_ja": "ログ解析の基本"
+        }
+      ],
+      "check_keywords": [
+        "ERROR",
+        "count",
+        "log"
+      ],
+      "starter_code": {
+        "python": "n = int(input())\n# TODO\n",
+        "javascript": "n = int(input())\n# TODO\n"
+      },
+      "min_answer_chars": 40
+    }
+  }
+}

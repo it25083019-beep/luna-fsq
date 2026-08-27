@@ -2,7 +2,9 @@
 """Paiza-like study workspace: problem, answer draft, progressive guides, boss exam."""
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from journey_engine import (
@@ -22,6 +24,52 @@ from journey_engine import (
 _MIN_ANSWER_CHARS = 24
 _MIN_BOSS_ANSWER_CHARS = 12
 _CODE_CAREERS = {"software_engineer", "data_analyst", "web_developer", "security_engineer"}
+_PAIZA: Optional[Dict[str, Any]] = None
+
+
+def load_paiza_problems() -> Dict[str, Any]:
+    global _PAIZA
+    if _PAIZA is None:
+        path = Path(__file__).resolve().parent / "config" / "paiza_problems.json"
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as f:
+                _PAIZA = json.load(f)
+        else:
+            _PAIZA = {"problems": {}}
+    return _PAIZA
+
+
+def get_paiza_problem(lesson_id: str) -> Dict[str, Any]:
+    probs = load_paiza_problems().get("problems") or {}
+    row = probs.get(lesson_id)
+    if row:
+        return dict(row)
+    if "__" in lesson_id:
+        base = lesson_id.split("__", 1)[-1]
+        row = probs.get(base)
+        if row:
+            return dict(row)
+    return {}
+
+
+def _compose_problem_text(paiza: Dict[str, Any], fallback: str) -> str:
+    if not paiza:
+        return fallback
+    parts: List[str] = []
+    title = (paiza.get("problem_title_ja") or "").strip()
+    body = (paiza.get("problem_ja") or "").strip()
+    if title:
+        parts.append(title)
+    if body:
+        parts.append(body)
+    if paiza.get("input_format_ja"):
+        parts.append("【入力】\n" + str(paiza["input_format_ja"]).strip())
+    if paiza.get("output_format_ja"):
+        parts.append("【出力】\n" + str(paiza["output_format_ja"]).strip())
+    if paiza.get("constraints_ja"):
+        parts.append("【条件】\n" + str(paiza["constraints_ja"]).strip())
+    text = "\n\n".join(parts).strip()
+    return text or fallback
 
 
 def _keywords_from_texts(texts: List[str], limit: int = 8) -> List[str]:
@@ -40,10 +88,12 @@ def _keywords_from_texts(texts: List[str], limit: int = 8) -> List[str]:
 
 
 def build_study_payload(lesson: Dict[str, Any], *, career_id: Optional[str] = None) -> Dict[str, Any]:
-    """Derive Paiza-like fields from existing materials (additive)."""
-    mat = get_lesson_material(lesson["id"]) if lesson.get("id") else {}
+    """Derive Paiza-like fields from materials + paiza_problems bank (additive)."""
+    lid = lesson.get("id") or ""
+    mat = get_lesson_material(lid) if lid else {}
     if not mat and lesson.get("summary_ja") is not None:
         mat = lesson
+    paiza = get_paiza_problem(lid)
 
     practice_steps = mat.get("practice_steps") or mat.get("steps") or []
     first_practice = ""
@@ -51,20 +101,26 @@ def build_study_payload(lesson: Dict[str, Any], *, career_id: Optional[str] = No
         first = practice_steps[0] or {}
         first_practice = (first.get("body_ja") or first.get("title_ja") or "").strip()
 
-    problem = (
+    title_ja = (lesson.get("title_ja") or "").strip()
+    fallback = (
         (mat.get("problem_ja") or "").strip()
         or (mat.get("practice_ja") or "").strip()
         or first_practice
         or (mat.get("summary_ja") or "").strip()
-        or "この単元の課題に取り組み、解答欄に考えた内容を書いて提出しよう。"
+        or (
+            f"「{title_ja}」の課題に取り組み、解答スペースに書いて提出しよう。"
+            if title_ja
+            else "この単元の課題に取り組み、解答欄に考えた内容を書いて提出しよう。"
+        )
     )
+    problem = _compose_problem_text(paiza, fallback)
 
-    workspace_type = (mat.get("workspace_type") or "").strip()
+    workspace_type = (paiza.get("workspace_type") or mat.get("workspace_type") or "").strip()
     if workspace_type not in ("text", "code"):
         cid = career_id or ""
-        workspace_type = "code" if cid in _CODE_CAREERS else "text"
+        workspace_type = "code" if cid in _CODE_CAREERS or lid.startswith("se_") else "text"
 
-    guides = mat.get("method_guides")
+    guides = paiza.get("method_guides") or mat.get("method_guides")
     if not isinstance(guides, list) or not guides:
         guides = []
         theory = mat.get("theory_ja") or []
@@ -108,19 +164,29 @@ def build_study_payload(lesson: Dict[str, Any], *, career_id: Optional[str] = No
                 },
             ]
 
-    keywords = mat.get("check_keywords")
+    keywords = paiza.get("check_keywords") or mat.get("check_keywords")
     if not isinstance(keywords, list) or not keywords:
         keywords = _keywords_from_texts(
             list(mat.get("checklist_ja") or []) + list(mat.get("goals_ja") or []) + [problem]
         )
 
+    min_chars = int(paiza.get("min_answer_chars") or mat.get("min_answer_chars") or _MIN_ANSWER_CHARS)
+    starter = paiza.get("starter_code") if isinstance(paiza.get("starter_code"), dict) else {}
+    samples = paiza.get("samples") if isinstance(paiza.get("samples"), list) else []
+
     return {
         "problem_ja": problem,
+        "problem_title_ja": paiza.get("problem_title_ja") or lesson.get("title_ja") or "",
         "workspace_type": workspace_type,
         "method_guides": guides,
         "check_keywords": keywords,
         "hint_count": len(guides),
-        "min_answer_chars": _MIN_ANSWER_CHARS,
+        "min_answer_chars": min_chars,
+        "input_format_ja": paiza.get("input_format_ja") or "",
+        "output_format_ja": paiza.get("output_format_ja") or "",
+        "constraints_ja": paiza.get("constraints_ja") or "",
+        "samples": samples,
+        "starter_code": starter,
     }
 
 

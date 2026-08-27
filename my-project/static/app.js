@@ -731,6 +731,29 @@
     }
   }
 
+  function renderStudySamples(samples) {
+    const box = document.getElementById("studySamples");
+    if (!box) return;
+    box.innerHTML = "";
+    (samples || []).forEach((s) => {
+      const div = document.createElement("div");
+      div.className = "study-sample";
+      const note = s.note_ja ? '<p class="note">' + s.note_ja + "</p>" : "";
+      div.innerHTML =
+        '<div class="sl">' +
+        (s.label_ja || "入出力例") +
+        "</div><div class=\"sl\">入力</div><pre>" +
+        (s.input || "") +
+        '</pre><div class="sl">出力</div><pre>' +
+        (s.output || "") +
+        "</pre>" +
+        note;
+      box.appendChild(div);
+    });
+  }
+
+  let currentStudyMeta = null;
+
   async function openStudyLesson(lessonId) {
     try {
       const les =
@@ -815,28 +838,50 @@
       } catch (_e) {
         attempt = null;
       }
-      const study = (attempt && attempt.study) || {
+      const fromLes = {
         problem_ja: les.problem_ja || les.practice_ja || les.summary_ja || "",
+        problem_title_ja: les.problem_title_ja || les.title_ja || "",
         workspace_type: les.workspace_type || "text",
         method_guides: les.method_guides || [],
         min_answer_chars: les.min_answer_chars || 24,
+        samples: les.samples || [],
+        starter_code: les.starter_code || {},
       };
+      const study = Object.assign({}, fromLes, (attempt && attempt.study) || {});
+      if (!(study.problem_ja || "").trim()) {
+        study.problem_ja =
+          fromLes.problem_ja ||
+          les.summary_ja ||
+          "課題文を読み、解答スペースにコード／解答を書いて提出しよう。";
+      }
+      currentStudyMeta = study;
+
+      const titleEl = document.getElementById("studyProblemTitle");
+      if (titleEl) titleEl.textContent = study.problem_title_ja || "";
       const problemEl = document.getElementById("studyProblemText");
-      if (problemEl) problemEl.textContent = study.problem_ja || "—";
+      if (problemEl) problemEl.textContent = study.problem_ja;
+      renderStudySamples(study.samples || []);
+
       const ta = document.getElementById("studyAnswer");
       if (ta) {
         ta.value = (attempt && attempt.answer) || "";
         ta.classList.toggle("code-mode", study.workspace_type === "code");
         ta.placeholder =
           study.workspace_type === "code"
-            ? "コードや手順を書いて提出しよう（実行ジャッジなし）"
+            ? "解答コードを書く（標準入力想定・実行ジャッジなし）"
             : "考えた手順・メモを書いて提出しよう";
+        if (!ta.value && study.workspace_type === "code") {
+          const lang = (document.getElementById("studyLang") || {}).value || "python";
+          const starter = (study.starter_code && study.starter_code[lang]) || "";
+          if (starter) ta.value = starter;
+        }
       }
       const ansHint = document.getElementById("studyAnswerHint");
       if (ansHint) {
         ansHint.textContent =
+          "Paiza風課題です。" +
           (study.min_answer_chars || 24) +
-          "文字以上書いて提出するとスキルを獲得できます。詰まったらガイドへ。";
+          "文字以上書いて提出。詰まったらガイド（定石）を開こう。";
       }
       renderUnlockedGuides((attempt && attempt.unlocked_guides) || []);
       const hintMeta = document.getElementById("studyHintMeta");
@@ -2745,6 +2790,28 @@
     document.querySelectorAll("#studyTabs button").forEach((btn) => {
       btn.onclick = () => setStudyTab(btn.getAttribute("data-study-tab") || "problem");
     });
+    const goWork = document.getElementById("studyGoWorkBtn");
+    if (goWork) goWork.onclick = () => setStudyTab("work");
+    const loadStarter = document.getElementById("studyLoadStarterBtn");
+    if (loadStarter) {
+      loadStarter.onclick = () => {
+        const ta = document.getElementById("studyAnswer");
+        const lang = (document.getElementById("studyLang") || {}).value || "python";
+        const starter =
+          (currentStudyMeta && currentStudyMeta.starter_code && currentStudyMeta.starter_code[lang]) || "";
+        if (ta && starter) {
+          if (ta.value && !confirm("現在の入力をスターターコードで上書きしますか？")) return;
+          ta.value = starter;
+          saveStudyAnswerDraft();
+        }
+      };
+    }
+    const studyLang = document.getElementById("studyLang");
+    if (studyLang) {
+      studyLang.onchange = () => {
+        /* keep answer; user can reload starter */
+      };
+    }
     const studyAnswer = document.getElementById("studyAnswer");
     if (studyAnswer) {
       studyAnswer.addEventListener("input", () => {

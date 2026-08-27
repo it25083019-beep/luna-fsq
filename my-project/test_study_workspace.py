@@ -44,7 +44,7 @@ def test_attempt_hint_submit():
     save_attempt(
         state,
         "se_l1",
-        "学習枠をカレンダーに入れ、開始トリガーを決めて1行ログを残した。",
+        "学習枠をカレンダーに入れ、開始トリガーを決めて1行ログを残した。ポモドーロも試した。",
     )
     h1 = reveal_hint(state, "se_l1")
     assert h1["guide"] and h1["hints_used"] == 1
