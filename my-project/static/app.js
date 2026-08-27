@@ -31,6 +31,7 @@
   ];
   const MAP_LANDMARKS = ["⛺", "🌲", "⛰", "🏰", "👹"];
   let lastMapStageIdx = -1;
+  let lastMapAvatarPos = null;
   const BOSS_LABEL = { weekly: "週次ボス", monthly: "月次ボス", career_final: "最終ボス" };
   const EVOLUTION_RANKS = [
     { id: "novice", label: "見習い" },
@@ -440,6 +441,12 @@
       reselectJourney = false;
       onboardStep = "class";
       if (luna) luna.applyEmotion("cheer", 1500);
+      if (window.FsqWorld) {
+        FsqWorld.toast("冒険開始！ " + (res.status && res.status.career_title_ja ? res.status.career_title_ja : ""), "gold");
+        FsqWorld.flash("gold");
+        FsqWorld.confetti(24);
+        FsqWorld.sfx.questClear();
+      }
       applyJourneyUi();
       await refreshCore();
     } catch (e) {
@@ -557,6 +564,11 @@
         stage.appendChild(burst);
         burst.addEventListener("animationend", () => burst.remove());
         if (luna) luna.applyEmotion("cheer", 900);
+        if (window.FsqWorld) {
+          FsqWorld.sfx.click();
+          FsqWorld.toast("Ready!", "gold");
+          FsqWorld.flash("gold");
+        }
       };
       stage.addEventListener("click", cheer);
       stage.addEventListener("keydown", (e) => {
@@ -750,7 +762,12 @@
             ? "メイン ・ +" + (row.les.exp || 0) + " EXP"
             : "サブ ・ +" + (row.les.exp || 0) + " EXP") +
         '</span></div><div class="check"></div>';
-      if (!row.done) div.onclick = () => openStudyLesson(row.les.id);
+      if (!row.done) {
+        div.onclick = () => {
+          if (window.FsqWorld && FsqWorld.toast) FsqWorld.toast("クエスト出撃！", "teal");
+          openStudyLesson(row.les.id);
+        };
+      }
       box.appendChild(div);
     });
   }
@@ -1170,44 +1187,61 @@
   async function openBossExam(bossId) {
     try {
       const exam = await api("/journey/bosses/" + encodeURIComponent(bossId) + "/exam");
-      currentExamBossId = bossId;
-      document.getElementById("examTitle").textContent =
-        (exam.exam_label_ja || "確認テスト") + " — " + (exam.title_ja || bossId);
-      document.getElementById("examSub").textContent =
-        "これまでの学習を確認します。各問に短くても具体的に書いて提出しよう（失敗しても進捗は消えません）。";
-      document.getElementById("examMsg").textContent = "";
-      const box = document.getElementById("examQuestions");
-      box.innerHTML = "";
-      const saved = exam.answers || {};
-      (exam.questions || []).forEach((q, i) => {
-        const div = document.createElement("div");
-        div.className = "exam-q";
-        div.innerHTML =
-          '<div class="q-lab">Q' +
-          (i + 1) +
-          "</div><p>" +
-          (q.prompt_ja || "") +
-          '</p><textarea data-qid="' +
-          q.id +
-          '" placeholder="解答を書く"></textarea>';
-        const ta = div.querySelector("textarea");
-        if (ta && saved[q.id]) ta.value = saved[q.id];
-        box.appendChild(div);
-      });
-      const submitBtn = document.getElementById("examSubmitBtn");
-      if (submitBtn) {
-        submitBtn.disabled = !exam.available || !!exam.cleared;
-        submitBtn.style.display = exam.cleared ? "none" : "inline-block";
+      const openExamUi = () => {
+        currentExamBossId = bossId;
+        document.getElementById("examTitle").textContent =
+          (exam.exam_label_ja || "確認テスト") + " — " + (exam.title_ja || bossId);
+        document.getElementById("examSub").textContent =
+          "これまでの学習を確認します。各問に短くても具体的に書いて提出しよう（失敗しても進捗は消えません）。";
+        document.getElementById("examMsg").textContent = "";
+        const box = document.getElementById("examQuestions");
+        box.innerHTML = "";
+        const saved = exam.answers || {};
+        (exam.questions || []).forEach((q, i) => {
+          const div = document.createElement("div");
+          div.className = "exam-q";
+          div.innerHTML =
+            '<div class="q-lab">Q' +
+            (i + 1) +
+            "</div><p>" +
+            (q.prompt_ja || "") +
+            '</p><textarea data-qid="' +
+            q.id +
+            '" placeholder="解答を書く"></textarea>';
+          const ta = div.querySelector("textarea");
+          if (ta && saved[q.id]) ta.value = saved[q.id];
+          box.appendChild(div);
+        });
+        const submitBtn = document.getElementById("examSubmitBtn");
+        if (submitBtn) {
+          submitBtn.disabled = !exam.available || !!exam.cleared;
+          submitBtn.style.display = exam.cleared ? "none" : "inline-block";
+        }
+        const examModal = document.getElementById("examModal");
+        examModal.classList.add("open", "boss-mode");
+        if (window.FsqWorld && FsqWorld.onOpenQuest) {
+          FsqWorld.onOpenQuest({ estimated_minutes: 45, title_ja: exam.title_ja || "ボス戦" });
+        }
+      };
+      if (window.FsqWorld && FsqWorld.showBossIntro) {
+        FsqWorld.showBossIntro(
+          {
+            title_ja: exam.exam_label_ja || exam.title_ja || "試験の番人",
+            hint_ja: "これまでの学習が武器になる。負けても進捗は消えない。",
+          },
+          openExamUi
+        );
+      } else {
+        openExamUi();
       }
-      document.getElementById("examModal").classList.add("open");
-      if (window.FsqWorld && FsqWorld.onOpenQuest) FsqWorld.onOpenQuest({ estimated_minutes: 45, title_ja: "ボス戦" });
     } catch (e) {
       setErr(e.message);
     }
   }
 
   function closeExamModal() {
-    document.getElementById("examModal").classList.remove("open");
+    const examModal = document.getElementById("examModal");
+    if (examModal) examModal.classList.remove("open", "boss-mode");
     currentExamBossId = null;
   }
 
@@ -1474,6 +1508,7 @@
       }
     }
     lastMapStageIdx = curIdx;
+    if (window.FsqWorld && FsqWorld.decorateMapWorld) FsqWorld.decorateMapWorld(curIdx);
     const lbl = document.getElementById("mapRegionLabel");
     if (lbl) {
       lbl.textContent =
@@ -1491,8 +1526,6 @@
       const pos = MAP_POSITIONS[curIdx] || MAP_POSITIONS[MAP_POSITIONS.length - 1];
       mapAv.hidden = false;
       mapAv.classList.add("alive");
-      mapAv.style.left = pos.left;
-      mapAv.style.top = pos.top;
       const ap = journeyStatus.appearance || {};
       let src =
         ap.evolution_sprite ||
@@ -1501,9 +1534,18 @@
         src = src.replace(/\.png$/, "_stand.png");
       }
       mapAvImg.src = src;
+      const moved = lastMapAvatarPos && (lastMapAvatarPos.left !== pos.left || lastMapAvatarPos.top !== pos.top);
+      if (moved && window.FsqWorld && FsqWorld.animateMapTravel) {
+        FsqWorld.animateMapTravel(lastMapAvatarPos, pos, null);
+      } else {
+        mapAv.style.left = pos.left;
+        mapAv.style.top = pos.top;
+      }
+      lastMapAvatarPos = { left: pos.left, top: pos.top };
     }
     if (window.FsqWorld && cur) {
       FsqWorld.renderMapPanel(cur, curIdx, journeyStatus);
+      if (curIdx >= 0) FsqWorld.showRegionTitle(curIdx, false);
     }
   }
 
@@ -3091,6 +3133,7 @@
     if (studyAnswer) {
       studyAnswer.addEventListener("input", () => {
         updateStudyBattleProgress();
+        if (window.FsqWorld && FsqWorld.onTypingTick) FsqWorld.onTypingTick();
         if (studyAutosaveTimer) clearTimeout(studyAutosaveTimer);
         studyAutosaveTimer = setTimeout(() => saveStudyAnswerDraft(), 900);
       });
