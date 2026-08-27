@@ -133,6 +133,80 @@
         repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,.02) 3px,rgba(255,255,255,.02) 4px);
     }
     #tab-fsq > *{position:relative;z-index:1}
+    .world-ambient{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .world-ambient .wp{position:absolute;width:4px;height:4px;border-radius:50%;opacity:0;animation:wpFloat ease-in-out infinite}
+    .world-ambient .wp.gold{background:var(--fsq-gold-soft);box-shadow:0 0 8px rgba(212,168,75,.8)}
+    .world-ambient .wp.teal{background:#5ecfc0;box-shadow:0 0 6px rgba(94,207,192,.7)}
+    .world-ambient .wp.soft{background:rgba(255,255,255,.65)}
+    @keyframes wpFloat{0%{opacity:0;transform:translateY(8px) scale(.6)}25%{opacity:.9}75%{opacity:.4}100%{opacity:0;transform:translateY(-60px) scale(1.1)}}
+    .world-portal{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(11,28,34,.92),rgba(0,0,0,.96));opacity:0;pointer-events:none;transition:opacity .5s ease}
+    .world-portal.open{opacity:1;pointer-events:auto}
+    .world-portal .wp-inner{text-align:center;color:#f7efe0;padding:2rem;animation:portalIn .8s ease}
+    .world-portal .wp-kicker{font-family:Cinzel,serif;letter-spacing:.35em;font-size:.62rem;color:var(--fsq-gold-soft);margin:0 0 .65rem}
+    .world-portal h3{margin:0;font-family:"Shippori Mincho",serif;font-size:1.5rem;text-shadow:0 0 24px rgba(212,168,75,.5)}
+    .world-portal p{margin:.55rem 0 0;font-size:.78rem;opacity:.88;font-family:"M PLUS Rounded 1c",sans-serif}
+    @keyframes portalIn{from{opacity:0;transform:scale(.92) translateY(12px)}to{opacity:1;transform:none}}
+    .world-hud{display:grid;grid-template-columns:auto 1fr auto;gap:.45rem;align-items:center;margin:0 .85rem .55rem;padding:.5rem .65rem;border-radius:14px;background:linear-gradient(180deg,rgba(8,28,34,.88),rgba(15,42,50,.92));border:1px solid rgba(212,168,75,.4);box-shadow:0 10px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);font-family:"M PLUS Rounded 1c",sans-serif}
+    .world-hud .wh-item{display:flex;align-items:center;gap:.35rem;color:var(--fsq-gold-soft);font-size:.62rem;font-weight:800}
+    .world-hud .wh-k{opacity:.75;font-size:.55rem;letter-spacing:.06em}
+    .world-hud .wh-item strong{color:#fff;font-size:.72rem}
+    .world-hud .wh-exp{flex:1;min-width:0}
+    .world-hud .wh-bar{flex:1;height:7px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid rgba(212,168,75,.3);overflow:hidden;min-width:60px}
+    .world-hud .wh-bar span{display:block;height:100%;background:linear-gradient(90deg,#5ecfc0,#f0d9a0,#d4a84b);border-radius:inherit;transition:width .4s}
+    .world-hud .wh-quest{grid-column:1/-1;font-size:.62rem;color:rgba(247,239,224,.9);padding-top:.15rem;border-top:1px solid rgba(212,168,75,.2);margin-top:.1rem}
+    .world-narrator{margin:0 .85rem .65rem;border-radius:16px;padding:.7rem .75rem;background:linear-gradient(135deg,rgba(15,42,50,.92),rgba(31,74,62,.88));border:1px solid rgba(212,168,75,.35);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    .world-narrator .wn-inner{display:flex;gap:.65rem;align-items:flex-start}
+    .world-narrator .wn-icon{font-size:1.35rem;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
+    .world-narrator strong{display:block;font-size:.78rem;color:var(--fsq-gold-soft);font-family:"Shippori Mincho",serif;margin-bottom:.25rem}
+    .world-narrator p{margin:0;font-size:.68rem;line-height:1.55;color:rgba(247,239,224,.92);font-family:"M PLUS Rounded 1c",sans-serif}
+    .world-narrator .wn-tip{display:block;margin-top:.35rem;font-size:.58rem;color:var(--fsq-mist);font-style:normal;font-family:"M PLUS Rounded 1c",sans-serif}
+    .fsq-section.world-enter{animation:sectionIn .45s ease}
+    @keyframes sectionIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    .map-scroll-wrap{overflow-x:auto;margin:.65rem 0;border-radius:22px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+    .map-scroll-wrap .map-world{margin:0;min-width:min(520px,140%)}
+    .map-region-panel{margin:0 0 .65rem;padding:.75rem;border-radius:18px;background:linear-gradient(180deg,rgba(255,252,245,.98),var(--fsq-parchment));border:2px solid rgba(212,168,75,.45);box-shadow:0 10px 26px rgba(8,28,34,.2);display:none}
+    .map-region-panel.open{display:block;animation:sectionIn .35s ease}
+    .map-region-panel .mrp-head{display:flex;gap:.55rem;align-items:center;margin-bottom:.45rem}
+    .map-region-panel .mrp-head span{font-size:1.6rem}
+    .map-region-panel .mrp-head strong{display:block;font-size:.82rem;color:#3a2a12;font-family:"Shippori Mincho",serif}
+    .map-region-panel .mrp-head em{font-style:normal;font-size:.62rem;color:var(--fsq-muted);font-weight:700}
+    .map-region-panel p{margin:0 0 .55rem;font-size:.68rem;line-height:1.55;color:var(--fsq-text);font-family:"M PLUS Rounded 1c",sans-serif}
+    .map-region-panel button{width:100%;border:none;border-radius:999px;padding:.55rem .85rem;font-weight:900;font-size:.72rem;cursor:pointer;background:linear-gradient(135deg,var(--fsq-gold),#a87828);color:#1a1204;box-shadow:0 6px 14px rgba(168,120,40,.3)}
+    .map-region-panel button:disabled{opacity:.55;cursor:not-allowed;background:#c9b896;color:#5a4a28;box-shadow:none}
+    .map-node{cursor:pointer;transition:transform .2s ease}
+    .map-node:not(.locked):hover{transform:translateX(-50%) scale(1.06)}
+    .study-modal.battle-mode{background:rgba(8,20,28,.78)}
+    .study-battle-hud{display:none;padding:.65rem .85rem 0;background:linear-gradient(180deg,#0f2a32,#145a52);border-radius:22px 22px 0 0;border:2px solid rgba(212,168,75,.45);border-bottom:none;margin:0 auto;max-width:520px;width:100%}
+    .study-modal.battle-mode .study-battle-hud{display:block}
+    .study-modal.battle-mode .study-sheet{border-radius:0 0 22px 22px;border-top:none;border:2px solid rgba(212,168,75,.45);border-top:1px dashed rgba(212,168,75,.25)}
+    .sbh-left{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+    .sbh-tag{font-family:Cinzel,serif;font-size:.58rem;letter-spacing:.2em;color:var(--fsq-gold-soft);font-weight:700}
+    .sbh-bar{height:8px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid rgba(212,168,75,.35);overflow:hidden;margin-bottom:.5rem}
+    .sbh-bar span{display:block;height:100%;background:linear-gradient(90deg,#ff7a7a,#ffd27a,#5ecfc0);border-radius:inherit;transition:width .35s;width:12%}
+    .study-modal.battle-mode .study-problem{border:2px solid rgba(196,92,58,.35);background:linear-gradient(180deg,#fff8f0,#fffdf8);position:relative}
+    .study-modal.battle-mode .study-problem::before{content:"👾";position:absolute;right:.65rem;top:.55rem;font-size:1.4rem;opacity:.85}
+    .reward-modal.victory-mode .reward-card{animation:victoryPop .55s cubic-bezier(.2,1.2,.3,1);border:2px solid rgba(212,168,75,.55);background:linear-gradient(180deg,#fffdf8 0%,var(--fsq-parchment) 40%,#fff8e8 100%)}
+    @keyframes victoryPop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+    .victory-burst{position:absolute;inset:-20%;background:radial-gradient(circle,rgba(255,210,122,.35),transparent 55%);pointer-events:none;opacity:0}
+    .reward-modal.victory-mode .victory-burst{animation:burstFade 1.2s ease forwards}
+    @keyframes burstFade{0%{opacity:0;transform:scale(.5)}30%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
+    .victory-exp{position:absolute;top:10%;left:50%;transform:translateX(-50%);font-size:1.4rem;font-weight:900;color:#c9a227;text-shadow:0 2px 12px rgba(201,162,39,.5);opacity:0;pointer-events:none;font-family:Cinzel,serif}
+    .victory-exp.pop{animation:expFloat 1.8s ease forwards}
+    @keyframes expFloat{0%{opacity:0;transform:translate(-50%,20px) scale(.8)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-40px) scale(1.1)}}
+    .chip-mini.loot{background:linear-gradient(135deg,#fff8e8,#ffe8a8);border:1px solid #e8c878;color:#5a3d12;animation:lootIn .4s ease backwards}
+    .chip-mini.loot:nth-child(2){animation-delay:.08s}
+    .chip-mini.loot:nth-child(3){animation-delay:.16s}
+    @keyframes lootIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .level-up-overlay{position:fixed;inset:0;z-index:190;display:flex;align-items:center;justify-content:center;background:rgba(8,20,28,.75);opacity:0;pointer-events:none;transition:opacity .35s}
+    .level-up-overlay.open{opacity:1;pointer-events:auto}
+    .level-up-overlay .lu-card{text-align:center;padding:2rem 2.5rem;border-radius:24px;background:linear-gradient(165deg,#0f2a32,#145a52 50%,#1a3d3a);border:2px solid var(--fsq-gold);box-shadow:0 0 60px rgba(212,168,75,.45);animation:levelPop .6s cubic-bezier(.2,1.3,.3,1)}
+    .level-up-overlay .lu-card p{margin:0;font-family:Cinzel,serif;letter-spacing:.25em;font-size:.72rem;color:var(--fsq-gold-soft)}
+    .level-up-overlay .lu-card strong{display:block;font-size:2.8rem;color:#fff;text-shadow:0 0 30px rgba(255,210,122,.6);margin:.25rem 0;font-family:"Shippori Mincho",serif}
+    .level-up-overlay .lu-card span{font-size:.72rem;color:rgba(247,239,224,.88);font-family:"M PLUS Rounded 1c",sans-serif}
+    @keyframes levelPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
+    .journey-onboard.epic-onboard{border:2px solid rgba(212,168,75,.45);background:linear-gradient(180deg,rgba(255,252,245,.98),var(--fsq-parchment)),url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 20h40M20 0v40' stroke='%23d4a84b' stroke-opacity='.06'/%3E%3C/svg%3E")}
+    .onboard-epic-line{text-align:center;padding:.5rem 0 .65rem;font-family:"Shippori Mincho",serif;font-size:.78rem;color:#5a3d12;line-height:1.5}
+    @media (prefers-reduced-motion:reduce){.world-ambient .wp,.world-portal .wp-inner,.fsq-section.world-enter,.victory-exp.pop,.level-up-overlay .lu-card{animation:none!important}}
     .fsq-banner{
       position:relative;overflow:hidden;
       background:
@@ -675,8 +749,10 @@
     .exam-q .q-lab{font-size:.62rem;font-weight:900;color:#a04040;margin-bottom:.25rem}
     .exam-q p{margin:0 0 .4rem;font-size:.76rem;line-height:1.5;font-weight:700}
     .exam-q textarea{width:100%;min-height:88px;border:1px solid #e8c0c0;border-radius:12px;padding:.55rem .65rem;font-size:.74rem;box-sizing:border-box;resize:vertical}
-    .study-modal{position:fixed;inset:0;background:rgba(20,16,48,.55);display:none;align-items:flex-end;justify-content:center;z-index:85;padding:0}
+    .study-modal{position:fixed;inset:0;background:rgba(20,16,48,.55);display:none;align-items:flex-end;justify-content:center;z-index:85;padding:0;flex-direction:column}
     .study-modal.open{display:flex}
+    .study-modal.battle-mode{align-items:center;padding-bottom:0}
+    .reward-modal .reward-card{position:relative;overflow:visible}
     .study-sheet{background:#fff;border-radius:22px 22px 0 0;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:1rem 1rem 5.5rem;box-shadow:0 -12px 40px rgba(20,16,48,.25)}
     .study-sheet h3{margin:0 0 .35rem;font-size:1.05rem}
     .study-sheet .summary{font-size:.8rem;line-height:1.55;color:#3a3f63;margin:.4rem 0 .7rem}
@@ -1162,6 +1238,21 @@
 
       <!-- FSQ secondary -->
       <section id="tab-fsq" class="tab-panel">
+        <div id="worldAmbient" class="world-ambient" aria-hidden="true"></div>
+        <div id="worldPortal" class="world-portal" aria-hidden="true">
+          <div class="wp-inner">
+            <p class="wp-kicker">— GATE OPEN —</p>
+            <h3>冒険の大陸へ</h3>
+            <p>学びはクエスト。成長はレベルアップ。<br>ここから、未来の自分を育てる旅が始まる。</p>
+          </div>
+        </div>
+        <div id="levelUpOverlay" class="level-up-overlay" aria-hidden="true">
+          <div class="lu-card">
+            <p>LEVEL UP</p>
+            <strong id="luLevel">Lv.2</strong>
+            <span id="luMsg">新しい力が目覚めた</span>
+          </div>
+        </div>
         <div class="fsq-banner">
           <p class="world-kicker">RPG WORLD</p>
           <h2>⚔ Future Skill Quest</h2>
@@ -1173,9 +1264,17 @@
           <button type="button" class="fsq-sub" data-fsq="map">🗺 ワールド</button>
           <button type="button" class="fsq-sub" data-fsq="career">📜 冒険録</button>
         </div>
+        <div id="worldHud" class="world-hud" hidden>
+          <div class="wh-item"><span class="wh-k">LV</span><strong id="whLv">Lv.1</strong></div>
+          <div class="wh-item wh-exp"><span class="wh-k">EXP</span><div class="wh-bar"><span id="whExpBar"></span></div></div>
+          <div class="wh-item"><span class="wh-k">現在地</span><strong id="whRegion">—</strong></div>
+          <div class="wh-item wh-quest"><span class="wh-k">MAIN</span><span id="whQuest">—</span></div>
+        </div>
+        <div id="worldNarrator" class="world-narrator"></div>
         <div id="fsq-onboard" class="fsq-section">
           <div class="content" style="padding-top:.65rem">
-            <div class="card journey-onboard" id="onboardClassStep">
+            <p class="onboard-epic-line">✦ 運命の選択 — クラスを選び、進路を定めよ ✦</p>
+            <div class="card journey-onboard epic-onboard" id="onboardClassStep">
               <div class="section-title"><span>① クラスを選ぶ</span></div>
               <p class="hint" style="margin:0 0 .5rem">剣士 / 魔法使い / 弓使い — 見習いから聖級まで進化</p>
               <div class="classes" id="classPicker"></div>
@@ -1184,7 +1283,7 @@
                 <div class="evo-grid" id="onboardEvoGrid"></div>
               </div>
             </div>
-            <div class="card journey-onboard" id="onboardCareerStep" style="display:none">
+            <div class="card journey-onboard epic-onboard" id="onboardCareerStep" style="display:none">
               <div class="section-title"><span>② 将来の職業を選ぶ</span><button type="button" id="backToClassBtn" class="hint" style="border:none;background:none;cursor:pointer;color:var(--lilac)">← クラス</button></div>
               <p class="hint" style="margin:0 0 .5rem">カリキュラム付きの職業から始めるのがおすすめ</p>
               <div class="career-grid" id="careerPicker"></div>
@@ -1275,6 +1374,12 @@
         </div>
         <div id="fsq-map" class="fsq-section">
           <div class="content" style="padding-top:.65rem">
+            <div id="mapRegionPanel" class="map-region-panel">
+              <div class="mrp-head"><span id="mrpIcon">⛺</span><div><strong id="mrpTitle">—</strong><em id="mrpSub">—</em></div></div>
+              <p id="mrpLore">エリアをタップすると詳細が表示されます。</p>
+              <button type="button" id="mrpDepartBtn">このエリアでクエスト開始</button>
+            </div>
+            <div class="map-scroll-wrap">
             <div class="map-world" id="mapWorld">
               <div class="map-sky" aria-hidden="true">
                 <div class="map-sun"></div>
@@ -1308,6 +1413,7 @@
                 <span><i class="lg-dot lock"></i>ロック</span>
                 <span><i class="lg-dot boss"></i>ボス</span>
               </div>
+            </div>
             </div>
             <p class="hint" id="mapRegionLabel" style="margin:0 0 .5rem">現在：始まりの平原</p>
             <div class="map-quest-panel" id="mapDailyQuest">
@@ -1355,6 +1461,8 @@
         </div>
       </section>
       <div id="rewardModal" class="reward-modal" role="dialog" aria-modal="true">
+        <div class="victory-burst" aria-hidden="true"></div>
+        <div class="victory-exp" id="victoryExpFloat" aria-hidden="true"></div>
         <div class="reward-card">
           <h3 id="rewardTitle">レッスン完了！</h3>
           <p id="rewardBody"></p>
@@ -1363,6 +1471,10 @@
         </div>
       </div>
       <div id="studyModal" class="study-modal" role="dialog" aria-modal="true">
+        <div class="study-battle-hud">
+          <div class="sbh-left"><span class="sbh-tag">QUEST BATTLE</span><span id="studyBattleRank">難易度 ★</span></div>
+          <div class="sbh-bar"><span id="studyBattleProgress"></span></div>
+        </div>
         <div class="study-sheet">
           <h3 id="studyTitle">レッスン</h3>
           <div class="hint" id="studyExp"></div>
@@ -1482,6 +1594,7 @@
   </div>
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
+  <script src="/static/world.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

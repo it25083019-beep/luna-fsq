@@ -290,9 +290,11 @@
     document.querySelectorAll(".fsq-sub").forEach((b) => b.classList.toggle("active", b.dataset.fsq === name));
     document.querySelectorAll(".fsq-section").forEach((s) => s.classList.remove("active"));
     document.getElementById("fsq-" + name).classList.add("active");
+    if (window.FsqWorld) FsqWorld.onSubSwitch(name);
   }
 
   function loadFsqTab() {
+    if (window.FsqWorld) FsqWorld.onEnterTab();
     loadJourney().catch((e) => setErr(e.message));
   }
 
@@ -347,6 +349,11 @@
     renderLessons();
     renderBosses();
     renderCareerPortfolio();
+    if (window.FsqWorld) {
+      FsqWorld.renderHud(journeyStatus, journeyMap, expProgress);
+      FsqWorld.renderNarrator(journeyStatus, journeyMap);
+      FsqWorld.checkLevelUp(journeyStatus.level || stateData.level || 1);
+    }
   }
 
   async function loadJourney() {
@@ -1075,6 +1082,7 @@
       }
       setStudyTab("solve");
       document.getElementById("studyModal").classList.add("open");
+      if (window.FsqWorld) FsqWorld.onOpenQuest(les);
       const taFocus = document.getElementById("studyAnswer");
       if (taFocus && !les.completed) {
         taFocus.disabled = false;
@@ -1098,6 +1106,7 @@
       studyAutosaveTimer = null;
     }
     saveStudyAnswerDraft();
+    if (window.FsqWorld) FsqWorld.closeQuest();
     document.getElementById("studyModal").classList.remove("open");
     currentStudyLessonId = null;
   }
@@ -1111,6 +1120,7 @@
         body: "{}",
       });
       renderUnlockedGuides(res.unlocked_guides || []);
+      updateStudyBattleProgress();
       const hintMeta = document.getElementById("studyHintMeta");
       if (hintMeta) hintMeta.textContent = res.message_ja || "";
       setStudyTab("guide");
@@ -1190,6 +1200,7 @@
         submitBtn.style.display = exam.cleared ? "none" : "inline-block";
       }
       document.getElementById("examModal").classList.add("open");
+      if (window.FsqWorld && FsqWorld.onOpenQuest) FsqWorld.onOpenQuest({ estimated_minutes: 45, title_ja: "ボス戦" });
     } catch (e) {
       setErr(e.message);
     }
@@ -1297,7 +1308,21 @@
     }
   }
 
+  function updateStudyBattleProgress() {
+    if (!window.FsqWorld || !currentStudyMeta) return;
+    const ta = document.getElementById("studyAnswer");
+    const min = currentStudyMeta.min_answer_chars || 24;
+    const len = ta ? (ta.value || "").trim().length : 0;
+    const guides = document.querySelectorAll("#studyGuideList .guide-item, #studyGuideList li").length;
+    const pct = Math.min(92, 12 + Math.round((len / Math.max(min, 1)) * 55) + guides * 8);
+    FsqWorld.onQuestProgress(pct);
+  }
+
   function showRewardModal(title, lines, chips) {
+    if (window.FsqWorld) {
+      FsqWorld.showVictory(title, lines, chips);
+      return;
+    }
     const modal = document.getElementById("rewardModal");
     document.getElementById("rewardTitle").textContent = title;
     document.getElementById("rewardBody").innerHTML = (lines || []).map((x) => "<p>" + x + "</p>").join("");
@@ -1408,6 +1433,9 @@
         "</span>" +
         (r.label_ja || r.id) +
         (r.progress ? '<div class="hint" style="color:#fff;opacity:.9">' + r.progress + "</div>" : "");
+      node.onclick = () => {
+        if (window.FsqWorld) FsqWorld.renderMapPanel(r, i, journeyStatus);
+      };
       path.appendChild(node);
     });
     const svg = document.getElementById("mapRouteSvg");
@@ -1473,6 +1501,9 @@
         src = src.replace(/\.png$/, "_stand.png");
       }
       mapAvImg.src = src;
+    }
+    if (window.FsqWorld && cur) {
+      FsqWorld.renderMapPanel(cur, curIdx, journeyStatus);
     }
   }
 
@@ -3059,9 +3090,14 @@
     const studyAnswer = document.getElementById("studyAnswer");
     if (studyAnswer) {
       studyAnswer.addEventListener("input", () => {
+        updateStudyBattleProgress();
         if (studyAutosaveTimer) clearTimeout(studyAutosaveTimer);
         studyAutosaveTimer = setTimeout(() => saveStudyAnswerDraft(), 900);
       });
+    }
+    if (window.FsqWorld) {
+      FsqWorld.init();
+      FsqWorld.setMapDepartHandler((lessonId) => openStudyLesson(lessonId));
     }
     const examSubmit = document.getElementById("examSubmitBtn");
     if (examSubmit) examSubmit.onclick = () => submitBossExamAnswers();
