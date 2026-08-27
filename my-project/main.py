@@ -88,7 +88,18 @@ from schemas import (
     JourneySelectRequest,
     JourneyBossChallenge,
     JourneyLessonEnrich,
+    LessonAttemptSave,
+    LessonSubmit,
+    BossExamSubmit,
     TtsSpeakRequest,
+)
+from study_workspace import (
+    build_boss_exam,
+    get_attempt,
+    reveal_hint,
+    save_attempt,
+    submit_boss_exam,
+    submit_lesson,
 )
 from suggestions import get_suggested_replies
 from career_engine import load_taxonomy, suggest_careers, rpg_class_label
@@ -1016,6 +1027,84 @@ def journey_boss_challenge(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     save_user_brain(current.public_id, brain)
+    return result
+
+
+@app.get("/journey/lessons/{lesson_id}/attempt")
+def journey_get_attempt(lesson_id: str, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        return get_attempt(brain, lesson_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/journey/lessons/{lesson_id}/attempt")
+def journey_save_attempt(
+    lesson_id: str,
+    req: LessonAttemptSave,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    try:
+        result = save_attempt(brain, lesson_id, req.answer or "")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return result
+
+
+@app.post("/journey/lessons/{lesson_id}/hint")
+def journey_lesson_hint(lesson_id: str, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        result = reveal_hint(brain, lesson_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return result
+
+
+@app.post("/journey/lessons/{lesson_id}/submit")
+def journey_lesson_submit(
+    lesson_id: str,
+    req: LessonSubmit,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    try:
+        result = submit_lesson(brain, lesson_id, answer=req.answer)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return result
+
+
+@app.get("/journey/bosses/{boss_id}/exam")
+def journey_boss_exam(boss_id: str, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    try:
+        return build_boss_exam(brain, boss_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/journey/bosses/{boss_id}/exam/submit")
+def journey_boss_exam_submit(
+    boss_id: str,
+    req: BossExamSubmit,
+    current: User = Depends(get_current_user),
+):
+    brain = load_user_brain(current.public_id)
+    try:
+        result = submit_boss_exam(brain, boss_id, answers=req.answers or {})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if result.get("success"):
+        save_user_brain(current.public_id, brain)
+    else:
+        # still save attempt answers without clearing progress
+        save_user_brain(current.public_id, brain)
     return result
 
 

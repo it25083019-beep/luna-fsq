@@ -387,7 +387,32 @@
     .reward-card h3{margin:0 0 .4rem;font-size:1rem}
     .reward-card p{margin:.25rem 0;font-size:.78rem;color:var(--muted)}
     .chip-mini{display:inline-block;margin:.15rem .2rem 0 0;padding:.2rem .45rem;border-radius:999px;background:#f0ecff;font-size:.62rem;font-weight:700}
-    .study-modal{position:fixed;inset:0;background:rgba(20,16,48,.55);display:none;align-items:flex-end;justify-content:center;z-index:85;padding:0}
+    .study-tabs{display:flex;gap:.3rem;margin:.45rem 0 .65rem;flex-wrap:wrap}
+    .study-tabs button{border:1px solid #dde1ff;background:#f6f7ff;color:#5a5f88;border-radius:999px;padding:.35rem .7rem;font-size:.68rem;font-weight:800;cursor:pointer}
+    .study-tabs button.active{background:linear-gradient(135deg,#ffd27a,#c9a227);color:#2a1a00;border-color:transparent}
+    .study-pane{display:none}
+    .study-pane.active{display:block}
+    .study-problem{border:2px solid #e8d4a8;border-radius:16px;padding:.75rem .8rem;background:linear-gradient(180deg,#fff9ef,#fff);margin-bottom:.55rem}
+    .study-problem .lab{font-size:.62rem;font-weight:900;color:#8a5a10;margin-bottom:.35rem;letter-spacing:.04em}
+    .study-problem p{margin:0;font-size:.8rem;line-height:1.55;color:#3a3f63;white-space:pre-wrap}
+    .study-workspace{margin:.35rem 0 .55rem}
+    .study-workspace label{display:block;font-size:.68rem;font-weight:800;margin-bottom:.3rem;color:#445}
+    .study-workspace textarea{width:100%;min-height:160px;border:1px solid #cfd5ff;border-radius:14px;padding:.7rem .75rem;font-size:.78rem;line-height:1.5;resize:vertical;box-sizing:border-box;font-family:inherit}
+    .study-workspace textarea.code-mode{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;min-height:200px;background:#0f1224;color:#e8ecff;border-color:#3a4270}
+    .study-guide-list{display:flex;flex-direction:column;gap:.4rem;margin:.4rem 0}
+    .study-guide-card{border:1px solid #e4e8ff;border-radius:14px;padding:.6rem .7rem;background:#fafbff}
+    .study-guide-card strong{display:block;font-size:.72rem;margin-bottom:.2rem}
+    .study-guide-card p{margin:0;font-size:.7rem;line-height:1.5;color:#445}
+    .study-guide-card .src{display:block;margin-top:.3rem;font-size:.58rem;color:var(--muted);font-weight:700}
+    .study-hint-meta{font-size:.65rem;color:var(--muted);font-weight:700;margin:.25rem 0 .45rem}
+    .exam-modal{position:fixed;inset:0;background:rgba(20,16,48,.55);display:none;align-items:flex-end;justify-content:center;z-index:86;padding:0}
+    .exam-modal.open{display:flex}
+    .exam-sheet{background:#fff;border-radius:22px 22px 0 0;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:1rem 1rem 1.25rem;box-shadow:0 -12px 40px rgba(20,16,48,.25)}
+    .exam-sheet h3{margin:0 0 .25rem}
+    .exam-q{border:1px solid #f0c8c8;border-radius:14px;padding:.65rem .7rem;margin-bottom:.55rem;background:linear-gradient(180deg,#fff8f8,#fff)}
+    .exam-q .q-lab{font-size:.62rem;font-weight:900;color:#a04040;margin-bottom:.25rem}
+    .exam-q p{margin:0 0 .4rem;font-size:.76rem;line-height:1.5;font-weight:700}
+    .exam-q textarea{width:100%;min-height:88px;border:1px solid #e8c0c0;border-radius:12px;padding:.55rem .65rem;font-size:.74rem;box-sizing:border-box;resize:vertical}
     .study-modal.open{display:flex}
     .study-sheet{background:#fff;border-radius:22px 22px 0 0;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:1rem 1rem 1.25rem;box-shadow:0 -12px 40px rgba(20,16,48,.25)}
     .study-sheet h3{margin:0 0 .35rem;font-size:1.05rem}
@@ -1038,22 +1063,60 @@
           <h3 id="studyTitle">レッスン</h3>
           <div class="hint" id="studyExp"></div>
           <p class="summary" id="studySummary"></p>
-          <div class="section-title" style="margin-bottom:.35rem"><span>🎯 ゴール</span></div>
-          <ul class="study-goals" id="studyGoals"></ul>
-          <div class="section-title" style="margin-bottom:.35rem"><span>📖 理論</span></div>
-          <div class="study-theory" id="studyTheory"></div>
-          <div class="section-title" style="margin-bottom:.35rem"><span>🛠️ 実践ステップ</span></div>
-          <div id="studySteps"></div>
-          <div class="section-title" style="margin:.7rem 0 .35rem"><span>✅ 完了チェック</span></div>
-          <ul class="study-check" id="studyChecklist"></ul>
-          <div class="section-title" style="margin:.7rem 0 .35rem"><span>🔗 参考教材</span></div>
-          <div class="study-resources" id="studyResources"></div>
-          <p class="hint" id="studyPractice" style="margin:0 0 .4rem"></p>
-          <p class="hint" id="studyEnrich" style="margin:0 0 .4rem;display:none"></p>
+          <div class="study-tabs" id="studyTabs">
+            <button type="button" class="active" data-study-tab="problem">課題</button>
+            <button type="button" data-study-tab="work">解答スペース</button>
+            <button type="button" data-study-tab="guide">ガイド</button>
+            <button type="button" data-study-tab="ref">理論・参考</button>
+          </div>
+          <div class="study-pane active" id="studyPaneProblem">
+            <div class="study-problem">
+              <div class="lab">QUEST / 課題</div>
+              <p id="studyProblemText">—</p>
+            </div>
+            <div class="section-title" style="margin-bottom:.35rem"><span>🎯 ゴール</span></div>
+            <ul class="study-goals" id="studyGoals"></ul>
+          </div>
+          <div class="study-pane" id="studyPaneWork">
+            <div class="study-workspace">
+              <label for="studyAnswer">ここに解答を書く（途中保存OK）</label>
+              <textarea id="studyAnswer" placeholder="考えた手順・コード・メモを書いて提出しよう"></textarea>
+            </div>
+            <p class="hint" id="studyAnswerHint">24文字以上書いて提出するとスキルを獲得できます。</p>
+          </div>
+          <div class="study-pane" id="studyPaneGuide">
+            <p class="study-hint-meta" id="studyHintMeta">詰まったら、正しい方法のガイドを1つずつ開けます。</p>
+            <button type="button" class="ghost" id="studyHintBtn" style="width:100%;margin-bottom:.45rem;border:none;border-radius:999px;padding:.5rem .8rem;font-weight:800;cursor:pointer;background:#fff0c8;color:#6a4208">💡 詰まったらガイドを見る</button>
+            <div class="study-guide-list" id="studyGuideList"></div>
+          </div>
+          <div class="study-pane" id="studyPaneRef">
+            <div class="section-title" style="margin-bottom:.35rem"><span>📖 理論</span></div>
+            <div class="study-theory" id="studyTheory"></div>
+            <div class="section-title" style="margin-bottom:.35rem"><span>🛠️ 実践ステップ</span></div>
+            <div id="studySteps"></div>
+            <div class="section-title" style="margin:.7rem 0 .35rem"><span>✅ 完了チェック</span></div>
+            <ul class="study-check" id="studyChecklist"></ul>
+            <div class="section-title" style="margin:.7rem 0 .35rem"><span>🔗 参考教材</span></div>
+            <div class="study-resources" id="studyResources"></div>
+            <p class="hint" id="studyPractice" style="margin:0 0 .4rem"></p>
+            <p class="hint" id="studyEnrich" style="margin:0 0 .4rem;display:none"></p>
+          </div>
           <div class="study-actions">
             <button type="button" class="ghost" id="studyEnrichBtn">AI補足</button>
             <button type="button" class="ghost" id="studyCloseBtn">閉じる</button>
-            <button type="button" class="primary" id="studyCompleteBtn">実践を記録する</button>
+            <button type="button" class="primary" id="studyCompleteBtn">提出してスキルを得る</button>
+          </div>
+        </div>
+      </div>
+      <div id="examModal" class="exam-modal" role="dialog" aria-modal="true">
+        <div class="exam-sheet">
+          <h3 id="examTitle">週次テスト</h3>
+          <p class="hint" id="examSub" style="margin:0 0 .65rem">これまでの学習を確認します。進捗は消えません。</p>
+          <div id="examQuestions"></div>
+          <p class="hint" id="examMsg" style="margin:.35rem 0"></p>
+          <div class="study-actions">
+            <button type="button" class="ghost" id="examRetreatBtn">退却</button>
+            <button type="button" class="primary" id="examSubmitBtn">解答を提出</button>
           </div>
         </div>
       </div>

@@ -89,7 +89,7 @@ def get_lesson_material(lesson_id: str) -> Dict[str, Any]:
     }
 
 
-def _attach_material(lesson: Dict[str, Any]) -> Dict[str, Any]:
+def _attach_material(lesson: Dict[str, Any], *, career_id: Optional[str] = None) -> Dict[str, Any]:
     out = dict(lesson)
     mat = get_lesson_material(lesson["id"])
     out["summary_ja"] = mat.get("summary_ja")
@@ -101,6 +101,13 @@ def _attach_material(lesson: Dict[str, Any]) -> Dict[str, Any]:
     out["checklist_ja"] = mat.get("checklist_ja") or []
     out["estimated_minutes"] = mat.get("estimated_minutes") or 30
     out["resources"] = mat.get("resources") or []
+    # Paiza-like fields (additive; derived in study_workspace)
+    try:
+        from study_workspace import attach_study_fields
+
+        out = attach_study_fields(out, career_id=career_id)
+    except Exception:
+        pass
     return out
 
 
@@ -219,6 +226,8 @@ def ensure_journey(state: Dict[str, Any]) -> Dict[str, Any]:
     j.setdefault("boss_clears", [])
     j.setdefault("journey_exp", 0)
     j.setdefault("lesson_enrich", {})
+    j.setdefault("lesson_attempts", {})
+    j.setdefault("boss_attempts", {})
     j.setdefault("selected_at", None)
     return j
 
@@ -388,7 +397,7 @@ def list_journey_map(state: Dict[str, Any]) -> Dict[str, Any]:
     lessons_out = []
     for les in cur.get("lessons") or []:
         stage = next((s for s in stages_out if s["id"] == les.get("stage_id")), None)
-        row = _attach_material(les)
+        row = _attach_material(les, career_id=j.get("career_id"))
         row["completed"] = les["id"] in completed
         row["available"] = bool(stage and stage.get("unlocked")) and les["id"] not in completed
         row["detail_ja"] = (j.get("lesson_enrich") or {}).get(les["id"])
@@ -505,7 +514,7 @@ def complete_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
 
     return {
         "ok": True,
-        "lesson": _attach_material(les),
+        "lesson": _attach_material(les, career_id=j.get("career_id")),
         "exp_gained": gained_exp,
         "journey_exp_gained": raw_exp,
         "skills_gained": skills,

@@ -258,3 +258,15 @@ class JourneyBossChallenge(BaseModel):
 
 class JourneyLessonEnrich(BaseModel):
     detail_ja: Optional[str] = Field(default=None, max_length=1200)
+
+
+class LessonAttemptSave(BaseModel):
+    answer: str = Field(default="", max_length=8000)
+
+
+class LessonSubmit(BaseModel):
+    answer: Optional[str] = Field(default=None, max_length=8000)
+
+
+class BossExamSubmit(BaseModel):
+    answers: Dict[str, str] = Field(default_factory=dict)

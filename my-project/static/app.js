@@ -672,14 +672,64 @@
       hint.className = "next-boss-hint";
       hint.style.flexBasis = "100%";
       hint.textContent =
-        "👹 ボス出現：" +
+        "👹 週次/月次テスト出現：" +
         (boss.title_ja || boss.id) +
-        "（ワールドのボス欄から挑戦。負けても進捗は消えない）";
+        "（ワールドのボス欄から受験。負けても学習進捗は消えない）";
       box.appendChild(hint);
     }
   }
 
   let currentStudyLessonId = null;
+  let studyAutosaveTimer = null;
+  let currentExamBossId = null;
+
+  function setStudyTab(tab) {
+    document.querySelectorAll("#studyTabs button").forEach((b) => {
+      b.classList.toggle("active", b.getAttribute("data-study-tab") === tab);
+    });
+    ["problem", "work", "guide", "ref"].forEach((name) => {
+      const pane = document.getElementById(
+        "studyPane" + name.charAt(0).toUpperCase() + name.slice(1)
+      );
+      if (pane) pane.classList.toggle("active", name === tab);
+    });
+  }
+
+  function renderUnlockedGuides(guides) {
+    const box = document.getElementById("studyGuideList");
+    if (!box) return;
+    box.innerHTML = "";
+    (guides || []).forEach((g) => {
+      const div = document.createElement("div");
+      div.className = "study-guide-card";
+      div.innerHTML =
+        "<strong>" +
+        (g.title_ja || "ガイド") +
+        "</strong><p>" +
+        (g.body_ja || "") +
+        '</p><span class="src">' +
+        (g.source_ja || "") +
+        "</span>";
+      box.appendChild(div);
+    });
+    if (!(guides || []).length) {
+      box.innerHTML = '<p class="hint" style="margin:0">まだガイドは未開放です。「詰まったらガイドを見る」を押そう。</p>';
+    }
+  }
+
+  async function saveStudyAnswerDraft() {
+    if (!currentStudyLessonId) return;
+    const ta = document.getElementById("studyAnswer");
+    if (!ta) return;
+    try {
+      await api("/journey/lessons/" + encodeURIComponent(currentStudyLessonId) + "/attempt", {
+        method: "POST",
+        body: JSON.stringify({ answer: ta.value || "" }),
+      });
+    } catch (_e) {
+      /* draft best-effort */
+    }
+  }
 
   async function openStudyLesson(lessonId) {
     try {
@@ -688,7 +738,7 @@
         (await api("/journey/lessons/" + encodeURIComponent(lessonId)));
       currentStudyLessonId = lessonId;
       document.getElementById("studyTitle").textContent = les.title_ja || lessonId;
-            document.getElementById("studySummary").textContent = les.summary_ja || "";
+      document.getElementById("studySummary").textContent = les.summary_ja || "";
       document.getElementById("studyExp").textContent =
         "目安 " +
         (les.estimated_minutes || 30) +
@@ -758,13 +808,54 @@
         enrich.style.display = "none";
         enrich.textContent = "";
       }
+
+      let attempt = null;
+      try {
+        attempt = await api("/journey/lessons/" + encodeURIComponent(lessonId) + "/attempt");
+      } catch (_e) {
+        attempt = null;
+      }
+      const study = (attempt && attempt.study) || {
+        problem_ja: les.problem_ja || les.practice_ja || les.summary_ja || "",
+        workspace_type: les.workspace_type || "text",
+        method_guides: les.method_guides || [],
+        min_answer_chars: les.min_answer_chars || 24,
+      };
+      const problemEl = document.getElementById("studyProblemText");
+      if (problemEl) problemEl.textContent = study.problem_ja || "—";
+      const ta = document.getElementById("studyAnswer");
+      if (ta) {
+        ta.value = (attempt && attempt.answer) || "";
+        ta.classList.toggle("code-mode", study.workspace_type === "code");
+        ta.placeholder =
+          study.workspace_type === "code"
+            ? "コードや手順を書いて提出しよう（実行ジャッジなし）"
+            : "考えた手順・メモを書いて提出しよう";
+      }
+      const ansHint = document.getElementById("studyAnswerHint");
+      if (ansHint) {
+        ansHint.textContent =
+          (study.min_answer_chars || 24) +
+          "文字以上書いて提出するとスキルを獲得できます。詰まったらガイドへ。";
+      }
+      renderUnlockedGuides((attempt && attempt.unlocked_guides) || []);
+      const hintMeta = document.getElementById("studyHintMeta");
+      if (hintMeta) {
+        const used = (attempt && attempt.hints_used) || 0;
+        const total = (study.method_guides || []).length || 0;
+        hintMeta.textContent =
+          "ガイド開放 " + used + " / " + total + " — 教材・フォーラムの定石を段階的に表示します。";
+      }
+      const hintBtn = document.getElementById("studyHintBtn");
+      if (hintBtn) hintBtn.disabled = !!les.completed;
+
       const doneBtn = document.getElementById("studyCompleteBtn");
       if (doneBtn) {
         doneBtn.style.display = les.completed ? "none" : "inline-block";
-        doneBtn.disabled = !(les.available || les.completed === false);
-        if (!les.available) doneBtn.disabled = true;
-        if (les.available) doneBtn.disabled = false;
+        doneBtn.disabled = !les.available;
+        doneBtn.textContent = "提出してスキルを得る";
       }
+      setStudyTab("problem");
       document.getElementById("studyModal").classList.add("open");
     } catch (e) {
       setErr(e.message);
@@ -772,8 +863,145 @@
   }
 
   function closeStudyModal() {
+    if (studyAutosaveTimer) {
+      clearTimeout(studyAutosaveTimer);
+      studyAutosaveTimer = null;
+    }
+    saveStudyAnswerDraft();
     document.getElementById("studyModal").classList.remove("open");
     currentStudyLessonId = null;
+  }
+
+  async function revealStudyHint() {
+    if (!currentStudyLessonId) return;
+    try {
+      await saveStudyAnswerDraft();
+      const res = await api("/journey/lessons/" + encodeURIComponent(currentStudyLessonId) + "/hint", {
+        method: "POST",
+        body: "{}",
+      });
+      renderUnlockedGuides(res.unlocked_guides || []);
+      const hintMeta = document.getElementById("studyHintMeta");
+      if (hintMeta) hintMeta.textContent = res.message_ja || "";
+      setStudyTab("guide");
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  async function submitStudyLesson() {
+    if (!currentStudyLessonId) return;
+    const ta = document.getElementById("studyAnswer");
+    const answer = ta ? ta.value || "" : "";
+    try {
+      const res = await api("/journey/lessons/" + encodeURIComponent(currentStudyLessonId) + "/submit", {
+        method: "POST",
+        body: JSON.stringify({ answer: answer }),
+      });
+      journeyStatus = res.status || journeyStatus;
+      journeyMap = res.map || journeyMap;
+      const chips = [];
+      (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
+      if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
+      if (res.rank) chips.push("進化：" + (res.rank.label_ja || res.rank.id));
+      const warn =
+        res.submit && res.submit.soft_check && res.submit.soft_check.warnings
+          ? res.submit.soft_check.warnings
+          : [];
+      showRewardModal(
+        "🎉 QUEST CLEAR!",
+        [
+          "EXP +" + (res.exp_gained || 0),
+          (res.lesson && res.lesson.title_ja) || "",
+          (res.submit && res.submit.message_ja) || "",
+        ].concat(warn),
+        chips
+      );
+      if (luna) luna.applyEmotion("cheer", 1500);
+      closeStudyModal();
+      applyJourneyUi();
+      await refreshCore();
+    } catch (e) {
+      setErr(e.message);
+      setStudyTab("work");
+    }
+  }
+
+  async function openBossExam(bossId) {
+    try {
+      const exam = await api("/journey/bosses/" + encodeURIComponent(bossId) + "/exam");
+      currentExamBossId = bossId;
+      document.getElementById("examTitle").textContent =
+        (exam.exam_label_ja || "確認テスト") + " — " + (exam.title_ja || bossId);
+      document.getElementById("examSub").textContent =
+        "これまでの学習を確認します。各問に短くても具体的に書いて提出しよう（失敗しても進捗は消えません）。";
+      document.getElementById("examMsg").textContent = "";
+      const box = document.getElementById("examQuestions");
+      box.innerHTML = "";
+      const saved = exam.answers || {};
+      (exam.questions || []).forEach((q, i) => {
+        const div = document.createElement("div");
+        div.className = "exam-q";
+        div.innerHTML =
+          '<div class="q-lab">Q' +
+          (i + 1) +
+          "</div><p>" +
+          (q.prompt_ja || "") +
+          '</p><textarea data-qid="' +
+          q.id +
+          '" placeholder="解答を書く"></textarea>';
+        const ta = div.querySelector("textarea");
+        if (ta && saved[q.id]) ta.value = saved[q.id];
+        box.appendChild(div);
+      });
+      const submitBtn = document.getElementById("examSubmitBtn");
+      if (submitBtn) {
+        submitBtn.disabled = !exam.available || !!exam.cleared;
+        submitBtn.style.display = exam.cleared ? "none" : "inline-block";
+      }
+      document.getElementById("examModal").classList.add("open");
+    } catch (e) {
+      setErr(e.message);
+    }
+  }
+
+  function closeExamModal() {
+    document.getElementById("examModal").classList.remove("open");
+    currentExamBossId = null;
+  }
+
+  async function submitBossExamAnswers() {
+    if (!currentExamBossId) return;
+    const answers = {};
+    document.querySelectorAll("#examQuestions textarea[data-qid]").forEach((ta) => {
+      answers[ta.getAttribute("data-qid")] = ta.value || "";
+    });
+    try {
+      const res = await api("/journey/bosses/" + encodeURIComponent(currentExamBossId) + "/exam/submit", {
+        method: "POST",
+        body: JSON.stringify({ answers: answers }),
+      });
+      if (!res.success) {
+        document.getElementById("examMsg").textContent = res.message_ja || "もう少し書き足して再挑戦しよう。";
+        return;
+      }
+      if (res.status) journeyStatus = res.status;
+      if (res.map) journeyMap = res.map;
+      const chips = [];
+      (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
+      if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
+      showRewardModal(
+        "🏆 " + (res.message_ja || "テストクリア！"),
+        ["EXP +" + (res.exp_gained || 0), "score " + (res.score != null ? res.score : "")],
+        chips
+      );
+      if (luna) luna.applyEmotion("cheer", 1500);
+      closeExamModal();
+      applyJourneyUi();
+      await refreshCore();
+    } catch (e) {
+      setErr(e.message);
+    }
   }
 
   function renderSkills() {
@@ -1014,26 +1242,34 @@
     bosses.forEach((b) => {
       const row = document.createElement("div");
       row.className = "boss-row";
+      const kind =
+        b.boss_type === "weekly"
+          ? "週次テスト"
+          : b.boss_type === "monthly"
+            ? "月次テスト"
+            : b.boss_type === "career_final"
+              ? "最終試験"
+              : BOSS_LABEL[b.boss_type] || b.boss_type;
       row.innerHTML =
         "<div><strong>" +
         (b.title_ja || b.id) +
         '</strong><div class="hint">' +
-        (BOSS_LABEL[b.boss_type] || b.boss_type) +
+        kind +
         " ・ " +
-        (b.cleared ? "討伐済" : b.available ? "挑戦可" : b.requirement_ja || "ロック") +
+        (b.cleared ? "クリア済" : b.available ? "受験可" : b.requirement_ja || "ロック") +
         '</div></div><div class="actions"></div>';
       const actions = row.querySelector(".actions");
       if (!b.cleared && b.available) {
-        const win = document.createElement("button");
-        win.type = "button";
-        win.textContent = "討伐";
-        win.onclick = () => challengeBoss(b.id, true);
+        const exam = document.createElement("button");
+        exam.type = "button";
+        exam.textContent = "受験する";
+        exam.onclick = () => openBossExam(b.id);
         const lose = document.createElement("button");
         lose.type = "button";
         lose.className = "ghost";
         lose.textContent = "退却";
         lose.onclick = () => challengeBoss(b.id, false);
-        actions.appendChild(win);
+        actions.appendChild(exam);
         actions.appendChild(lose);
       }
       list.appendChild(row);
@@ -2503,12 +2739,27 @@
     const studyClose = document.getElementById("studyCloseBtn");
     if (studyClose) studyClose.onclick = () => closeStudyModal();
     const studyComplete = document.getElementById("studyCompleteBtn");
-    if (studyComplete) {
-      studyComplete.onclick = async () => {
-        if (!currentStudyLessonId) return;
-        const id = currentStudyLessonId;
-        closeStudyModal();
-        await completeJourneyLesson(id);
+    if (studyComplete) studyComplete.onclick = () => submitStudyLesson();
+    const studyHintBtn = document.getElementById("studyHintBtn");
+    if (studyHintBtn) studyHintBtn.onclick = () => revealStudyHint();
+    document.querySelectorAll("#studyTabs button").forEach((btn) => {
+      btn.onclick = () => setStudyTab(btn.getAttribute("data-study-tab") || "problem");
+    });
+    const studyAnswer = document.getElementById("studyAnswer");
+    if (studyAnswer) {
+      studyAnswer.addEventListener("input", () => {
+        if (studyAutosaveTimer) clearTimeout(studyAutosaveTimer);
+        studyAutosaveTimer = setTimeout(() => saveStudyAnswerDraft(), 900);
+      });
+    }
+    const examSubmit = document.getElementById("examSubmitBtn");
+    if (examSubmit) examSubmit.onclick = () => submitBossExamAnswers();
+    const examRetreat = document.getElementById("examRetreatBtn");
+    if (examRetreat) {
+      examRetreat.onclick = async () => {
+        const id = currentExamBossId;
+        closeExamModal();
+        if (id) await challengeBoss(id, false);
       };
     }
     const studyEnrichBtn = document.getElementById("studyEnrichBtn");
