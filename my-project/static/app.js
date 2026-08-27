@@ -485,6 +485,11 @@
 
   const GEAR_SLOT_JA = { weapon: "武器", armor: "防具", accessory: "装飾", artifact: "証" };
   const GEAR_SLOT_ICO = { weapon: "⚔", armor: "🛡", accessory: "💠", artifact: "📜" };
+  const CLASS_HELD_ICO = {
+    swordsman: { weapon: "⚔", armor: "🛡", accessory: "✨", artifact: "🏅" },
+    mage: { weapon: "🪄", armor: "📖", accessory: "🔮", artifact: "🏅" },
+    archer: { weapon: "🏹", armor: "🪶", accessory: "🎯", artifact: "🏅" },
+  };
 
   function applyAppearance(wrap, img, appearance) {
     if (!wrap || !img) return;
@@ -505,10 +510,44 @@
     } else if (ap.sprite) {
       img.src = ap.sprite;
     }
+    const alive = document.getElementById("homeHeroAlive");
+    if (alive) {
+      alive.className = "hero-alive class-" + (classId || "swordsman");
+    }
+    renderHeldProps(appearance, classId);
     const tag = document.getElementById("homeAvatarClass");
     if (tag) tag.textContent = ap.class_label_ja || classLabel(ap.class_id) || "—";
     const emblem = document.getElementById("homeAvatarEmblem");
     if (emblem) emblem.textContent = ap.class_emblem_ja || (ap.class_label_ja || "旅")[0] || "旅";
+  }
+
+  function renderHeldProps(appearance, classId) {
+    const box = document.getElementById("homeHeldProps");
+    if (!box) return;
+    const details = (appearance && appearance.equipped_details) || [];
+    const bySlot = {};
+    details.forEach((d) => {
+      if (d && d.slot) bySlot[d.slot] = d;
+    });
+    const icos = CLASS_HELD_ICO[classId] || CLASS_HELD_ICO.swordsman;
+    const slots = ["weapon", "armor", "accessory", "artifact"];
+    box.innerHTML = slots
+      .map((slot) => {
+        const row = bySlot[slot];
+        const empty = row ? "" : " empty";
+        const title = row ? row.label_ja || row.id : GEAR_SLOT_JA[slot] + " 未装備";
+        return (
+          '<span class="held-prop ' +
+          slot +
+          empty +
+          '" title="' +
+          title +
+          '"><i class="ring" aria-hidden="true"></i><span class="glyph">' +
+          (icos[slot] || GEAR_SLOT_ICO[slot] || "◆") +
+          "</span></span>"
+        );
+      })
+      .join("");
   }
 
   function renderGearPanel(appearance, inventory) {
@@ -523,6 +562,8 @@
     (inventory || []).forEach((it) => {
       if (it && it.slot && !bySlot[it.slot]) bySlot[it.slot] = it;
     });
+    const classId = (appearance && appearance.class_id) || journeyStatus.class_id || selectedClass;
+    const icos = CLASS_HELD_ICO[classId] || GEAR_SLOT_ICO;
     panel.innerHTML = slots
       .map((slot) => {
         const row = bySlot[slot];
@@ -534,7 +575,7 @@
           '" data-slot="' +
           slot +
           '"><span class="ico" aria-hidden="true">' +
-          (GEAR_SLOT_ICO[slot] || "◆") +
+          (icos[slot] || GEAR_SLOT_ICO[slot] || "◆") +
           '</span><span class="k">' +
           (GEAR_SLOT_JA[slot] || slot) +
           '</span><span class="v">' +
