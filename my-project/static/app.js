@@ -684,15 +684,29 @@
   let currentExamBossId = null;
 
   function setStudyTab(tab) {
+    const normalized = tab === "problem" || tab === "work" ? "solve" : tab;
     document.querySelectorAll("#studyTabs button").forEach((b) => {
-      b.classList.toggle("active", b.getAttribute("data-study-tab") === tab);
+      b.classList.toggle("active", b.getAttribute("data-study-tab") === normalized);
     });
-    ["problem", "work", "guide", "ref"].forEach((name) => {
+    ["solve", "guide", "ref"].forEach((name) => {
       const pane = document.getElementById(
         "studyPane" + name.charAt(0).toUpperCase() + name.slice(1)
       );
-      if (pane) pane.classList.toggle("active", name === tab);
+      if (pane) pane.classList.toggle("active", name === normalized);
     });
+    if (normalized === "solve") {
+      const ta = document.getElementById("studyAnswer");
+      if (ta) {
+        ta.disabled = false;
+        ta.readOnly = false;
+        setTimeout(() => {
+          try {
+            ta.focus({ preventScroll: false });
+            ta.scrollIntoView({ block: "center", behavior: "smooth" });
+          } catch (_e) {}
+        }, 50);
+      }
+    }
   }
 
   function renderUnlockedGuides(guides) {
@@ -900,8 +914,20 @@
         doneBtn.disabled = !les.available;
         doneBtn.textContent = "提出してスキルを得る";
       }
-      setStudyTab("problem");
+      setStudyTab("solve");
       document.getElementById("studyModal").classList.add("open");
+      const taFocus = document.getElementById("studyAnswer");
+      if (taFocus && !les.completed) {
+        taFocus.disabled = false;
+        taFocus.readOnly = false;
+        setTimeout(() => {
+          try {
+            taFocus.focus();
+            document.getElementById("studyWorkspaceBox") &&
+              document.getElementById("studyWorkspaceBox").scrollIntoView({ block: "center", behavior: "smooth" });
+          } catch (_e) {}
+        }, 120);
+      }
     } catch (e) {
       setErr(e.message);
     }
@@ -968,7 +994,7 @@
       await refreshCore();
     } catch (e) {
       setErr(e.message);
-      setStudyTab("work");
+      setStudyTab("solve");
     }
   }
 
@@ -2788,10 +2814,10 @@
     const studyHintBtn = document.getElementById("studyHintBtn");
     if (studyHintBtn) studyHintBtn.onclick = () => revealStudyHint();
     document.querySelectorAll("#studyTabs button").forEach((btn) => {
-      btn.onclick = () => setStudyTab(btn.getAttribute("data-study-tab") || "problem");
+      btn.onclick = () => setStudyTab(btn.getAttribute("data-study-tab") || "solve");
     });
     const goWork = document.getElementById("studyGoWorkBtn");
-    if (goWork) goWork.onclick = () => setStudyTab("work");
+    if (goWork) goWork.onclick = () => setStudyTab("solve");
     const loadStarter = document.getElementById("studyLoadStarterBtn");
     if (loadStarter) {
       loadStarter.onclick = () => {
