@@ -945,12 +945,17 @@
     if (mapAv && mapAvImg && cur) {
       const pos = MAP_POSITIONS[curIdx] || MAP_POSITIONS[MAP_POSITIONS.length - 1];
       mapAv.hidden = false;
+      mapAv.classList.add("alive");
       mapAv.style.left = pos.left;
       mapAv.style.top = pos.top;
       const ap = journeyStatus.appearance || {};
-      mapAvImg.src =
+      let src =
         ap.evolution_sprite ||
         evolutionSpritePath(journeyStatus.class_id || selectedClass, journeyStatus.rank_id || "novice");
+      if (src && src.indexOf("_stand.png") < 0 && /\/static\/rpg\/characters\/[^/]+\.png$/.test(src)) {
+        src = src.replace(/\.png$/, "_stand.png");
+      }
+      mapAvImg.src = src;
     }
   }
 
