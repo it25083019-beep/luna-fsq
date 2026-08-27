@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>LUNA</title>
   <link rel="manifest" href="/static/manifest-app.json" />
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Shippori+Mincho:wght@500;600;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bg0:#e8dff7; --bg1:#d4e8f8; --bg2:#f7e6f0;
@@ -18,7 +18,20 @@
       --glow-a:rgba(240,168,200,.35); --glow-b:rgba(155,126,217,.28);
       --st1:linear-gradient(160deg,#efe6ff,#fff); --st2:linear-gradient(160deg,#e4f4ff,#fff); --st3:linear-gradient(160deg,#ffe8f2,#fff);
       --nav-bg:rgba(255,255,255,.97); --nav-active:#7b5eb8; --nav-idle:#8a7aa8;
-      --fsq-hero:#17115b; --fsq-panel:#f6f7ff;
+      --fsq-ink:#0b1c22;
+      --fsq-deep:#123040;
+      --fsq-teal:#1f7a6e;
+      --fsq-gold:#d4a84b;
+      --fsq-gold-soft:#f0d9a0;
+      --fsq-parchment:#f2e6d0;
+      --fsq-parchment-deep:#e5d3b0;
+      --fsq-mist:#9eb8b0;
+      --fsq-ember:#c45c3a;
+      --fsq-panel:#102832;
+      --fsq-hero:#0b1c22;
+      --fsq-text:#1c2a2e;
+      --fsq-muted:#5a6e68;
+      --fsq-card:#f7efe0;
       --radius:22px;
     }
     *{box-sizing:border-box}
@@ -94,32 +107,172 @@
     .theme-swatch{width:2rem;height:2rem;border-radius:10px;background:linear-gradient(135deg,var(--sw0,#ccc),var(--sw1,#999),var(--sw2,#666))}
     #lunaMainView.hidden{display:none!important}
 
-    /* ===== FSQ secondary tab ===== */
-    #tab-fsq{background:
-      radial-gradient(ellipse 80% 40% at 50% -10%,rgba(140,110,255,.22),transparent 55%),
-      var(--fsq-panel)}
-    .fsq-banner{background:linear-gradient(180deg,#1a1448 0%,#2a1f6b 55%,var(--fsq-panel) 100%);padding:1.1rem 1rem .65rem;color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}
-    .fsq-banner h2{margin:0;font-size:1.05rem;display:flex;align-items:center;gap:.4rem;letter-spacing:.02em;text-shadow:0 2px 12px rgba(0,0,0,.35)}
-    .fsq-banner p{margin:.35rem 0 0;font-size:.72rem;opacity:.88;line-height:1.45}
-    .fsq-subnav{display:flex;gap:.35rem;padding:.65rem 1rem 0;overflow-x:auto}
-    .fsq-subnav button{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#d7cfff;padding:.45rem .85rem;border-radius:999px;font-size:.72rem;font-weight:800;cursor:pointer;white-space:nowrap}
-    .fsq-subnav button.active{background:linear-gradient(135deg,#ffd27a,#c9a227);color:#2a1a00;border-color:transparent;box-shadow:0 6px 16px rgba(201,162,39,.35)}
-    .rpg-stage{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.22);box-shadow:0 18px 45px rgba(28,32,91,.45), inset 0 1px 0 rgba(255,255,255,.2);background:
-      radial-gradient(ellipse 70% 50% at 85% 15%,rgba(255,210,122,.28),transparent 50%),
-      radial-gradient(ellipse 60% 45% at 10% 90%,rgba(120,200,255,.2),transparent 45%),
-      linear-gradient(145deg,#2a1f78 0%,#4a3ab0 48%,#6b3fd4 100%)}
-    .rpg-stage-shine{position:absolute;inset:-40% -20% auto;height:70%;background:radial-gradient(ellipse at center,rgba(255,255,255,.18),transparent 65%);pointer-events:none;animation:stageShine 6s ease-in-out infinite}
+    /* ===== FSQ RPG World (distinct from LUNA chat soft lilac) ===== */
+    #tab-fsq{
+      --lilac:#1f7a6e;
+      --lilac-deep:#145a52;
+      --muted:var(--fsq-muted);
+      --card:var(--fsq-card);
+      --shadow:0 14px 36px rgba(8,28,34,.28);
+      color:var(--fsq-text);
+      font-family:"Shippori Mincho","M PLUS Rounded 1c",serif;
+      background:
+        radial-gradient(ellipse 90% 55% at 50% -8%,rgba(212,168,75,.22),transparent 55%),
+        radial-gradient(circle at 12% 28%,rgba(31,122,110,.35) 0 2px,transparent 3px),
+        radial-gradient(circle at 78% 18%,rgba(240,217,160,.4) 0 1.5px,transparent 3px),
+        radial-gradient(circle at 62% 42%,rgba(158,184,176,.25) 0 1px,transparent 2px),
+        linear-gradient(180deg,#0b1c22 0%,#123040 38%,#1a3d3a 72%,#243f38 100%);
+      min-height:100%;
+      position:relative;
+    }
+    #tab-fsq::before{
+      content:"";
+      position:absolute;inset:0;pointer-events:none;opacity:.35;z-index:0;
+      background:
+        linear-gradient(90deg,transparent 0 46%,rgba(212,168,75,.08) 50%,transparent 54%),
+        repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,.02) 3px,rgba(255,255,255,.02) 4px);
+    }
+    #tab-fsq > *{position:relative;z-index:1}
+    .fsq-banner{
+      position:relative;overflow:hidden;
+      background:
+        radial-gradient(ellipse 80% 70% at 80% 0%,rgba(31,122,110,.45),transparent 55%),
+        linear-gradient(165deg,#0b1c22 0%,#145a52 48%,#1a3d3a 100%);
+      padding:1.15rem 1rem .85rem;color:#f7efe0;
+      border-bottom:2px solid rgba(212,168,75,.45);
+      box-shadow:inset 0 -1px 0 rgba(255,255,255,.06);
+    }
+    .fsq-banner::after{
+      content:"";position:absolute;left:1rem;right:1rem;bottom:0;height:2px;
+      background:linear-gradient(90deg,transparent,var(--fsq-gold),transparent);opacity:.7;
+    }
+    .fsq-banner .world-kicker{
+      font-family:Cinzel,"Shippori Mincho",serif;font-size:.58rem;letter-spacing:.28em;
+      color:var(--fsq-gold-soft);text-transform:uppercase;margin:0 0 .35rem;opacity:.9;
+    }
+    .fsq-banner h2{
+      margin:0;font-size:1.2rem;display:flex;align-items:center;gap:.45rem;
+      font-family:"Shippori Mincho",Cinzel,serif;font-weight:700;letter-spacing:.04em;
+      text-shadow:0 2px 14px rgba(0,0,0,.45);
+    }
+    .fsq-banner p{margin:.4rem 0 0;font-size:.74rem;opacity:.9;line-height:1.5;max-width:34em;font-family:"M PLUS Rounded 1c",sans-serif}
+    .fsq-subnav{display:flex;gap:.4rem;padding:.75rem 1rem .15rem;overflow-x:auto}
+    .fsq-subnav button{
+      border:1px solid rgba(212,168,75,.35);background:rgba(11,28,34,.55);color:var(--fsq-gold-soft);
+      padding:.48rem .9rem;border-radius:10px;font-size:.72rem;font-weight:800;cursor:pointer;white-space:nowrap;
+      font-family:"M PLUS Rounded 1c",sans-serif;backdrop-filter:blur(6px);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .fsq-subnav button.active{
+      background:linear-gradient(135deg,var(--fsq-gold),#a87828);color:#1a1204;border-color:transparent;
+      box-shadow:0 8px 18px rgba(212,168,75,.35);
+    }
+    #tab-fsq .content{padding:0 .85rem 1.2rem}
+    #tab-fsq .card,#tab-fsq .quest-board,#tab-fsq .map-quest-panel,#tab-fsq .journey-onboard{
+      background:
+        linear-gradient(180deg,rgba(255,252,245,.97),var(--fsq-parchment)),
+        repeating-linear-gradient(90deg,transparent,transparent 12px,rgba(120,90,40,.03) 12px,rgba(120,90,40,.03) 13px);
+      border:1px solid rgba(180,140,70,.35);
+      border-radius:16px;
+      box-shadow:0 12px 28px rgba(8,28,34,.22), inset 0 0 0 1px rgba(255,255,255,.35);
+      color:var(--fsq-text);
+    }
+    #tab-fsq .section-title{color:#3a2a12;font-family:"Shippori Mincho",serif}
+    #tab-fsq .hint{color:var(--fsq-muted);font-family:"M PLUS Rounded 1c",sans-serif}
+    #tab-fsq .quest-board .section-title{color:#5a3d12}
+    #tab-fsq .quest-tag{
+      background:linear-gradient(135deg,var(--fsq-gold-soft),var(--fsq-gold));color:#3a2808;
+      border:1px solid #c9a04a;font-family:"M PLUS Rounded 1c",sans-serif;
+    }
+    #tab-fsq .boss-board{border-color:rgba(196,92,58,.45);background:linear-gradient(180deg,#fff4ef,var(--fsq-parchment))}
+    .rpg-stage{
+      position:relative;overflow:hidden;border:1px solid rgba(212,168,75,.4);
+      box-shadow:0 18px 45px rgba(8,28,34,.45), inset 0 1px 0 rgba(255,255,255,.15);
+      background:
+        radial-gradient(ellipse 70% 50% at 85% 15%,rgba(212,168,75,.28),transparent 50%),
+        radial-gradient(ellipse 60% 45% at 10% 90%,rgba(31,122,110,.28),transparent 45%),
+        linear-gradient(145deg,#0f2a32 0%,#145a52 48%,#1f4a3e 100%);
+      border-radius:22px;padding:1rem;color:#f7efe0;margin-bottom:.65rem;
+    }
+    .rpg-stage-shine{position:absolute;inset:-40% -20% auto;height:70%;background:radial-gradient(ellipse at center,rgba(240,217,160,.16),transparent 65%);pointer-events:none;animation:stageShine 6s ease-in-out infinite}
     @keyframes stageShine{0%,100%{opacity:.7;transform:translateX(0)}50%{opacity:1;transform:translateX(8%)}}
     @media (prefers-reduced-motion:reduce){.rpg-stage-shine{animation:none}}
     .rpg-stage::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,.015) 3px,rgba(255,255,255,.015) 4px);pointer-events:none;z-index:0}
     .rpg-hud-top{display:flex;justify-content:space-between;align-items:center;gap:.4rem;position:relative;z-index:1}
-    .rpg-chip{font-size:.62rem;font-weight:800;background:linear-gradient(135deg,#ffd27a,#c9a227);color:#2a1a00;padding:.28rem .55rem;border-radius:999px}
+    .rpg-chip{font-size:.62rem;font-weight:800;background:linear-gradient(135deg,var(--fsq-gold-soft),var(--fsq-gold));color:#2a1a00;padding:.28rem .55rem;border-radius:999px;font-family:"M PLUS Rounded 1c",sans-serif}
+    #tab-fsq .badge{background:rgba(0,0,0,.28);border:1px solid rgba(212,168,75,.4);color:var(--fsq-gold-soft);font-family:"M PLUS Rounded 1c",sans-serif}
     .rpg-status{position:relative;z-index:1}
     .rpg-bars{display:flex;flex-direction:column;gap:.25rem}
     .rpg-bar-row{display:flex;align-items:center;gap:.4rem}
     .rpg-bar-lab{font-size:.58rem;font-weight:900;opacity:.9;min-width:1.8rem}
-    .rpg-exp{flex:1;height:10px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.2)}
-    .rpg-exp span{background:linear-gradient(90deg,#77f1ff,#fff38d,#ffd27a)}
+    .rpg-exp{flex:1;height:10px;background:rgba(0,0,0,.3);border:1px solid rgba(212,168,75,.35)}
+    .rpg-exp span{background:linear-gradient(90deg,#5ecfc0,#f0d9a0,#d4a84b)}
+    #tab-fsq .role{font-family:"Shippori Mincho",serif;letter-spacing:.03em}
+    #tab-fsq .next-lesson button,
+    #tab-fsq .lesson-row button:not(.ghost),
+    #tab-fsq .boss-row button:not(.ghost){
+      background:linear-gradient(135deg,var(--fsq-gold),#a87828);color:#1a1204;
+      box-shadow:0 6px 14px rgba(168,120,40,.3);
+    }
+    #tab-fsq .lesson-row button.ghost,#tab-fsq .boss-row button.ghost{
+      background:#ebe0c8;color:#5a4a28;
+    }
+    #tab-fsq .class-btn{
+      border:1px solid rgba(180,140,70,.4);background:var(--fsq-parchment);color:var(--fsq-text);
+      font-family:"M PLUS Rounded 1c",sans-serif;
+    }
+    #tab-fsq .class-btn.active{
+      background:linear-gradient(135deg,var(--fsq-teal),#145a52);color:#f7efe0;border-color:transparent;
+    }
+    #tab-fsq .career-pick{
+      border:1px solid rgba(180,140,70,.35);background:rgba(247,239,224,.95);
+    }
+    #tab-fsq .career-pick .tag{background:rgba(31,122,110,.12);color:#145a52}
+    #tab-fsq .evolution-strip{
+      background:linear-gradient(180deg,#0f2a32,#145a52)!important;
+      border:1px solid rgba(212,168,75,.4)!important;
+    }
+    #tab-fsq .portfolio-hero{
+      background:linear-gradient(165deg,#0b1c22 0%,#123040 45%,#1f4a3e 100%);
+      border:1px solid rgba(212,168,75,.35);
+    }
+    #tab-fsq .skill{
+      background:linear-gradient(180deg,#fffdf8,var(--fsq-parchment));
+      border:1px solid rgba(180,140,70,.3);
+    }
+    #tab-fsq .map-world{
+      box-shadow:0 16px 40px rgba(8,28,34,.35);
+      border:1px solid rgba(212,168,75,.25);
+    }
+    body.world-mode .bottom-nav{
+      background:linear-gradient(180deg,#1a3438,#102428);
+      box-shadow:0 10px 28px rgba(8,28,34,.4);
+      border:1px solid rgba(212,168,75,.3);
+    }
+    body.world-mode .nav-item{color:#9eb8b0}
+    body.world-mode .nav-item.active{background:rgba(212,168,75,.2);color:var(--fsq-gold-soft)}
+    body.world-mode .nav-item.center svg circle{fill:#1f7a6e}
+    body.world-mode .nav-item.active .nav-luna{box-shadow:0 0 0 2px var(--fsq-gold)}
+    body.world-mode{background:#0b1c22}
+    body.world-mode .study-modal .study-sheet{
+      background:linear-gradient(180deg,#fffdf8,var(--fsq-parchment));
+      border-top:3px solid var(--fsq-gold);
+      font-family:"Shippori Mincho","M PLUS Rounded 1c",serif;
+    }
+    body.world-mode .study-tabs button.active{
+      background:linear-gradient(135deg,var(--fsq-gold),#a87828);color:#1a1204;
+    }
+    body.world-mode .study-actions .primary{
+      background:linear-gradient(135deg,var(--fsq-gold),#a87828);color:#1a1204;
+    }
+    body.world-mode .reward-card{
+      background:linear-gradient(180deg,#fffdf8,var(--fsq-parchment));
+      border:1px solid rgba(212,168,75,.45);
+    }
+    body.world-mode .exam-sheet{
+      background:linear-gradient(180deg,#fffdf8,var(--fsq-parchment));
+      border-top:3px solid var(--fsq-ember);
+    }
     .rpg-status-top{position:relative;z-index:1;margin-top:.45rem}
     .rpg-status-top .role{font-size:1.15rem;font-weight:800;margin:.1rem 0}
     .rpg-status-top .small{font-size:.7rem;opacity:.88;line-height:1.4}
@@ -259,6 +412,15 @@
     .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:.55rem;font-size:.95rem;font-weight:800}
     .hint{font-size:.68rem;color:var(--muted);font-weight:700}
     .char-card{border-radius:24px;padding:1rem;background:linear-gradient(135deg,rgba(80,105,255,.95),rgba(137,88,246,.94));box-shadow:0 18px 45px rgba(28,32,91,.38);color:#fff;margin-bottom:.65rem}
+    #tab-fsq .char-card.rpg-stage{
+      background:
+        radial-gradient(ellipse 70% 50% at 85% 15%,rgba(212,168,75,.28),transparent 50%),
+        radial-gradient(ellipse 60% 45% at 10% 90%,rgba(31,122,110,.28),transparent 45%),
+        linear-gradient(145deg,#0f2a32 0%,#145a52 48%,#1f4a3e 100%);
+      box-shadow:0 18px 45px rgba(8,28,34,.45), inset 0 1px 0 rgba(255,255,255,.15);
+      border:1px solid rgba(212,168,75,.4);
+      color:#f7efe0;
+    }
     .badge{display:inline-flex;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:.35rem .6rem;font-size:.68rem;font-weight:700}
     .char-main{display:grid;grid-template-columns:1fr minmax(140px,46%);gap:.65rem;align-items:start;margin-top:.55rem}
     .char-main .role{font-size:1.2rem;font-weight:800;margin:.15rem 0}
@@ -905,8 +1067,9 @@
       <!-- FSQ secondary -->
       <section id="tab-fsq" class="tab-panel">
         <div class="fsq-banner">
+          <p class="world-kicker">RPG WORLD</p>
           <h2>⚔ Future Skill Quest</h2>
-          <p>学習が冒険になる世界。クラスを育て、マップを進み、ボスに挑もう</p>
+          <p>ここは冒険の大陸。LUNAの日常とは別の世界で、クラスを育てマップを進み、学習をクエストにする</p>
         </div>
         <div class="fsq-subnav" id="fsqSubnav">
           <button type="button" class="fsq-sub active" data-fsq="home">🏰 拠点</button>

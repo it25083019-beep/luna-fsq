@@ -262,6 +262,7 @@
   function switchTab(name) {
     currentTab = name;
     setNavActive(name);
+    document.body.classList.toggle("world-mode", name === "fsq");
     if (name === "health" || name === "money" || name === "goals") {
       document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
       document.getElementById("tab-luna").classList.add("active");
