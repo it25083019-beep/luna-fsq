@@ -334,6 +334,10 @@
       return;
     }
     renderHomeHeader();
+    renderHomeClassStrip();
+    renderHomeDailyQuests();
+    renderHomeFinalForm();
+    renderHomePortfolioTeaser();
     renderSkills();
     renderNextLesson();
     renderMap();
@@ -623,6 +627,8 @@
     if (lvL) lvL.textContent = "Lv." + lv;
     const bar = document.getElementById("homeExpBar");
     if (bar) bar.style.width = prog.pct + "%";
+    const power = document.getElementById("homePowerText");
+    if (power) power.textContent = "Power " + prog.pct + "%";
     applyAppearance(
       document.getElementById("homeAvatarWrap"),
       document.getElementById("homeAvatarImg"),
@@ -637,6 +643,123 @@
     );
     const my = document.getElementById("myName");
     if (my) my.textContent = user;
+  }
+
+  function renderHomeClassStrip() {
+    const el = document.getElementById("homeClassStrip");
+    if (!el) return;
+    el.innerHTML = "";
+    const cur = journeyStatus.class_id || selectedClass;
+    CLASSES.forEach((c) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "class-btn" + (c.id === cur ? " active" : "");
+      b.innerHTML =
+        '<span class="class-icon">' +
+        c.icon +
+        '</span><span class="class-label">' +
+        c.label +
+        "</span>";
+      if (c.id !== cur) b.title = "冒険録から選び直せます";
+      el.appendChild(b);
+    });
+  }
+
+  function renderHomeDailyQuests() {
+    const box = document.getElementById("homeDailyQuestList");
+    if (!box) return;
+    box.innerHTML = "";
+    if (!journeyStatus.selected) {
+      box.innerHTML = '<p class="hint" style="margin:0">進路を選ぶとクエストが表示されます。</p>';
+      return;
+    }
+    const lessons = (journeyMap.lessons || []).filter((l) => (l.boss_type || "none") === "none");
+    const next = journeyStatus.next_lesson;
+    const rows = [];
+    if (next) rows.push({ les: next, done: false, main: true });
+    lessons
+      .filter((l) => l.available && !l.completed && (!next || l.id !== next.id))
+      .slice(0, 2)
+      .forEach((l) => rows.push({ les: l, done: false, main: false }));
+    lessons
+      .filter((l) => l.completed)
+      .slice(-2)
+      .forEach((l) => rows.push({ les: l, done: true, main: false }));
+    if (!rows.length) {
+      box.innerHTML = '<p class="hint" style="margin:0">クエスト準備中… ワールドマップを確認しよう。</p>';
+      return;
+    }
+    const iconCls = ["yellow", "blue", "pink", "green"];
+    rows.forEach((row, i) => {
+      const div = document.createElement("div");
+      div.className = "demo-quest-row" + (row.done ? " done" : "");
+      const icon = (row.les.title_ja || row.les.id || "?").slice(0, 2);
+      div.innerHTML =
+        '<div class="quest-icon ' +
+        iconCls[i % iconCls.length] +
+        '">' +
+        icon +
+        '</div><div class="quest-text"><strong>' +
+        (row.les.title_ja || row.les.id) +
+        "</strong><span>" +
+        (row.done
+          ? "クリア済 ・ +" + (row.les.exp || 0) + " EXP"
+          : row.main
+            ? "メイン ・ +" + (row.les.exp || 0) + " EXP"
+            : "サブ ・ +" + (row.les.exp || 0) + " EXP") +
+        '</span></div><div class="check"></div>';
+      if (!row.done) div.onclick = () => openStudyLesson(row.les.id);
+      box.appendChild(div);
+    });
+  }
+
+  function renderHomeFinalForm() {
+    const box = document.getElementById("homeFinalForm");
+    if (!box) return;
+    const cls = journeyStatus.class_id || selectedClass;
+    const rankJa = journeyStatus.rank_ja || "見習い";
+    const lv = journeyStatus.level || stateData.level || 1;
+    const classIcon = CLASSES.find((c) => c.id === cls)?.icon || "⚔️";
+    const career = journeyStatus.career_title_ja || "Frontend Developer";
+    const classJa = journeyStatus.class_ja || classLabel(cls);
+    if (!journeyStatus.selected) {
+      box.innerHTML =
+        '<div class="form-cell"><div class="big">' +
+        classIcon +
+        '</div><strong>現在</strong><span>クラス未選択<br>Lv.1</span></div><div class="arrow">→</div><div class="form-cell final"><div class="big">👑</div><strong>最終形態</strong><span>進路を選ぶと<br>目標が表示されます</span></div>';
+      return;
+    }
+    box.innerHTML =
+      '<div class="form-cell"><div class="big">' +
+      classIcon +
+      '</div><strong>現在</strong><span>' +
+      classJa +
+      "<br>Lv." +
+      lv +
+      " ／ " +
+      rankJa +
+      '</span></div><div class="arrow">→</div><div class="form-cell final"><div class="big">👑</div><strong>' +
+      career +
+      '</strong><span>スキル・実績・作品で<br>開放される最終形態</span></div>';
+  }
+
+  function renderHomePortfolioTeaser() {
+    const btn = document.getElementById("homePortfolioBtn");
+    if (btn && !btn.dataset.bound) {
+      btn.dataset.bound = "1";
+      btn.onclick = () => switchFsqSub("career");
+    }
+    const teaser = document.getElementById("homePortfolioTeaser");
+    if (!teaser || !journeyStatus.selected) return;
+    const p = teaser.querySelector("p");
+    if (p) {
+      p.textContent =
+        "レッスン " +
+        (journeyStatus.completed_count || 0) +
+        " 完了・装備 " +
+        ((journeyStatus.inventory || []).length || 0) +
+        " 点。冒険録でスキルと成長記録を確認し、就活の自己PRに活用できます。";
+    }
   }
 
   function renderNextLesson() {
@@ -1081,24 +1204,62 @@
     if (!grid) return;
     grid.innerHTML = "";
     const skills = journeyStatus.skills || [];
-    if (!skills.length) {
-      grid.innerHTML = '<p class="hint">レッスンをクリアするとスキルが増えます。</p>';
+    const colorKeys = Object.keys(SKILL_CLS);
+    const previewLocked = [
+      { label: "React", icon: "⚛", cls: "purple" },
+      { label: "TypeScript", icon: "TS", cls: "blue" },
+    ];
+    if (!journeyStatus.selected) {
+      grid.innerHTML = '<p class="hint">進路を選ぶとスキルツリーが表示されます。</p>';
       return;
     }
-    const colors = Object.values(SKILL_CLS);
+    if (!skills.length) {
+      previewLocked.forEach((sk) => {
+        const div = document.createElement("div");
+        div.className = "skill locked";
+        div.innerHTML =
+          '<div class="icon" style="background:' +
+          SKILL_CLS[sk.cls] +
+          '">' +
+          sk.icon +
+          "</div><strong>" +
+          sk.label +
+          '</strong><em>Locked</em>';
+        grid.appendChild(div);
+      });
+      return;
+    }
     skills.forEach((s, i) => {
       const div = document.createElement("div");
       div.className = "skill";
+      const ck = colorKeys[i % colorKeys.length];
       div.innerHTML =
         '<div class="icon" style="background:' +
-        colors[i % colors.length] +
+        SKILL_CLS[ck] +
         '">' +
-        (s.label_ja || s.id).slice(0, 1) +
+        (s.label_ja || s.id).slice(0, 2) +
         "</div><strong>" +
         (s.label_ja || s.id) +
-        "</strong>";
+        '</strong><em>Lv.' +
+        Math.min(3, 1 + Math.floor((journeyStatus.completed_count || 0) / 3)) +
+        "</em>";
       grid.appendChild(div);
     });
+    if (skills.length < 6) {
+      previewLocked.slice(0, Math.max(0, 3 - skills.length)).forEach((sk) => {
+        const div = document.createElement("div");
+        div.className = "skill locked";
+        div.innerHTML =
+          '<div class="icon" style="background:' +
+          SKILL_CLS[sk.cls] +
+          '">' +
+          sk.icon +
+          "</div><strong>" +
+          sk.label +
+          '</strong><em>Locked</em>';
+        grid.appendChild(div);
+      });
+    }
   }
 
   function showRewardModal(title, lines, chips) {

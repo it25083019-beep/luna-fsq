@@ -156,6 +156,38 @@
       text-shadow:0 2px 14px rgba(0,0,0,.45);
     }
     .fsq-banner p{margin:.4rem 0 0;font-size:.74rem;opacity:.9;line-height:1.5;max-width:34em;font-family:"M PLUS Rounded 1c",sans-serif}
+    .fsq-banner .fsq-demo-tagline{margin:.25rem 0 0;font-size:.68rem;color:var(--fsq-gold-soft);opacity:.85;font-style:italic}
+    .fsq-addon-card{margin-bottom:.65rem}
+    .home-class-strip .class-btn{cursor:default;opacity:.72}
+    .home-class-strip .class-btn.active{opacity:1;transform:translateY(-2px);box-shadow:0 8px 16px rgba(31,122,110,.25)}
+    .home-class-strip .class-label{display:block;font-size:.58rem;margin-top:.1rem}
+    .demo-quest-row{display:flex;align-items:center;gap:.65rem;padding:.55rem 0;border-bottom:1px solid rgba(180,140,70,.22);cursor:pointer}
+    .demo-quest-row:last-child{border-bottom:none}
+    .demo-quest-row.done{cursor:default;opacity:.88}
+    .demo-quest-row .quest-icon{width:36px;height:36px;border-radius:13px;display:grid;place-items:center;color:#fff;font-size:.85rem;font-weight:900;flex-shrink:0}
+    .demo-quest-row .quest-icon.yellow{background:linear-gradient(135deg,#f6b61f,#ffdb68)}
+    .demo-quest-row .quest-icon.blue{background:linear-gradient(135deg,#497cff,#31d2ff)}
+    .demo-quest-row .quest-icon.pink{background:linear-gradient(135deg,#ff5d9d,#ff91c8)}
+    .demo-quest-row .quest-icon.green{background:linear-gradient(135deg,#1bb874,#6de8b8)}
+    .demo-quest-row .quest-text{flex:1;min-width:0}
+    .demo-quest-row .quest-text strong{display:block;font-size:.78rem;color:#3a2a12}
+    .demo-quest-row .quest-text span{font-size:.62rem;color:var(--fsq-muted);font-weight:700}
+    .demo-quest-row .check{width:26px;height:26px;border:2px solid #c9cee9;border-radius:50%;flex-shrink:0;display:grid;place-items:center;color:#fff;font-weight:900;font-size:.75rem}
+    .demo-quest-row.done .check{background:var(--fsq-teal);border-color:var(--fsq-teal)}
+    .demo-quest-row.done .check::after{content:"✓"}
+    .final-form-strip{display:grid;grid-template-columns:1fr auto 1fr;gap:.45rem;align-items:center}
+    .final-form-strip .form-cell{text-align:center;background:rgba(255,252,245,.95);border-radius:16px;padding:.65rem .45rem;border:1px solid rgba(180,140,70,.28);min-height:108px;display:flex;flex-direction:column;justify-content:center}
+    .final-form-strip .form-cell.final{background:linear-gradient(135deg,#eff4ff,#fff5fc);border-color:#d9dfff}
+    .final-form-strip .big{font-size:1.75rem;margin-bottom:.15rem;line-height:1}
+    .final-form-strip strong{font-size:.72rem;display:block;margin-bottom:.15rem}
+    .final-form-strip span{font-size:.58rem;color:var(--fsq-muted);font-weight:700;line-height:1.35}
+    .final-form-strip .arrow{color:var(--fsq-teal);font-size:1.2rem;font-weight:900}
+    .portfolio-teaser{background:linear-gradient(135deg,#161d53,#4e2eb4);color:#fff;border-radius:18px;padding:.85rem .9rem}
+    .portfolio-teaser strong{display:block;font-size:.82rem;margin-bottom:.35rem}
+    .portfolio-teaser p{margin:0 0 .55rem;font-size:.68rem;line-height:1.55;color:rgba(255,255,255,.85)}
+    .portfolio-teaser button{border:none;border-radius:999px;padding:.45rem .85rem;font-size:.68rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#77f1ff,#fff38d);color:#1a1204}
+    #tab-fsq .skill em{font-style:normal;color:var(--fsq-muted);font-size:.58rem;font-weight:800;display:block;margin-top:.1rem}
+    #tab-fsq .skill.locked{opacity:.48;filter:grayscale(.15)}
     .fsq-subnav{display:flex;gap:.4rem;padding:.75rem 1rem .15rem;overflow-x:auto}
     .fsq-subnav button{
       border:1px solid rgba(212,168,75,.35);background:rgba(11,28,34,.55);color:var(--fsq-gold-soft);
@@ -1069,6 +1101,7 @@
         <div class="fsq-banner">
           <p class="world-kicker">RPG WORLD</p>
           <h2>⚔ Future Skill Quest</h2>
+          <p class="fsq-demo-tagline">未来の自分を育てるキャリアRPG</p>
           <p>ここは冒険の大陸。LUNAの日常とは別の世界で、クラスを育てマップを進み、学習をクエストにする</p>
         </div>
         <div class="fsq-subnav" id="fsqSubnav">
@@ -1110,7 +1143,8 @@
                     <span class="rpg-bar-lab">EXP</span>
                     <div class="exp-bar rpg-exp"><span id="homeExpBar"></span></div>
                   </div>
-                  <div class="exp-label"><span id="homeExpLabel">学習EXP 0</span><span id="homeLvLabel">Lv.1</span></div>
+                  <div class="exp-label"><span id="homeExpLabel">学習EXP 0</span><span id="homePowerText">Power 0%</span></div>
+                  <div class="exp-label" style="margin-top:.1rem;margin-bottom:0"><span id="homeLvLabel">Lv.1</span><span></span></div>
                 </div>
               </div>
               <div class="hero-showcase">
@@ -1141,13 +1175,33 @@
               </div>
               <div class="evolution-strip" id="homeEvolutionStrip" hidden></div>
             </div>
+            <div class="card fsq-addon-card">
+              <div class="section-title"><span>🛡️ クラス</span><span class="hint">自分の分身</span></div>
+              <div class="classes home-class-strip" id="homeClassStrip"></div>
+            </div>
+            <div class="card fsq-addon-card">
+              <div class="section-title"><span>✅ 今日のクエスト</span><span class="hint">タップで出撃</span></div>
+              <div id="homeDailyQuestList"><p class="hint" style="margin:0">進路を選ぶとクエストが表示されます。</p></div>
+            </div>
             <div class="card quest-board">
               <div class="section-title"><span>📜 MAIN QUEST</span><span class="quest-tag">次の学習</span></div>
               <div class="next-lesson" id="nextLessonBox"><p class="hint" style="margin:0">進路を選ぶとレッスンが表示されます。</p></div>
             </div>
             <div class="card">
-              <div class="section-title"><span>✨ SKILL BOOK</span><span class="quest-tag">習得</span></div>
+              <div class="section-title"><span>🌳 スキルツリー</span><span class="hint">成長マップ</span></div>
               <div class="skill-grid" id="skillGrid"></div>
+            </div>
+            <div class="card fsq-addon-card">
+              <div class="section-title"><span>🔓 最終形態</span><span class="hint">将来の目標</span></div>
+              <div class="final-form-strip" id="homeFinalForm"></div>
+            </div>
+            <div class="card fsq-addon-card">
+              <div class="section-title"><span>📄 ポートフォリオ化</span><span class="hint">就職活動へ</span></div>
+              <div class="portfolio-teaser" id="homePortfolioTeaser">
+                <strong>成長記録がそのまま自己PRになる</strong>
+                <p>クエスト達成、制作物、スキルレベルを記録し、将来はポートフォリオや自己紹介文として活用できます。</p>
+                <button type="button" id="homePortfolioBtn">冒険録を見る</button>
+              </div>
             </div>
           </div>
         </div>
