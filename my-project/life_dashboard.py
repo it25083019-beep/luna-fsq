@@ -39,10 +39,9 @@ def health_dashboard(user: Dict[str, Any]) -> Dict[str, Any]:
     evaluation = evaluate_health(structured)
     needed = mental_needed(structured)
     remind = mental_reminder_due(structured)
-    if remind:
-        note = "LUNAが今日の気分を聞きたいよ"
-        if user.get("pending_notification") != note:
-            user["pending_notification"] = note
+    from care_memory import maybe_daily_care_notification
+
+    maybe_daily_care_notification(user)
 
     return {
         "score": evaluation["score"],
@@ -112,8 +111,9 @@ def mental_status_payload(user: Dict[str, Any]) -> Dict[str, Any]:
     today = date.today().isoformat()
     needed = mental_needed(structured)
     remind = mental_reminder_due(structured)
-    if remind:
-        user["pending_notification"] = "LUNAが今日の気分を聞きたいよ"
+    from care_memory import maybe_daily_care_notification
+
+    maybe_daily_care_notification(user)
     return {
         "needed": needed,
         "reminder": remind,

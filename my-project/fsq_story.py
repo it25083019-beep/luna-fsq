@@ -22,7 +22,16 @@ def _week_days(week_start: date) -> List[str]:
 
 
 def _day_key(iso: str) -> str:
-    return (iso or "")[:10]
+    raw = str(iso or "")
+    if len(raw) >= 19:
+        try:
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone().date().isoformat()
+        except ValueError:
+            pass
+    return raw[:10]
 
 
 def _collect_week_facts(state: Dict[str, Any], *, today: Optional[date] = None) -> Dict[str, Any]:

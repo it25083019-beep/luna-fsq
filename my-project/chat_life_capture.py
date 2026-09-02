@@ -137,6 +137,41 @@ def _extract_time(text: str) -> Optional[str]:
     return f"{int(m.group(1)):02d}:{m.group(2)}"
 
 
+def _is_sleep_concern(text: str) -> bool:
+    t = text or ""
+    return bool(
+        re.search(
+            r"睡眠を教える|眠れない|眠れてない|眠れていない|眠れなか|しか眠れ|寝つき|不眠|あまり眠れ",
+            t,
+        )
+    )
+
+
+def _extract_sleep_hours(text: str) -> Optional[float]:
+    """Hours of sleep when the message is clearly about sleeping."""
+    t = text or ""
+    if not re.search(r"眠|睡眠|寝", t):
+        return None
+    half = re.search(r"(\d+(?:\.\d+)?)\s*時間半", t)
+    if half:
+        try:
+            hours = float(half.group(1)) + 0.5
+            if 0 < hours <= 14:
+                return hours
+        except ValueError:
+            pass
+    m = re.search(r"(\d+(?:\.\d+)?)\s*時間", t)
+    if not m:
+        return None
+    try:
+        hours = float(m.group(1))
+    except ValueError:
+        return None
+    if 0 < hours <= 14:
+        return hours
+    return None
+
+
 def extract_life_hints_from_text(user_text: str, *, today: Optional[date] = None) -> Dict[str, Any]:
     """Heuristic extraction from the user's message only."""
     today = today or _today()
@@ -149,10 +184,20 @@ def extract_life_hints_from_text(user_text: str, *, today: Optional[date] = None
     if mental:
         out["mental_status"] = mental
 
+    sleep_hours = _extract_sleep_hours(t)
+    if sleep_hours is not None:
+        out["sleep_hours"] = sleep_hours
+    if _is_sleep_concern(t):
+        out["sleep_concern"] = True
+
     amount = _parse_amount_yen(t)
     if amount is not None:
         note = t[:80]
         out["spend"] = {"amount": amount, "note": note, "date": today.isoformat()}
+    elif re.search(r"支出を記録", t):
+        out.setdefault("notes", {})
+        if isinstance(out["notes"], dict):
+            out["notes"]["money"] = t[:120]
 
     title = _extract_schedule_title(t)
     if title:
@@ -254,6 +299,31 @@ def apply_life_updates(user: Dict[str, Any], updates: Dict[str, Any]) -> List[st
             applied.append(f"気分→{mental.strip()}")
         except Exception:
             pass
+
+    sleep_hours = updates.get("sleep_hours")
+    if sleep_hours is not None:
+        try:
+            hours = float(sleep_hours)
+        except (TypeError, ValueError):
+            hours = None
+        if hours is not None and 0 < hours <= 14:
+            try:
+                from life_modules import update_module_structured
+
+                row = user["life_modules"]["health"]
+                structured = dict(row.get("structured") or {})
+                structured["sleep_hours"] = hours
+                update_module_structured(
+                    user,
+                    "health",
+                    structured,
+                    note=f"チャット睡眠: {hours}時間",
+                )
+                applied.append(f"睡眠→{hours:g}時間")
+            except Exception:
+                pass
+    elif updates.get("sleep_concern"):
+        applied.append("睡眠メモ")
 
     # Spend today (append only)
     spend = updates.get("spend")
@@ -374,10 +444,13 @@ def compose_companion_dialogue(
     user: Dict[str, Any],
     user_text: str,
     applied: Optional[List[str]] = None,
+    *,
+    include_ack: bool = True,
 ) -> Dict[str, str]:
     """Warm companion line: acknowledge save (if any) + empathize + one suggestion.
 
-    Returns {{dialogue, emotion}}.
+    Returns {{dialogue, emotion}}. Consult replies keep the ack in a separate
+    【記録】 line, so they pass include_ack=False to avoid saying it twice.
     """
     name = (user.get("user_display_name") or "").strip()
     gender = str((user.get("life_profile") or {}).get("gender") or "")
@@ -408,8 +481,10 @@ def compose_companion_dialogue(
             ack_bits.append(f"{tag}を目標リストに入れたよ")
         elif tag == "目標の進捗":
             ack_bits.append("目標の進捗を更新したよ")
-        elif tag.endswith("メモ"):
-            ack_bits.append("メモも残したよ")
+        elif tag.startswith("睡眠→"):
+            ack_bits.append(f"{tag.replace('睡眠→', '')}の睡眠を残したよ")
+        elif tag == "睡眠メモ":
+            ack_bits.append("睡眠の話、メモしたよ")
     ack = "。".join(ack_bits[:2])
     if ack:
         ack = ack + "。"
@@ -474,14 +549,14 @@ def compose_companion_dialogue(
         )
         emotion = "happy"
 
-    if ack:
+    if include_ack and ack:
         # Record confirm first, then companion reaction (feels like a real partner)
         dialogue = f"{ack}{body}"
     else:
         dialogue = body
 
-    # Keep readable length
-    if len(dialogue) > 160:
+    # Keep the local path short; consult replies assemble extra parts after this.
+    if include_ack and len(dialogue) > 160:
         dialogue = dialogue[:157] + "…"
     return {"dialogue": dialogue, "emotion": emotion}
 

@@ -1234,9 +1234,8 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
     today_open_n = len(sched.get("today_open") or [])
     needed = mental_needed(health)
     remind = mental_reminder_due(health)
-    if remind and not user.get("pending_notification"):
-        user["pending_notification"] = "LUNAが今日の気分を聞きたいよ"
-    from care_memory import build_care_prompt, build_care_quests
+    from care_memory import build_care_prompt, build_care_quests, maybe_daily_care_notification
+    maybe_daily_care_notification(user)
     from care_timeline import build_care_timeline, build_weekly_review
     from goals_service import home_goals_summary
     from money_eval import evaluate_money, spend_pace_snapshot

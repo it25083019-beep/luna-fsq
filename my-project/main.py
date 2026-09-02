@@ -1134,11 +1134,18 @@ def journey_lesson_submit(
     req: LessonSubmit,
     current: User = Depends(get_current_user),
 ):
+    from fsq_story import build_fsq_weekly_story
+
     brain = load_user_brain(current.public_id)
     try:
         result = submit_lesson(brain, lesson_id, answer=req.answer)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    # This is the path the study UI actually uses, so the weekly narrative has
+    # to refresh here too and not only on /complete.
+    story = build_fsq_weekly_story(brain, status=result.get("status"), force_refresh=True)
+    if story:
+        result["weekly_story"] = story
     save_user_brain(current.public_id, brain)
     return result
 

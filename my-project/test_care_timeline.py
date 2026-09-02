@@ -22,6 +22,8 @@ def test_lesson_complete_life_link():
     }
     res = on_lesson_complete(state, {"id": "se_l1", "title_ja": "HTML入門", "exp": 15}, exp_gained=12)
     assert "HTML入門" in res["luna_message"]
+    assert "ストレス" in " ".join(res["life_effects"])
+    assert state["life_modules"]["health"]["structured"]["mental_status"] == "普通"
     assert state["rpg"]["journey"]["completion_log"]
     rows = build_care_timeline(state)
     assert any(r.get("kind") == "study" for r in rows)

@@ -50,8 +50,13 @@ def on_lesson_complete(
 
     prior = str(structured.get("mental_status") or "")
     if prior in ("疲れ", "不安", "落ち込み"):
+        relief = {"落ち込み": "疲れ", "不安": "疲れ", "疲れ": "普通"}
+        structured["mental_status"] = relief[prior]
         structured["last_study_relief_on"] = today
-        effects.append("集中できたね（ストレス軽減メモ）")
+        from health_eval import apply_health_evaluation
+
+        apply_health_evaluation(structured)
+        effects.append("ストレスが少し和らいだよ")
     notes.append(
         {
             "at": _utcnow_iso(),

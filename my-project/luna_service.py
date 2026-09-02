@@ -210,6 +210,7 @@ def load_user_brain(user_id: str) -> Dict[str, Any]:
 def save_user_brain(user_id: str, brain_data: Dict[str, Any]) -> None:
     # Ephemeral runtime flags must never be persisted.
     brain_data.pop("_schedule_dirty", None)
+    # Legacy ephemeral name; the repeat guard now persists last_companion_line.
     brain_data.pop("_last_companion_line", None)
     # consult_mode is persisted so multi-turn companion care continues; it
     # expires via _consult_session_active so chat returns to the model.
@@ -577,6 +578,10 @@ If unsure, omit life_updates. Never wipe calendars, funds, or goals.
 - You only know THIS user. Never invent or reference other users' private data.
 - Do not ask for email/password. Auth is outside chat.
 
+# SAFETY
+{chr(10).join("- " + r for r in (policy.get("safety_rules") or [])) or "- No medical/mental diagnosis. If crisis signals appear: empathize and suggest contacting a trusted person or professional support immediately."}
+- If the user wants to die or harm themselves: do not diagnose. Stay with them, urge them to contact a trusted person or いのちの電話 0570-783-556 now.
+
 # OUTPUT FORMAT (follow exactly — no text outside these two blocks)
 <dialogue>
 [cheer]よくできました。次は短い休憩を取りましょう。
@@ -792,15 +797,10 @@ def _build_schedule_reminders(time_weekday: str) -> list:
     return uniq[:6]
 
 
-def _activity_notification(user_text: str) -> Optional[Dict[str, Any]]:
+def _activity_notification(user_text: str) -> Optional[str]:
     t = user_text or ""
     if re.search(r"(勉強|学習|課題|レポート|コーディング|開発|作業|バイト|面接|出勤)", t):
-        return {
-            "title": "準備と集中のリマインド",
-            "body": "始める前に持ち物・水分・目標を1つ確認。開始後は25分後に短い休憩を。",
-            "when": "now_and_in_25m",
-            "type": "activity",
-        }
+        return "始める前に持ち物・水分・目標を1つ確認。開始後は25分後に短い休憩を。"
     return None
 
 
@@ -834,10 +834,15 @@ def start_user_greeting(user_id: str) -> str:
     user.setdefault("profile_complete", False)
 
     if user.get("user_display_name") and user.get("companion_name") and user.get("profile_complete"):
+        from care_memory import greeting_care_line
+
         lv = _relationship_level(user)
         cname = user['companion_name']
         who = _honorific(user)
-        if lv >= 3:
+        care_line = greeting_care_line(user)
+        if care_line:
+            dialogue = f"{who}、おかえり。{care_line}"
+        elif lv >= 3:
             dialogue = f"{who}、おかえり。{cname}だよ。今日の調子はどう？"
         elif lv >= 2:
             dialogue = f"{who}、おかえりなさい。{cname}です。今日の体調はどうですか？"
@@ -962,6 +967,30 @@ def _is_bare_mood_ping(text: str) -> bool:
     return bool(MOOD_PING_RE.search(text or "")) and len(remainder) < MOOD_PING_SLACK
 
 
+CRISIS_RE = re.compile(
+    r"死にたい|消えたい|自殺|死んでしま|自傷|生きていたくない|もういない方が|"
+    r"kill myself|want to die|suicide|"
+    r"muốn chết|tự tử",
+    re.I,
+)
+
+
+def _is_crisis_message(text: str) -> bool:
+    return bool(CRISIS_RE.search(text or ""))
+
+
+def _crisis_reply(user: Dict[str, Any]) -> str:
+    """Local safety path — never wait on the model for a crisis line."""
+    who = _honorific(user)
+    cname = user.get("companion_name") or "LUNA"
+    dialogue = (
+        f"{who}、いまの気持ち、ちゃんと受け取ったよ。{cname}はそばにいる。"
+        f"ひとりで抱えなくていい。信頼できる人か、いのちの電話（0570-783-556）に今すぐつながってほしい。"
+        f"診断はできないけど、あなたが大切だよ。"
+    )
+    return _pack_reply(dialogue, {"emotion": "sad", "crisis": True})
+
+
 CONSULT_MAX_TURNS = 4
 CONSULT_TTL_MINUTES = 20
 
@@ -1033,21 +1062,23 @@ def _begin_consult_session(user: Dict[str, Any], topic: str) -> str:
 def _consult_next_step(topic: str, applied: List[str], msg: str) -> str:
     """One gentle next step — walk alongside, not lecture."""
     if topic == "health":
+        if any(a.startswith("睡眠") for a in applied):
+            return "今夜は就寝を15分早めるだけでも楽になるかも。明日また教えてね。"
         if any(a.startswith("気分") for a in applied):
             return "今夜はゆっくり休もう。明日の朝、またちょっとだけ教えてくれる？"
         if re.search(r"眠|睡眠|寝", msg):
-            return "メモしておいたよ。明日は起床を15分遅らせるだけでも楽になるかも。"
+            return "睡眠の時間も教えてもらえると記録できるよ。明日は起床を15分遅らせてみて。"
         if re.search(r"痛|熱|咳|吐|めまい", msg):
             return "無理しないで。水分とって、悪化したら病院や相談窓口へ。また教えてね。"
         if applied:
-            return "記録しておいたよ。今夜は休息優先で。明日また様子聞かせて。"
+            return "今夜は休息優先で。明日また様子聞かせて。"
         return "睡眠・気分・食欲、どれか一つだけでも大丈夫。ゆっくりでいいよ。"
     if any(a.startswith("支出") for a in applied):
-        return "記録したよ。今週は外食をあと1回に抑える、みたいな小さなルールから始めよう。"
+        return "今週は外食をあと1回に抑える、みたいな小さなルールから始めよう。"
     if re.search(r"貯金|欲しい", msg):
-        return "目標メモしておいた。週に一度、一緒に進捗見直そう。"
+        return "週に一度、一緒に進捗見直そう。"
     if applied:
-        return "メモ残したよ。週末に残り予算、一緒に確認しよう。"
+        return "週末に残り予算、一緒に確認しよう。"
     return "金額が分かれば記録できるよ。『今日ランチ800円』みたいに送っても大丈夫。"
 
 
@@ -1063,15 +1094,17 @@ def _companion_consult_followup(user: Dict[str, Any], user_text: str) -> str:
         user["consult_turns"] = 1
     applied = capture_life_from_chat(user, user_text, None)
     touch_care_memory(user, topic, user_text, applied)
-    composed = compose_companion_dialogue(user, user_text, applied)
+    composed = compose_companion_dialogue(user, user_text, applied, include_ack=False)
     recorded = format_recorded(applied)
     next_step = _consult_next_step(topic, applied, user_text)
     parts: List[str] = []
     if recorded:
-        parts.append(f"【記録】{recorded}、メモしたよ。")
-    body = composed["dialogue"]
+        parts.append(f"【記録】{recorded}。")
+    else:
+        parts.append("【記録】いまは数値の記録はなし。話は残したよ。")
+    body = (composed.get("dialogue") or "").strip()
     if body and body not in " ".join(parts):
-        parts.append(body)
+        parts.append(body if body.endswith(("。", "？", "！", "よ")) else body + "。")
     if next_step and next_step not in " ".join(parts):
         parts.append(next_step)
     dialogue = "".join(parts)
@@ -1105,14 +1138,38 @@ def _dialogue_similar(a: str, b: str) -> bool:
     return shorter in longer and len(shorter) >= max(12, int(len(longer) * 0.55))
 
 
+_REPEAT_NUDGES = (
+    "{who}、うん、聞いてるよ。もう少しだけ詳しく教えてくれる？",
+    "{who}、それってどんな感じだった？よかったら続きを聞かせて。",
+    "{who}、なるほどね。今いちばん気になってるのはどのあたり？",
+)
+
+
+RECENT_LINE_MEMORY = 4
+
+
 def _avoid_repeat_dialogue(user: Dict[str, Any], dialogue: str) -> str:
-    """Stop back-to-back identical companion lines."""
-    prev = (user.get("_last_companion_line") or "").strip()
+    """Stop the companion repeating lines it has just said.
+
+    Two things kept this from working. The previous line was held in
+    `_last_companion_line`, which save_user_brain strips as an ephemeral flag,
+    so every turn compared against an empty string. And comparing against only
+    the single last line let a repeated sentence alternate straight back in
+    once a nudge had displaced it, so the user still saw A, nudge, A, nudge.
+    """
+    recent = [str(x) for x in (user.get("recent_companion_lines") or []) if x]
     text = (dialogue or "").strip()
-    if prev and _dialogue_similar(prev, text):
-        who = _honorific(user)
-        return f"{who}、うん、聞いてるよ。もう少しだけ詳しく教えてくれる？"
-    user["_last_companion_line"] = text[:200]
+    if text and any(_dialogue_similar(prev, text) for prev in recent):
+        try:
+            n = int(user.get("repeat_nudge_i") or 0)
+        except (TypeError, ValueError):
+            n = 0
+        # Rotate, so someone who repeats themselves is not deflected with the
+        # very same sentence each time.
+        user["repeat_nudge_i"] = (n + 1) % len(_REPEAT_NUDGES)
+        text = _REPEAT_NUDGES[n % len(_REPEAT_NUDGES)].format(who=_honorific(user))
+    if text:
+        user["recent_companion_lines"] = (recent + [text[:200]])[-RECENT_LINE_MEMORY:]
     return text
 
 
@@ -1262,12 +1319,16 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
 
 def handle_chat_message(user_id: str, user_text: str) -> str:
     """Main /chat handler — consult & care always work without LLM."""
+    text_in = (user_text or "").strip()
+    if text_in and _is_crisis_message(text_in):
+        user = load_user_brain(user_id)
+        return _persist_local_turn(user_id, user, text_in, _crisis_reply(user))
+
     onboarded = handle_user_onboarding_turn(user_id, user_text)
     if onboarded is not None:
         return onboarded
 
     user = load_user_brain(user_id)
-    text_in = (user_text or "").strip()
     admin = is_admin(user_id)
 
     # Consult chips + follow-up: all users (including admin) — never depend on Gemini.
@@ -1295,6 +1356,11 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
 
 
 def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, skip_onboarding: bool = False) -> str:
+    text_in = (user_text or "").strip()
+    if text_in and _is_crisis_message(text_in):
+        user = load_user_brain(user_id)
+        return _persist_local_turn(user_id, user, text_in, _crisis_reply(user))
+
     if not skip_onboarding:
         onboarded = handle_user_onboarding_turn(user_id, user_text)
         if onboarded is not None:
@@ -1302,7 +1368,6 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
 
     user = load_user_brain(user_id)
     admin = is_admin(user_id)
-    text_in = (user_text or "").strip()
 
     if text_in:
         topic = _consult_topic_from_chip(text_in)
@@ -1339,9 +1404,14 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
     if not admin and text_in:
         _update_relationship(user, text_in)
         if user.get("profile_complete"):
+            from care_memory import maybe_daily_care_notification
+
             note = _activity_notification(text_in)
-            if note:
+            if note and str(user.get("care_notified_on") or "")[:10] != _today_iso():
                 user["pending_notification"] = note
+                user["care_notified_on"] = _today_iso()
+            else:
+                maybe_daily_care_notification(user)
 
     if admin:
         system_prompt = _build_admin_system_prompt(blueprint, policy, core)

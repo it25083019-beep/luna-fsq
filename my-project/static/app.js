@@ -1378,25 +1378,40 @@
       journeyMap = res.map || journeyMap;
       const chips = [];
       (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
-      if (res.gear) chips.push(gearChipLabel(res.gear));
+      if (res.gear) {
+        chips.push(gearChipLabel(res.gear));
+        toastGearDrop(res.gear);
+      }
       if (res.rank) chips.push("進化：" + (res.rank.label_ja || res.rank.id));
       const warn =
         res.submit && res.submit.soft_check && res.submit.soft_check.warnings
           ? res.submit.soft_check.warnings
           : [];
+      // EXP already has its own line above.
+      const effects = (res.life_effects || []).filter((x) => x && !/^EXP/.test(x));
       showRewardModal(
         "🎉 QUEST CLEAR!",
         [
+          (res.quest_story || "").trim(),
           "EXP +" + (res.exp_gained || 0),
           (res.lesson && res.lesson.title_ja) || "",
           (res.submit && res.submit.message_ja) || "",
-        ].concat(warn),
+        ]
+          .concat(effects)
+          .concat(warn)
+          .filter(Boolean),
         chips
       );
+      if (res.luna_message) {
+        const dialogueEl = document.getElementById("dialogue");
+        if (dialogueEl) dialogueEl.textContent = res.luna_message;
+        speakJa(res.luna_message).catch(() => {});
+      }
       if (luna) luna.applyEmotion("cheer", 1500);
       closeStudyModal();
       applyJourneyUi();
       await refreshCore();
+      loadHomeSummary().catch(() => {});
     } catch (e) {
       setErr(e.message);
       setStudyTab("solve");
@@ -2474,13 +2489,25 @@
       .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
   }
 
+  // pending_notification arrives as a plain string from the check-in paths but
+  // as {title, body} from the activity reminder, and the model can set it too.
+  function notifText(n) {
+    if (!n) return "";
+    if (typeof n === "string") return n;
+    if (typeof n === "object") {
+      return [n.title, n.body].filter(Boolean).join("：");
+    }
+    return String(n);
+  }
+
   function updateMentalReminderBanner(s) {
     const banner = document.getElementById("mentalRemindBanner");
     if (!banner) return;
-    const show = !!(s && (s.health?.mental_reminder || (s.pending_notification && String(s.pending_notification).includes("気分"))));
+    const note = notifText(s && s.pending_notification);
+    const show = !!(s && (s.health?.mental_reminder || note.includes("気分")));
     banner.classList.toggle("open", show && !sessionStorage.getItem("mentalModalOpen"));
     const txt = document.getElementById("mentalRemindText");
-    if (txt) txt.textContent = s.pending_notification || "LUNAが今日の気分を聞きたいよ";
+    if (txt) txt.textContent = note || "LUNAが今日の気分を聞きたいよ";
   }
 
   function formatTimeRange(ev) {
@@ -3335,7 +3362,7 @@
       if (stMoney) stMoney.textContent = s.money?.label || "—";
       document.getElementById("stGoals").textContent = s.goals?.label || "—";
       renderHomeToday(s.schedule?.today_items || []);
-      const bannerMsg = s.care_prompt || s.pending_notification;
+      const bannerMsg = s.care_prompt || notifText(s.pending_notification);
       updateMentalReminderBanner({
         health: { mental_reminder: !!bannerMsg },
         pending_notification: bannerMsg,

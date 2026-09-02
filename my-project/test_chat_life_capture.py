@@ -78,9 +78,30 @@ def test_llm_life_updates_merge():
     print("OK goals additive", items[0]["pct"])
 
 
+def test_extract_sleep_hours_and_concern():
+    h = extract_life_hints_from_text("昨夜は6時間しか眠れなかった")
+    assert h.get("sleep_hours") == 6
+    assert h.get("sleep_concern") is True
+    chip = extract_life_hints_from_text("睡眠を教える")
+    assert chip.get("sleep_concern") is True
+    assert "sleep_hours" not in chip
+    print("OK sleep extract")
+
+
+def test_apply_sleep_hours():
+    user = {"life_modules": {}}
+    applied = apply_life_updates(user, {"sleep_hours": 6.5, "sleep_concern": True})
+    assert any("睡眠→6.5時間" in a for a in applied), applied
+    health = user["life_modules"]["health"]["structured"]
+    assert health.get("sleep_hours") == 6.5
+    print("OK sleep apply")
+
+
 if __name__ == "__main__":
     test_extract_mood_and_spend()
     test_extract_schedule_tomorrow()
     test_apply_additive_no_wipe()
     test_llm_life_updates_merge()
+    test_extract_sleep_hours_and_concern()
+    test_apply_sleep_hours()
     print("ALL OK")

@@ -19,7 +19,17 @@ def _utcnow_iso() -> str:
 
 
 def _day_key(iso: str) -> str:
-    return (iso or "")[:10]
+    """Calendar day in local time, so UTC stamps near midnight still count as today."""
+    raw = str(iso or "")
+    if len(raw) >= 19:
+        try:
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone().date().isoformat()
+        except ValueError:
+            pass
+    return raw[:10]
 
 
 def append_care_event(
@@ -232,5 +242,5 @@ def build_weekly_review(user: Dict[str, Any], *, today: Optional[date] = None) -
         "care_count": care_n,
         "spend_total": spend_total,
         "goal_next_week": goal,
-        "show_banner": today.weekday() == 6 or care_n >= 3,
+        "show_banner": today.weekday() == 6,
     }

@@ -22,8 +22,14 @@ def touch_care_memory(
     for tag in applied or []:
         if tag.startswith("気分"):
             cm["last_health_concern"] = tag.replace("気分→", "")
+        if tag.startswith("睡眠"):
+            cm["last_health_concern"] = "睡眠"
         if tag.startswith("支出"):
             cm["last_money_note"] = tag
+            cm["last_money_worry"] = tag
+    if snippet and topic == "money":
+        if re.search(r"心配|不安|足り|貯金|借金", snippet):
+            cm["last_money_worry"] = snippet[:80]
     if snippet:
         notes = list(cm.get("notes") or [])
         notes.append({"d": today, "t": topic, "s": snippet[:100]})
@@ -36,8 +42,10 @@ def touch_care_memory(
             append_care_event(user, "health", f"気分「{tag.replace('気分→', '')}」を記録")
         elif tag.startswith("支出+"):
             append_care_event(user, "money", f"支出 {tag.replace('支出+', '')}")
-        elif tag == "予定を追加":
-            append_care_event(user, "schedule", "予定を追加したよ")
+        elif tag.startswith("睡眠→"):
+            append_care_event(user, "health", f"睡眠 {tag.replace('睡眠→', '')}")
+        elif tag == "睡眠メモ":
+            append_care_event(user, "health", "睡眠の話をメモ")
         elif tag.endswith("メモ"):
             append_care_event(user, "care", tag)
 
@@ -48,11 +56,14 @@ def care_recall_prefix(user: Dict[str, Any], topic: str) -> str:
     if topic == "health":
         concern = cm.get("last_health_concern")
         if concern:
+            if concern == "睡眠":
+                return "前回、睡眠が心配だったよね。"
             return f"前に「{concern}」って話してくれたよね。"
         if cm.get("last_topic") == "health" and cm.get("last_health_message"):
             return "前回の体調のこと、気になってたよ。"
     else:
-        if cm.get("last_money_note"):
+        worry = cm.get("last_money_worry") or cm.get("last_money_note")
+        if worry:
             return "前に支出の話、一緒に見たね。"
         if cm.get("last_topic") == "money" and cm.get("last_money_message"):
             return "前回のお金のこと、続きも聞けるよ。"
@@ -68,8 +79,10 @@ def format_recorded(applied: List[str]) -> str:
             bits.append(f"気分「{tag.replace('気分→', '')}」")
         elif tag.startswith("支出+"):
             bits.append(f"支出{tag.replace('支出+', '')}")
-        elif tag == "予定を追加":
-            bits.append("予定")
+        elif tag.startswith("睡眠→"):
+            bits.append(f"睡眠{tag.replace('睡眠→', '')}")
+        elif tag == "睡眠メモ":
+            bits.append("睡眠")
         elif tag.endswith("メモ"):
             bits.append("メモ")
         else:
@@ -111,3 +124,64 @@ def build_care_prompt(user: Dict[str, Any]) -> Optional[str]:
         return None
     first = quests[0]["label"]
     return f"今日は「{first}」から始めようか。"
+
+
+def greeting_care_line(user: Dict[str, Any]) -> Optional[str]:
+    """Spoken on app open — last concern, then how are you today."""
+    cm = user.get("care_memory") or {}
+    concern = cm.get("last_health_concern")
+    if concern == "睡眠":
+        return "前回、睡眠が心配だったよね。今日はどう？"
+    if concern:
+        return f"前回、「{concern}」が気になってたよね。今日はどう？"
+    if cm.get("last_money_worry") or cm.get("last_money_note"):
+        return "前回、お金のことが引っかかってたよね。今日の調子はどう？"
+    return None
+
+
+def _notif_text(value: Any) -> str:
+    if not value:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return "：".join(str(x) for x in (value.get("title"), value.get("body")) if x)
+    return str(value)
+
+
+def maybe_daily_care_notification(user: Dict[str, Any]) -> Optional[str]:
+    """At most one care ping per calendar day, from real data gaps."""
+    from health_eval import mental_reminder_due
+    from money_eval import spend_rows
+
+    today = date.today()
+    today_s = today.isoformat()
+    if str(user.get("care_notified_on") or "")[:10] == today_s:
+        existing = _notif_text(user.get("pending_notification"))
+        return existing or None
+
+    health = (user.get("life_modules") or {}).get("health", {}).get("structured") or {}
+    money = (user.get("life_modules") or {}).get("money", {}).get("structured") or {}
+
+    note: Optional[str] = None
+    if mental_reminder_due(health):
+        note = "LUNAが今日の気分を聞きたいよ"
+    else:
+        last_day = None
+        for row in spend_rows(money):
+            d = str(row.get("date") or "")[:10]
+            if len(d) == 10 and (last_day is None or d > last_day):
+                last_day = d
+        if last_day:
+            try:
+                gap = (today - date.fromisoformat(last_day)).days
+            except ValueError:
+                gap = 0
+            if gap >= 3:
+                note = "支出の記録が3日空いてるよ。よかったら今日の分だけ残そう"
+
+    if note:
+        user["pending_notification"] = note
+        user["care_notified_on"] = today_s
+        return note
+    return None
