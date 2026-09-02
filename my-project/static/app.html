@@ -1103,6 +1103,24 @@
     .home-banner.open{display:flex}
     .home-banner p{margin:0;flex:1;font-size:.78rem;color:var(--text);line-height:1.4}
     .home-banner button{border:none;border-radius:999px;padding:.4rem .7rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;font-size:.72rem;flex-shrink:0}
+    .care-timeline{margin:0 1rem .65rem;padding:.75rem;background:var(--card);border-radius:18px;box-shadow:var(--shadow)}
+    .care-timeline h3{margin:0 0 .45rem;font-size:.88rem;color:var(--lilac-deep);display:flex;justify-content:space-between;align-items:center}
+    .care-timeline h3 span{font-size:.62rem;font-weight:700;color:var(--muted)}
+    .care-timeline ul{margin:0;padding:0;list-style:none}
+    .care-timeline li{display:flex;gap:.5rem;align-items:flex-start;padding:.4rem 0;border-bottom:1px solid rgba(155,126,217,.1);font-size:.74rem;line-height:1.45}
+    .care-timeline li:last-child{border-bottom:none}
+    .care-timeline .ct-ico{flex-shrink:0;font-size:1rem;line-height:1.2}
+    .care-timeline .ct-body{flex:1;min-width:0}
+    .care-timeline .ct-body strong{display:block;font-weight:700;color:var(--text)}
+    .care-timeline .ct-body em{font-style:normal;font-size:.65rem;color:var(--muted)}
+    .care-timeline.empty .hint{margin:0;font-size:.75rem;color:var(--muted)}
+    .weekly-review{margin:0 1rem .55rem;padding:.75rem .85rem;border-radius:16px;background:linear-gradient(135deg,#e8f5f0,#fff);border:1px solid rgba(31,122,110,.25);display:none}
+    .weekly-review.open{display:block}
+    .weekly-review h4{margin:0 0 .35rem;font-size:.82rem;color:#145a52}
+    .weekly-review ul{margin:0 0 .45rem;padding:0 0 0 1rem;font-size:.72rem;line-height:1.5;color:var(--text)}
+    .weekly-review p{margin:0;font-size:.7rem;color:var(--muted);line-height:1.45}
+    .demo-quest-row.life-quest{border-left:3px solid var(--fsq-teal,#1f7a6e);padding-left:.5rem;margin-left:-.15rem}
+    .demo-quest-row.life-quest .quest-text span{color:#145a52}
     .edit-panel .ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
     .edit-panel .local-err{color:var(--danger);font-size:.75rem;margin:.35rem 0 0;min-height:1em}
   </style>
@@ -1131,6 +1149,11 @@
             <p id="mentalRemindText">LUNAが今日の気分を聞きたいよ</p>
             <button type="button" id="mentalRemindBtn">答える</button>
           </div>
+          <div id="weeklyReview" class="weekly-review" role="region" aria-label="週間レビュー">
+            <h4 id="weeklyReviewTitle">今週のふりかえり</h4>
+            <ul id="weeklyReviewList"></ul>
+            <p id="weeklyReviewGoal"></p>
+          </div>
           <div class="status-row">
             <button type="button" class="status-card" data-open="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
             <button type="button" class="status-card" data-open="health"><div class="ico">💚</div><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
@@ -1140,6 +1163,11 @@
           <div class="home-today">
             <h3>今日の予定 <button type="button" data-open="schedule">カレンダー</button></h3>
             <div id="homeTodayList"><p class="hint">まだ予定はありません。カレンダーから追加できます。</p></div>
+          </div>
+          <div id="careTimeline" class="care-timeline empty" aria-label="ケアタイムライン">
+            <h3>🌸 LUNAの記録 <span>今日</span></h3>
+            <p class="hint">まだ記録はありません。相談や学習をするとここに残ります。</p>
+            <ul id="careTimelineList" hidden></ul>
           </div>
           <div class="chips" id="chips"></div>
           <div class="composer-voice">
@@ -1724,6 +1752,6 @@
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
   <script src="/static/world.js"></script>
-  <script src="/static/app.js?v=20260902c"></script>
+  <script src="/static/app.js?v=20260902d"></script>
 </body>
 </html>

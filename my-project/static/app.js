@@ -744,22 +744,29 @@
     const box = document.getElementById("homeDailyQuestList");
     if (!box) return;
     box.innerHTML = "";
-    if (!journeyStatus.selected) {
+    const lifeRows = (journeyStatus.life_quests || []).map((q) => ({
+      life: q,
+      done: false,
+      main: false,
+    }));
+    if (!journeyStatus.selected && !lifeRows.length) {
       box.innerHTML = '<p class="hint" style="margin:0">進路を選ぶとクエストが表示されます。</p>';
       return;
     }
     const lessons = (journeyMap.lessons || []).filter((l) => (l.boss_type || "none") === "none");
     const next = journeyStatus.next_lesson;
-    const rows = [];
-    if (next) rows.push({ les: next, done: false, main: true });
-    lessons
-      .filter((l) => l.available && !l.completed && (!next || l.id !== next.id))
-      .slice(0, 2)
-      .forEach((l) => rows.push({ les: l, done: false, main: false }));
-    lessons
-      .filter((l) => l.completed)
-      .slice(-2)
-      .forEach((l) => rows.push({ les: l, done: true, main: false }));
+    const rows = lifeRows.slice();
+    if (journeyStatus.selected) {
+      if (next) rows.push({ les: next, done: false, main: true });
+      lessons
+        .filter((l) => l.available && !l.completed && (!next || l.id !== next.id))
+        .slice(0, Math.max(0, 2 - lifeRows.length))
+        .forEach((l) => rows.push({ les: l, done: false, main: false }));
+      lessons
+        .filter((l) => l.completed)
+        .slice(-1)
+        .forEach((l) => rows.push({ les: l, done: true, main: false }));
+    }
     if (!rows.length) {
       box.innerHTML = '<p class="hint" style="margin:0">クエスト準備中… ワールドマップを確認しよう。</p>';
       return;
@@ -767,6 +774,27 @@
     const iconCls = ["yellow", "blue", "pink", "green"];
     rows.forEach((row, i) => {
       const div = document.createElement("div");
+      if (row.life) {
+        const q = row.life;
+        div.className = "demo-quest-row life-quest";
+        div.innerHTML =
+          '<div class="quest-icon ' +
+          (q.icon_class || "green") +
+          '">🌸</div><div class="quest-text"><strong>' +
+          (q.title_ja || "ケア") +
+          "</strong><span>ライフ ・ +" +
+          (q.exp || 8) +
+          ' EXP</span></div><div class="check"></div>';
+        div.onclick = () => {
+          const chip = q.chip || q.title_ja;
+          if (chip.includes("体調") || chip === "元気") runConsult("health", chip.includes("体調") ? chip : "体調を相談したい");
+          else if (chip.includes("お金")) runConsult("money", chip);
+          else sendMessage(chip);
+          switchTab("luna");
+        };
+        box.appendChild(div);
+        return;
+      }
       div.className = "demo-quest-row" + (row.done ? " done" : "");
       const icon = (row.les.title_ja || row.les.id || "?").slice(0, 2);
       div.innerHTML =
@@ -1398,10 +1426,16 @@
       (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
       if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
       if (res.rank) chips.push("進化：" + (res.rank.label_ja || res.rank.id));
-      showRewardModal("🎉 QUEST CLEAR!", ["EXP +" + (res.exp_gained || 0), (res.lesson && res.lesson.title_ja) || ""], chips);
+      showRewardModal("🎉 QUEST CLEAR!", ["EXP +" + (res.exp_gained || 0), (res.lesson && res.lesson.title_ja) || ""].concat(res.life_effects || []), chips);
+      if (res.luna_message) {
+        const dialogueEl = document.getElementById("dialogue");
+        if (dialogueEl) dialogueEl.textContent = res.luna_message;
+        speakJa(res.luna_message).catch(() => {});
+      }
       if (luna) luna.applyEmotion("cheer", 1500);
       applyJourneyUi();
       await refreshCore();
+      loadHomeSummary().catch(() => {});
     } catch (e) {
       setErr(e.message);
     }
@@ -2947,6 +2981,61 @@
     }
   }
 
+  function renderCareTimeline(items) {
+    const wrap = document.getElementById("careTimeline");
+    const list = document.getElementById("careTimelineList");
+    if (!wrap || !list) return;
+    const rows = items || [];
+    const hint = wrap.querySelector(".hint");
+    if (!rows.length) {
+      wrap.classList.add("empty");
+      if (hint) hint.hidden = false;
+      list.hidden = true;
+      list.innerHTML = "";
+      return;
+    }
+    wrap.classList.remove("empty");
+    if (hint) hint.hidden = true;
+    list.hidden = false;
+    list.innerHTML = "";
+    rows.slice().reverse().forEach((row) => {
+      const li = document.createElement("li");
+      const time = (row.at || "").slice(11, 16) || "—";
+      li.innerHTML =
+        '<span class="ct-ico">' +
+        (row.icon || "🌸") +
+        '</span><span class="ct-body"><strong>' +
+        (row.label || "") +
+        "</strong>" +
+        (row.detail ? '<em>' + row.detail + "</em>" : "") +
+        '<em style="display:block;margin-top:.1rem">' +
+        time +
+        "</em></span>";
+      list.appendChild(li);
+    });
+  }
+
+  function renderWeeklyReview(review) {
+    const box = document.getElementById("weeklyReview");
+    const title = document.getElementById("weeklyReviewTitle");
+    const ul = document.getElementById("weeklyReviewList");
+    const goal = document.getElementById("weeklyReviewGoal");
+    if (!box || !ul || !goal) return;
+    if (!review || !review.show_banner) {
+      box.classList.remove("open");
+      return;
+    }
+    box.classList.add("open");
+    if (title) title.textContent = "今週のふりかえり（" + (review.week_label || "") + "）";
+    ul.innerHTML = "";
+    (review.highlights || []).forEach((h) => {
+      const li = document.createElement("li");
+      li.textContent = h;
+      ul.appendChild(li);
+    });
+    goal.textContent = review.goal_next_week || "";
+  }
+
   async function loadHomeSummary() {
     try {
       const s = await api("/home/summary");
@@ -2966,6 +3055,8 @@
         const chipLabels = s.care_quests.map((q) => q.chip).filter(Boolean);
         if (chipLabels.length) renderChips(chipLabels.concat(DEFAULT_CHIPS.filter((c) => !chipLabels.includes(c))).slice(0, 6));
       }
+      renderCareTimeline(s.care_timeline || []);
+      renderWeeklyReview(s.weekly_review || null);
     } catch (_) {}
   }
 

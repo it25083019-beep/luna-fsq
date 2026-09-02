@@ -361,6 +361,9 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
         j.get("rank_id") or "novice",
         j.get("inventory") or [],
     )
+    from life_link import life_quests_for_fsq
+
+    life_quests = life_quests_for_fsq(state) if j.get("career_id") else []
     return {
         "selected": bool(j.get("class_id") and j.get("career_id")),
         "class_id": j.get("class_id"),
@@ -384,6 +387,7 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
         "classes": list_classes(),
         "careers": list_careers(),
         "ranks": list_ranks(),
+        "life_quests": life_quests,
     }
 
 
@@ -506,6 +510,10 @@ def complete_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
     _advance_stage(j, cur)
     appearance = _build_appearance(j["class_id"], j.get("equipped") or {}, j["rank_id"], j.get("inventory") or [])
 
+    from life_link import on_lesson_complete
+
+    life_link = on_lesson_complete(state, les, exp_gained=gained_exp)
+
     rpg = ensure_rpg(state)
     if gear:
         rpg.setdefault("equipment", []).append(
@@ -523,6 +531,8 @@ def complete_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
         "appearance": appearance,
         "status": journey_status(state),
         "map": list_journey_map(state),
+        "luna_message": life_link.get("luna_message"),
+        "life_effects": life_link.get("life_effects") or [],
     }
 
 

@@ -29,6 +29,18 @@ def touch_care_memory(
         notes.append({"d": today, "t": topic, "s": snippet[:100]})
         cm["notes"] = notes[-12:]
 
+    from care_timeline import append_care_event
+
+    for tag in applied or []:
+        if tag.startswith("気分→"):
+            append_care_event(user, "health", f"気分「{tag.replace('気分→', '')}」を記録")
+        elif tag.startswith("支出+"):
+            append_care_event(user, "money", f"支出 {tag.replace('支出+', '')}")
+        elif tag == "予定を追加":
+            append_care_event(user, "schedule", "予定を追加したよ")
+        elif tag.endswith("メモ"):
+            append_care_event(user, "care", tag)
+
 
 def care_recall_prefix(user: Dict[str, Any], topic: str) -> str:
     """Short warm callback to prior concern — companion tone, not formal."""

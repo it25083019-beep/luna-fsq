@@ -1237,6 +1237,7 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
     if remind and not user.get("pending_notification"):
         user["pending_notification"] = "LUNAが今日の気分を聞きたいよ"
     from care_memory import build_care_prompt, build_care_quests
+    from care_timeline import build_care_timeline, build_weekly_review
     from goals_service import home_goals_summary
     from money_eval import evaluate_money, spend_pace_snapshot
 
@@ -1274,4 +1275,6 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
         "pending_notification": user.get("pending_notification"),
         "care_prompt": build_care_prompt(user),
         "care_quests": build_care_quests(user),
+        "care_timeline": build_care_timeline(user),
+        "weekly_review": build_weekly_review(user),
     }
