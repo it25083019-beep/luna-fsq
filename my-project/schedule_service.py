@@ -1275,6 +1275,6 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
         "pending_notification": user.get("pending_notification"),
         "care_prompt": build_care_prompt(user),
         "care_quests": build_care_quests(user),
-        "care_timeline": build_care_timeline(user),
+        "care_timeline": build_care_timeline(user, schedule_items=today_items),
         "weekly_review": build_weekly_review(user),
     }

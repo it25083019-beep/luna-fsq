@@ -92,11 +92,9 @@ def build_care_quests(user: Dict[str, Any]) -> List[Dict[str, str]]:
     if not sleeps:
         quests.append({"id": "sleep", "label": "睡眠を記録する", "chip": "体調を相談したい"})
 
-    spends = money.get("daily_spends") or []
-    has_today = any(
-        isinstance(s, dict) and str(s.get("date") or "")[:10] == today for s in spends
-    )
-    if not has_today:
+    from money_eval import spend_rows_on
+
+    if not spend_rows_on(money, today):
         quests.append({"id": "spend", "label": "今日の支出を記録", "chip": "お金の相談"})
 
     cm = user.get("care_memory") or {}

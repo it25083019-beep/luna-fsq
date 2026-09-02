@@ -46,8 +46,14 @@ def append_care_event(
     return row
 
 
-def _module_events_today(user: Dict[str, Any], today: str) -> List[Dict[str, Any]]:
+def _module_events_today(
+    user: Dict[str, Any],
+    today: str,
+    schedule_items: Optional[List[Dict[str, Any]]] = None,
+) -> List[Dict[str, Any]]:
     """Derive display rows from life modules when not yet in care_timeline."""
+    from money_eval import spend_rows_on
+
     out: List[Dict[str, Any]] = []
     modules = user.get("life_modules") or {}
     health = (modules.get("health") or {}).get("structured") or {}
@@ -66,20 +72,35 @@ def _module_events_today(user: Dict[str, Any], today: str) -> List[Dict[str, Any
             }
         )
 
-    for s in money.get("daily_spends") or []:
-        if not isinstance(s, dict):
-            continue
-        if str(s.get("date") or "")[:10] != today:
-            continue
+    for i, s in enumerate(spend_rows_on(money, today)):
         amt = s.get("amount")
-        note = (s.get("note") or s.get("category") or "支出").strip()
+        note = (s.get("note") or s.get("category") or "支出").strip() or "支出"
         out.append(
             {
-                "at": f"{today}T14:00:00+00:00",
+                # Entries carry only a date, so fan them out by index to keep the
+                # order they were recorded in once the timeline is sorted.
+                "at": f"{today}T14:{i % 60:02d}:00+00:00",
                 "kind": "money",
                 "label": f"{note} {int(amt):,}円" if amt else note,
                 "detail": None,
                 "icon": KIND_ICON["money"],
+                "source": "module",
+            }
+        )
+
+    for ev in schedule_items or []:
+        if not isinstance(ev, dict):
+            continue
+        title = (ev.get("title") or "予定").strip()
+        at_time = str(ev.get("time") or "")[:5]
+        done = bool(ev.get("done"))
+        out.append(
+            {
+                "at": f"{today}T{at_time or '09:00'}:00+00:00",
+                "kind": "schedule",
+                "label": f"予定クリア：{title}" if done else f"予定：{title}",
+                "detail": at_time or None,
+                "icon": KIND_ICON["schedule"],
                 "source": "module",
             }
         )
@@ -127,8 +148,17 @@ def _module_events_today(user: Dict[str, Any], today: str) -> List[Dict[str, Any
     return out
 
 
-def build_care_timeline(user: Dict[str, Any], *, day: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Today's care journal rows, newest last (UI can reverse)."""
+def build_care_timeline(
+    user: Dict[str, Any],
+    *,
+    day: Optional[str] = None,
+    schedule_items: Optional[List[Dict[str, Any]]] = None,
+) -> List[Dict[str, Any]]:
+    """Today's care journal rows, newest last (UI can reverse).
+
+    `schedule_items` are today's events as list_events already returned them;
+    the caller passes them in so this stays free of schedule side effects.
+    """
     today = day or date.today().isoformat()
     stored = [
         dict(x)
@@ -136,7 +166,7 @@ def build_care_timeline(user: Dict[str, Any], *, day: Optional[str] = None) -> L
         if isinstance(x, dict) and _day_key(str(x.get("at") or "")) == today
     ]
     labels = {x.get("label") for x in stored}
-    for row in _module_events_today(user, today):
+    for row in _module_events_today(user, today, schedule_items):
         if row.get("label") not in labels:
             stored.append(row)
             labels.add(row.get("label"))
@@ -162,11 +192,11 @@ def build_weekly_review(user: Dict[str, Any], *, today: Optional[date] = None) -
         if isinstance(x, dict) and _day_key(str(x.get("at") or "")) in week_days
     ]
 
+    from money_eval import spend_rows
+
     spend_total = 0
     spend_days = set()
-    for s in money.get("daily_spends") or []:
-        if not isinstance(s, dict):
-            continue
+    for s in spend_rows(money):
         d = str(s.get("date") or "")[:10]
         if d not in week_days:
             continue

@@ -366,6 +366,23 @@ def _calendar_days_in_month(d) -> int:
     return calendar.monthrange(d.year, d.month)[1]
 
 
+def spend_rows(structured: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Recorded spending entries, oldest first.
+
+    `spend_log` is the only place append_spend_entry writes, so readers outside
+    this module should come through here rather than guessing the key.
+    """
+    log = structured.get("spend_log")
+    if not isinstance(log, list):
+        return []
+    return [r for r in log if isinstance(r, dict)]
+
+
+def spend_rows_on(structured: Dict[str, Any], day: str) -> List[Dict[str, Any]]:
+    """Spending entries recorded on one YYYY-MM-DD day."""
+    return [r for r in spend_rows(structured) if str(r.get("date") or "")[:10] == day[:10]]
+
+
 def spend_pace_snapshot(structured: Dict[str, Any], *, today=None) -> Dict[str, Any]:
     """Compute today spend + remaining-day budget warnings from spend_log."""
     from datetime import date, timedelta
