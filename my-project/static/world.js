@@ -295,6 +295,11 @@
   function renderNarrator(status, map) {
     const box = $("worldNarrator");
     if (!box) return;
+    box.classList.remove("expanded");
+    if (!box.dataset.toggleBound) {
+      box.dataset.toggleBound = "1";
+      box.addEventListener("click", () => box.classList.toggle("expanded"));
+    }
     if (!status.selected) {
       box.innerHTML =
         '<div class="wn-inner"><span class="wn-icon">🌙</span><div><strong>冒険の大陸が目を覚ます</strong><p>クラスと進路を選ぶと、ここがあなただけのクエスト世界になる。</p></div></div>';

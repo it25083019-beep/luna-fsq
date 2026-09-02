@@ -120,6 +120,25 @@ def test_weekly_review():
     print("OK weekly review")
 
 
+def test_raw_chat_notes_do_not_fill_the_timeline():
+    """Consult snippets used to dump every message onto 今日's journal."""
+    today = date.today().isoformat()
+    user = {
+        "care_memory": {
+            "notes": [
+                {"d": today, "t": "health", "s": "こんにちは"},
+                {"d": today, "t": "health", "s": "mày nói dài quá nói ít thôi"},
+            ]
+        },
+        "life_modules": {"health": {"structured": {}}, "money": {"structured": {}}},
+    }
+    rows = build_care_timeline(user, day=today)
+    labels = " ".join(r.get("label") or "" for r in rows)
+    assert "こんにちは" not in labels
+    assert "nói dài" not in labels
+    print("OK chat notes stay off timeline")
+
+
 if __name__ == "__main__":
     test_append_and_build_timeline()
     test_lesson_complete_life_link()
@@ -128,4 +147,5 @@ if __name__ == "__main__":
     test_timeline_shows_mood_spend_and_schedule()
     test_spend_quest_clears_once_spending_is_logged()
     test_weekly_review_totals_real_spending()
+    test_raw_chat_notes_do_not_fill_the_timeline()
     print("ALL care_timeline tests OK")

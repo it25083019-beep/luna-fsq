@@ -133,28 +133,6 @@ def _module_events_today(
             }
         )
 
-    cm = user.get("care_memory") or {}
-    for note in cm.get("notes") or []:
-        if not isinstance(note, dict):
-            continue
-        if str(note.get("d") or "")[:10] != today:
-            continue
-        topic = note.get("t") or "care"
-        kind = "health" if topic == "health" else "money" if topic == "money" else "care"
-        snippet = (note.get("s") or "").strip()
-        if not snippet:
-            continue
-        out.append(
-            {
-                "at": f"{today}T10:00:00+00:00",
-                "kind": kind,
-                "label": snippet[:80],
-                "detail": "相談メモ",
-                "icon": KIND_ICON.get(kind, "🌸"),
-                "source": "care_memory",
-            }
-        )
-
     return out
 
 

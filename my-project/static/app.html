@@ -62,19 +62,23 @@
     body.world-mode #tab-fsq.active{
       position:fixed;
       top:0;
-      left:50%;
-      transform:translateX(-50%);
+      left:0;
+      right:0;
+      /* Do not center with transform — screenIn's fill-mode:both would
+         wipe translateX(-50%) and pin the 440px column to the right half. */
+      transform:none;
       width:100%;
       max-width:440px;
+      margin:0 auto;
       height:100dvh;
       max-height:100dvh;
-      margin:0;
       overflow-x:hidden;
       overflow-y:auto;
       overscroll-behavior:contain;
       -webkit-overflow-scrolling:touch;
       padding-bottom:calc(88px + env(safe-area-inset-bottom));
       z-index:2;
+      animation:none;
     }
     .tab-panel{display:none!important}
     .tab-panel.active{display:block!important}
@@ -201,14 +205,21 @@
     .world-hud .wh-bar{flex:1;height:7px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid rgba(212,168,75,.3);overflow:hidden;min-width:60px}
     .world-hud .wh-bar span{display:block;height:100%;background:linear-gradient(90deg,#5ecfc0,#f0d9a0,#d4a84b);border-radius:inherit;transition:width .4s}
     .world-hud .wh-quest{grid-column:1/-1;font-size:.62rem;color:rgba(247,239,224,.9);padding-top:.15rem;border-top:1px solid rgba(212,168,75,.2);margin-top:.1rem}
-    .world-narrator{margin:0 .85rem .65rem;border-radius:16px;padding:.7rem .75rem;background:linear-gradient(135deg,rgba(15,42,50,.92),rgba(31,74,62,.88));border:1px solid rgba(212,168,75,.35);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    .world-narrator{margin:0 .85rem .45rem;border-radius:14px;padding:.45rem .65rem;background:linear-gradient(135deg,rgba(15,42,50,.92),rgba(31,74,62,.88));border:1px solid rgba(212,168,75,.35);box-shadow:0 8px 24px rgba(0,0,0,.25);cursor:pointer}
     .world-narrator:empty{display:none;margin:0;padding:0;border:none}
+    .world-narrator p{
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+      margin:0;font-size:.68rem;line-height:1.45;color:rgba(247,239,224,.92);font-family:"M PLUS Rounded 1c",sans-serif
+    }
+    .world-narrator.expanded p{-webkit-line-clamp:unset;display:block}
+    .world-narrator .wn-tip{display:none}
+    .world-narrator.expanded .wn-tip{display:block;margin-top:.3rem}
     #fsq-onboard:not(.active){display:none!important}
     #fsq-home .content{padding-top:0;padding-bottom:.35rem}
     #fsq-home .char-card.rpg-stage{margin-bottom:.45rem;padding:.55rem .6rem .5rem}
     #fsq-home .hero-showcase{min-height:0;margin-bottom:0;padding:0;justify-content:flex-start}
-    #fsq-home .hero-arena{position:relative;width:100%;display:flex;justify-content:center}
-    #fsq-home .hero-stage{padding:0;width:auto;max-width:none}
+    #fsq-home .hero-arena{position:relative;width:100%;display:flex;justify-content:center;align-items:flex-end;min-height:min(238px,32vh)}
+    #fsq-home .hero-stage{padding:0 4.4rem 0;width:100%;max-width:320px;margin:0 auto;box-sizing:border-box}
     #fsq-home .hero-avatar.standee{width:min(178px,44vw);height:min(238px,34vh);margin:0 auto;border:none!important;background:transparent!important}
     #fsq-home .hero-avatar.standee .class-tag,
     #fsq-home .hero-avatar.standee .class-emblem{display:none}
@@ -235,9 +246,8 @@
     #fsq-home .hero-reflection{display:none!important}
     .world-narrator .wn-inner{display:flex;gap:.65rem;align-items:flex-start}
     .world-narrator .wn-icon{font-size:1.35rem;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
-    .world-narrator strong{display:block;font-size:.78rem;color:var(--fsq-gold-soft);font-family:"Shippori Mincho",serif;margin-bottom:.25rem}
-    .world-narrator p{margin:0;font-size:.68rem;line-height:1.55;color:rgba(247,239,224,.92);font-family:"M PLUS Rounded 1c",sans-serif}
-    .world-narrator .wn-tip{display:block;margin-top:.35rem;font-size:.58rem;color:var(--fsq-mist);font-style:normal;font-family:"M PLUS Rounded 1c",sans-serif}
+    .world-narrator strong{display:block;font-size:.72rem;color:var(--fsq-gold-soft);font-family:"Shippori Mincho",serif;margin-bottom:.15rem}
+    .world-narrator .wn-tip{font-size:.58rem;color:var(--fsq-mist);font-style:normal;font-family:"M PLUS Rounded 1c",sans-serif}
     .fsq-section.world-enter{animation:sectionIn .45s ease}
     @keyframes sectionIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
     .map-scroll-wrap{overflow-x:auto;margin:.65rem 0;border-radius:22px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
@@ -997,7 +1007,10 @@
     .home-title-row h1{margin:0;font-family:"Zen Maru Gothic",sans-serif;font-size:1.35rem;color:var(--lilac-deep)}
     .home-title-row p{margin:.2rem 0 0;font-size:.78rem;color:var(--muted)}
     .icon-btn{border:none;background:var(--card);width:2.2rem;height:2.2rem;border-radius:12px;box-shadow:var(--shadow);cursor:pointer;font-size:1rem}
-    #lunaMainView{display:flex;flex-direction:column;min-height:calc(100dvh - 64px - env(safe-area-inset-bottom));padding-bottom:.25rem}
+    #lunaMainView{display:flex;flex-direction:column;height:calc(100dvh - 72px - env(safe-area-inset-bottom));max-height:calc(100dvh - 72px - env(safe-area-inset-bottom));padding-bottom:0;overflow:hidden}
+    #lunaMainView .home-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    #lunaMainView .home-dock .chips{padding:.2rem 1rem .3rem}
+    #lunaMainView .home-dock .composer-voice{margin:.05rem 1rem .4rem}
     .home-hero{display:grid;grid-template-columns:minmax(128px,38%) 1fr;gap:.7rem;padding:0 1rem .55rem;align-items:end}
     .home-hero-luna{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%}
     .home-hero-luna #lunaSprite{height:min(42vw,200px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 10px 20px rgba(120,90,180,.2));background:transparent}
@@ -1199,22 +1212,24 @@
     .home-banner.open{display:flex}
     .home-banner p{margin:0;flex:1;font-size:.78rem;color:var(--text);line-height:1.4}
     .home-banner button{border:none;border-radius:999px;padding:.4rem .7rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;font-size:.72rem;flex-shrink:0}
-    .care-timeline{margin:0 1rem .65rem;padding:.75rem;background:var(--card);border-radius:18px;box-shadow:var(--shadow)}
-    .care-timeline h3{margin:0 0 .45rem;font-size:.88rem;color:var(--lilac-deep);display:flex;justify-content:space-between;align-items:center}
+    .care-timeline{margin:0 1rem .45rem;padding:.55rem .7rem;background:var(--card);border-radius:16px;box-shadow:var(--shadow)}
+    .care-timeline h3{margin:0 0 .25rem;font-size:.82rem;color:var(--lilac-deep);display:flex;justify-content:space-between;align-items:center}
     .care-timeline h3 span{font-size:.62rem;font-weight:700;color:var(--muted)}
-    .care-timeline ul{margin:0;padding:0;list-style:none}
-    .care-timeline li{display:flex;gap:.5rem;align-items:flex-start;padding:.4rem 0;border-bottom:1px solid rgba(155,126,217,.1);font-size:.74rem;line-height:1.45}
+    .care-timeline ul{margin:0;padding:0;list-style:none;max-height:7.2rem;overflow-y:auto}
+    .care-timeline li{display:flex;gap:.4rem;align-items:flex-start;padding:.28rem 0;border-bottom:1px solid rgba(155,126,217,.1);font-size:.72rem;line-height:1.35}
     .care-timeline li:last-child{border-bottom:none}
-    .care-timeline .ct-ico{flex-shrink:0;font-size:1rem;line-height:1.2}
+    .care-timeline .ct-ico{flex-shrink:0;font-size:.9rem;line-height:1.2}
     .care-timeline .ct-body{flex:1;min-width:0}
-    .care-timeline .ct-body strong{display:block;font-weight:700;color:var(--text)}
-    .care-timeline .ct-body em{font-style:normal;font-size:.65rem;color:var(--muted)}
+    .care-timeline .ct-body strong{display:block;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .care-timeline .ct-body em{font-style:normal;font-size:.62rem;color:var(--muted)}
     .care-timeline.empty .hint{margin:0;font-size:.75rem;color:var(--muted)}
-    .weekly-review{margin:0 1rem .55rem;padding:.75rem .85rem;border-radius:16px;background:linear-gradient(135deg,#e8f5f0,#fff);border:1px solid rgba(31,122,110,.25);display:none}
+    .care-timeline .ct-more{display:none;width:100%;margin-top:.2rem;border:none;background:none;color:var(--lilac-deep);font-size:.68rem;font-weight:800;cursor:pointer;padding:.15rem 0}
+    .care-timeline.overflow .ct-more{display:block}
+    .weekly-review{margin:0 1rem .4rem;padding:.5rem .75rem;border-radius:14px;background:linear-gradient(135deg,#e8f5f0,#fff);border:1px solid rgba(31,122,110,.25);display:none}
     .weekly-review.open{display:block}
-    .weekly-review h4{margin:0 0 .35rem;font-size:.82rem;color:#145a52}
-    .weekly-review ul{margin:0 0 .45rem;padding:0 0 0 1rem;font-size:.72rem;line-height:1.5;color:var(--text)}
-    .weekly-review p{margin:0;font-size:.7rem;color:var(--muted);line-height:1.45}
+    .weekly-review h4{margin:0 0 .2rem;font-size:.78rem;color:#145a52}
+    .weekly-review ul{margin:0;padding:0 0 0 1rem;font-size:.68rem;line-height:1.4;color:var(--text);max-height:3.6rem;overflow:hidden}
+    .weekly-review p{margin:.25rem 0 0;font-size:.66rem;color:var(--muted);line-height:1.35}
     .demo-quest-row.life-quest{border-left:3px solid var(--fsq-teal,#1f7a6e);padding-left:.5rem;margin-left:-.15rem}
     .demo-quest-row.life-quest .quest-text span{color:#145a52}
     .edit-panel .ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
@@ -1241,6 +1256,7 @@
       <!-- LUNA HOME (main) -->
       <section id="tab-luna" class="tab-panel active">
         <div id="lunaMainView">
+          <div class="home-scroll">
           <div class="home-title-row">
             <div><h1>ホーム</h1><p id="greetingSub">今日も一緒に遊ぼうね</p></div>
             <div style="display:flex;gap:.4rem">
@@ -1278,12 +1294,16 @@
             <h3>🌸 LUNAの記録 <span>今日</span></h3>
             <p class="hint">まだ記録はありません。相談や学習をするとここに残ります。</p>
             <ul id="careTimelineList" hidden></ul>
+            <button type="button" class="ct-more" id="careTimelineMore" hidden>もっと見る</button>
           </div>
+          </div>
+          <div class="home-dock">
           <div class="chips" id="chips"></div>
           <div class="composer-voice">
             <button type="button" class="mic" id="voiceBtn" title="音声">🎤</button>
             <input id="message" type="text" placeholder="LUNAに話しかけて…" autocomplete="off" />
             <button type="button" id="sendBtn" style="border:none;background:none;font-size:1.1rem;cursor:pointer">😊</button>
+          </div>
           </div>
         </div>
         <div id="settingsView" class="settings-panel">
@@ -1530,7 +1550,6 @@
           <div class="wh-item wh-power" id="whPower">PWR 0%</div>
           <div class="wh-item wh-quest"><span class="wh-k">MAIN</span><span id="whQuest">—</span></div>
         </div>
-        <div id="worldNarrator" class="world-narrator"></div>
         <div id="fsq-onboard" class="fsq-section">
           <div class="content" style="padding-top:.65rem">
             <p class="onboard-epic-line">✦ 運命の選択 — クラスを選び、進路を定めよ ✦</p>
@@ -1603,6 +1622,7 @@
               </div>
               <div class="evolution-strip" id="homeEvolutionStrip" hidden></div>
             </div>
+            <div id="worldNarrator" class="world-narrator" title="タップで全文"></div>
             <div class="card fsq-addon-card">
               <div class="section-title"><span>🛡️ クラス</span><span class="hint">自分の分身</span></div>
               <div class="classes home-class-strip" id="homeClassStrip"></div>
@@ -1881,8 +1901,8 @@
   </div>
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
-  <script src="/static/world.js"></script>
-  <script src="/static/character_doll.js?v=20260903a"></script>
-  <script src="/static/app.js?v=20260903a"></script>
+  <script src="/static/world.js?v=20260903b"></script>
+  <script src="/static/character_doll.js?v=20260903b"></script>
+  <script src="/static/app.js?v=20260903b"></script>
 </body>
 </html>

@@ -3300,35 +3300,56 @@
   function renderCareTimeline(items) {
     const wrap = document.getElementById("careTimeline");
     const list = document.getElementById("careTimelineList");
+    const more = document.getElementById("careTimelineMore");
     if (!wrap || !list) return;
-    const rows = items || [];
+    const all = (items || []).slice().reverse();
     const hint = wrap.querySelector(".hint");
-    if (!rows.length) {
+    wrap._careRows = all;
+    wrap._careOpen = false;
+    if (!all.length) {
       wrap.classList.add("empty");
+      wrap.classList.remove("overflow");
       if (hint) hint.hidden = false;
       list.hidden = true;
       list.innerHTML = "";
+      if (more) more.hidden = true;
       return;
     }
     wrap.classList.remove("empty");
     if (hint) hint.hidden = true;
     list.hidden = false;
-    list.innerHTML = "";
-    rows.slice().reverse().forEach((row) => {
-      const li = document.createElement("li");
-      const time = (row.at || "").slice(11, 16) || "—";
-      li.innerHTML =
-        '<span class="ct-ico">' +
-        (row.icon || "🌸") +
-        '</span><span class="ct-body"><strong>' +
-        (row.label || "") +
-        "</strong>" +
-        (row.detail ? '<em>' + row.detail + "</em>" : "") +
-        '<em style="display:block;margin-top:.1rem">' +
-        time +
-        "</em></span>";
-      list.appendChild(li);
-    });
+    const paint = () => {
+      const open = !!wrap._careOpen;
+      const rows = open ? all : all.slice(0, 3);
+      list.innerHTML = "";
+      rows.forEach((row) => {
+        const li = document.createElement("li");
+        const time = (row.at || "").slice(11, 16) || "—";
+        li.innerHTML =
+          '<span class="ct-ico">' +
+          (row.icon || "🌸") +
+          '</span><span class="ct-body"><strong>' +
+          (row.label || "") +
+          "</strong>" +
+          (row.detail ? "<em>" + row.detail + "</em>" : "") +
+          '<em style="display:block;margin-top:.1rem">' +
+          time +
+          "</em></span>";
+        list.appendChild(li);
+      });
+      wrap.classList.toggle("overflow", all.length > 3);
+      if (more) {
+        more.hidden = all.length <= 3;
+        more.textContent = open ? "閉じる" : "もっと見る（" + all.length + "）";
+      }
+    };
+    paint();
+    if (more) {
+      more.onclick = () => {
+        wrap._careOpen = !wrap._careOpen;
+        paint();
+      };
+    }
   }
 
   function renderWeeklyReview(review) {
