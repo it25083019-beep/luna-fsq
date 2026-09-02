@@ -426,6 +426,19 @@ def compose_companion_dialogue(
     elif re.search(r"おはよう|こんにちは|こんばんは", msg):
         body = f"{who}、こんにちは。{cname}だよ。今日の調子、短くでも聞かせてくれる？"
         emotion = "wave"
+    elif user.get("consult_mode") == "health":
+        body = (
+            f"{who}、うん、ちゃんと聞いてるよ。"
+            f"つらいところや気になることがあれば、ひとつずつでいいから教えて。"
+            f"一緒に整理して、健康メモにも残しておくね。"
+        )
+        emotion = "think"
+    elif user.get("consult_mode") == "money":
+        body = (
+            f"{who}、話してくれてありがとう。"
+            f"金額でも気持ちでも、どっちからでもいいよ。一緒に見ていこう。"
+        )
+        emotion = "think"
     else:
         body = (
             f"{who}、聞いてくれてありがとう。"

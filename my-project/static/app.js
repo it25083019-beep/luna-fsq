@@ -262,6 +262,12 @@
     if (errEl) errEl.textContent = msg || "";
   }
 
+  function scrollScreenTop() {
+    const screen = document.querySelector(".screen");
+    if (screen) screen.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }
+
   function switchTab(name) {
     currentTab = name;
     setNavActive(name);
@@ -280,11 +286,12 @@
     if (panel) panel.classList.add("active");
     if (name === "luna") {
       setLunaView("main");
+      setErr("");
       loadHomeSummary();
       if (!chatStarted) startChat();
     }
     if (name === "fsq") loadFsqTab();
-    window.scrollTo(0, 0);
+    scrollScreenTop();
   }
 
   function switchFsqSub(name) {
@@ -1880,17 +1887,17 @@
     "欲しいものがある",
   ];
 
-  async function runConsult(kind, message, opts = {}) {
-    const openModule = opts.openModule !== false;
+  async function runConsult(kind, message) {
     unlockAudio();
     setErr("");
+    closeAllSubviews();
     switchTab("luna");
     const ok = await sendMessage(message);
     if (!ok) {
       const soft =
         kind === "health"
-          ? "体調について一緒に整理しよう。まず今日の睡眠と気分を短く教えてね。"
-          : "お金のことを一緒に見ていこう。いまいちばん気になっていることを教えてね。";
+          ? "体調のこと？ うん、聞いてるよ。いまどんな感じか、思ったことをそのまま教えてね。一緒に整理するし、メモも残しておくよ。"
+          : "お金のこと、気になってるんだね。いまいちばん心に引っかかってることを教えて。話しながら一緒に整理していこう。";
       const dialogueEl = document.getElementById("dialogue");
       if (dialogueEl) dialogueEl.textContent = soft;
       setErr("");
@@ -1899,7 +1906,6 @@
       } catch (_) {}
       speakJa(soft).catch(() => {});
     }
-    if (openModule) switchTab(kind === "health" ? "health" : "money");
   }
 
   function chipRouteForLabel(label) {
@@ -1907,7 +1913,7 @@
     if (t.includes("健康に追記")) return { type: "subview", name: "health" };
     if (t.includes("予定を整理")) return { type: "subview", name: "schedule" };
     if (t.includes("欲しいもの")) return { type: "subview", name: "goals" };
-    // Consult chips: open the module first, then also chat
+    // Consult chips: companion care on home chat — never open health/money subviews
     if (t.includes("体調を相談") || (t.includes("体調") && t.includes("相談"))) {
       return { type: "consult", name: "health" };
     }
@@ -2017,7 +2023,7 @@
       const soft = "うまく返事できなかったみたい。もう一度送ってくれる？";
       const dialogueEl = document.getElementById("dialogue");
       if (dialogueEl) dialogueEl.textContent = soft;
-      setErr(e.message || String(e));
+      setErr("");
       try {
         if (luna) luna.reactToText(soft, { fallback: "sad", force: true });
       } catch (_) {}
@@ -2037,10 +2043,8 @@
     try {
       const data = await api("/chat/start", { method: "POST", body: JSON.stringify({ message: "" }) });
       applyChat(data);
-    } catch (e) {
-      setErr(e.message);
-      // Keep local greeting + default chips; allow retry on next luna tab focus.
-      chatStarted = false;
+    } catch (_) {
+      setErr("");
       showLocalGreeting();
       renderChips(DEFAULT_CHIPS);
     }
@@ -2997,6 +3001,7 @@
       el.onclick = () => {
         closeAllSubviews();
         setNavActive("luna");
+        setErr("");
         switchTab("luna");
       };
     });
@@ -3004,15 +3009,15 @@
       el.onclick = async () => {
         const ask = el.dataset.ask || "";
         if (ask.includes("体調") && ask.includes("相談")) {
-          await runConsult("health", ask, { openModule: false });
+          await runConsult("health", ask);
           return;
         }
         if ((ask.includes("お金") || ask.includes("支出") || ask.includes("貯金")) && ask.includes("相談")) {
-          await runConsult("money", ask, { openModule: false });
+          await runConsult("money", ask);
           return;
         }
         if (ask.includes("支出") && ask.includes("整理")) {
-          await runConsult("money", ask, { openModule: false });
+          await runConsult("money", ask);
           return;
         }
         closeAllSubviews();
@@ -3232,9 +3237,7 @@
       if (currentTab === "fsq") await loadJourney();
       else renderHomeHeader();
       await loadHomeSummary();
-    } catch (e) {
-      setErr(e.message);
-    }
+    } catch (_) {}
   }
 
   async function boot() {

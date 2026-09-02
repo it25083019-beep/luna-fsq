@@ -206,6 +206,7 @@ def save_user_brain(user_id: str, brain_data: Dict[str, Any]) -> None:
     # Ephemeral runtime flags must never be persisted.
     brain_data.pop("_schedule_dirty", None)
     brain_data.pop("_last_companion_line", None)
+    # consult_mode is persisted briefly so multi-turn companion care continues
     if os.getenv("LUNA_USE_JSON_FALLBACK") == "1":
         from brain_merge import safe_merge_for_save
 
@@ -781,7 +782,7 @@ def soft_chat_failure_reply(exc: BaseException) -> str:
     if _is_quota_error(exc) or (isinstance(exc, LunaAiError) and getattr(exc, "code", "") == "quota_exceeded"):
         msg = "少し混み合っているみたいだけど、ちゃんと話は聞いているよ。もう一度短く話しかけてね。"
     elif isinstance(exc, LunaAiError):
-        msg = str(exc)
+        msg = "ごめんね、いまちょっと返事が遅れてる。でも聞いてるから、もう一度ゆっくり話してくれる？"
     else:
         msg = "少し混み合っているみたい。もう一度話しかけてくれる？"
     return _pack_reply(msg, {"emotion": "think"})
@@ -800,25 +801,86 @@ def _mark_quota_block(seconds: int = 90) -> None:
     _quota_block_until = time.time() + max(45, min(int(seconds or 90), 180))
 
 
-def _local_consult_reply(user: Dict[str, Any], user_text: str) -> Optional[str]:
-    """Fast local answers for health/money consult chips — no Gemini wait."""
-    t = (user_text or "").strip()
+def _consult_topic_from_chip(text: str) -> Optional[str]:
+    """Detect health/money consult chip taps (start of care companion session)."""
+    t = (text or "").strip()
     if not t:
         return None
+    if re.search(r"体調|健康", t, re.I) and re.search(r"相談", t):
+        return "health"
+    if re.search(r"お金|家計|支出|貯金", t, re.I) and re.search(r"相談|整理", t):
+        return "money"
+    return None
+
+
+def _begin_consult_session(user: Dict[str, Any], topic: str) -> str:
+    """Open companion care on home chat: listen first, capture, advise — stay on chat."""
+    user["consult_mode"] = topic
     who = _honorific(user)
     cname = user.get("companion_name") or "LUNA"
-    if re.search(r"体調.*相談|健康.*相談|体調について|体調が", t):
+    if topic == "health":
         dialogue = (
-            f"{who}、体調の相談ね。{cname}が一緒に整理するよ。"
-            f"まず今日の睡眠時間と、いまの気分（元気/普通/疲れ）を短く教えて。"
+            f"{who}、体調のこと？ {cname}が聞くね。"
+            f"いまどんな感じ？眠れてる・食べられてる・気分…なんでもいいから、"
+            f"思ったことをそのまま教えて。一緒に整理するし、メモも残しておくよ。"
         )
-        return _pack_reply(dialogue, {"emotion": "think"})
-    if re.search(r"お金.*相談|家計.*相談|支出.*相談|お金について|貯金.*相談|支出.*整理", t):
+    else:
         dialogue = (
-            f"{who}、お金の相談だね。{cname}が一緒に見ていこう。"
-            f"今いちばん気になっていること（支出・貯金・欲しいもの）を一つ教えて。"
+            f"{who}、お金のこと、気になってるんだね。"
+            f"支出でも貯金でも欲しいものでも、いまいちばん心に引っかかってることを教えて。"
+            f"話しながら一緒に整理していこう。"
         )
-        return _pack_reply(dialogue, {"emotion": "think"})
+    return _pack_reply(dialogue, {"emotion": "think", "consult_mode": topic})
+
+
+def _consult_next_step(topic: str, applied: List[str], msg: str) -> str:
+    """One gentle next step — walk alongside, not lecture."""
+    if topic == "health":
+        if any(a.startswith("気分") for a in applied):
+            return "今夜はゆっくり休もう。明日の朝、またちょっとだけ教えてくれる？"
+        if re.search(r"眠|睡眠|寝", msg):
+            return "メモしておいたよ。明日は起床を15分遅らせるだけでも楽になるかも。"
+        if re.search(r"痛|熱|咳|吐|めまい", msg):
+            return "無理しないで。水分とって、悪化したら病院や相談窓口へ。また教えてね。"
+        if applied:
+            return "記録しておいたよ。今夜は休息優先で。明日また様子聞かせて。"
+        return "睡眠・気分・食欲、どれか一つだけでも大丈夫。ゆっくりでいいよ。"
+    if any(a.startswith("支出") for a in applied):
+        return "記録したよ。今週は外食をあと1回に抑える、みたいな小さなルールから始めよう。"
+    if re.search(r"貯金|欲しい", msg):
+        return "目標メモしておいた。週に一度、一緒に進捗見直そう。"
+    if applied:
+        return "メモ残したよ。週末に残り予算、一緒に確認しよう。"
+    return "金額が分かれば記録できるよ。『今日ランチ800円』みたいに送っても大丈夫。"
+
+
+def _companion_consult_followup(user: Dict[str, Any], user_text: str) -> str:
+    """Continue care companion: capture facts, empathize, suggest one next step."""
+    from chat_life_capture import capture_life_from_chat, compose_companion_dialogue
+
+    topic = str(user.get("consult_mode") or "health")
+    applied = capture_life_from_chat(user, user_text, None)
+    composed = compose_companion_dialogue(user, user_text, applied)
+    next_step = _consult_next_step(topic, applied, user_text)
+    dialogue = composed["dialogue"]
+    if next_step and next_step not in dialogue:
+        dialogue = dialogue.rstrip("。") + "。" + next_step
+    dialogue = _avoid_repeat_dialogue(user, dialogue)
+    return _pack_reply(
+        dialogue,
+        {
+            "emotion": composed.get("emotion") or "think",
+            "consult_mode": topic,
+            "life_saved": applied,
+        },
+    )
+
+
+def _local_consult_reply(user: Dict[str, Any], user_text: str) -> Optional[str]:
+    """Start care companion on chip tap — chat only, no module redirect."""
+    topic = _consult_topic_from_chip(user_text)
+    if topic:
+        return _begin_consult_session(user, topic)
     return None
 
 
@@ -1011,6 +1073,10 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
         if consult:
             _update_relationship(user, text_in)
             return _persist_local_turn(user_id, user, text_in, consult)
+
+    if not admin and text_in and user.get("consult_mode") and not _consult_topic_from_chip(text_in):
+        _update_relationship(user, text_in)
+        return _persist_local_turn(user_id, user, text_in, _companion_consult_followup(user, text_in))
 
     # Instant local care for common short moods (no Gemini wait).
     if not admin and text_in and re.search(
