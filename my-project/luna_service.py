@@ -815,18 +815,21 @@ def _consult_topic_from_chip(text: str) -> Optional[str]:
 
 def _begin_consult_session(user: Dict[str, Any], topic: str) -> str:
     """Open companion care on home chat: listen first, capture, advise — stay on chat."""
+    from care_memory import care_recall_prefix
+
     user["consult_mode"] = topic
     who = _honorific(user)
     cname = user.get("companion_name") or "LUNA"
+    recall = care_recall_prefix(user, topic)
     if topic == "health":
         dialogue = (
-            f"{who}、体調のこと？ {cname}が聞くね。"
+            f"{recall}{who}、体調のこと？ {cname}が聞くね。"
             f"いまどんな感じ？眠れてる・食べられてる・気分…なんでもいいから、"
             f"思ったことをそのまま教えて。一緒に整理するし、メモも残しておくよ。"
         )
     else:
         dialogue = (
-            f"{who}、お金のこと、気になってるんだね。"
+            f"{recall}{who}、お金のこと、気になってるんだね。"
             f"支出でも貯金でも欲しいものでも、いまいちばん心に引っかかってることを教えて。"
             f"話しながら一緒に整理していこう。"
         )
@@ -856,15 +859,24 @@ def _consult_next_step(topic: str, applied: List[str], msg: str) -> str:
 
 def _companion_consult_followup(user: Dict[str, Any], user_text: str) -> str:
     """Continue care companion: capture facts, empathize, suggest one next step."""
+    from care_memory import format_recorded, touch_care_memory
     from chat_life_capture import capture_life_from_chat, compose_companion_dialogue
 
     topic = str(user.get("consult_mode") or "health")
     applied = capture_life_from_chat(user, user_text, None)
+    touch_care_memory(user, topic, user_text, applied)
     composed = compose_companion_dialogue(user, user_text, applied)
+    recorded = format_recorded(applied)
     next_step = _consult_next_step(topic, applied, user_text)
-    dialogue = composed["dialogue"]
-    if next_step and next_step not in dialogue:
-        dialogue = dialogue.rstrip("。") + "。" + next_step
+    parts: List[str] = []
+    if recorded:
+        parts.append(f"【記録】{recorded}、メモしたよ。")
+    body = composed["dialogue"]
+    if body and body not in " ".join(parts):
+        parts.append(body)
+    if next_step and next_step not in " ".join(parts):
+        parts.append(next_step)
+    dialogue = "".join(parts)
     dialogue = _avoid_repeat_dialogue(user, dialogue)
     return _pack_reply(
         dialogue,
@@ -953,11 +965,7 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
     if not msg:
         return None
 
-    _consult_re = re.compile(
-        r"体調.*相談|健康.*相談|体調について|体調が|お金.*相談|家計.*相談|支出.*相談|お金について",
-        re.I,
-    )
-    if _consult_re.search(msg) and display:
+    if _consult_topic_from_chip(msg):
         return None
 
     if not display:
@@ -1078,6 +1086,12 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
         _update_relationship(user, text_in)
         return _persist_local_turn(user_id, user, text_in, _companion_consult_followup(user, text_in))
 
+    from llm_client import llm_configured
+
+    if not admin and text_in and not llm_configured():
+        _update_relationship(user, text_in)
+        return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
+
     # Instant local care for common short moods (no Gemini wait).
     if not admin and text_in and re.search(
         r"疲れ|つらい|しんど|眠い|疲れた|mệt|tired|exhausted|おはよう|こんにちは|こんばんは",
@@ -1180,6 +1194,10 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
             if _is_transient_error(e) and i < max_retries - 1:
                 time.sleep(0.8 + random.uniform(0, 0.4))
                 continue
+            if not admin and text_in:
+                return _persist_local_turn(
+                    user_id, user, text_in, _local_companion_reply(user, text_in)
+                )
             break
 
     assert last_error is not None

@@ -25,8 +25,21 @@ _NANNY_DEFAULT = [
 ]
 
 
+_CONSULT_CHIPS = {
+    "health": ["睡眠を教える", "気分は普通", "明日また報告する"],
+    "money": ["今日ランチ800円", "貯金が心配", "週末に予算を見る"],
+}
+
+
 def get_suggested_replies(user_id: str, state: dict) -> list[str]:
     """Return tap-to-send suggestion chips for the current brain mode / intake step."""
+    from luna_service import load_user_brain
+
+    brain_user = load_user_brain(user_id)
+    consult = brain_user.get("consult_mode")
+    if consult in _CONSULT_CHIPS:
+        return list(_CONSULT_CHIPS[consult])
+
     brain = get_brain_status(user_id)
     mode = brain.get("mode") or ""
 

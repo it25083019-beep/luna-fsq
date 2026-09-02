@@ -39,8 +39,8 @@
     button,input,textarea{font:inherit}
     .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
     .screen{flex:1;overflow-y:auto;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
-    .tab-panel{display:none}
-    .tab-panel.active{display:block}
+    .tab-panel{display:none!important}
+    .tab-panel.active{display:block!important}
 
     /* ===== LUNA main (default) ===== */
     #tab-luna{background:
@@ -162,6 +162,7 @@
     #fsq-home .hero-showcase{min-height:0;margin-bottom:0;padding-bottom:0}
     #fsq-home .hero-stage{padding:0 3.2rem .15rem}
     #fsq-home .evo-orbit{margin-top:.45rem}
+    #tab-fsq .fsq-banner{margin-top:0}
     .world-narrator .wn-inner{display:flex;gap:.65rem;align-items:flex-start}
     .world-narrator .wn-icon{font-size:1.35rem;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
     .world-narrator strong{display:block;font-size:.78rem;color:var(--fsq-gold-soft);font-family:"Shippori Mincho",serif;margin-bottom:.25rem}
@@ -1708,6 +1709,6 @@
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
   <script src="/static/world.js"></script>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=20260902b"></script>
 </body>
 </html>

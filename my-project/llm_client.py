@@ -134,7 +134,7 @@ def chat_openai_compatible(
     if LLM_PROVIDER == "openrouter":
         headers["HTTP-Referer"] = os.getenv("APP_BASE_URL", "http://localhost")
         headers["X-Title"] = "LUNA-FSQ"
-    res = requests.post(url, json=payload, headers=headers, timeout=60)
+    res = requests.post(url, json=payload, headers=headers, timeout=12)
     if res.status_code >= 400:
         raise RuntimeError(f"LLM HTTP {res.status_code}: {res.text[:400]}")
     data = res.json()
@@ -169,6 +169,15 @@ def chat_gemini(
     return (response.text or "").strip()
 
 
+def llm_configured() -> bool:
+    """True when an API key / local LLM endpoint is available."""
+    if provider_name() == "gemini":
+        return bool((os.getenv("GOOGLE_API_KEY") or "").strip())
+    if LLM_PROVIDER in ("ollama", "lmstudio"):
+        return True
+    return bool(_openai_api_key())
+
+
 def complete_chat(
     system_prompt: str,
     *,
@@ -179,22 +188,33 @@ def complete_chat(
     max_tokens: int = 180,
 ) -> str:
     """Route to configured provider. history_contents used only for gemini."""
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutTimeout
+
     mode = provider_name()
-    if mode == "openai_compatible":
-        return chat_openai_compatible(
+
+    def _run() -> str:
+        if mode == "openai_compatible":
+            return chat_openai_compatible(
+                system_prompt,
+                history_dicts,
+                user_text,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        return chat_gemini(
             system_prompt,
-            history_dicts,
+            history_contents or [],
             user_text,
             temperature=temperature,
-            max_tokens=max_tokens,
+            max_output_tokens=max_tokens,
         )
-    return chat_gemini(
-        system_prompt,
-        history_contents or [],
-        user_text,
-        temperature=temperature,
-        max_output_tokens=max_tokens,
-    )
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        fut = pool.submit(_run)
+        try:
+            return fut.result(timeout=14)
+        except FutTimeout as exc:
+            raise TimeoutError("LLM request timed out") from exc
 
 
 def active_backend_label() -> Dict[str, Any]:

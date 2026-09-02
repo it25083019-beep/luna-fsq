@@ -298,10 +298,13 @@
     document.querySelectorAll(".fsq-sub").forEach((b) => b.classList.toggle("active", b.dataset.fsq === name));
     document.querySelectorAll(".fsq-section").forEach((s) => s.classList.remove("active"));
     document.getElementById("fsq-" + name).classList.add("active");
+    scrollScreenTop();
     if (window.FsqWorld) FsqWorld.onSubSwitch(name);
   }
 
   function loadFsqTab() {
+    scrollScreenTop();
+    requestAnimationFrame(() => scrollScreenTop());
     if (window.FsqWorld) FsqWorld.onEnterTab();
     loadJourney().catch((e) => setErr(e.message));
   }
@@ -1892,7 +1895,16 @@
     setErr("");
     closeAllSubviews();
     switchTab("luna");
-    const ok = await sendMessage(message);
+    const instant =
+      kind === "health"
+        ? "体調のこと？ うん、聞いてるよ。いまどんな感じか教えてね。"
+        : "お金のこと、気になってるんだね。いまいちばん気になることを教えて。";
+    const dialogueEl = document.getElementById("dialogue");
+    if (dialogueEl) dialogueEl.textContent = instant;
+    try {
+      if (luna) luna.startThinking();
+    } catch (_) {}
+    const ok = await sendMessage(message, { skipThink: true });
     if (!ok) {
       const soft =
         kind === "health"
@@ -1996,15 +2008,17 @@
     });
   }
 
-  async function sendMessage(text) {
+  async function sendMessage(text, opts) {
     const msg = (text || "").trim();
     if (!msg || busy) return false;
     busy = true;
     unlockAudio();
-    // Instant think reaction BEFORE any network wait
-    try {
-      if (luna) luna.startThinking();
-    } catch (_) {}
+    const skipThink = !!(opts && opts.skipThink);
+    if (!skipThink) {
+      try {
+        if (luna) luna.startThinking();
+      } catch (_) {}
+    }
     await paintNow();
     const sendBtn = document.getElementById("sendBtn");
     if (sendBtn) sendBtn.disabled = true;
@@ -2936,7 +2950,15 @@
       if (stMoney) stMoney.textContent = s.money?.label || "—";
       document.getElementById("stGoals").textContent = s.goals?.label || "—";
       renderHomeToday(s.schedule?.today_items || []);
-      updateMentalReminderBanner(s);
+      const bannerMsg = s.care_prompt || s.pending_notification;
+      updateMentalReminderBanner({
+        health: { mental_reminder: !!bannerMsg },
+        pending_notification: bannerMsg,
+      });
+      if (s.care_quests && s.care_quests.length) {
+        const chipLabels = s.care_quests.map((q) => q.chip).filter(Boolean);
+        if (chipLabels.length) renderChips(chipLabels.concat(DEFAULT_CHIPS.filter((c) => !chipLabels.includes(c))).slice(0, 6));
+      }
     } catch (_) {}
   }
 
