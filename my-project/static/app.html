@@ -42,8 +42,6 @@
     body.world-mode{
       overflow:hidden;
       height:100dvh;
-      position:fixed;
-      inset:0;
       width:100%;
     }
     body.world-mode .app{
@@ -53,18 +51,30 @@
     }
     body.world-mode .screen{
       overflow:hidden;
-      display:flex;
-      flex-direction:column;
+      display:block;
+      flex:none;
       min-height:0;
+      height:100dvh;
+      max-height:100dvh;
       padding-bottom:0;
     }
+    body.world-mode #tab-luna{display:none!important;height:0!important;overflow:hidden!important;visibility:hidden!important}
     body.world-mode #tab-fsq.active{
-      flex:1 1 auto;
+      position:fixed;
+      top:0;
+      left:50%;
+      transform:translateX(-50%);
+      width:100%;
+      max-width:440px;
+      height:100dvh;
+      max-height:100dvh;
+      margin:0;
       overflow-x:hidden;
       overflow-y:auto;
-      min-height:0;
+      overscroll-behavior:contain;
       -webkit-overflow-scrolling:touch;
       padding-bottom:calc(88px + env(safe-area-inset-bottom));
+      z-index:2;
     }
     .tab-panel{display:none!important}
     .tab-panel.active{display:block!important}
@@ -184,23 +194,26 @@
     .world-narrator{margin:0 .85rem .65rem;border-radius:16px;padding:.7rem .75rem;background:linear-gradient(135deg,rgba(15,42,50,.92),rgba(31,74,62,.88));border:1px solid rgba(212,168,75,.35);box-shadow:0 8px 24px rgba(0,0,0,.25)}
     .world-narrator:empty{display:none;margin:0;padding:0;border:none}
     #fsq-onboard:not(.active){display:none!important}
-    #fsq-home .content{padding-top:.25rem;padding-bottom:.35rem}
-    #fsq-home .char-card.rpg-stage{margin-bottom:.45rem;padding:.65rem .75rem .55rem}
+    #fsq-home .content{padding-top:0;padding-bottom:.35rem}
+    #fsq-home .char-card.rpg-stage{margin-bottom:.45rem;padding:.55rem .75rem .5rem}
     #fsq-home .hero-showcase{min-height:0;margin-bottom:0;padding:0;justify-content:flex-start}
-    #fsq-home .hero-stage{padding:0 .5rem .05rem;width:100%;max-width:340px}
-    #fsq-home .hero-avatar.standee{width:min(260px,74vw);height:min(300px,46vh);margin:0 auto}
+    #fsq-home .hero-stage{padding:0 .35rem .05rem;width:100%;max-width:340px}
+    #fsq-home .hero-avatar.standee{width:min(240px,72vw);height:min(280px,42vh);margin:0 auto;border:none!important;background:transparent!important}
     #fsq-home .hero-avatar.standee .class-tag,
     #fsq-home .hero-avatar.standee .class-emblem{display:none}
-    #fsq-home .hero-nameplate{margin-top:.35rem;font-size:.62rem;opacity:.9}
+    #fsq-home .hero-avatar.standee img.hero-body{display:none!important}
+    #fsq-home .hero-nameplate{margin-top:.25rem;font-size:.62rem;opacity:.9}
     #fsq-home .evo-orbit{margin-top:.35rem;padding:.45rem .4rem .3rem}
-    #fsq-home .rpg-doll-mount{display:none!important}
+    #fsq-home .rpg-doll-mount{display:flex!important;width:100%;height:100%;align-items:flex-end;justify-content:center}
     #tab-fsq .fsq-banner{margin-top:0}
+    #tab-fsq.fsq-compact .fsq-banner{display:none}
     #tab-fsq.fsq-compact .fsq-banner{padding:.4rem .85rem .35rem}
     #tab-fsq.fsq-compact .fsq-banner h2{font-size:.92rem;margin:0}
     #tab-fsq.fsq-compact .fsq-banner .fsq-demo-tagline,
     #tab-fsq.fsq-compact .fsq-banner p:not(.world-kicker){display:none}
     #tab-fsq.fsq-compact .fsq-banner .world-kicker{margin:0;font-size:.5rem}
-    #tab-fsq.fsq-compact .fsq-subnav{margin-bottom:.35rem}
+    #tab-fsq.fsq-compact .fsq-subnav{margin:.35rem .85rem .35rem}
+    #tab-fsq.fsq-compact #worldHud{margin-top:0}
     #tab-fsq.fsq-compact #fsq-home .rpg-hud-top,
     #tab-fsq.fsq-compact #fsq-home .rpg-status-top{display:none}
     #tab-fsq.fsq-compact #worldNarrator:empty{display:none!important}
@@ -521,7 +534,7 @@
     .rpg-status-top{position:relative;z-index:1;margin-top:.45rem}
     .rpg-status-top .role{font-size:1.15rem;font-weight:800;margin:.1rem 0}
     .rpg-status-top .small{font-size:.7rem;opacity:.88;line-height:1.4}
-    .hero-showcase{position:relative;z-index:1;margin-top:.35rem;padding:0 .15rem .2rem;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .hero-showcase{position:relative;z-index:1;margin-top:.2rem;padding:0 .15rem .2rem;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
     .hero-showcase[data-rank="intermediate"] .stage-aura{background:radial-gradient(circle,rgba(255,200,120,.35),rgba(94,207,192,.15) 45%,transparent 70%)}
     .hero-showcase[data-rank="veteran"] .stage-aura{background:radial-gradient(circle,rgba(120,200,255,.38),rgba(180,140,255,.18) 45%,transparent 70%)}
     .hero-showcase[data-rank="saint"] .stage-aura{background:radial-gradient(circle,rgba(255,240,150,.45),rgba(255,200,80,.25) 40%,transparent 68%);animation:auraPulse 2.2s ease-in-out infinite,saintGlow 4s ease-in-out infinite}
@@ -554,6 +567,19 @@
     .stage-floor{width:150px;height:26px;margin-top:-10px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,210,122,.65),rgba(80,60,160,.15) 55%,transparent 72%);box-shadow:0 8px 28px rgba(0,0,0,.25);z-index:1}
     .hero-avatar.standee{width:min(240px,62vw);height:280px;max-height:none;aspect-ratio:auto;border:none!important;border-radius:0;overflow:visible;background:transparent!important;box-shadow:none!important;outline:none!important;z-index:2}
     .rpg-doll-mount{width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;position:relative;z-index:2}
+    .rpg-doll.sprite-mode{position:relative;width:min(210px,58vw);transform:scale(var(--scale,1));transform-origin:50% 92%;animation:dollIdle 2.8s ease-in-out infinite}
+    .rpg-doll.sprite-mode .doll-sprite-wrap{position:relative;width:100%;line-height:0}
+    .rpg-doll.sprite-mode .doll-sprite{width:100%;height:auto;display:block;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 14px 18px rgba(0,0,0,.5));pointer-events:none;user-select:none}
+    .rpg-doll.sprite-mode .doll-armor-tint{position:absolute;inset:8% 10% 12%;border-radius:40%;background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--armor-tint,#5b6abf) 28%,transparent),transparent 72%);pointer-events:none;mix-blend-mode:soft-light}
+    .rpg-doll.sprite-mode .doll-cloak-slot{position:absolute;left:50%;top:10%;transform:translateX(-50%);width:115%;height:72%;z-index:0;pointer-events:none}
+    .rpg-doll.sprite-mode .doll-acc-slot{position:absolute;left:50%;top:4%;transform:translateX(-50%);z-index:5}
+    .rpg-doll.sprite-mode .doll-weapon-slot{position:absolute;right:2%;top:28%;width:42px;height:64px;transform:rotate(-18deg);transform-origin:30% 80%;z-index:6;pointer-events:none}
+    .rpg-doll.sprite-mode .doll-weapon-slot.has-gear{animation:weaponBob 2.6s ease-in-out infinite}
+    .rpg-doll.sprite-mode .doll-art-slot{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);width:100%;height:100%;pointer-events:none;z-index:1}
+    .rpg-doll.sprite-mode .doll-shadow{position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);width:78%;height:12px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.4),transparent 70%)}
+    .rpg-doll.sprite-mode.gear-glow-rare .doll-aura,
+    .rpg-doll.sprite-mode.gear-glow-epic .doll-aura,
+    .rpg-doll.sprite-mode.gear-glow-legendary .doll-aura{background:radial-gradient(circle,rgba(255,210,122,.35),transparent 70%)}
     .rpg-doll{position:relative;width:140px;transform:scale(var(--scale,1));transform-origin:50% 92%;animation:dollIdle 2.8s ease-in-out infinite}
     @keyframes dollIdle{0%,100%{transform:scale(var(--scale,1)) translateY(0)}50%{transform:scale(var(--scale,1)) translateY(-6px)}}
     .rpg-doll .doll-aura{position:absolute;left:50%;top:5%;width:130px;height:130px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,230,150,.22),transparent 70%);pointer-events:none;animation:auraPulse 3s ease-in-out infinite}
@@ -1518,7 +1544,7 @@
           </div>
         </div>
         <div id="fsq-home" class="fsq-section active">
-          <div class="content" style="padding-top:.65rem">
+          <div class="content">
             <div class="char-card rpg-stage">
               <div class="rpg-stage-shine" aria-hidden="true"></div>
               <div class="rpg-hud-top">
@@ -1544,8 +1570,8 @@
                   <div class="stage-aura" aria-hidden="true"></div>
                   <div class="hero-avatar standee" id="homeAvatarWrap">
                     <div class="hero-alive" id="homeHeroAlive">
-                      <div id="rpgDollMount" class="rpg-doll-mount" aria-hidden="true" hidden></div>
-                      <img id="homeAvatarImg" class="hero-body" src="" alt="" />
+                      <div id="rpgDollMount" class="rpg-doll-mount" aria-label="キャラクター"></div>
+                      <img id="homeAvatarImg" class="hero-body" src="" alt="" hidden />
                       <div class="life-fx" aria-hidden="true">
                         <span class="spark s1"></span>
                         <span class="spark s2"></span>
@@ -1846,7 +1872,7 @@
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
   <script src="/static/world.js"></script>
-  <script src="/static/character_doll.js?v=20260902h"></script>
-  <script src="/static/app.js?v=20260902h"></script>
+  <script src="/static/character_doll.js?v=20260902i"></script>
+  <script src="/static/app.js?v=20260902i"></script>
 </body>
 </html>

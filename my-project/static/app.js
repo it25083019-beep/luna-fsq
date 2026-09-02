@@ -269,11 +269,13 @@
   }
 
   function scrollFsqTop() {
-    scrollScreenTop();
-    const fsq = document.getElementById("tab-fsq");
-    if (fsq) fsq.scrollTop = 0;
+    window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
+    const screen = document.querySelector(".screen");
+    if (screen) screen.scrollTop = 0;
+    const fsq = document.getElementById("tab-fsq");
+    if (fsq) fsq.scrollTop = 0;
   }
 
   function updateFsqCompactMode() {
@@ -284,6 +286,7 @@
   }
 
   function switchTab(name) {
+    if (name === "fsq") scrollFsqTop();
     currentTab = name;
     setNavActive(name);
     document.body.classList.toggle("world-mode", name === "fsq");
@@ -593,9 +596,21 @@
     const mount = document.getElementById("rpgDollMount");
     if (!mount || !window.CharacterDoll) return;
     const ap = appearance || journeyStatus.appearance || {};
+    const classId = ap.class_id || journeyStatus.class_id || selectedClass;
+    const rankId = ap.rank_id || journeyStatus.rank_id || "novice";
+    let sprite = ap.evolution_sprite || evolutionSpritePath(classId, rankId);
+    if (
+      sprite &&
+      typeof sprite === "string" &&
+      sprite.indexOf("_stand.png") < 0 &&
+      /\/static\/rpg\/characters\/[^/]+\.png$/.test(sprite)
+    ) {
+      sprite = sprite.replace(/\.png$/, "_stand.png");
+    }
     CharacterDoll.render(mount, {
-      classId: ap.class_id || journeyStatus.class_id || selectedClass,
-      rankId: ap.rank_id || journeyStatus.rank_id || "novice",
+      classId: classId,
+      rankId: rankId,
+      sprite: sprite,
       loadout: buildDollLoadout(),
     });
   }
@@ -610,24 +625,10 @@
     wrap.classList.add("has-evolution");
     const mount = document.getElementById("rpgDollMount");
     if (mount) {
-      mount.innerHTML = "";
-      mount.hidden = true;
+      mount.hidden = false;
+      renderCharacterDoll(ap);
     }
-    let evo = ap.evolution_sprite || ap.sprite || (classId ? evolutionSpritePath(classId, rankId) : null);
-    if (
-      evo &&
-      typeof evo === "string" &&
-      evo.indexOf("_stand.png") < 0 &&
-      /\/static\/rpg\/characters\/[^/]+\.png$/.test(evo)
-    ) {
-      evo = evo.replace(/\.png$/, "_stand.png");
-    }
-    if (img && evo) {
-      img.hidden = false;
-      img.src = evo;
-      img.alt =
-        (ap.class_label_ja || classLabel(classId)) + " " + (ap.rank_label_ja || journeyStatus.rank_ja || "");
-    } else if (img) {
+    if (img) {
       img.hidden = true;
       img.removeAttribute("src");
     }
