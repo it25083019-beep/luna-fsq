@@ -300,6 +300,20 @@
         '<div class="wn-inner"><span class="wn-icon">🌙</span><div><strong>冒険の大陸が目を覚ます</strong><p>クラスと進路を選ぶと、ここがあなただけのクエスト世界になる。</p></div></div>';
       return;
     }
+    const weekly = status.weekly_story;
+    if (weekly && weekly.story_ja) {
+      const hl = (weekly.highlights || []).slice(0, 2).join(" ・ ");
+      box.innerHTML =
+        '<div class="wn-inner"><span class="wn-icon">📖</span><div><strong>今週の物語（' +
+        (weekly.week_label || "") +
+        "）</strong><p>" +
+        weekly.story_ja +
+        '</p><em class="wn-tip">' +
+        (weekly.tip_ja || "学びは経験値。一歩ずつ未来へ。") +
+        (hl ? " — " + hl : "") +
+        "</em></div></div>";
+      return;
+    }
     const idx = currentRegionIdx(map);
     const lore = REGION_LORE[idx] || REGION_LORE[0];
     const next = status.next_lesson;

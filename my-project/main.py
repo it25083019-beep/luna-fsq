@@ -986,8 +986,18 @@ def journey_careers(current: User = Depends(get_current_user)):
 
 @app.get("/journey/status")
 def journey_get_status(current: User = Depends(get_current_user)):
+    from fsq_story import build_fsq_weekly_story
+
     brain = load_user_brain(current.public_id)
-    return journey_status(brain)
+    before = dict(brain.get("fsq_weekly_story") or {})
+    status = journey_status(brain)
+    story = build_fsq_weekly_story(brain, status=status)
+    if story:
+        status["weekly_story"] = story
+    after = brain.get("fsq_weekly_story") or {}
+    if after != before:
+        save_user_brain(current.public_id, brain)
+    return status
 
 
 @app.post("/journey/select")
@@ -1018,11 +1028,16 @@ def journey_get_lesson(lesson_id: str, current: User = Depends(get_current_user)
 
 @app.post("/journey/lessons/{lesson_id}/complete")
 def journey_complete_lesson(lesson_id: str, current: User = Depends(get_current_user)):
+    from fsq_story import build_fsq_weekly_story
+
     brain = load_user_brain(current.public_id)
     try:
         result = complete_lesson(brain, lesson_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    story = build_fsq_weekly_story(brain, status=result.get("status"), force_refresh=True)
+    if story:
+        result["weekly_story"] = story
     save_user_brain(current.public_id, brain)
     return result
 

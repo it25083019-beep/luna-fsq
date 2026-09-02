@@ -75,10 +75,15 @@ def on_lesson_complete(
             f"+{raw_exp} EXP だよ。今日の冒険、ちゃんと記録したね✨"
         )
 
+    from fsq_story import mini_quest_story
+
+    quest_story = mini_quest_story(state, lesson, exp=raw_exp)
+
     return {
         "luna_message": luna_message,
         "life_effects": effects,
         "timeline_kind": "study",
+        "quest_story": quest_story,
     }
 
 

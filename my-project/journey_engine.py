@@ -533,6 +533,7 @@ def complete_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
         "map": list_journey_map(state),
         "luna_message": life_link.get("luna_message"),
         "life_effects": life_link.get("life_effects") or [],
+        "quest_story": life_link.get("quest_story"),
     }
 
 

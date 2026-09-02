@@ -382,6 +382,7 @@
     try {
       const [st, mp] = await Promise.all([api("/journey/status"), api("/journey/map")]);
       journeyStatus = st || { selected: false, classes: [], careers: [] };
+      if (st && st.weekly_story) journeyStatus.weekly_story = st.weekly_story;
       journeyMap = mp || { selected: false, stages: [], lessons: [], bosses: [] };
       if (st && st.class_id) selectedClass = st.class_id;
     } catch (e) {
@@ -1422,11 +1423,16 @@
       });
       journeyStatus = res.status || journeyStatus;
       journeyMap = res.map || journeyMap;
+      if (res.weekly_story) journeyStatus.weekly_story = res.weekly_story;
       const chips = [];
       (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
       if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
       if (res.rank) chips.push("進化：" + (res.rank.label_ja || res.rank.id));
-      showRewardModal("🎉 QUEST CLEAR!", ["EXP +" + (res.exp_gained || 0), (res.lesson && res.lesson.title_ja) || ""].concat(res.life_effects || []), chips);
+      showRewardModal(
+        "🎉 QUEST CLEAR!",
+        [(res.quest_story || "").trim(), "EXP +" + (res.exp_gained || 0), (res.lesson && res.lesson.title_ja) || ""].filter(Boolean),
+        chips
+      );
       if (res.luna_message) {
         const dialogueEl = document.getElementById("dialogue");
         if (dialogueEl) dialogueEl.textContent = res.luna_message;
@@ -1716,14 +1722,19 @@
     if (pBar) pBar.style.width = prog.pct + "%";
     const pStory = document.getElementById("portfolioStory");
     if (pStory) {
-      pStory.textContent = journeyStatus.selected
-        ? (journeyStatus.career_title_ja || "進路") +
-          "への冒険。習熟「" +
-          (journeyStatus.rank_ja || "見習い") +
-          "」— レッスン " +
-          (journeyStatus.completed_count || 0) +
-          " 完了。理論と実践を重ね、最終ボスへ向かおう。"
-        : "クラスと職業を選ぶと、冒険の記録がここに表示されます。";
+      const weekly = journeyStatus.weekly_story;
+      if (weekly && weekly.story_ja) {
+        pStory.textContent = weekly.story_ja;
+      } else {
+        pStory.textContent = journeyStatus.selected
+          ? (journeyStatus.career_title_ja || "進路") +
+            "への冒険。習熟「" +
+            (journeyStatus.rank_ja || "見習い") +
+            "」— レッスン " +
+            (journeyStatus.completed_count || 0) +
+            " 完了。理論と実践を重ね、最終ボスへ向かおう。"
+          : "クラスと職業を選ぶと、冒険の記録がここに表示されます。";
+      }
     }
     const row = document.getElementById("portfolioStats");
     if (row) {
