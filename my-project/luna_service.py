@@ -14,6 +14,11 @@ from llm_client import active_backend_label, complete_chat, provider_name
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.5-flash")
 
+# A packed reply carries the dialogue plus a game_state JSON block, so the
+# budget has to cover both or the tail gets cut off mid-sentence.
+CHAT_REPLY_TOKENS = int(os.getenv("CHAT_REPLY_TOKENS") or 700)
+CHAT_CONTEXT_TURNS = int(os.getenv("CHAT_CONTEXT_TURNS") or 20)
+
 # Gemini client is optional when using openai_compatible / groq / ollama.
 client = None
 if provider_name() == "gemini":
@@ -227,44 +232,142 @@ def save_user_brain(user_id: str, brain_data: Dict[str, Any]) -> None:
     _db_save_user(user_id, brain_data)
 
 
+EMOTION_TAGS = "neutral|joy|happy|sadness|sad|surprise|surprised|think|cheer|wave"
+
+
+def _today_iso() -> str:
+    from datetime import date
+
+    return date.today().isoformat()
+
+
+def _now_iso() -> str:
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).isoformat()
+
+
+def append_turns(store: Dict[str, Any], user_text: str, ai_reply: str) -> None:
+    """Record one exchange. Timestamps let the history screen group by day."""
+    history = store.setdefault("chat_history", [])
+    stamp = _now_iso()
+    if (user_text or "").strip():
+        history.append({"role": "user", "content": user_text, "at": stamp})
+    history.append({"role": "model", "content": ai_reply, "at": stamp})
+
+
+def get_chat_history(
+    user_id: str, *, limit: int = 60, before: Optional[int] = None
+) -> Dict[str, Any]:
+    """Newest-last page of readable turns, walking backwards from `before`.
+
+    Stored assistant turns hold the packed protocol payload, so each one is run
+    through the parser to recover plain text. Turns saved before timestamps
+    existed simply have no `at`.
+    """
+    user = load_user_brain(user_id)
+    history = user.get("chat_history")
+    if not isinstance(history, list):
+        history = []
+    total = len(history)
+
+    end = total if before is None else max(0, min(int(before), total))
+    start = max(0, end - max(1, int(limit)))
+
+    rows = []
+    for idx in range(start, end):
+        turn = history[idx]
+        if not isinstance(turn, dict):
+            continue
+        role = "user" if turn.get("role") == "user" else "luna"
+        content = turn.get("content") or ""
+        if role == "luna":
+            text, _ = parse_ai_reply(content)
+        else:
+            text = str(content).strip()
+        if not text:
+            continue
+        rows.append({"index": idx, "role": role, "text": text, "at": turn.get("at")})
+
+    return {
+        "total": total,
+        "turns": rows,
+        "next_before": start if start > 0 else None,
+        "has_more": start > 0,
+    }
+
+
+def _extract_game_state(ai_reply: str) -> Dict[str, Any]:
+    """Read the state JSON, tolerating a missing closing tag."""
+    for pattern in (
+        r"<game_state_json>\s*(.*?)\s*</game_state_json>",
+        r"<game_state_json>\s*(\{.*)",
+    ):
+        match = re.search(pattern, ai_reply, re.DOTALL | re.IGNORECASE)
+        if not match:
+            continue
+        raw = match.group(1).strip()
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            # A truncated reply leaves unbalanced braces; recover the longest
+            # prefix that still parses so captured life data is not lost.
+            for end in range(len(raw), 1, -1):
+                if raw[end - 1] != "}":
+                    continue
+                try:
+                    parsed = json.loads(raw[:end])
+                    break
+                except json.JSONDecodeError:
+                    continue
+            else:
+                continue
+        if isinstance(parsed, dict):
+            return parsed
+    return {}
+
+
+def _clean_dialogue(text: str) -> str:
+    """Strip any stray protocol markup so it can never reach the chat bubble."""
+    out = re.sub(
+        r"<game_state_json>.*?(</game_state_json>|$)",
+        "",
+        text,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    out = re.sub(r"</?dialogue>", "\n", out, flags=re.IGNORECASE)
+    out = re.sub(r"\n{3,}", "\n\n", out)
+    return out.strip()
+
+
 def parse_ai_reply(ai_reply: str) -> Tuple[str, Dict[str, Any]]:
-    dialogue = ai_reply.strip()
+    raw = (ai_reply or "").strip()
     game_state: Dict[str, Any] = {}
 
-    dialogue_match = re.search(
-        r"<dialogue>\s*(.*?)\s*</dialogue>", ai_reply, re.DOTALL | re.IGNORECASE
-    )
-    if dialogue_match:
-        dialogue = dialogue_match.group(1).strip()
+    # Prefer a well-formed block, then an unclosed one (truncated reply), then
+    # treat the whole payload as dialogue.
+    closed = re.search(r"<dialogue>\s*(.*?)\s*</dialogue>", raw, re.DOTALL | re.IGNORECASE)
+    if closed:
+        dialogue = closed.group(1)
+    else:
+        open_only = re.search(r"<dialogue>\s*(.*)", raw, re.DOTALL | re.IGNORECASE)
+        dialogue = open_only.group(1) if open_only else raw
 
-    # VTuber-style [emotion] tags → expression hint for frontend
-    emo_match = re.match(
-        r"^\[(neutral|joy|happy|sadness|sad|surprise|surprised|think|cheer|wave)\]\s*",
-        dialogue,
-        re.IGNORECASE,
-    )
-    if emo_match:
-        game_state["emotion"] = emo_match.group(1).lower()
-        dialogue = dialogue[emo_match.end() :].strip()
+    dialogue = _clean_dialogue(dialogue)
 
-    json_match = re.search(
-        r"<game_state_json>\s*(.*?)\s*</game_state_json>",
-        ai_reply,
-        re.DOTALL | re.IGNORECASE,
-    )
-    if json_match:
-        raw_json = json_match.group(1).strip()
-        try:
-            parsed = json.loads(raw_json)
-            if isinstance(parsed, dict):
-                # keep emotion from tag if JSON didn't set it
-                if "emotion" in game_state and "emotion" not in parsed:
-                    parsed["emotion"] = game_state["emotion"]
-                game_state = parsed
-            else:
-                game_state = {}
-        except json.JSONDecodeError:
-            pass
+    # The emotion tag can land before or after the wrapper, so sweep the head
+    # of the text rather than anchoring strictly at position 0.
+    emo = re.match(rf"\s*\[({EMOTION_TAGS})\]\s*", dialogue, re.IGNORECASE)
+    if emo:
+        game_state["emotion"] = emo.group(1).lower()
+        dialogue = dialogue[emo.end() :].strip()
+    dialogue = re.sub(rf"\[({EMOTION_TAGS})\]", "", dialogue, flags=re.IGNORECASE).strip()
+
+    parsed = _extract_game_state(raw)
+    if parsed:
+        if "emotion" in game_state and "emotion" not in parsed:
+            parsed["emotion"] = game_state["emotion"]
+        game_state = parsed
 
     return dialogue, game_state
 
@@ -442,9 +545,8 @@ THREE LIFE MODULES (first-meeting questions are only a baseline; user can add mo
 
 FIVE PILLARS always: 1 health 2 study/future 3 money 4 time 5 goal direction.
 
-EMOTION TAGS (like VTuber emotionMap — put ONE tag at the start of dialogue when fitting):
+EMOTION TAGS (like VTuber emotionMap — put ONE tag right after <dialogue> when fitting):
 [neutral] [joy] [sadness] [surprise] [think] [cheer] [wave] [happy]
-Example: [cheer]よくできました。次は短い休憩を。
 
 USER PROFILE:
 {profile}
@@ -458,6 +560,7 @@ NOTIFICATION RULES (do NOT ask interval preference):
 - Before scheduled events in timetable: use schedule_reminders / pending_notification.
 
 LIFE DATA CAPTURE (additive — never delete existing user data):
+TODAY IS {_today_iso()}. Never guess a date — derive every date from TODAY.
 When the user mentions facts about mood, spending, schedule, or goals, put them in game_state_json under life_updates.
 Use ONLY these keys when confident:
 - mental_status: one of 元気/普通/疲れ/落ち込み/不安
@@ -472,8 +575,20 @@ If unsure, omit life_updates. Never wipe calendars, funds, or goals.
 # PRIVACY
 - You only know THIS user. Never invent or reference other users' private data.
 - Do not ask for email/password. Auth is outside chat.
-Output ONLY <dialogue> and <game_state_json>.
-Include current_focus, current_do_now, pending_notification when useful.
+
+# OUTPUT FORMAT (follow exactly — no text outside these two blocks)
+<dialogue>
+[cheer]よくできました。次は短い休憩を取りましょう。
+</dialogue>
+<game_state_json>
+{{"emotion": "cheer", "current_do_now": "5分休憩"}}
+</game_state_json>
+
+Hard rules:
+- ALWAYS close both tags. Never emit a second <dialogue> block.
+- Keep the dialogue to 2-3 short sentences so both blocks fit in the reply.
+- game_state_json must be one valid JSON object, even if empty: {{}}
+- Include current_focus, current_do_now, pending_notification when useful.
 """
 
 
@@ -753,7 +868,7 @@ def start_user_greeting(user_id: str) -> str:
         "companion_name": user.get("companion_name"),
     })
     if not user.get("chat_history"):
-        user["chat_history"].append({"role": "model", "content": ai_reply})
+        append_turns(user, "", ai_reply)
         save_user_brain(user_id, user)
     return ai_reply
 
@@ -943,8 +1058,7 @@ def _local_companion_reply(user: Dict[str, Any], user_text: str) -> str:
 def _persist_local_turn(user_id: str, user: Dict[str, Any], user_text: str, ai_reply: str) -> str:
     """Persist a local companion turn. Capture is done inside _local_companion_reply."""
     user.setdefault("chat_history", [])
-    user["chat_history"].append({"role": "user", "content": user_text})
-    user["chat_history"].append({"role": "model", "content": ai_reply})
+    append_turns(user, user_text, ai_reply)
     save_user_brain(user_id, user)
     return ai_reply
 
@@ -986,8 +1100,7 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
                     f"{name}様、承知いたしました。次に、私の呼び名を一つお決めください。",
                     {"user_display_name": name},
                 )
-        user["chat_history"].append({"role": "user", "content": user_text})
-        user["chat_history"].append({"role": "model", "content": ai_reply})
+        append_turns(user, user_text, ai_reply)
         save_user_brain(user_id, user)
         return ai_reply
 
@@ -1013,8 +1126,7 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
                 "companion_name": cname,
                 "profile_intake_step": 0,
             })
-        user["chat_history"].append({"role": "user", "content": user_text})
-        user["chat_history"].append({"role": "model", "content": ai_reply})
+        append_turns(user, user_text, ai_reply)
         save_user_brain(user_id, user)
         return ai_reply
 
@@ -1058,8 +1170,7 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
                     "profile_intake_step": step,
                     "life_profile": user.get("life_profile"),
                 })
-            user["chat_history"].append({"role": "user", "content": user_text})
-            user["chat_history"].append({"role": "model", "content": ai_reply})
+            append_turns(user, user_text, ai_reply)
             save_user_brain(user_id, user)
             return ai_reply
 
@@ -1167,22 +1278,21 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
             ai_reply = complete_chat(
                 system_prompt,
                 history_dicts=history,
-                history_contents=_history_to_contents(history, limit=6),
+                history_contents=_history_to_contents(history, limit=CHAT_CONTEXT_TURNS),
                 user_text=user_text,
                 temperature=0.6,
-                max_tokens=220,
+                max_tokens=CHAT_REPLY_TOKENS,
+                history_limit=CHAT_CONTEXT_TURNS,
             )
 
-            # If provider returned plain Japanese without XML tags, wrap it.
-            if ai_reply and "<dialogue>" not in ai_reply:
-                ai_reply = _pack_reply(ai_reply, {})
-
-            _, game_state = parse_ai_reply(ai_reply)
+            # Normalise whatever shape the model used into our packed format so
+            # a missing or unclosed tag can never leak into the chat bubble.
+            dialogue, game_state = parse_ai_reply(ai_reply)
+            ai_reply = _pack_reply(dialogue, game_state)
 
             if admin:
                 _apply_memory_note_admin(core, game_state)
-                core["chat_history"].append({"role": "user", "content": user_text})
-                core["chat_history"].append({"role": "model", "content": ai_reply})
+                append_turns(core, user_text, ai_reply)
                 save_core_brain(core)
             else:
                 _apply_user_fields_from_game_state(user, game_state)
@@ -1211,8 +1321,7 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
                     ai_reply = _pack_reply(dialogue, gs)
                 except Exception:
                     pass
-                user["chat_history"].append({"role": "user", "content": user_text})
-                user["chat_history"].append({"role": "model", "content": ai_reply})
+                append_turns(user, user_text, ai_reply)
                 save_user_brain(user_id, user)
 
             return ai_reply

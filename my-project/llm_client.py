@@ -115,6 +115,7 @@ def chat_openai_compatible(
     *,
     temperature: float = 0.6,
     max_tokens: int = 180,
+    history_limit: int = 6,
 ) -> str:
     key = _openai_api_key()
     if not key and LLM_PROVIDER not in ("ollama", "lmstudio"):
@@ -123,7 +124,9 @@ def chat_openai_compatible(
     model = _default_model_for_provider()
     payload = {
         "model": model,
-        "messages": history_to_openai_messages(system_prompt, history, user_text),
+        "messages": history_to_openai_messages(
+            system_prompt, history, user_text, limit=history_limit
+        ),
         "temperature": temperature,
         "max_tokens": max_tokens,
     }
@@ -156,17 +159,31 @@ def chat_gemini(
 
     client = _get_gemini()
     model = (os.getenv("MODEL_NAME") or "gemini-2.5-flash").strip()
+    cfg: Dict[str, Any] = {
+        "system_instruction": system_prompt,
+        "temperature": temperature,
+        "max_output_tokens": max_output_tokens,
+    }
+    # Gemini 2.5 thinks before answering and those tokens are billed against
+    # max_output_tokens, which silently truncated replies mid-sentence. Chat
+    # replies are short and conversational, so thinking buys nothing here.
+    if "2.5" in model or "gemini-3" in model:
+        cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
     chat_session = client.chats.create(
         model=model,
         history=history_contents,
-        config=types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-        ),
+        config=types.GenerateContentConfig(**cfg),
     )
     response = chat_session.send_message(user_text)
-    return (response.text or "").strip()
+    text = (response.text or "").strip()
+    if not text:
+        reason = None
+        try:
+            reason = (response.candidates or [None])[0].finish_reason
+        except (AttributeError, IndexError):
+            pass
+        raise RuntimeError(f"Empty LLM reply (finish_reason={reason})")
+    return text
 
 
 def llm_configured() -> bool:
@@ -186,6 +203,7 @@ def complete_chat(
     user_text: str,
     temperature: float = 0.6,
     max_tokens: int = 180,
+    history_limit: int = 6,
 ) -> str:
     """Route to configured provider. history_contents used only for gemini."""
     from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutTimeout
@@ -200,6 +218,7 @@ def complete_chat(
                 user_text,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                history_limit=history_limit,
             )
         return chat_gemini(
             system_prompt,

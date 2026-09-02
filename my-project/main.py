@@ -131,6 +131,7 @@ from tts_service import synthesize_speech
 from luna_service import (
     LunaAiError,
     generate_with_retry,
+    get_chat_history,
     handle_chat_message,
     parse_ai_reply,
     get_brain_status,
@@ -408,6 +409,18 @@ def get_state_me(current: User = Depends(get_current_user)):
 @app.get("/brain/me")
 def brain_status_me(current: User = Depends(get_current_user)):
     return get_brain_status(current.public_id)
+
+
+@app.get("/chat/history")
+def chat_history_me(
+    limit: int = 60,
+    before: Optional[int] = None,
+    current: User = Depends(get_current_user),
+):
+    """Readable past turns, newest page first. Page back with `next_before`."""
+    return get_chat_history(
+        current.public_id, limit=max(1, min(int(limit), 200)), before=before
+    )
 
 
 @app.get("/state/{user_id}")

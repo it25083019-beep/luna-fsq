@@ -182,9 +182,25 @@ def extract_life_hints_from_text(user_text: str, *, today: Optional[date] = None
     return out
 
 
-def _merge_updates(base: Dict[str, Any], extra: Any) -> Dict[str, Any]:
+DATE_DRIFT_DAYS = 31
+
+
+def _plausible_date(value: Any, *, today: Optional[date] = None) -> bool:
+    """Guard against the model inventing a date far from the real one."""
+    today = today or _today()
+    try:
+        parsed = date.fromisoformat(str(value)[:10])
+    except (TypeError, ValueError):
+        return False
+    return abs((parsed - today).days) <= DATE_DRIFT_DAYS
+
+
+def _merge_updates(
+    base: Dict[str, Any], extra: Any, *, today: Optional[date] = None
+) -> Dict[str, Any]:
     if not isinstance(extra, dict):
         return base
+    today = today or _today()
     out = dict(base)
     for k, v in extra.items():
         if v is None or v == "" or v == {}:
@@ -193,11 +209,23 @@ def _merge_updates(base: Dict[str, Any], extra: Any) -> Dict[str, Any]:
             out[k] = v
         elif isinstance(out[k], dict) and isinstance(v, dict):
             merged = dict(out[k])
-            merged.update({kk: vv for kk, vv in v.items() if vv not in (None, "")})
+            for kk, vv in v.items():
+                if vv in (None, ""):
+                    continue
+                # The message text is the ground truth for dates; only accept the
+                # model's value when it is close enough to today to be real.
+                if kk == "date" and not _plausible_date(vv, today=today):
+                    continue
+                merged[kk] = vv
             out[k] = merged
         else:
             # Prefer explicit LLM structured value when both present
             out[k] = v
+
+    for key in ("spend", "schedule_add"):
+        row = out.get(key)
+        if isinstance(row, dict) and not _plausible_date(row.get("date"), today=today):
+            row["date"] = today.isoformat()
     return out
 
 

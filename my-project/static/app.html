@@ -981,7 +981,7 @@
     .row-btns button{border:none;border-radius:999px;padding:.5rem .8rem;font-size:.75rem;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep);font-weight:700}
     .row-btns button.danger{background:rgba(224,122,138,.15);color:var(--danger)}
 
-    .bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:412px;height:62px;padding:0 .45rem;background:#f3f1f6;border:none;border-radius:999px;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;z-index:70;box-shadow:0 10px 28px rgba(80,50,120,.18)}
+    .bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:412px;height:62px;padding:0 .45rem;background:#f3f1f6;border:none;border-radius:999px;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;z-index:78;box-shadow:0 10px 28px rgba(80,50,120,.18)}
     .nav-item{border:none;background:transparent;height:54px;display:grid;place-items:center;cursor:pointer;color:#8a6ec8;padding:0;border-radius:50%}
     .nav-item svg{width:26px;height:26px;display:block}
     .nav-item .nav-luna{width:34px;height:34px;border-radius:50%;object-fit:cover;background:#fff;box-shadow:0 0 0 2px #fff}
@@ -1011,10 +1011,32 @@
     .composer-voice input{flex:1;border:none;background:transparent;outline:none;padding:.4rem 0;font-size:.85rem}
 
     /* Full-screen subviews (schedule / health / money) */
-    .subview{position:fixed;inset:0;max-width:440px;margin:0 auto;background:linear-gradient(165deg,var(--bg0),var(--bg1) 50%,var(--bg2));z-index:75;overflow-y:auto;padding-bottom:calc(28px + env(safe-area-inset-bottom))}
-    body.subview-open .bottom-nav{display:none}
+    .subview{position:fixed;inset:0;max-width:440px;margin:0 auto;background:linear-gradient(165deg,var(--bg0),var(--bg1) 50%,var(--bg2));z-index:75;overflow-y:auto;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+    /* The bottom nav stays reachable above subviews so 健康 / お金 / クエスト
+       can be swapped directly instead of backing out first. */
+    .subview:not(.hidden){animation:screenIn .24s cubic-bezier(.2,.8,.2,1) both}
+    @keyframes screenIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    .tab-panel.active{animation:screenIn .24s cubic-bezier(.2,.8,.2,1) both}
+    @media (prefers-reduced-motion:reduce){
+      .subview:not(.hidden),.tab-panel.active{animation:none}
+    }
     .mental-overlay{position:fixed;inset:0;background:rgba(40,30,60,.45);z-index:90;display:none;align-items:flex-end;justify-content:center;padding:1rem;pointer-events:none}
     .mental-overlay.open{display:flex;pointer-events:auto}
+    /* ===== Chat history ===== */
+    .hist-wrap{padding:.85rem 1rem calc(96px + env(safe-area-inset-bottom))}
+    .hist-empty{text-align:center;color:var(--muted);font-size:.82rem;padding:2.5rem 1rem;line-height:1.7}
+    .hist-more{display:block;width:100%;margin:0 0 .9rem;padding:.6rem;border:1px dashed var(--lilac);background:transparent;color:var(--lilac-deep);border-radius:14px;font-size:.78rem;font-weight:800;cursor:pointer}
+    .hist-more[disabled]{opacity:.5;cursor:default}
+    .hist-day{position:sticky;top:0;z-index:1;margin:.5rem 0 .7rem;text-align:center}
+    .hist-day span{display:inline-block;font-size:.66rem;font-weight:800;color:var(--muted);background:var(--card);border-radius:999px;padding:.2rem .7rem;box-shadow:var(--shadow)}
+    .hist-msg{display:flex;flex-direction:column;max-width:82%;margin-bottom:.65rem}
+    .hist-msg .txt{border-radius:16px;padding:.6rem .8rem;font-size:.84rem;line-height:1.65;white-space:pre-wrap;word-break:break-word;box-shadow:var(--shadow)}
+    .hist-msg .meta{font-size:.58rem;color:var(--muted);margin-top:.2rem}
+    .hist-msg.luna{align-items:flex-start;margin-right:auto}
+    .hist-msg.luna .txt{background:var(--card);border-top-left-radius:5px}
+    .hist-msg.me{align-items:flex-end;margin-left:auto}
+    .hist-msg.me .txt{background:linear-gradient(135deg,var(--lilac-deep),var(--lilac));color:#fff;border-top-right-radius:5px}
+    .hist-msg.me .meta{text-align:right}
     .subview-head{display:flex;align-items:center;gap:.5rem;padding:1rem;background:linear-gradient(135deg,var(--lilac-deep),var(--lilac));color:#fff}
     .subview-head button{border:none;background:rgba(255,255,255,.2);color:#fff;width:2rem;height:2rem;border-radius:10px;cursor:pointer}
     .subview-head h2{flex:1;margin:0;font-size:1rem;text-align:center}
@@ -1221,7 +1243,10 @@
         <div id="lunaMainView">
           <div class="home-title-row">
             <div><h1>ホーム</h1><p id="greetingSub">今日も一緒に遊ぼうね</p></div>
-            <button type="button" class="icon-btn" id="settingsBtn" title="設定">⚙️</button>
+            <div style="display:flex;gap:.4rem">
+              <button type="button" class="icon-btn" data-open="history" title="会話の履歴">💬</button>
+              <button type="button" class="icon-btn" id="settingsBtn" title="設定">⚙️</button>
+            </div>
           </div>
           <div class="home-hero">
             <div class="home-hero-luna luna-stage" id="lunaStage">
@@ -1427,6 +1452,15 @@
         <div class="consult-row">
           <button type="button" class="consult-btn blue" data-ask="今月の支出を整理したい">📊 支出を整理</button>
           <button type="button" class="consult-btn pink" data-ask="貯金目標について相談したい">👛 貯金目標</button>
+        </div>
+      </div>
+
+      <!-- Chat history subview -->
+      <div id="sub-history" class="subview hidden">
+        <div class="subview-head"><button type="button" data-back="history">←</button><h2>会話の履歴</h2><span style="width:2rem"></span></div>
+        <div class="hist-wrap">
+          <button type="button" class="hist-more hidden" id="histMoreBtn">もっと前を読み込む</button>
+          <div id="histList"></div>
         </div>
       </div>
 
@@ -1797,6 +1831,7 @@
           <button type="button" data-open="health">💚 ヘルスケア</button>
           <button type="button" data-open="money">👛 お金・家計</button>
           <button type="button" data-open="goals">🎯 目標</button>
+          <button type="button" data-open="history">💬 会話の履歴</button>
           <button type="button" id="menuThemeBtn">🎨 テーマ設定</button>
           <button type="button" id="morningBtn">🌅 朝チェックイン</button>
           <button type="button" id="eveningBtn">🌙 夜チェックイン</button>
@@ -1847,7 +1882,7 @@
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
   <script src="/static/world.js"></script>
-  <script src="/static/character_doll.js?v=20260902j"></script>
-  <script src="/static/app.js?v=20260902j"></script>
+  <script src="/static/character_doll.js?v=20260902k"></script>
+  <script src="/static/app.js?v=20260902k"></script>
 </body>
 </html>

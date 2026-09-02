@@ -200,9 +200,14 @@
     );
   }
 
+  const SUBVIEWS = ["schedule", "health", "money", "goals", "history"];
+
   function openSubview(name) {
     closeAllSubviews();
-    document.getElementById("sub-" + name).classList.remove("hidden");
+    const el = document.getElementById("sub-" + name);
+    if (!el) return;
+    el.classList.remove("hidden");
+    el.scrollTop = 0;
     document.body.classList.add("subview-open");
     if (name === "schedule") {
       selectedDate = todayIso();
@@ -211,6 +216,7 @@
     if (name === "health") loadHealthView();
     if (name === "money") loadMoneyView();
     if (name === "goals") loadGoalsView();
+    if (name === "history") loadHistoryView();
   }
 
   function closeSubview(name) {
@@ -219,7 +225,7 @@
   }
 
   function closeAllSubviews() {
-    ["schedule", "health", "money", "goals"].forEach(closeSubview);
+    SUBVIEWS.forEach(closeSubview);
     document.body.classList.remove("subview-open");
   }
 
@@ -285,31 +291,42 @@
     tab.classList.toggle("fsq-compact", compact);
   }
 
+  const SUBVIEW_TABS = ["health", "money", "goals"];
+
+  function setActivePanel(name) {
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+    const panel = document.getElementById("tab-" + name);
+    if (panel) panel.classList.add("active");
+  }
+
   function switchTab(name) {
-    if (name === "fsq") scrollFsqTop();
     currentTab = name;
     setNavActive(name);
     document.body.classList.toggle("world-mode", name === "fsq");
-    if (name === "health" || name === "money" || name === "goals") {
-      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-      document.getElementById("tab-luna").classList.add("active");
-      closeAllSubviews();
+
+    // Health / money / goals render as full-screen subviews on top of the LUNA
+    // tab. The bottom nav stays visible, so these can be swapped directly.
+    if (SUBVIEW_TABS.indexOf(name) >= 0) {
+      setActivePanel("luna");
       openSubview(name);
       window.scrollTo(0, 0);
       return;
     }
+
     closeAllSubviews();
-    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-    const panel = document.getElementById("tab-" + name);
-    if (panel) panel.classList.add("active");
+    setActivePanel(name);
     if (name === "luna") {
       setLunaView("main");
       setErr("");
       loadHomeSummary();
       if (!chatStarted) startChat();
     }
-    if (name === "fsq") loadFsqTab();
-    else scrollScreenTop();
+    if (name === "fsq") {
+      scrollFsqTop();
+      loadFsqTab();
+    } else {
+      scrollScreenTop();
+    }
   }
 
   function switchFsqSub(name) {
@@ -2993,6 +3010,112 @@
     }
   }
 
+  const HISTORY_PAGE = 60;
+  let histNextBefore = null;
+  let histLoading = false;
+
+  function histDayLabel(iso) {
+    if (!iso) return "日付なし";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "日付なし";
+    const key = todayIso();
+    const dk =
+      d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    if (dk === key) return "今日";
+    const y = new Date(Date.now() - 86400000);
+    const yk =
+      y.getFullYear() + "-" + String(y.getMonth() + 1).padStart(2, "0") + "-" + String(y.getDate()).padStart(2, "0");
+    if (dk === yk) return "昨日";
+    return d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日";
+  }
+
+  function histTime(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+
+  function histMsgNode(turn) {
+    const row = document.createElement("div");
+    row.className = "hist-msg " + (turn.role === "user" ? "me" : "luna");
+    const txt = document.createElement("div");
+    txt.className = "txt";
+    txt.textContent = turn.text;
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const time = histTime(turn.at);
+    meta.textContent = (turn.role === "user" ? "あなた" : "LUNA") + (time ? " ・ " + time : "");
+    row.appendChild(txt);
+    row.appendChild(meta);
+    return row;
+  }
+
+  function histRender(turns, prepend) {
+    const list = document.getElementById("histList");
+    if (!list) return;
+    const frag = document.createDocumentFragment();
+    let lastDay = prepend ? "" : list.dataset.lastDay || "";
+    turns.forEach((turn) => {
+      const day = histDayLabel(turn.at);
+      if (day !== lastDay) {
+        const head = document.createElement("div");
+        head.className = "hist-day";
+        const span = document.createElement("span");
+        span.textContent = day;
+        head.appendChild(span);
+        frag.appendChild(head);
+        lastDay = day;
+      }
+      frag.appendChild(histMsgNode(turn));
+    });
+    if (prepend) list.insertBefore(frag, list.firstChild);
+    else list.appendChild(frag);
+    list.dataset.lastDay = lastDay;
+  }
+
+  async function loadHistoryView(more) {
+    const list = document.getElementById("histList");
+    const btn = document.getElementById("histMoreBtn");
+    const panel = document.getElementById("sub-history");
+    if (!list || histLoading) return;
+    histLoading = true;
+    if (btn) btn.disabled = true;
+    if (!more) {
+      list.innerHTML = '<p class="hist-empty">読み込み中…</p>';
+      list.dataset.lastDay = "";
+      histNextBefore = null;
+    }
+    try {
+      let path = "/chat/history?limit=" + HISTORY_PAGE;
+      if (more && histNextBefore !== null) path += "&before=" + histNextBefore;
+      const data = await api(path);
+      const turns = data.turns || [];
+      const prevHeight = panel ? panel.scrollHeight : 0;
+      if (!more) list.innerHTML = "";
+      if (!turns.length && !more) {
+        list.innerHTML =
+          '<p class="hist-empty">まだ会話の記録がないよ。<br />ホームでLUNAに話しかけてみてね。</p>';
+      } else {
+        histRender(turns, !!more);
+      }
+      histNextBefore = data.next_before;
+      if (btn) btn.classList.toggle("hidden", !data.has_more);
+      if (panel) {
+        // Keep the reading position steady when older turns are added on top.
+        if (more) panel.scrollTop += panel.scrollHeight - prevHeight;
+        else panel.scrollTop = panel.scrollHeight;
+      }
+    } catch (e) {
+      if (!more) {
+        list.innerHTML = '<p class="hist-empty">読み込みに失敗しました。<br />もう一度開いてみてね。</p>';
+      }
+    } finally {
+      histLoading = false;
+      if (btn) btn.disabled = false;
+    }
+  }
+
   async function loadGoalsView() {
     try {
       const d = await api("/life/goals/dashboard");
@@ -3285,12 +3408,12 @@
     });
     document.querySelectorAll("[data-back]").forEach((el) => {
       el.onclick = () => {
-        closeAllSubviews();
-        setNavActive("luna");
         setErr("");
-        switchTab("luna");
+        switchTab(el.dataset.back === "history" ? "mypage" : "luna");
       };
     });
+    const histMore = document.getElementById("histMoreBtn");
+    if (histMore) histMore.onclick = () => loadHistoryView(true);
     document.querySelectorAll("[data-ask]").forEach((el) => {
       el.onclick = async () => {
         const ask = el.dataset.ask || "";
