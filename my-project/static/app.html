@@ -39,6 +39,21 @@
     button,input,textarea{font:inherit}
     .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
     .screen{flex:1;overflow-y:auto;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+    body.world-mode .screen{
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+      padding-bottom:0;
+    }
+    body.world-mode #tab-fsq.active{
+      flex:1 1 auto;
+      overflow-x:hidden;
+      overflow-y:auto;
+      min-height:0;
+      -webkit-overflow-scrolling:touch;
+      padding-bottom:calc(88px + env(safe-area-inset-bottom));
+    }
     .tab-panel{display:none!important}
     .tab-panel.active{display:block!important}
 
@@ -1709,6 +1724,6 @@
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
   <script src="/static/world.js"></script>
-  <script src="/static/app.js?v=20260902b"></script>
+  <script src="/static/app.js?v=20260902c"></script>
 </body>
 </html>

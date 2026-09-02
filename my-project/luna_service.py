@@ -1066,23 +1066,58 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
     return None
 
 
-def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> str:
-    # Deterministic user onboarding (greet already done via /chat/start)
+def handle_chat_message(user_id: str, user_text: str) -> str:
+    """Main /chat handler — consult & care always work without LLM."""
     onboarded = handle_user_onboarding_turn(user_id, user_text)
     if onboarded is not None:
         return onboarded
 
     user = load_user_brain(user_id)
+    text_in = (user_text or "").strip()
+    admin = is_admin(user_id)
+
+    # Consult chips + follow-up: all users (including admin) — never depend on Gemini.
+    if text_in:
+        topic = _consult_topic_from_chip(text_in)
+        if topic:
+            reply = _begin_consult_session(user, topic)
+            _update_relationship(user, text_in)
+            return _persist_local_turn(user_id, user, text_in, reply)
+        if user.get("consult_mode"):
+            _update_relationship(user, text_in)
+            return _persist_local_turn(user_id, user, text_in, _companion_consult_followup(user, text_in))
+
+    try:
+        return generate_with_retry(user_id, user_text, skip_onboarding=True)
+    except Exception:
+        user = load_user_brain(user_id)
+        if admin:
+            who = _honorific(user)
+            return _pack_reply(
+                f"{who}、聞いてるよ。いまの状況をもう少し教えてくれる？",
+                {"emotion": "think"},
+            )
+        return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
+
+
+def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, skip_onboarding: bool = False) -> str:
+    if not skip_onboarding:
+        onboarded = handle_user_onboarding_turn(user_id, user_text)
+        if onboarded is not None:
+            return onboarded
+
+    user = load_user_brain(user_id)
     admin = is_admin(user_id)
     text_in = (user_text or "").strip()
 
-    if not admin and text_in:
-        consult = _local_consult_reply(user, text_in)
-        if consult:
+    if text_in:
+        topic = _consult_topic_from_chip(text_in)
+        if topic:
+            reply = _begin_consult_session(user, topic)
             _update_relationship(user, text_in)
-            return _persist_local_turn(user_id, user, text_in, consult)
+            return _persist_local_turn(user_id, user, text_in, reply)
 
-    if not admin and text_in and user.get("consult_mode") and not _consult_topic_from_chip(text_in):
+    if text_in and user.get("consult_mode") and not _consult_topic_from_chip(text_in):
         _update_relationship(user, text_in)
         return _persist_local_turn(user_id, user, text_in, _companion_consult_followup(user, text_in))
 
@@ -1205,18 +1240,14 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
         return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
     retry_after = _retry_after_from_error(last_error)
     if _is_quota_error(last_error):
-        raise LunaAiError(
-            "AIの利用上限に達しました。少し待ってからもう一度お試しください。",
-            code="quota_exceeded",
-            retry_after_seconds=retry_after,
-            status_code=429,
-        ) from last_error
-    raise LunaAiError(
-        "AIサービスが一時的に混み合っています。しばらくしてからお試しください。",
-        code="ai_unavailable",
-        retry_after_seconds=retry_after,
-        status_code=503,
-    ) from last_error
+        return _pack_reply(
+            "少し混み合っているみたいだけど、ちゃんと話は聞いているよ。もう一度短く話しかけてね。",
+            {"emotion": "think"},
+        )
+    return _pack_reply(
+        "ごめんね、いまちょっと返事が遅れてる。でも聞いてるから、もう一度ゆっくり話してくれる？",
+        {"emotion": "think"},
+    )
 
 
 def generate_json_task(system_instruction: str, user_prompt: str) -> Optional[Any]:

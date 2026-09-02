@@ -130,6 +130,7 @@ from tts_service import synthesize_speech
 from luna_service import (
     LunaAiError,
     generate_with_retry,
+    handle_chat_message,
     parse_ai_reply,
     get_brain_status,
     load_user_brain,
@@ -490,7 +491,7 @@ def chat_start(req: ChatRequest, current: User = Depends(get_current_user)):
 def chat(req: ChatRequest, current: User = Depends(get_current_user)):
     uid = _resolve_user_id(req.user_id, current)
     try:
-        raw = generate_with_retry(uid, req.message)
+        raw = handle_chat_message(uid, req.message or "")
         dialogue, ai_state = parse_ai_reply(raw)
         if not (dialogue or "").strip():
             dialogue = "うん、聞こえてるよ。もう少し詳しく教えてくれる？"
@@ -498,21 +499,29 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
         if isinstance(ai_state, dict) and ai_state.get("emotion"):
             state = dict(state)
             state["emotion"] = ai_state["emotion"]
+        try:
+            chips = get_suggested_replies(uid, state)
+        except Exception:
+            chips = ["体調を相談したい", "お金の相談", "予定を整理したい"]
         return ChatResponse(
             dialogue=dialogue,
             game_state=state,
-            suggested_replies=get_suggested_replies(uid, state),
+            suggested_replies=chips,
             allow_custom_input=True,
             allow_voice_input=True,
         )
     except Exception as e:
-        # Keep bubble speaking even when Gemini is down / quota hit.
+        # Last-resort spoken line — never HTTP error for chat.
         state = get_user_state(uid)
-        dialogue, _ = parse_ai_reply(soft_chat_failure_reply(e))
+        try:
+            raw = handle_chat_message(uid, req.message or "")
+            dialogue, _ = parse_ai_reply(raw)
+        except Exception:
+            dialogue, _ = parse_ai_reply(soft_chat_failure_reply(e))
         return ChatResponse(
-            dialogue=dialogue or "少し待ってから、もう一度話しかけてね。",
+            dialogue=dialogue or "うん、聞いてるよ。もう一度話しかけてくれる？",
             game_state=state,
-            suggested_replies=["もう一度送る", "元気？", "今日の予定は？"],
+            suggested_replies=["体調を相談したい", "お金の相談", "予定を整理したい"],
             allow_custom_input=True,
             allow_voice_input=True,
         )

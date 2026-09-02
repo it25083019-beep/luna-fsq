@@ -268,6 +268,12 @@
     window.scrollTo(0, 0);
   }
 
+  function scrollFsqTop() {
+    scrollScreenTop();
+    const fsq = document.getElementById("tab-fsq");
+    if (fsq) fsq.scrollTop = 0;
+  }
+
   function switchTab(name) {
     currentTab = name;
     setNavActive(name);
@@ -291,20 +297,21 @@
       if (!chatStarted) startChat();
     }
     if (name === "fsq") loadFsqTab();
-    scrollScreenTop();
+    else scrollScreenTop();
   }
 
   function switchFsqSub(name) {
     document.querySelectorAll(".fsq-sub").forEach((b) => b.classList.toggle("active", b.dataset.fsq === name));
     document.querySelectorAll(".fsq-section").forEach((s) => s.classList.remove("active"));
     document.getElementById("fsq-" + name).classList.add("active");
-    scrollScreenTop();
+    scrollFsqTop();
     if (window.FsqWorld) FsqWorld.onSubSwitch(name);
   }
 
   function loadFsqTab() {
-    scrollScreenTop();
-    requestAnimationFrame(() => scrollScreenTop());
+    scrollFsqTop();
+    requestAnimationFrame(() => scrollFsqTop());
+    setTimeout(() => scrollFsqTop(), 50);
     if (window.FsqWorld) FsqWorld.onEnterTab();
     loadJourney().catch((e) => setErr(e.message));
   }
