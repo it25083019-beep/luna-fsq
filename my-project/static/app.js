@@ -272,6 +272,15 @@
     scrollScreenTop();
     const fsq = document.getElementById("tab-fsq");
     if (fsq) fsq.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
+
+  function updateFsqCompactMode() {
+    const tab = document.getElementById("tab-fsq");
+    if (!tab) return;
+    const compact = !!(journeyStatus.selected && !reselectJourney);
+    tab.classList.toggle("fsq-compact", compact);
   }
 
   function switchTab(name) {
@@ -312,6 +321,7 @@
     scrollFsqTop();
     requestAnimationFrame(() => scrollFsqTop());
     setTimeout(() => scrollFsqTop(), 50);
+    setTimeout(() => scrollFsqTop(), 180);
     if (window.FsqWorld) FsqWorld.onEnterTab();
     loadJourney().catch((e) => setErr(e.message));
   }
@@ -340,6 +350,8 @@
       if (home) home.classList.add("active");
       document.querySelectorAll("#fsq-map, #fsq-career").forEach((el) => el.classList.remove("active"));
     }
+    updateFsqCompactMode();
+    if (!show) scrollFsqTop();
   }
 
   function applyJourneyUi() {
@@ -371,6 +383,8 @@
     renderLessons();
     renderBosses();
     renderCareerPortfolio();
+    updateFsqCompactMode();
+    if (!needOnboard) scrollFsqTop();
     if (window.FsqWorld) {
       FsqWorld.renderHud(journeyStatus, journeyMap, expProgress);
       FsqWorld.renderNarrator(journeyStatus, journeyMap);
@@ -594,7 +608,29 @@
     const classId = ap.class_id || journeyStatus.class_id || selectedClass;
     const rankId = ap.rank_id || journeyStatus.rank_id || "novice";
     wrap.classList.add("has-evolution");
-    renderCharacterDoll(ap);
+    const mount = document.getElementById("rpgDollMount");
+    if (mount) {
+      mount.innerHTML = "";
+      mount.hidden = true;
+    }
+    let evo = ap.evolution_sprite || ap.sprite || (classId ? evolutionSpritePath(classId, rankId) : null);
+    if (
+      evo &&
+      typeof evo === "string" &&
+      evo.indexOf("_stand.png") < 0 &&
+      /\/static\/rpg\/characters\/[^/]+\.png$/.test(evo)
+    ) {
+      evo = evo.replace(/\.png$/, "_stand.png");
+    }
+    if (img && evo) {
+      img.hidden = false;
+      img.src = evo;
+      img.alt =
+        (ap.class_label_ja || classLabel(classId)) + " " + (ap.rank_label_ja || journeyStatus.rank_ja || "");
+    } else if (img) {
+      img.hidden = true;
+      img.removeAttribute("src");
+    }
     const alive = document.getElementById("homeHeroAlive");
     if (alive) {
       alive.className = "hero-alive class-" + (classId || "swordsman");
@@ -604,7 +640,6 @@
     if (tag) tag.textContent = ap.class_label_ja || classLabel(ap.class_id) || "—";
     const emblem = document.getElementById("homeAvatarEmblem");
     if (emblem) emblem.textContent = ap.class_emblem_ja || (ap.class_label_ja || "旅")[0] || "旅";
-    if (img) img.hidden = true;
   }
 
   function applyHeroShowcaseFx(classId, rankId) {
@@ -672,8 +707,9 @@
   function renderGearPanel(appearance, inventory) {
     const panel = document.getElementById("homeGearPanel");
     if (!panel) return;
+    panel.className = "gear-strip";
     const details = (appearance && appearance.equipped_details) || [];
-    const slots = ["weapon", "armor", "accessory", "artifact", "cloak"];
+    const slots = ["weapon", "armor", "cloak", "accessory", "artifact"];
     const bySlot = {};
     details.forEach((d) => {
       bySlot[d.slot] = d;
@@ -698,11 +734,11 @@
           rar +
           '><span class="ico" aria-hidden="true">' +
           (icos[slot] || GEAR_SLOT_ICO[slot] || "◆") +
-          '</span><span class="k">' +
+          '</span><span class="slot-meta"><span class="k">' +
           (GEAR_SLOT_JA[slot] || slot) +
           '</span><span class="v">' +
           label +
-          "</span></div>"
+          "</span></span></div>"
         );
       })
       .join("");

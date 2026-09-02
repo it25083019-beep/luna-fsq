@@ -39,6 +39,18 @@
     button,input,textarea{font:inherit}
     .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
     .screen{flex:1;overflow-y:auto;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+    body.world-mode{
+      overflow:hidden;
+      height:100dvh;
+      position:fixed;
+      inset:0;
+      width:100%;
+    }
+    body.world-mode .app{
+      height:100dvh;
+      max-height:100dvh;
+      overflow:hidden;
+    }
     body.world-mode .screen{
       overflow:hidden;
       display:flex;
@@ -172,12 +184,27 @@
     .world-narrator{margin:0 .85rem .65rem;border-radius:16px;padding:.7rem .75rem;background:linear-gradient(135deg,rgba(15,42,50,.92),rgba(31,74,62,.88));border:1px solid rgba(212,168,75,.35);box-shadow:0 8px 24px rgba(0,0,0,.25)}
     .world-narrator:empty{display:none;margin:0;padding:0;border:none}
     #fsq-onboard:not(.active){display:none!important}
-    #fsq-home .content{padding-top:.5rem;padding-bottom:.35rem}
-    #fsq-home .char-card.rpg-stage{margin-bottom:.45rem;padding-bottom:.65rem}
-    #fsq-home .hero-showcase{min-height:0;margin-bottom:0;padding-bottom:0}
-    #fsq-home .hero-stage{padding:0 3.2rem .15rem}
-    #fsq-home .evo-orbit{margin-top:.45rem}
+    #fsq-home .content{padding-top:.25rem;padding-bottom:.35rem}
+    #fsq-home .char-card.rpg-stage{margin-bottom:.45rem;padding:.65rem .75rem .55rem}
+    #fsq-home .hero-showcase{min-height:0;margin-bottom:0;padding:0;justify-content:flex-start}
+    #fsq-home .hero-stage{padding:0 .5rem .05rem;width:100%;max-width:340px}
+    #fsq-home .hero-avatar.standee{width:min(260px,74vw);height:min(300px,46vh);margin:0 auto}
+    #fsq-home .hero-avatar.standee .class-tag,
+    #fsq-home .hero-avatar.standee .class-emblem{display:none}
+    #fsq-home .hero-nameplate{margin-top:.35rem;font-size:.62rem;opacity:.9}
+    #fsq-home .evo-orbit{margin-top:.35rem;padding:.45rem .4rem .3rem}
+    #fsq-home .rpg-doll-mount{display:none!important}
     #tab-fsq .fsq-banner{margin-top:0}
+    #tab-fsq.fsq-compact .fsq-banner{padding:.4rem .85rem .35rem}
+    #tab-fsq.fsq-compact .fsq-banner h2{font-size:.92rem;margin:0}
+    #tab-fsq.fsq-compact .fsq-banner .fsq-demo-tagline,
+    #tab-fsq.fsq-compact .fsq-banner p:not(.world-kicker){display:none}
+    #tab-fsq.fsq-compact .fsq-banner .world-kicker{margin:0;font-size:.5rem}
+    #tab-fsq.fsq-compact .fsq-subnav{margin-bottom:.35rem}
+    #tab-fsq.fsq-compact #fsq-home .rpg-hud-top,
+    #tab-fsq.fsq-compact #fsq-home .rpg-status-top{display:none}
+    #tab-fsq.fsq-compact #worldNarrator:empty{display:none!important}
+    #fsq-home .hero-reflection{display:none!important}
     .world-narrator .wn-inner{display:flex;gap:.65rem;align-items:flex-start}
     .world-narrator .wn-icon{font-size:1.35rem;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
     .world-narrator strong{display:block;font-size:.78rem;color:var(--fsq-gold-soft);font-family:"Shippori Mincho",serif;margin-bottom:.25rem}
@@ -625,6 +652,13 @@
     .gear-orbit .gear-slot[data-slot="armor"]{left:0;top:42%}
     .gear-orbit .gear-slot[data-slot="accessory"]{right:0;top:6%}
     .gear-orbit .gear-slot[data-slot="artifact"]{right:0;top:42%}
+    .gear-orbit .gear-slot[data-slot="cloak"]{left:0;top:22%}
+    .gear-strip{position:relative;inset:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.32rem;width:100%;max-width:340px;margin:.35rem auto 0;padding:0 .1rem;z-index:4;pointer-events:auto}
+    .gear-strip .gear-slot{position:static;width:auto;animation:none!important;padding:.38rem .42rem;border-radius:12px;display:flex;align-items:center;gap:.35rem;text-align:left;min-height:2.35rem}
+    .gear-strip .gear-slot .ico{display:inline-block;font-size:.82rem;margin:0;line-height:1;flex-shrink:0}
+    .gear-strip .gear-slot .slot-meta{min-width:0;flex:1}
+    .gear-strip .gear-slot .k{display:block;font-size:.48rem;opacity:.72;margin:0 0 .05rem}
+    .gear-strip .gear-slot .v{font-size:.56rem;line-height:1.2;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .evo-orbit{position:relative;z-index:3;margin-top:.65rem;padding:.55rem .45rem .35rem;border-radius:18px;background:rgba(8,6,28,.35);border:1px solid rgba(255,255,255,.12)}
     .evo-orbit-title{display:flex;justify-content:space-between;align-items:center;font-size:.72rem;font-weight:800;color:#ffe9b0;margin:0 0 .4rem;padding:0 .15rem}
     .evo-orbit-title span{font-size:.58rem;color:rgba(255,255,255,.7);font-weight:700}
@@ -1445,7 +1479,7 @@
             <span id="luMsg">新しい力が目覚めた</span>
           </div>
         </div>
-        <div class="fsq-banner">
+        <div class="fsq-banner" id="fsqBanner">
           <p class="world-kicker">RPG WORLD</p>
           <h2>⚔ Future Skill Quest</h2>
           <p class="fsq-demo-tagline">未来の自分を育てるキャリアRPG</p>
@@ -1504,16 +1538,14 @@
                 </div>
               </div>
               <div class="hero-showcase" id="heroShowcase">
-                <div class="gear-orbit" id="homeGearPanel" aria-label="装備"></div>
                   <div class="hero-stage" id="heroStage" role="button" tabindex="0" aria-label="キャラクターをタップ">
                   <div class="hero-theater-bg" aria-hidden="true"><span class="tb tb1"></span><span class="tb tb2"></span><span class="tb tb3"></span></div>
                   <div class="hero-spotlight" aria-hidden="true"></div>
                   <div class="stage-aura" aria-hidden="true"></div>
-                  <div class="hero-reflection" aria-hidden="true"><img id="homeAvatarReflect" alt="" /></div>
                   <div class="hero-avatar standee" id="homeAvatarWrap">
                     <div class="hero-alive" id="homeHeroAlive">
-                      <div id="rpgDollMount" class="rpg-doll-mount" aria-label="キャラクター"></div>
-                      <img id="homeAvatarImg" class="hero-body" src="" alt="" hidden />
+                      <div id="rpgDollMount" class="rpg-doll-mount" aria-hidden="true" hidden></div>
+                      <img id="homeAvatarImg" class="hero-body" src="" alt="" />
                       <div class="life-fx" aria-hidden="true">
                         <span class="spark s1"></span>
                         <span class="spark s2"></span>
@@ -1528,6 +1560,7 @@
                   <div class="stage-floor" aria-hidden="true"></div>
                   <div class="hero-nameplate" id="homeNameplate">PARTY</div>
                 </div>
+                <div class="gear-strip" id="homeGearPanel" aria-label="装備"></div>
                 <div class="evo-orbit">
                   <div class="evo-orbit-title">クラス進化 <span id="homeEvoRankLabel">見習い</span></div>
                   <div class="evo-grid evo-ring" id="homeEvoGrid"></div>
@@ -1813,7 +1846,7 @@
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
   <script src="/static/world.js"></script>
-  <script src="/static/character_doll.js?v=20260902g"></script>
-  <script src="/static/app.js?v=20260902g"></script>
+  <script src="/static/character_doll.js?v=20260902h"></script>
+  <script src="/static/app.js?v=20260902h"></script>
 </body>
 </html>
