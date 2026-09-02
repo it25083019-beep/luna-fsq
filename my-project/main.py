@@ -862,14 +862,23 @@ def _user_to_admin_out(user: User) -> AdminUserOut:
     except Exception:
         brain = {}
     created = user.created_at.isoformat() if user.created_at else None
+    try:
+        from name_utils import sanitize_display_name
+
+        raw_name = user.display_name or brain.get("user_display_name")
+        display_name = sanitize_display_name(raw_name) or raw_name
+        companion_name = sanitize_display_name(brain.get("companion_name")) or brain.get("companion_name")
+    except Exception:
+        display_name = user.display_name or brain.get("user_display_name")
+        companion_name = brain.get("companion_name")
     return AdminUserOut(
         user_id=user.public_id,
         email=user.email,
-        display_name=user.display_name or brain.get("user_display_name"),
+        display_name=display_name,
         is_admin=bool(user.is_admin or is_admin(user.public_id)),
         is_locked=bool(getattr(user, "is_locked", False)),
         created_at=created,
-        companion_name=brain.get("companion_name"),
+        companion_name=companion_name,
         profile_complete=bool(brain.get("profile_complete")),
     )
 

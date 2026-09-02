@@ -302,12 +302,16 @@
   function showFsqOnboarding(show) {
     const onboard = document.getElementById("fsq-onboard");
     const sub = document.getElementById("fsqSubnav");
+    const hud = document.getElementById("worldHud");
+    const narrator = document.getElementById("worldNarrator");
     const sections = ["fsq-home", "fsq-map", "fsq-career"];
     if (sub) sub.style.display = show ? "none" : "flex";
     if (onboard) {
       onboard.classList.toggle("active", !!show);
-      onboard.style.display = "";
+      onboard.style.display = show ? "" : "none";
     }
+    if (hud) hud.hidden = show || !journeyStatus.selected;
+    if (narrator) narrator.style.display = show ? "none" : "";
     sections.forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
@@ -1876,6 +1880,28 @@
     "欲しいものがある",
   ];
 
+  async function runConsult(kind, message, opts = {}) {
+    const openModule = opts.openModule !== false;
+    unlockAudio();
+    setErr("");
+    switchTab("luna");
+    const ok = await sendMessage(message);
+    if (!ok) {
+      const soft =
+        kind === "health"
+          ? "体調について一緒に整理しよう。まず今日の睡眠と気分を短く教えてね。"
+          : "お金のことを一緒に見ていこう。いまいちばん気になっていることを教えてね。";
+      const dialogueEl = document.getElementById("dialogue");
+      if (dialogueEl) dialogueEl.textContent = soft;
+      setErr("");
+      try {
+        if (luna) luna.reactToText(soft, { fallback: "happy", force: true });
+      } catch (_) {}
+      speakJa(soft).catch(() => {});
+    }
+    if (openModule) switchTab(kind === "health" ? "health" : "money");
+  }
+
   function chipRouteForLabel(label) {
     const t = String(label || "");
     if (t.includes("健康に追記")) return { type: "subview", name: "health" };
@@ -1914,14 +1940,7 @@
           return;
         }
         if (route.type === "consult") {
-          // Stay on home chat so the conversation is visible; open module if chat fails
-          closeAllSubviews();
-          setNavActive("luna");
-          const ok = await sendMessage(label);
-          if (!ok) {
-            openSubview(route.name);
-            setNavActive(route.name === "money" || route.name === "health" ? route.name : "luna");
-          }
+          await runConsult(route.name, label);
           return;
         }
         sendMessage(label);
@@ -2983,9 +3002,22 @@
     });
     document.querySelectorAll("[data-ask]").forEach((el) => {
       el.onclick = async () => {
+        const ask = el.dataset.ask || "";
+        if (ask.includes("体調") && ask.includes("相談")) {
+          await runConsult("health", ask, { openModule: false });
+          return;
+        }
+        if ((ask.includes("お金") || ask.includes("支出") || ask.includes("貯金")) && ask.includes("相談")) {
+          await runConsult("money", ask, { openModule: false });
+          return;
+        }
+        if (ask.includes("支出") && ask.includes("整理")) {
+          await runConsult("money", ask, { openModule: false });
+          return;
+        }
         closeAllSubviews();
         switchTab("luna");
-        await sendMessage(el.dataset.ask);
+        await sendMessage(ask);
       };
     });
     document.getElementById("settingsBtn").onclick = () => {

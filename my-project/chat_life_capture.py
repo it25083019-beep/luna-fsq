@@ -428,8 +428,8 @@ def compose_companion_dialogue(
         emotion = "wave"
     else:
         body = (
-            f"{who}、話してくれてありがとう。ちゃんと受け取ったよ。"
-            f"いちばん気になることを一つだけ教えてくれたら、一緒に次の一歩を考えよう。"
+            f"{who}、聞いてくれてありがとう。"
+            f"いまいちばん気になっていることを一つだけ教えてくれたら、一緒に次の一歩を考えよう。"
         )
         emotion = "happy"
 
@@ -451,12 +451,22 @@ def enrich_dialogue_with_capture(
     user_text: str,
     applied: List[str],
 ) -> str:
-    """If we saved facts but the model forgot to acknowledge, prepend a soft ack + keep warmth."""
+    """If we saved facts but the model forgot to acknowledge, prepend a short ack only."""
     text = (dialogue or "").strip()
     if not applied:
         return text
     if re.search(r"記録|メモ|残した|入れた|更新した|わかったよ|ノート", text):
         return text
-    composed = compose_companion_dialogue(user, user_text, applied)
-    # Prefer our companion line when capture happened — clearer partner feel
-    return composed["dialogue"]
+    ack_bits: List[str] = []
+    for tag in applied[:2]:
+        if tag.startswith("気分→"):
+            ack_bits.append(f"気分「{tag.replace('気分→', '')}」、メモしたよ。")
+        elif tag.startswith("支出+"):
+            ack_bits.append(f"{tag.replace('支出+', '')}の支出、記録したよ。")
+        elif tag == "予定を追加":
+            ack_bits.append("予定に追加したよ。")
+        elif tag.startswith("目標「"):
+            ack_bits.append(f"{tag}を目標に入れたよ。")
+    if not ack_bits:
+        return text
+    return "".join(ack_bits) + text

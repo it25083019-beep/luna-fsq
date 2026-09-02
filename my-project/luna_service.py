@@ -205,6 +205,7 @@ def load_user_brain(user_id: str) -> Dict[str, Any]:
 def save_user_brain(user_id: str, brain_data: Dict[str, Any]) -> None:
     # Ephemeral runtime flags must never be persisted.
     brain_data.pop("_schedule_dirty", None)
+    brain_data.pop("_last_companion_line", None)
     if os.getenv("LUNA_USE_JSON_FALLBACK") == "1":
         from brain_merge import safe_merge_for_save
 
@@ -482,22 +483,25 @@ def _apply_memory_note_admin(core: Dict[str, Any], game_state: Dict[str, Any]) -
 
 
 def _apply_user_fields_from_game_state(user: Dict[str, Any], game_state: Dict[str, Any]) -> None:
+    from name_utils import sanitize_display_name
+
     for key in ("companion_name", "user_display_name", "current_focus", "current_plan", "current_do_now", "memory_note", "pending_notification"):
         val = game_state.get(key)
-        if val is not None and val != "":
-            user[key] = val
+        if val is None or val == "":
+            continue
+        if key in ("user_display_name", "companion_name"):
+            cleaned = sanitize_display_name(str(val))
+            if cleaned:
+                user[key] = cleaned
+            continue
+        user[key] = val
 
 
 
 def _clean_name(raw: str) -> str:
-    name = (raw or "").strip()
-    name = re.sub(r"^(私は|僕は|俺は|名前は|自分は|呼び名は)", "", name)
-    m = re.match(r"^(.+?)(でいい|で良い|がいい|が良い|にして|でお願い|でお願いします).*$", name)
-    if m:
-        name = m.group(1)
-    name = re.sub(r"(です|だよ|だ|といいます|と申します|っていうの|って呼ばれてる).*$", "", name)
-    name = name.strip(" 　。.、,!！?？「」『』\"'")
-    return name[:20] if name else ""
+    from name_utils import sanitize_display_name
+
+    return sanitize_display_name(raw) or ""
 
 
 def _pack_reply(dialogue: str, state: Dict[str, Any]) -> str:
@@ -796,6 +800,50 @@ def _mark_quota_block(seconds: int = 90) -> None:
     _quota_block_until = time.time() + max(45, min(int(seconds or 90), 180))
 
 
+def _local_consult_reply(user: Dict[str, Any], user_text: str) -> Optional[str]:
+    """Fast local answers for health/money consult chips — no Gemini wait."""
+    t = (user_text or "").strip()
+    if not t:
+        return None
+    who = _honorific(user)
+    cname = user.get("companion_name") or "LUNA"
+    if re.search(r"体調.*相談|健康.*相談|体調について|体調が", t):
+        dialogue = (
+            f"{who}、体調の相談ね。{cname}が一緒に整理するよ。"
+            f"まず今日の睡眠時間と、いまの気分（元気/普通/疲れ）を短く教えて。"
+        )
+        return _pack_reply(dialogue, {"emotion": "think"})
+    if re.search(r"お金.*相談|家計.*相談|支出.*相談|お金について|貯金.*相談|支出.*整理", t):
+        dialogue = (
+            f"{who}、お金の相談だね。{cname}が一緒に見ていこう。"
+            f"今いちばん気になっていること（支出・貯金・欲しいもの）を一つ教えて。"
+        )
+        return _pack_reply(dialogue, {"emotion": "think"})
+    return None
+
+
+def _dialogue_similar(a: str, b: str) -> bool:
+    a = re.sub(r"\s+", "", (a or "").strip())
+    b = re.sub(r"\s+", "", (b or "").strip())
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    shorter, longer = (a, b) if len(a) <= len(b) else (b, a)
+    return shorter in longer and len(shorter) >= max(12, int(len(longer) * 0.55))
+
+
+def _avoid_repeat_dialogue(user: Dict[str, Any], dialogue: str) -> str:
+    """Stop back-to-back identical companion lines."""
+    prev = (user.get("_last_companion_line") or "").strip()
+    text = (dialogue or "").strip()
+    if prev and _dialogue_similar(prev, text):
+        who = _honorific(user)
+        return f"{who}、うん、聞いてるよ。もう少しだけ詳しく教えてくれる？"
+    user["_last_companion_line"] = text[:200]
+    return text
+
+
 def _local_companion_reply(user: Dict[str, Any], user_text: str) -> str:
     """Instant Japanese companion lines without Gemini (mood / daily care)."""
     from chat_life_capture import capture_life_from_chat, compose_companion_dialogue
@@ -806,8 +854,9 @@ def _local_companion_reply(user: Dict[str, Any], user_text: str) -> str:
     except Exception:
         applied = []
     composed = compose_companion_dialogue(user, user_text or "", applied)
+    dialogue = _avoid_repeat_dialogue(user, composed["dialogue"])
     return _pack_reply(
-        composed["dialogue"],
+        dialogue,
         {
             "emotion": composed.get("emotion") or "happy",
             "user_display_name": user.get("user_display_name"),
@@ -842,16 +891,31 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
     if not msg:
         return None
 
+    _consult_re = re.compile(
+        r"体調.*相談|健康.*相談|体調について|体調が|お金.*相談|家計.*相談|支出.*相談|お金について",
+        re.I,
+    )
+    if _consult_re.search(msg) and display:
+        return None
+
     if not display:
-        name = _clean_name(msg)
-        if not name or len(name) > 20:
-            ai_reply = _pack_reply("恐れ入ります。お名前のみ、短く教えていただけますか。", {})
-        else:
-            user["user_display_name"] = name
+        from name_utils import is_valid_display_name
+
+        if re.search(r"相談|consult|体調|お金|予定|健康に|支出", msg, re.I):
             ai_reply = _pack_reply(
-                f"{name}様、承知いたしました。次に、私の呼び名を一つお決めください。",
-                {"user_display_name": name},
+                "お名前の登録の前に、まず短いお名前だけ教えてください。（例：太郎）",
+                {},
             )
+        else:
+            name = _clean_name(msg)
+            if not is_valid_display_name(name):
+                ai_reply = _pack_reply("恐れ入ります。お名前のみ、短く教えていただけますか。（例：太郎 / Paula）", {})
+            else:
+                user["user_display_name"] = name
+                ai_reply = _pack_reply(
+                    f"{name}様、承知いたしました。次に、私の呼び名を一つお決めください。",
+                    {"user_display_name": name},
+                )
         user["chat_history"].append({"role": "user", "content": user_text})
         user["chat_history"].append({"role": "model", "content": ai_reply})
         save_user_brain(user_id, user)
@@ -859,7 +923,9 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
 
     if not companion:
         cname = _clean_name(msg)
-        if not cname or len(cname) > 20:
+        from name_utils import is_valid_display_name
+
+        if not is_valid_display_name(cname):
             ai_reply = _pack_reply(
                 f"{display}様、私の呼び名をもう一度短くお願いいたします。",
                 {"user_display_name": display},
@@ -940,6 +1006,12 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
     admin = is_admin(user_id)
     text_in = (user_text or "").strip()
 
+    if not admin and text_in:
+        consult = _local_consult_reply(user, text_in)
+        if consult:
+            _update_relationship(user, text_in)
+            return _persist_local_turn(user_id, user, text_in, consult)
+
     # Instant local care for common short moods (no Gemini wait).
     if not admin and text_in and re.search(
         r"疲れ|つらい|しんど|眠い|疲れた|mệt|tired|exhausted|おはよう|こんにちは|こんばんは",
@@ -1009,11 +1081,19 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1) -> s
                         dialogue = enrich_dialogue_with_capture(
                             dialogue, user, user_text or "", applied
                         )
+                        dialogue = _avoid_repeat_dialogue(user, dialogue)
                         gs = dict(gs or {})
                         gs["life_saved"] = applied
                         if "emotion" not in gs:
                             gs["emotion"] = "happy"
                         ai_reply = _pack_reply(dialogue, gs)
+                except Exception:
+                    pass
+                try:
+                    dialogue, gs = parse_ai_reply(ai_reply)
+                    dialogue = _avoid_repeat_dialogue(user, dialogue)
+                    gs = dict(gs or {})
+                    ai_reply = _pack_reply(dialogue, gs)
                 except Exception:
                     pass
                 user["chat_history"].append({"role": "user", "content": user_text})

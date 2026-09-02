@@ -143,6 +143,14 @@ def load_user_brain(public_id: str, db: Optional[Session] = None) -> Dict[str, A
             return default_user_brain(public_id)
         data = _parse_state(user.brain.state_json, default_user_brain(public_id))
         data["user_id"] = public_id
+        try:
+            from name_utils import sanitize_display_name
+
+            cleaned = sanitize_display_name(data.get("user_display_name"))
+            if cleaned:
+                data["user_display_name"] = cleaned
+        except Exception:
+            pass
         return data
     finally:
         if own:
@@ -173,6 +181,18 @@ def save_user_brain(public_id: str, data: Dict[str, Any], db: Optional[Session] 
                 existing = {}
         payload = safe_merge_for_save(existing, dict(data))
         payload["user_id"] = public_id
+        try:
+            from name_utils import sanitize_display_name
+
+            raw_name = payload.get("user_display_name")
+            cleaned = sanitize_display_name(str(raw_name)) if raw_name else ""
+            if cleaned:
+                payload["user_display_name"] = cleaned
+                user.display_name = cleaned
+            elif raw_name and user.display_name == raw_name:
+                user.display_name = None
+        except Exception:
+            pass
         raw = json.dumps(payload, ensure_ascii=False)
         if user.brain:
             user.brain.state_json = raw
