@@ -33,9 +33,16 @@ def test_catalog_has_full_and_stub():
     cur = get_curriculum("software_engineer")
     assert len(cur["stages"]) >= 5
     assert any((l.get("boss_type") == "career_final") for l in cur["lessons"])
-    stub = get_curriculum("data_analyst")
-    assert stub["lessons"]
-    assert stub["lessons"][0]["id"].startswith("data_analyst__")
+    # Careers without a hand-authored curriculum are filled in by
+    # curriculum_expander, which namespaces lesson ids with a slug of the
+    # career id rather than the career id itself.
+    generated = get_curriculum("data_analyst")
+    assert generated["stages"]
+    assert generated["lessons"]
+    prefix = "data_analyst".replace("_", "")[:10]
+    ids = [l["id"] for l in generated["lessons"]]
+    assert all(i.startswith(prefix) for i in ids), ids[:5]
+    assert len(set(ids)) == len(ids), "lesson ids must be unique"
     print("OK catalog")
 
 
@@ -185,10 +192,13 @@ def test_final_boss_requires_progress_and_rank():
 def test_enrich_caches_detail():
     state = fresh()
     select_journey(state, class_id="archer", career_id="ui_designer")
-    out = enrich_lesson_detail(state, "ux_l1", "観察のコツは小さくメモすること。")
+    # Take a real lesson id from the curriculum; ids are generated, so
+    # hardcoding one here goes stale whenever the expander changes.
+    lesson_id = get_curriculum("ui_designer")["lessons"][0]["id"]
+    out = enrich_lesson_detail(state, lesson_id, "観察のコツは小さくメモすること。")
     assert out["ok"]
     mmap = list_journey_map(state)
-    row = next(x for x in mmap["lessons"] if x["id"] == "ux_l1")
+    row = next(x for x in mmap["lessons"] if x["id"] == lesson_id)
     assert "観察" in (row.get("detail_ja") or "")
     print("OK enrich")
 

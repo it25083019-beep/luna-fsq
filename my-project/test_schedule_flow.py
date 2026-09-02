@@ -353,7 +353,12 @@ def test_one_year_horizon_and_extend_prompt():
 
     result = extend_recurring_horizons(user, template_ids=[tpls[0]["id"]], days=365)
     assert result["count"] == 1
-    assert active_templates(user)[0]["horizon_end"] == "2027-09-01"
+    # Extension anchors on whichever is later, the old horizon or today, so a
+    # horizon that has already elapsed does not extend into the past.
+    from datetime import date as _date, timedelta as _timedelta
+
+    anchor = max(_date(2026, 9, 1), _date.today())
+    assert active_templates(user)[0]["horizon_end"] == (anchor + _timedelta(days=365)).isoformat()
     assert "2026-09-14" in dates_for_title(user, "Laws", "2026-09-14")
     prompt2 = list_events(user, on_date="2026-08-20")["extend_prompt"]
     assert prompt2["needed"] is False, prompt2
