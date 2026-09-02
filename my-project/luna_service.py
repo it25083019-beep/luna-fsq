@@ -211,7 +211,8 @@ def save_user_brain(user_id: str, brain_data: Dict[str, Any]) -> None:
     # Ephemeral runtime flags must never be persisted.
     brain_data.pop("_schedule_dirty", None)
     brain_data.pop("_last_companion_line", None)
-    # consult_mode is persisted briefly so multi-turn companion care continues
+    # consult_mode is persisted so multi-turn companion care continues; it
+    # expires via _consult_session_active so chat returns to the model.
     if os.getenv("LUNA_USE_JSON_FALLBACK") == "1":
         from brain_merge import safe_merge_for_save
 
@@ -928,11 +929,56 @@ def _consult_topic_from_chip(text: str) -> Optional[str]:
     return None
 
 
+CONSULT_MAX_TURNS = 4
+CONSULT_TTL_MINUTES = 20
+
+
+def _end_consult_session(user: Dict[str, Any]) -> None:
+    for key in ("consult_mode", "consult_started_at", "consult_turns"):
+        user.pop(key, None)
+
+
+def _consult_session_active(user: Dict[str, Any]) -> bool:
+    """True while a care session should keep answering locally.
+
+    Without an expiry the flag stayed set forever, so every later message was
+    answered by templates and never reached the model again.
+    """
+    if not user.get("consult_mode"):
+        return False
+
+    try:
+        turns = int(user.get("consult_turns") or 0)
+    except (TypeError, ValueError):
+        turns = 0
+    if turns >= CONSULT_MAX_TURNS:
+        _end_consult_session(user)
+        return False
+
+    started = user.get("consult_started_at")
+    if started:
+        from datetime import datetime, timedelta, timezone
+
+        try:
+            begun = datetime.fromisoformat(str(started))
+        except ValueError:
+            begun = None
+        if begun is not None:
+            if begun.tzinfo is None:
+                begun = begun.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - begun > timedelta(minutes=CONSULT_TTL_MINUTES):
+                _end_consult_session(user)
+                return False
+    return True
+
+
 def _begin_consult_session(user: Dict[str, Any], topic: str) -> str:
     """Open companion care on home chat: listen first, capture, advise — stay on chat."""
     from care_memory import care_recall_prefix
 
     user["consult_mode"] = topic
+    user["consult_started_at"] = _now_iso()
+    user["consult_turns"] = 0
     who = _honorific(user)
     cname = user.get("companion_name") or "LUNA"
     recall = care_recall_prefix(user, topic)
@@ -978,6 +1024,10 @@ def _companion_consult_followup(user: Dict[str, Any], user_text: str) -> str:
     from chat_life_capture import capture_life_from_chat, compose_companion_dialogue
 
     topic = str(user.get("consult_mode") or "health")
+    try:
+        user["consult_turns"] = int(user.get("consult_turns") or 0) + 1
+    except (TypeError, ValueError):
+        user["consult_turns"] = 1
     applied = capture_life_from_chat(user, user_text, None)
     touch_care_memory(user, topic, user_text, applied)
     composed = compose_companion_dialogue(user, user_text, applied)
@@ -1194,7 +1244,7 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
             reply = _begin_consult_session(user, topic)
             _update_relationship(user, text_in)
             return _persist_local_turn(user_id, user, text_in, reply)
-        if user.get("consult_mode"):
+        if _consult_session_active(user):
             _update_relationship(user, text_in)
             return _persist_local_turn(user_id, user, text_in, _companion_consult_followup(user, text_in))
 
@@ -1228,7 +1278,7 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
             _update_relationship(user, text_in)
             return _persist_local_turn(user_id, user, text_in, reply)
 
-    if text_in and user.get("consult_mode") and not _consult_topic_from_chip(text_in):
+    if text_in and _consult_session_active(user) and not _consult_topic_from_chip(text_in):
         _update_relationship(user, text_in)
         return _persist_local_turn(user_id, user, text_in, _companion_consult_followup(user, text_in))
 

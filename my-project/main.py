@@ -526,12 +526,14 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
         )
     except Exception as e:
         # Last-resort spoken line — never HTTP error for chat.
-        state = get_user_state(uid)
+        # handle_chat_message already falls back internally and has persisted
+        # the turn, so replaying it here would duplicate history and re-apply
+        # captured life data such as a spend entry.
         try:
-            raw = handle_chat_message(uid, req.message or "")
-            dialogue, _ = parse_ai_reply(raw)
+            state = get_user_state(uid)
         except Exception:
-            dialogue, _ = parse_ai_reply(soft_chat_failure_reply(e))
+            state = {}
+        dialogue, _ = parse_ai_reply(soft_chat_failure_reply(e))
         return ChatResponse(
             dialogue=dialogue or "うん、聞いてるよ。もう一度話しかけてくれる？",
             game_state=state,
