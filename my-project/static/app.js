@@ -598,19 +598,10 @@
     const ap = appearance || journeyStatus.appearance || {};
     const classId = ap.class_id || journeyStatus.class_id || selectedClass;
     const rankId = ap.rank_id || journeyStatus.rank_id || "novice";
-    let sprite = ap.evolution_sprite || evolutionSpritePath(classId, rankId);
-    if (
-      sprite &&
-      typeof sprite === "string" &&
-      sprite.indexOf("_stand.png") < 0 &&
-      /\/static\/rpg\/characters\/[^/]+\.png$/.test(sprite)
-    ) {
-      sprite = sprite.replace(/\.png$/, "_stand.png");
-    }
     CharacterDoll.render(mount, {
       classId: classId,
       rankId: rankId,
-      sprite: sprite,
+      alt: (ap.class_label_ja || classLabel(classId) || "") + " " + (ap.rank_label_ja || journeyStatus.rank_ja || ""),
       loadout: buildDollLoadout(),
     });
   }
@@ -705,56 +696,82 @@
       .join("");
   }
 
+  const GEAR_ORBIT_SIDE = {
+    weapon: "side-l",
+    armor: "side-l",
+    cloak: "side-l",
+    accessory: "side-r",
+    artifact: "side-r",
+  };
+
   function renderGearPanel(appearance, inventory) {
     const panel = document.getElementById("homeGearPanel");
     if (!panel) return;
-    panel.className = "gear-strip";
+    panel.className = "gear-orbit";
     const details = (appearance && appearance.equipped_details) || [];
-    const slots = ["weapon", "armor", "cloak", "accessory", "artifact"];
     const bySlot = {};
     details.forEach((d) => {
-      bySlot[d.slot] = d;
+      if (d && d.slot) bySlot[d.slot] = d;
     });
     (inventory || []).forEach((it) => {
       if (it && it.slot && !bySlot[it.slot]) bySlot[it.slot] = it;
     });
     const classId = (appearance && appearance.class_id) || journeyStatus.class_id || selectedClass;
     const icos = CLASS_HELD_ICO[classId] || GEAR_SLOT_ICO;
-    panel.innerHTML = slots
+    panel.innerHTML = Object.keys(GEAR_ORBIT_SIDE)
       .map((slot) => {
         const row = bySlot[slot];
         const label = row ? row.label_ja || row.id || "装備中" : "未装備";
-        const empty = row ? "" : " empty";
-        const rar = row && row.rarity ? ' style="border-color:' + (row.rarity_color || "#9aa0b8") + '"' : "";
+        const col = row && row.rarity_color ? row.rarity_color : "";
         return (
-          '<div class="gear-slot' +
-          empty +
+          '<div class="gear-slot ' +
+          GEAR_ORBIT_SIDE[slot] +
+          (row ? "" : " empty") +
           '" data-slot="' +
           slot +
           '"' +
-          rar +
-          '><span class="ico" aria-hidden="true">' +
+          (col ? ' style="--slot-col:' + col + '"' : "") +
+          ' role="button" tabindex="0"><span class="ico" aria-hidden="true">' +
           (icos[slot] || GEAR_SLOT_ICO[slot] || "◆") +
-          '</span><span class="slot-meta"><span class="k">' +
+          '</span><span class="k">' +
           (GEAR_SLOT_JA[slot] || slot) +
           '</span><span class="v">' +
           label +
-          "</span></span></div>"
+          "</span></div>"
         );
       })
       .join("");
     panel.querySelectorAll(".gear-slot").forEach((el) => {
-      el.onclick = () => openWardrobe();
+      el.onclick = () => openWardrobe(el.dataset.slot);
+      el.onkeydown = (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openWardrobe(el.dataset.slot);
+        }
+      };
     });
   }
 
-  function openWardrobe() {
+  let wardrobeSlot = "";
+
+  function openWardrobe(slot) {
     const modal = document.getElementById("glamourModal");
     const list = document.getElementById("glamourList");
     if (!modal || !list) return;
-    const inv = journeyStatus.inventory || [];
+    if (typeof slot === "string") wardrobeSlot = slot;
+    const all = journeyStatus.inventory || [];
+    const inv = wardrobeSlot ? all.filter((it) => it && it.slot === wardrobeSlot) : all;
+    const title = document.getElementById("glamourTitle");
+    if (title) {
+      title.textContent = wardrobeSlot
+        ? "装備・グラマー：" + (GEAR_SLOT_JA[wardrobeSlot] || wardrobeSlot)
+        : "装備・グラマー";
+    }
     if (!inv.length) {
-      list.innerHTML = '<p class="hint" style="margin:0">まだ装備がないよ。学習クエストでドロップするよ。</p>';
+      list.innerHTML =
+        '<p class="hint" style="margin:0">' +
+        (wardrobeSlot ? "このスロットの装備はまだないよ。" : "まだ装備がないよ。") +
+        "学習クエストでドロップするよ。</p>";
     } else {
       list.innerHTML = "";
       inv.forEach((it) => {
@@ -795,6 +812,7 @@
 
   function closeWardrobe() {
     const modal = document.getElementById("glamourModal");
+    wardrobeSlot = "";
     if (modal) {
       modal.classList.remove("open");
       modal.setAttribute("aria-hidden", "true");
