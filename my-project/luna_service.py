@@ -929,6 +929,39 @@ def _consult_topic_from_chip(text: str) -> Optional[str]:
     return None
 
 
+# Longest first so that stripping 疲れた does not leave a stray た behind.
+MOOD_PING_WORDS = [
+    "exhausted",
+    "こんばんは",
+    "こんにちは",
+    "おはよう",
+    "しんど",
+    "つらい",
+    "疲れた",
+    "tired",
+    "眠い",
+    "疲れ",
+    "mệt",
+]
+MOOD_PING_RE = re.compile("|".join(MOOD_PING_WORDS), re.I)
+# Anything longer than this left over is real content the model should answer.
+MOOD_PING_SLACK = 6
+
+
+def _is_bare_mood_ping(text: str) -> bool:
+    """True when the message is only a greeting or mood note.
+
+    The check used to be a bare `re.search`, so 「おはよう、今日テストがある」
+    matched on the greeting and got a canned hello while the actual news about
+    the test went unanswered. Only messages that carry nothing beyond the
+    greeting take the instant local path now.
+    """
+    stripped = MOOD_PING_RE.sub("", text or "")
+    # Drop punctuation, spaces and ASCII so only substantive characters remain.
+    remainder = re.sub(r"[\s\W_]|[a-zA-Z0-9]", "", stripped, flags=re.UNICODE)
+    return bool(MOOD_PING_RE.search(text or "")) and len(remainder) < MOOD_PING_SLACK
+
+
 CONSULT_MAX_TURNS = 4
 CONSULT_TTL_MINUTES = 20
 
@@ -1288,12 +1321,8 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
         _update_relationship(user, text_in)
         return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
 
-    # Instant local care for common short moods (no Gemini wait).
-    if not admin and text_in and re.search(
-        r"疲れ|つらい|しんど|眠い|疲れた|mệt|tired|exhausted|おはよう|こんにちは|こんばんは",
-        text_in,
-        re.I,
-    ):
+    # Instant local care for a bare greeting or mood ping (no Gemini wait).
+    if not admin and text_in and _is_bare_mood_ping(text_in):
         _update_relationship(user, text_in)
         return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
 
