@@ -526,47 +526,85 @@
     }
   }
 
-  const GEAR_SLOT_JA = { weapon: "武器", armor: "防具", accessory: "装飾", artifact: "証" };
-  const GEAR_SLOT_ICO = { weapon: "⚔", armor: "🛡", accessory: "💠", artifact: "📜" };
+  function gearChipLabel(gear) {
+    if (!gear) return "";
+    const rar = gear.rarity_ja || gear.rarity || "";
+    return "装備ドロップ：" + (gear.label_ja || gear.item_id) + (rar ? "（" + rar + "）" : "");
+  }
+
+  function toastGearDrop(gear) {
+    if (!gear || !window.FsqWorld) return;
+    FsqWorld.toast("装備を手に入れた！", "gold");
+  }
+  const GEAR_SLOT_JA = { weapon: "武器", armor: "防具", accessory: "装飾", artifact: "秘宝", cloak: "外套" };
+  const GEAR_SLOT_ICO = { weapon: "⚔", armor: "🛡", accessory: "💠", artifact: "📜", cloak: "🧥" };
   const CLASS_HELD_ICO = {
     swordsman: { weapon: "⚔", armor: "🛡", accessory: "✨", artifact: "🏅" },
     mage: { weapon: "🪄", armor: "📖", accessory: "🔮", artifact: "🏅" },
     archer: { weapon: "🏹", armor: "🪶", accessory: "🎯", artifact: "🏅" },
   };
 
+  function buildDollLoadout() {
+    const inv = journeyStatus.inventory || [];
+    const byUid = {};
+    inv.forEach((it) => {
+      if (it && (it.uid || it.id)) byUid[it.uid || it.id] = it;
+    });
+    const glam = journeyStatus.glamour || {};
+    const eq = journeyStatus.equipped || {};
+    const slots = ["cloak", "armor", "weapon", "accessory", "artifact"];
+    const loadout = {};
+    slots.forEach((s) => {
+      const uid = glam[s] || eq[s];
+      loadout[s] = uid ? byUid[uid] || null : null;
+    });
+    // Fallback: appearance equipped_details (legacy ids)
+    const details = (journeyStatus.appearance && journeyStatus.appearance.equipped_details) || [];
+    details.forEach((d) => {
+      if (d && d.slot && !loadout[d.slot]) {
+        loadout[d.slot] = {
+          item_id: d.item_id,
+          label_ja: d.label_ja,
+          slot: d.slot,
+          css: d.css,
+          tint: d.tint,
+          rarity: d.rarity || "common",
+        };
+      }
+    });
+    return loadout;
+  }
+
+  function renderCharacterDoll(appearance) {
+    const mount = document.getElementById("rpgDollMount");
+    if (!mount || !window.CharacterDoll) return;
+    const ap = appearance || journeyStatus.appearance || {};
+    CharacterDoll.render(mount, {
+      classId: ap.class_id || journeyStatus.class_id || selectedClass,
+      rankId: ap.rank_id || journeyStatus.rank_id || "novice",
+      loadout: buildDollLoadout(),
+    });
+  }
+
   function applyAppearance(wrap, img, appearance) {
-    if (!wrap || !img) return;
+    if (!wrap) return;
     const ap = appearance || {};
     const standee = wrap.classList.contains("standee");
     wrap.className = "hero-avatar " + (standee ? "standee " : "") + (ap.css_classes || "");
     const classId = ap.class_id || journeyStatus.class_id || selectedClass;
     const rankId = ap.rank_id || journeyStatus.rank_id || "novice";
-    let evo = ap.evolution_sprite || ap.sprite || (classId ? evolutionSpritePath(classId, rankId) : null);
-    if (evo && typeof evo === "string" && evo.indexOf("_stand.png") < 0 && /\/static\/rpg\/characters\/[^/]+\.png$/.test(evo)) {
-      evo = evo.replace(/\.png$/, "_stand.png");
-    }
-    if (evo && classId) {
-      wrap.classList.add("has-evolution");
-      if (standee) wrap.classList.add("standee");
-      img.src = evo;
-      img.alt = (ap.class_label_ja || classLabel(classId)) + " " + (ap.rank_label_ja || journeyStatus.rank_ja || "");
-      const reflect = document.getElementById("homeAvatarReflect");
-      if (reflect) reflect.src = evo;
-    } else if (ap.sprite) {
-      img.src = ap.sprite;
-      const reflect = document.getElementById("homeAvatarReflect");
-      if (reflect) reflect.src = ap.sprite;
-    }
+    wrap.classList.add("has-evolution");
+    renderCharacterDoll(ap);
     const alive = document.getElementById("homeHeroAlive");
     if (alive) {
       alive.className = "hero-alive class-" + (classId || "swordsman");
     }
-    renderHeldProps(appearance, classId);
     applyHeroShowcaseFx(classId, rankId);
     const tag = document.getElementById("homeAvatarClass");
     if (tag) tag.textContent = ap.class_label_ja || classLabel(ap.class_id) || "—";
     const emblem = document.getElementById("homeAvatarEmblem");
     if (emblem) emblem.textContent = ap.class_emblem_ja || (ap.class_label_ja || "旅")[0] || "旅";
+    if (img) img.hidden = true;
   }
 
   function applyHeroShowcaseFx(classId, rankId) {
@@ -611,7 +649,7 @@
       if (d && d.slot) bySlot[d.slot] = d;
     });
     const icos = CLASS_HELD_ICO[classId] || CLASS_HELD_ICO.swordsman;
-    const slots = ["weapon", "armor", "accessory", "artifact"];
+    const slots = ["weapon", "armor", "accessory", "artifact", "cloak"];
     box.innerHTML = slots
       .map((slot) => {
         const row = bySlot[slot];
@@ -635,7 +673,7 @@
     const panel = document.getElementById("homeGearPanel");
     if (!panel) return;
     const details = (appearance && appearance.equipped_details) || [];
-    const slots = ["weapon", "armor", "accessory", "artifact"];
+    const slots = ["weapon", "armor", "accessory", "artifact", "cloak"];
     const bySlot = {};
     details.forEach((d) => {
       bySlot[d.slot] = d;
@@ -650,12 +688,15 @@
         const row = bySlot[slot];
         const label = row ? row.label_ja || row.id || "装備中" : "未装備";
         const empty = row ? "" : " empty";
+        const rar = row && row.rarity ? ' style="border-color:' + (row.rarity_color || "#9aa0b8") + '"' : "";
         return (
           '<div class="gear-slot' +
           empty +
           '" data-slot="' +
           slot +
-          '"><span class="ico" aria-hidden="true">' +
+          '"' +
+          rar +
+          '><span class="ico" aria-hidden="true">' +
           (icos[slot] || GEAR_SLOT_ICO[slot] || "◆") +
           '</span><span class="k">' +
           (GEAR_SLOT_JA[slot] || slot) +
@@ -665,6 +706,62 @@
         );
       })
       .join("");
+    panel.querySelectorAll(".gear-slot").forEach((el) => {
+      el.onclick = () => openWardrobe();
+    });
+  }
+
+  function openWardrobe() {
+    const modal = document.getElementById("glamourModal");
+    const list = document.getElementById("glamourList");
+    if (!modal || !list) return;
+    const inv = journeyStatus.inventory || [];
+    if (!inv.length) {
+      list.innerHTML = '<p class="hint" style="margin:0">まだ装備がないよ。学習クエストでドロップするよ。</p>';
+    } else {
+      list.innerHTML = "";
+      inv.forEach((it) => {
+        const row = document.createElement("div");
+        row.className = "glamour-item";
+        const col = it.rarity_color || "#9aa0b8";
+        row.innerHTML =
+          '<span class="gi-rarity" style="background:' +
+          col +
+          '"></span><div><strong>' +
+          (it.label_ja || it.id) +
+          "</strong><span>" +
+          (GEAR_SLOT_JA[it.slot] || it.slot) +
+          " ・ " +
+          (it.rarity_ja || it.rarity || "コモン") +
+          "（見た目のみ）</span></div>";
+        row.onclick = async () => {
+          try {
+            const res = await api("/journey/gear/glamour", {
+              method: "POST",
+              body: JSON.stringify({ item_uid: it.uid || it.id }),
+            });
+            if (res.status) journeyStatus = res.status;
+            if (res.appearance) journeyStatus.appearance = res.appearance;
+            applyJourneyUi();
+            openWardrobe();
+            if (window.FsqWorld) FsqWorld.toast("着せ替えた！", "gold");
+          } catch (e) {
+            setErr(e.message);
+          }
+        };
+        list.appendChild(row);
+      });
+    }
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeWardrobe() {
+    const modal = document.getElementById("glamourModal");
+    if (modal) {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
   }
 
   function renderHomeHeader() {
@@ -1209,7 +1306,7 @@
       journeyMap = res.map || journeyMap;
       const chips = [];
       (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
-      if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
+      if (res.gear) chips.push(gearChipLabel(res.gear));
       if (res.rank) chips.push("進化：" + (res.rank.label_ja || res.rank.id));
       const warn =
         res.submit && res.submit.soft_check && res.submit.soft_check.warnings
@@ -1314,7 +1411,7 @@
       if (res.map) journeyMap = res.map;
       const chips = [];
       (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
-      if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
+      if (res.gear) chips.push(gearChipLabel(res.gear));
       showRewardModal(
         "🏆 " + (res.message_ja || "テストクリア！"),
         ["EXP +" + (res.exp_gained || 0), "score " + (res.score != null ? res.score : "")],
@@ -1426,7 +1523,10 @@
       if (res.weekly_story) journeyStatus.weekly_story = res.weekly_story;
       const chips = [];
       (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
-      if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
+      if (res.gear) {
+        chips.push(gearChipLabel(res.gear));
+        toastGearDrop(res.gear);
+      }
       if (res.rank) chips.push("進化：" + (res.rank.label_ja || res.rank.id));
       showRewardModal(
         "🎉 QUEST CLEAR!",
@@ -1470,7 +1570,7 @@
       if (res.map) journeyMap = res.map;
       const chips = [];
       (res.skills_gained || []).forEach((s) => chips.push("スキル：" + (s.label_ja || s.id)));
-      if (res.gear) chips.push("装備：" + (res.gear.label_ja || res.gear.item_id));
+      if (res.gear) chips.push(gearChipLabel(res.gear));
       showRewardModal(res.success ? "🏆 BOSS DEFEATED!" : "退却… また挑もう", [res.message_ja || ""], chips);
       if (res.success && luna) luna.applyEmotion("cheer", 1500);
       applyJourneyUi();
@@ -3265,6 +3365,16 @@
     const rewardClose = document.getElementById("rewardCloseBtn");
     if (rewardClose) {
       rewardClose.onclick = () => document.getElementById("rewardModal").classList.remove("open");
+    }
+    const openGlamour = document.getElementById("openGlamourBtn");
+    if (openGlamour) openGlamour.onclick = () => openWardrobe();
+    const glamourClose = document.getElementById("glamourClose");
+    if (glamourClose) glamourClose.onclick = () => closeWardrobe();
+    const glamourModal = document.getElementById("glamourModal");
+    if (glamourModal) {
+      glamourModal.onclick = (e) => {
+        if (e.target === glamourModal) closeWardrobe();
+      };
     }
     const studyClose = document.getElementById("studyCloseBtn");
     if (studyClose) studyClose.onclick = () => closeStudyModal();

@@ -54,7 +54,8 @@
     "art_career_ux": {"css": "gear-artifact", "tint": "#ffd27a"},
     "art_career_nu": {"css": "gear-artifact", "tint": "#ffd27a"},
     "art_career_te": {"css": "gear-artifact", "tint": "#ffd27a"},
-    "art_stub": {"css": "gear-artifact", "tint": "#c8c0e0"}
+    "art_stub": {"css": "gear-artifact", "tint": "#c8c0e0"},
+    "gear-cloak-soft": {"css": "gear-cloak-soft", "tint": "#3a2f8a"}
   },
   "rank_aura": {
     "novice": "rank-novice",

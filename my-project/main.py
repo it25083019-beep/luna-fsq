@@ -107,6 +107,7 @@ from journey_engine import (
     challenge_boss,
     complete_lesson,
     enrich_lesson_detail,
+    equip_glamour_item,
     get_curriculum,
     get_lesson,
     journey_status,
@@ -1015,6 +1016,20 @@ def journey_select(req: JourneySelectRequest, current: User = Depends(get_curren
 def journey_map(current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
     return list_journey_map(brain)
+
+
+@app.post("/journey/gear/glamour")
+def journey_equip_glamour(req: dict, current: User = Depends(get_current_user)):
+    uid = (req or {}).get("item_uid") or (req or {}).get("uid")
+    if not uid:
+        raise HTTPException(status_code=400, detail="item_uid required")
+    brain = load_user_brain(current.public_id)
+    try:
+        result = equip_glamour_item(brain, str(uid))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return result
 
 
 @app.get("/journey/lessons/{lesson_id}")

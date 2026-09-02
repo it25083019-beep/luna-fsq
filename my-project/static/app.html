@@ -494,7 +494,7 @@
     .rpg-status-top{position:relative;z-index:1;margin-top:.45rem}
     .rpg-status-top .role{font-size:1.15rem;font-weight:800;margin:.1rem 0}
     .rpg-status-top .small{font-size:.7rem;opacity:.88;line-height:1.4}
-    .hero-showcase{position:relative;z-index:1;margin-top:.35rem;padding:0 .15rem .2rem;min-height:360px}
+    .hero-showcase{position:relative;z-index:1;margin-top:.35rem;padding:0 .15rem .2rem;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center}
     .hero-showcase[data-rank="intermediate"] .stage-aura{background:radial-gradient(circle,rgba(255,200,120,.35),rgba(94,207,192,.15) 45%,transparent 70%)}
     .hero-showcase[data-rank="veteran"] .stage-aura{background:radial-gradient(circle,rgba(120,200,255,.38),rgba(180,140,255,.18) 45%,transparent 70%)}
     .hero-showcase[data-rank="saint"] .stage-aura{background:radial-gradient(circle,rgba(255,240,150,.45),rgba(255,200,80,.25) 40%,transparent 68%);animation:auraPulse 2.2s ease-in-out infinite,saintGlow 4s ease-in-out infinite}
@@ -525,7 +525,48 @@
     .stage-aura{position:absolute;left:50%;top:8%;transform:translateX(-50%);width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(255,230,150,.28),rgba(120,160,255,.12) 45%,transparent 70%);pointer-events:none;animation:auraPulse 3.2s ease-in-out infinite;z-index:0}
     @keyframes auraPulse{0%,100%{opacity:.7;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.06)}}
     .stage-floor{width:150px;height:26px;margin-top:-10px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,210,122,.65),rgba(80,60,160,.15) 55%,transparent 72%);box-shadow:0 8px 28px rgba(0,0,0,.25);z-index:1}
-    .hero-avatar.standee{width:min(210px,58vw);height:255px;max-height:none;aspect-ratio:auto;border:none!important;border-radius:0;overflow:visible;background:transparent!important;box-shadow:none!important;outline:none!important;z-index:2}
+    .hero-avatar.standee{width:min(240px,62vw);height:280px;max-height:none;aspect-ratio:auto;border:none!important;border-radius:0;overflow:visible;background:transparent!important;box-shadow:none!important;outline:none!important;z-index:2}
+    .rpg-doll-mount{width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;position:relative;z-index:2}
+    .rpg-doll{position:relative;width:140px;transform:scale(var(--scale,1));transform-origin:50% 92%;animation:dollIdle 2.8s ease-in-out infinite}
+    @keyframes dollIdle{0%,100%{transform:scale(var(--scale,1)) translateY(0)}50%{transform:scale(var(--scale,1)) translateY(-6px)}}
+    .rpg-doll .doll-aura{position:absolute;left:50%;top:5%;width:130px;height:130px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,230,150,.22),transparent 70%);pointer-events:none;animation:auraPulse 3s ease-in-out infinite}
+    .rpg-doll.rank-veteran .doll-aura{background:radial-gradient(circle,rgba(120,200,255,.28),transparent 70%)}
+    .rpg-doll.rank-saint .doll-aura{background:radial-gradient(circle,rgba(255,230,120,.45),transparent 68%);animation:auraPulse 2.2s ease-in-out infinite,saintGlow 4s ease-in-out infinite}
+    .rpg-doll .doll-cloak-slot{position:absolute;left:50%;top:18%;transform:translateX(-50%);width:120px;height:100px;z-index:0;pointer-events:none}
+    .doll-cloak-piece{position:absolute;inset:0}
+    .doll-cloak-piece .cloak-l,.doll-cloak-piece .cloak-r{position:absolute;top:8%;width:42%;height:88%;border-radius:40% 10% 50% 50%;background:linear-gradient(180deg,var(--gear),color-mix(in srgb,var(--gear) 60%,#000));box-shadow:0 0 18px var(--glow,rgba(0,0,0,.2));opacity:.92}
+    .doll-cloak-piece .cloak-l{left:2%;transform:rotate(-8deg)}
+    .doll-cloak-piece .cloak-r{right:2%;transform:rotate(8deg) scaleX(-1)}
+    .rpg-doll .doll-body{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center}
+    .rpg-doll .doll-head{position:relative;width:52px;height:52px;margin-bottom:-4px;z-index:4}
+    .rpg-doll .doll-hair{position:absolute;inset:-6px -8px 8px;border-radius:50% 50% 42% 42%;background:var(--hair);box-shadow:inset 0 -4px 0 rgba(0,0,0,.15)}
+    .rpg-doll.class-mage .doll-hair{inset:-10px -10px 6px;border-radius:45% 45% 40% 40%}
+    .rpg-doll .doll-face{position:absolute;left:50%;top:14px;transform:translateX(-50%);width:38px;height:34px;border-radius:50%;background:var(--skin);z-index:2}
+    .rpg-doll .doll-face .eye{position:absolute;top:12px;width:4px;height:5px;border-radius:50%;background:var(--eye)}
+    .rpg-doll .doll-face .eye.l{left:9px}
+    .rpg-doll .doll-face .eye.r{right:9px}
+    .rpg-doll .doll-face .mouth{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);width:10px;height:4px;border-bottom:2px solid #c87858;border-radius:0 0 8px 8px}
+    .doll-acc-slot{position:absolute;left:50%;top:-6px;transform:translateX(-50%);z-index:5}
+    .doll-acc-piece .gem{width:14px;height:14px;border-radius:50%;display:block;background:radial-gradient(circle at 30% 30%,#fff,var(--gear));box-shadow:0 0 10px var(--gear)}
+    .rpg-doll .doll-torso{position:relative;width:56px;height:50px;z-index:3}
+    .doll-armor-piece{position:absolute;inset:0;border-radius:14px 14px 10px 10px;background:linear-gradient(180deg,color-mix(in srgb,var(--gear) 85%,#fff),var(--gear));box-shadow:inset 0 2px 0 rgba(255,255,255,.25),0 4px 0 rgba(0,0,0,.15)}
+    .doll-armor-piece.apron{border-radius:12px 12px 18px 18px;height:58px;top:-4px}
+    .doll-armor-piece.vest{height:46px;background:linear-gradient(180deg,var(--gear),color-mix(in srgb,var(--gear) 70%,#000))}
+    .doll-arm{position:absolute;width:14px;height:32px;border-radius:8px;background:var(--skin);top:8px}
+    .rpg-doll .arm-l{left:-12px;transform:rotate(18deg)}
+    .rpg-doll .arm-r{right:-12px;transform:rotate(-12deg)}
+    .doll-weapon-slot{position:absolute;right:-8px;top:-18px;width:48px;height:72px;transform:rotate(-20deg);transform-origin:30% 80%}
+    .doll-weapon-slot.has-gear{animation:weaponBob 2.6s ease-in-out infinite}
+    @keyframes weaponBob{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(-8deg) translateY(-3px)}}
+    .doll-gear-svg{width:100%;height:100%;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+    .rpg-doll .doll-legs{display:flex;gap:8px;margin-top:-2px;z-index:2}
+    .rpg-doll .doll-legs .leg{width:18px;height:34px;border-radius:8px 8px 10px 10px;background:linear-gradient(180deg,color-mix(in srgb,var(--body) 80%,#000),var(--body))}
+    .doll-art-slot{position:absolute;left:50%;bottom:28%;transform:translateX(-50%);width:90px;height:90px;pointer-events:none;z-index:1}
+    .doll-art-piece{width:100%;height:100%;border-radius:50%;border:2px solid var(--gear);box-shadow:0 0 24px var(--glow,var(--gear));opacity:.55;animation:artOrbit 4s linear infinite}
+    @keyframes artOrbit{to{transform:rotate(360deg)}}
+    .rpg-doll .doll-shadow{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:90px;height:14px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.35),transparent 70%)}
+    .hero-stage.hero-cheer .rpg-doll{animation:dollCheer .65s ease!important}
+    @keyframes dollCheer{0%{transform:scale(var(--scale,1)) translateY(0)}30%{transform:scale(calc(var(--scale,1)*1.05)) translateY(-14px)}100%{transform:scale(var(--scale,1)) translateY(0)}}
     .hero-avatar.standee .class-motif,.hero-avatar.standee::after,.hero-avatar.standee::before{display:none!important}
     .hero-alive{position:relative;width:100%;height:100%;transform-origin:50% 92%;animation:heroIdle 2.8s ease-in-out infinite;z-index:2}
     .hero-avatar.standee img.hero-body,
@@ -1122,7 +1163,18 @@
     .demo-quest-row.life-quest{border-left:3px solid var(--fsq-teal,#1f7a6e);padding-left:.5rem;margin-left:-.15rem}
     .demo-quest-row.life-quest .quest-text span{color:#145a52}
     .edit-panel .ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
-    .edit-panel .local-err{color:var(--danger);font-size:.75rem;margin:.35rem 0 0;min-height:1em}
+    .glamour-modal{position:fixed;inset:0;background:rgba(8,16,28,.72);z-index:120;display:none;align-items:flex-end;justify-content:center;padding:0}
+    .glamour-modal.open{display:flex}
+    .glamour-sheet{width:100%;max-width:440px;max-height:78vh;overflow:auto;background:linear-gradient(180deg,#1a3d3a,#0b1c22);border-radius:20px 20px 0 0;padding:1rem .85rem calc(1.2rem + env(safe-area-inset-bottom));border-top:2px solid rgba(212,168,75,.45)}
+    .glamour-sheet h3{margin:0 0 .35rem;font-size:.95rem;color:var(--fsq-gold-soft);font-family:"Shippori Mincho",serif}
+    .glamour-sheet .hint{margin:0 0 .65rem;font-size:.68rem;color:var(--fsq-muted)}
+    .glamour-item{display:flex;align-items:center;gap:.55rem;padding:.55rem .45rem;border-bottom:1px solid rgba(212,168,75,.15);cursor:pointer}
+    .glamour-item:last-child{border-bottom:none}
+    .glamour-item .gi-rarity{width:4px;height:36px;border-radius:4px;flex-shrink:0}
+    .glamour-item strong{display:block;font-size:.76rem;color:#f7efe0}
+    .glamour-item span{font-size:.6rem;color:var(--fsq-muted)}
+    .glamour-close{margin-top:.65rem;width:100%;border:none;border-radius:12px;padding:.6rem;background:rgba(255,255,255,.1);color:#f7efe0;font-weight:700;cursor:pointer}
+    .btn-glamour-open{margin:.45rem .85rem 0;border:none;border-radius:12px;padding:.5rem .75rem;background:linear-gradient(135deg,#1f7a6e,#145a52);color:#f7efe0;font-size:.72rem;font-weight:700;cursor:pointer;width:calc(100% - 1.7rem)}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/static/theme.js"></script>
@@ -1460,8 +1512,8 @@
                   <div class="hero-reflection" aria-hidden="true"><img id="homeAvatarReflect" alt="" /></div>
                   <div class="hero-avatar standee" id="homeAvatarWrap">
                     <div class="hero-alive" id="homeHeroAlive">
-                      <div class="held-props" id="homeHeldProps" aria-hidden="true"></div>
-                      <img id="homeAvatarImg" class="hero-body" src="/static/rpg/characters/swordsman_novice_stand.png" alt="" />
+                      <div id="rpgDollMount" class="rpg-doll-mount" aria-label="キャラクター"></div>
+                      <img id="homeAvatarImg" class="hero-body" src="" alt="" hidden />
                       <div class="life-fx" aria-hidden="true">
                         <span class="spark s1"></span>
                         <span class="spark s2"></span>
@@ -1486,6 +1538,7 @@
             <div class="card fsq-addon-card">
               <div class="section-title"><span>🛡️ クラス</span><span class="hint">自分の分身</span></div>
               <div class="classes home-class-strip" id="homeClassStrip"></div>
+              <button type="button" class="btn-glamour-open" id="openGlamourBtn">👗 装備・グラマー（見た目変更）</button>
             </div>
             <div class="card fsq-addon-card">
               <div class="section-title"><span>✅ 今日のクエスト</span><span class="hint">タップで出撃</span></div>
@@ -1749,9 +1802,18 @@
       </div>
     </div>
   </div>
+  <div id="glamourModal" class="glamour-modal" aria-hidden="true">
+    <div class="glamour-sheet">
+      <h3>装備・グラマー</h3>
+      <p class="hint">見た目だけ変わるよ（ステータスは変わらない）。タップで着せ替え。</p>
+      <div id="glamourList"></div>
+      <button type="button" class="glamour-close" id="glamourClose">閉じる</button>
+    </div>
+  </div>
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
   <script src="/static/world.js"></script>
-  <script src="/static/app.js?v=20260902e"></script>
+  <script src="/static/character_doll.js?v=20260902g"></script>
+  <script src="/static/app.js?v=20260902g"></script>
 </body>
 </html>

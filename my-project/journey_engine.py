@@ -130,7 +130,7 @@ def get_curriculum(career_id: str) -> Dict[str, Any]:
     data = load_curricula()
     full = (data.get("curricula") or {}).get(career_id)
     if full:
-        return dict(full)
+        return _maybe_expand_curriculum(career_id, dict(full))
     stub = dict(data.get("stub_template") or {})
     stub["career_id"] = career_id
     skills = []
@@ -148,7 +148,18 @@ def get_curriculum(career_id: str) -> Dict[str, Any]:
             row["gear_drop"] = g
         lessons.append(row)
     stub["lessons"] = lessons
-    return stub
+    cur = stub
+    return _maybe_expand_curriculum(career_id, cur)
+
+
+def _maybe_expand_curriculum(career_id: str, cur: Dict[str, Any]) -> Dict[str, Any]:
+    from curriculum_expander import expand_curriculum, should_expand
+
+    if not should_expand(career_id, cur):
+        return cur
+    meta = _career_meta(career_id) or {}
+    cluster_id = meta.get("cluster_id") or "it_engineering"
+    return expand_curriculum(cur, career_id, cluster_id)
 
 
 def _is_boss(les: Dict[str, Any]) -> bool:
@@ -222,7 +233,8 @@ def ensure_journey(state: Dict[str, Any]) -> Dict[str, Any]:
     j.setdefault("completed_lessons", [])
     j.setdefault("skills", [])
     j.setdefault("inventory", [])
-    j.setdefault("equipped", {"weapon": None, "armor": None, "accessory": None, "artifact": None})
+    j.setdefault("equipped", {"weapon": None, "armor": None, "accessory": None, "artifact": None, "cloak": None})
+    j.setdefault("glamour", {"weapon": None, "armor": None, "accessory": None, "artifact": None, "cloak": None})
     j.setdefault("boss_clears", [])
     j.setdefault("journey_exp", 0)
     j.setdefault("lesson_enrich", {})
@@ -248,7 +260,13 @@ def _compute_rank(completed_count: int, journey_exp: int) -> Dict[str, Any]:
     return current
 
 
-def _build_appearance(class_id: str, equipped: Dict[str, Any], rank_id: str, inventory: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+def _build_appearance(
+    class_id: str,
+    equipped: Dict[str, Any],
+    rank_id: str,
+    inventory: Optional[List[Dict[str, Any]]] = None,
+    glamour: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     app = load_appearance()
     base = (app.get("class_base") or {}).get(class_id) or {
         "sprite": "/static/live2d/luna-expressions/luna-neutral.png",
@@ -260,24 +278,40 @@ def _build_appearance(class_id: str, equipped: Dict[str, Any], rank_id: str, inv
     aura = (app.get("rank_aura") or {}).get(rank_id) or "rank-novice"
     layers.append(aura)
     tints = []
-    inv_by_id = {str(i.get("id")): i for i in (inventory or [])}
+    inv_by_id: Dict[str, Dict[str, Any]] = {}
+    for i in inventory or []:
+        if i.get("uid"):
+            inv_by_id[str(i["uid"])] = i
+        if i.get("id"):
+            inv_by_id[str(i["id"])] = i
+    display_slots = glamour or equipped or {}
     equipped_details = []
-    for slot, item_id in (equipped or {}).items():
-        if not item_id:
+    for slot in ("cloak", "weapon", "armor", "accessory", "artifact"):
+        uid = (display_slots or {}).get(slot) or (equipped or {}).get(slot)
+        if not uid:
             continue
-        lookup = item_id.split("__")[-1] if "__" in str(item_id) else str(item_id)
-        mod = mods.get(str(item_id)) or mods.get(lookup)
-        if mod:
-            if mod.get("css"):
-                layers.append(mod["css"])
-            if mod.get("tint"):
-                tints.append(mod["tint"])
-        meta = inv_by_id.get(str(item_id)) or {}
+        meta = inv_by_id.get(str(uid)) or {}
+        lookup = str(meta.get("id") or uid).split("__")[-1]
+        mod = None
+        if meta.get("css"):
+            layers.append(str(meta["css"]))
+            if meta.get("tint"):
+                tints.append(str(meta["tint"]))
+        else:
+            mod = mods.get(str(meta.get("id") or "")) or mods.get(lookup)
+            if mod:
+                if mod.get("css"):
+                    layers.append(mod["css"])
+                if mod.get("tint"):
+                    tints.append(mod["tint"])
         equipped_details.append(
             {
                 "slot": slot,
-                "item_id": item_id,
+                "item_id": meta.get("id") or lookup,
                 "label_ja": meta.get("label_ja") or lookup,
+                "rarity": meta.get("rarity"),
+                "css": meta.get("css") or (mod or {}).get("css"),
+                "tint": meta.get("tint") or (mod or {}).get("tint"),
             }
         )
     evo_cfg = app.get("character_evolution") or {}
@@ -323,7 +357,8 @@ def select_journey(state: Dict[str, Any], *, class_id: str, career_id: str) -> D
     j["completed_lessons"] = []
     j["skills"] = []
     j["inventory"] = []
-    j["equipped"] = {"weapon": None, "armor": None, "accessory": None, "artifact": None}
+    j["equipped"] = {"weapon": None, "armor": None, "accessory": None, "artifact": None, "cloak": None}
+    j["glamour"] = {"weapon": None, "armor": None, "accessory": None, "artifact": None, "cloak": None}
     j["boss_clears"] = []
     j["journey_exp"] = 0
     j["lesson_enrich"] = {}
@@ -334,6 +369,32 @@ def select_journey(state: Dict[str, Any], *, class_id: str, career_id: str) -> D
     state["career_path"]["career_id"] = career_id
     state["career_path"]["title_ja"] = meta.get("title_ja")
     state["career_path"]["rpg_class"] = class_id
+    from gear_engine import grant_loot
+
+    starter_armor = grant_loot(
+        j,
+        {
+            "slot": "armor",
+            "item_id": "arm_apprentice",
+            "label_ja": "見習いの装備",
+            "css": "gear-armor-hoodie",
+            "tint": "#5b6abf",
+            "rarity": "common",
+        },
+    )
+    starter_cloak = grant_loot(
+        j,
+        {
+            "slot": "cloak",
+            "item_id": "clk_apprentice",
+            "label_ja": "見習いの外套",
+            "css": "gear-cloak-soft",
+            "tint": "#3a2f8a",
+            "rarity": "common",
+        },
+    )
+    j["glamour"]["armor"] = starter_armor["uid"]
+    j["glamour"]["cloak"] = starter_cloak["uid"]
     return journey_status(state)
 
 
@@ -360,6 +421,7 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
         j.get("equipped") or {},
         j.get("rank_id") or "novice",
         j.get("inventory") or [],
+        j.get("glamour") or {},
     )
     from life_link import life_quests_for_fsq
 
@@ -380,6 +442,7 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
         "skills": j.get("skills") or [],
         "inventory": j.get("inventory") or [],
         "equipped": j.get("equipped") or {},
+        "glamour": j.get("glamour") or {},
         "appearance": appearance,
         "next_lesson": next_lesson,
         "next_boss": next_boss,
@@ -429,19 +492,14 @@ def get_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
     return row
 
 
-def _equip_gear(j: Dict[str, Any], gear: Dict[str, Any]) -> None:
-    slot = gear.get("slot") or "accessory"
-    item = {
-        "id": gear.get("item_id") or uuid.uuid4().hex[:10],
-        "slot": slot,
-        "label_ja": gear.get("label_ja") or "アイテム",
-        "at": _utcnow(),
-    }
-    inv = j.setdefault("inventory", [])
-    inv.append(item)
-    equipped = j.setdefault("equipped", {})
-    # Auto-equip newest for slot
-    equipped[slot] = item["id"]
+def _equip_gear(j: Dict[str, Any], gear: Dict[str, Any]) -> Dict[str, Any]:
+    from gear_engine import grant_loot
+
+    row = grant_loot(j, gear, auto_equip_if_empty=True)
+    glam = j.setdefault("glamour", {})
+    slot = row.get("slot") or "accessory"
+    glam[slot] = row["uid"]
+    return row
 
 
 def _unlock_skills(j: Dict[str, Any], cur: Dict[str, Any], skill_ids: List[str]) -> List[Dict[str, Any]]:
@@ -502,13 +560,29 @@ def complete_lesson(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
     j.setdefault("completed_lessons", []).append(lesson_id)
     skills = _unlock_skills(j, cur, les.get("skill_ids") or [])
     gear = None
+    loot_row = None
     if les.get("gear_drop"):
-        _equip_gear(j, les["gear_drop"])
-        gear = les["gear_drop"]
+        loot_row = _equip_gear(j, les["gear_drop"])
+        gear = loot_row
+    from gear_engine import roll_monster_loot
+
+    bonus = roll_monster_loot(
+        j.get("career_id") or "",
+        lesson_index=len(j.get("completed_lessons") or []),
+    )
+    if bonus:
+        loot_row = _equip_gear(j, bonus)
+        gear = loot_row
     rank = _compute_rank(len(j["completed_lessons"]), j["journey_exp"])
     j["rank_id"] = rank["id"]
     _advance_stage(j, cur)
-    appearance = _build_appearance(j["class_id"], j.get("equipped") or {}, j["rank_id"], j.get("inventory") or [])
+    appearance = _build_appearance(
+        j["class_id"],
+        j.get("equipped") or {},
+        j["rank_id"],
+        j.get("inventory") or [],
+        j.get("glamour") or {},
+    )
 
     from life_link import on_lesson_complete
 
@@ -625,8 +699,12 @@ def challenge_boss(state: Dict[str, Any], boss_id: str, *, success: bool = True)
     skills = _unlock_skills(j, cur, les.get("skill_ids") or [])
     gear = None
     if les.get("gear_drop"):
-        _equip_gear(j, les["gear_drop"])
-        gear = les["gear_drop"]
+        gear = _equip_gear(j, les["gear_drop"])
+    from gear_engine import roll_monster_loot
+
+    bonus = roll_monster_loot(j.get("career_id") or "", boss=True, lesson_index=len(j.get("completed_lessons") or []))
+    if bonus:
+        gear = _equip_gear(j, bonus)
     rank = _compute_rank(len(j["completed_lessons"]), j["journey_exp"])
     j["rank_id"] = rank["id"]
     _advance_stage(j, cur)
@@ -645,10 +723,33 @@ def challenge_boss(state: Dict[str, Any], boss_id: str, *, success: bool = True)
         "skills_gained": skills,
         "gear": gear,
         "rank": rank,
-        "appearance": _build_appearance(j["class_id"], j.get("equipped") or {}, j["rank_id"], j.get("inventory") or []),
+        "appearance": _build_appearance(
+            j["class_id"],
+            j.get("equipped") or {},
+            j["rank_id"],
+            j.get("inventory") or [],
+            j.get("glamour") or {},
+        ),
         "status": journey_status(state),
         "map": list_journey_map(state),
     }
+
+
+def equip_glamour_item(state: Dict[str, Any], item_uid: str) -> Dict[str, Any]:
+    from gear_engine import set_glamour
+
+    j = ensure_journey(state)
+    if not j.get("career_id"):
+        raise ValueError("journey not selected")
+    item = set_glamour(j, item_uid)
+    appearance = _build_appearance(
+        j.get("class_id") or "swordsman",
+        j.get("equipped") or {},
+        j.get("rank_id") or "novice",
+        j.get("inventory") or [],
+        j.get("glamour") or {},
+    )
+    return {"ok": True, "item": item, "appearance": appearance, "status": journey_status(state)}
 
 
 def enrich_lesson_detail(state: Dict[str, Any], lesson_id: str, detail_ja: str) -> Dict[str, Any]:
