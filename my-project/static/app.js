@@ -1074,9 +1074,9 @@
       hint.className = "next-boss-hint";
       hint.style.flexBasis = "100%";
       hint.textContent =
-        "👹 週次/月次テスト出現：" +
+        "👹 試験ボス出現：" +
         (boss.title_ja || boss.id) +
-        "（ワールドのボス欄から受験。負けても学習進捗は消えない）";
+        "（単元／学期末／認定相当。用語を入れて解答。負けても進捗は消えない）";
       box.appendChild(hint);
     }
   }
@@ -1425,23 +1425,39 @@
         currentExamBossId = bossId;
         document.getElementById("examTitle").textContent =
           (exam.exam_label_ja || "確認テスト") + " — " + (exam.title_ja || bossId);
+        const minC = exam.min_answer_chars || 48;
+        const passPct = Math.round((exam.pass_ratio || 0.6) * 100);
         document.getElementById("examSub").textContent =
-          "これまでの学習を確認します。各問に短くても具体的に書いて提出しよう（失敗しても進捗は消えません）。";
+          (exam.briefing_ja || "これまでの学習を、自分の言葉で説明してください。") +
+          " " +
+          (exam.duration_hint_ja || "") +
+          " 各問" +
+          minC +
+          "文字以上／合格ライン " +
+          passPct +
+          "%（失敗しても進捗は消えません）。";
         document.getElementById("examMsg").textContent = "";
         const box = document.getElementById("examQuestions");
         box.innerHTML = "";
         const saved = exam.answers || {};
+        const qRows = exam.boss_type === "career_final" ? 7 : exam.boss_type === "monthly" ? 6 : 5;
         (exam.questions || []).forEach((q, i) => {
           const div = document.createElement("div");
           div.className = "exam-q";
           div.innerHTML =
             '<div class="q-lab">Q' +
             (i + 1) +
+            " / " +
+            (exam.questions || []).length +
             "</div><p>" +
             (q.prompt_ja || "") +
             '</p><textarea data-qid="' +
             q.id +
-            '" placeholder="解答を書く"></textarea>';
+            '" rows="' +
+            qRows +
+            '" placeholder="用語と手順を入れて、自分の言葉で書く（' +
+            minC +
+            '文字以上）"></textarea>';
           const ta = div.querySelector("textarea");
           if (ta && saved[q.id]) ta.value = saved[q.id];
           box.appendChild(div);
@@ -1907,20 +1923,29 @@
     }
     const pBar = document.getElementById("portfolioExpBar");
     if (pBar) pBar.style.width = prog.pct + "%";
+    const pf = journeyStatus.career_portfolio || {};
     const pStory = document.getElementById("portfolioStory");
     if (pStory) {
       const weekly = journeyStatus.weekly_story;
-      if (weekly && weekly.story_ja) {
-        pStory.textContent = weekly.story_ja;
-      } else {
-        pStory.textContent = journeyStatus.selected
+      pStory.textContent =
+        pf.story_ja ||
+        (weekly && weekly.story_ja) ||
+        (journeyStatus.selected
           ? (journeyStatus.career_title_ja || "進路") +
             "への冒険。習熟「" +
             (journeyStatus.rank_ja || "見習い") +
             "」— レッスン " +
             (journeyStatus.completed_count || 0) +
-            " 完了。理論と実践を重ね、最終ボスへ向かおう。"
-          : "クラスと職業を選ぶと、冒険の記録がここに表示されます。";
+            " 完了。課題を提出するほど、就活の記録が育ちます。"
+          : "クラスと職業を選ぶと、冒険の記録がここに表示されます。");
+      const ready = document.getElementById("portfolioReady");
+      if (ready) ready.remove();
+      if (pf.job_ready) {
+        const mark = document.createElement("span");
+        mark.id = "portfolioReady";
+        mark.className = "pf-ready";
+        mark.textContent = "応募書類に使える段階";
+        pStory.after(mark);
       }
     }
     const row = document.getElementById("portfolioStats");
@@ -1933,6 +1958,58 @@
         '</strong></div><div class="stat-box" style="background:linear-gradient(135deg,#7a5cff,#b47aff)"><span>ボス</span><strong>' +
         ((journeyStatus.boss_clears || []).length || 0) +
         "</strong></div>";
+    }
+    const prEl = document.getElementById("portfolioPr");
+    if (prEl) {
+      const bullets = pf.self_pr || [];
+      prEl.innerHTML = bullets.length
+        ? bullets.map((b) => "<li>" + String(b).replace(/</g, "") + "</li>").join("")
+        : '<li class="hint">課題を提出すると、就活で使える一文が増えます。</li>';
+    }
+    const evEl = document.getElementById("portfolioEvidence");
+    if (evEl) {
+      const evs = pf.evidence || [];
+      evEl.innerHTML = evs.length
+        ? evs
+            .map((e) => {
+              const kind = e.kind === "exam" ? "試験" : "課題";
+              const pct = Math.round((e.score || 0) * 100);
+              return (
+                '<div class="pf-ev"><div class="ev-top"><span>' +
+                kind +
+                " · " +
+                String(e.title_ja || e.id || "").replace(/</g, "") +
+                "</span><span>" +
+                pct +
+                "%</span></div><p class=\"ev-sn\">" +
+                String(e.snippet || "").replace(/</g, "") +
+                "</p></div>"
+              );
+            })
+            .join("")
+        : '<p class="hint">レッスンや試験の解答が、ここに作品として残ります。</p>';
+    }
+    const exEl = document.getElementById("portfolioExams");
+    if (exEl) {
+      const exams = pf.exams || [];
+      const label = { weekly: "単元テスト", monthly: "学期末", career_final: "認定試験" };
+      exEl.innerHTML = exams.length
+        ? exams
+            .map((x) => {
+              const pct = Math.round((x.score || 0) * 100);
+              return (
+                '<div class="pf-ev"><div class="ev-top"><span>' +
+                (label[x.boss_type] || "試験") +
+                " · " +
+                String(x.title_ja || x.id || "").replace(/</g, "") +
+                "</span><span>" +
+                (x.passed ? "合格 " : "未達 ") +
+                pct +
+                "%</span></div></div>"
+              );
+            })
+            .join("")
+        : '<p class="hint">単元テスト・学期末・認定試験の結果が残ります。</p>';
     }
     const route = document.getElementById("routeList");
     if (route) {
@@ -1965,12 +2042,14 @@
     }
     const story = document.getElementById("storyBox");
     if (story) {
-      story.textContent = journeyStatus.selected
-        ? (journeyStatus.career_title_ja || "進路") +
-          "への旅。ランク「" +
-          (journeyStatus.rank_ja || "見習い") +
-          "」。レッスンを重ねて最終ボスへ挑もう。"
-        : "クラスと職業を選んで旅を始めよう。";
+      story.textContent =
+        pf.story_ja ||
+        (journeyStatus.selected
+          ? (journeyStatus.career_title_ja || "進路") +
+            "への旅。ランク「" +
+            (journeyStatus.rank_ja || "見習い") +
+            "」。課題提出が経験値と就活記録になる。"
+          : "クラスと職業を選んで旅を始めよう。");
     }
   }
 

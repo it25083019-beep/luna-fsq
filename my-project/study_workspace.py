@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from journey_engine import (
     _attach_material,
@@ -18,11 +18,37 @@ from journey_engine import (
     get_lesson,
     get_lesson_material,
     list_bosses,
-    list_journey_map,
 )
 
-_MIN_ANSWER_CHARS = 24
-_MIN_BOSS_ANSWER_CHARS = 12
+_MIN_ANSWER_CHARS = 48
+_MIN_BOSS_ANSWER_CHARS = 40
+_LESSON_PASS_SCORE = 0.48
+_BOSS_EXAM_SPEC = {
+    "weekly": {
+        "questions": 5,
+        "min_chars": 48,
+        "pass_ratio": 0.58,
+        "match_ratio": 0.4,
+        "label_ja": "単元テスト（小テスト〜中間相当）",
+        "briefing_ja": "このステージの学習を、自分の言葉で説明できるかを見ます。短い感想や繰り返しでは通りません。",
+    },
+    "monthly": {
+        "questions": 8,
+        "min_chars": 72,
+        "pass_ratio": 0.66,
+        "match_ratio": 0.5,
+        "label_ja": "総合テスト（学期末試験相当）",
+        "briefing_ja": "複数単元を横断します。用語・手順・理由を具体的に書いてください。不合格でも進捗は消えません。",
+    },
+    "career_final": {
+        "questions": 10,
+        "min_chars": 90,
+        "pass_ratio": 0.75,
+        "match_ratio": 0.6,
+        "label_ja": "認定試験（資格・卒業試験相当）",
+        "briefing_ja": "進路の最終関門です。実務で説明できる粒度まで書いてください。合格記録は就活ポートフォリオに残ります。",
+    },
+}
 _CODE_CAREERS = {"software_engineer", "data_analyst", "web_developer", "security_engineer"}
 _PAIZA: Optional[Dict[str, Any]] = None
 
@@ -275,26 +301,83 @@ def reveal_hint(state: Dict[str, Any], lesson_id: str) -> Dict[str, Any]:
     }
 
 
-def soft_check_answer(answer: str, keywords: List[str], *, min_chars: int = _MIN_ANSWER_CHARS) -> Dict[str, Any]:
+def _looks_like_filler(text: str) -> bool:
+    compact = re.sub(r"\s+", "", text)
+    if len(set(compact)) < 8:
+        return True
+    if len(compact) >= 24 and len(set(compact)) / max(1, len(compact)) < 0.12:
+        return True
+    return False
+
+
+def _copied_prompt(text: str, prompts: List[str]) -> bool:
+    src = re.sub(r"\s+", "", text)
+    if len(src) < 20:
+        return False
+    for p in prompts:
+        raw = re.sub(r"\s+", "", str(p or ""))
+        if len(raw) < 24:
+            continue
+        if src == raw:
+            return True
+        if raw in src and len(src) - len(raw) < 20:
+            return True
+        if src in raw and len(raw) - len(src) < 8:
+            return True
+    return False
+
+
+def soft_check_answer(
+    answer: str,
+    keywords: List[str],
+    *,
+    min_chars: int = _MIN_ANSWER_CHARS,
+    require_keyword: bool = True,
+    reject_prompts: Optional[List[str]] = None,
+) -> Dict[str, Any]:
     text = (answer or "").strip()
     warnings: List[str] = []
-    ok_len = len(text) >= min_chars
-    if not ok_len:
+    if len(text) < min_chars:
         return {
             "ok": False,
             "can_submit": False,
             "matched": [],
-            "warnings": [f"解答は{min_chars}文字以上書いてから提出しよう。"],
+            "warnings": [f"解答は{min_chars}文字以上、用語と手順を入れて書いてから提出しよう。"],
             "score": 0.0,
         }
-    matched = [k for k in keywords if k and k in text]
-    score = 1.0
+    if _looks_like_filler(text):
+        return {
+            "ok": False,
+            "can_submit": False,
+            "matched": [],
+            "warnings": ["同じ文字の繰り返しや意味のない文字列では提出できません。自分の言葉で説明しよう。"],
+            "score": 0.0,
+        }
+    if reject_prompts and _copied_prompt(text, reject_prompts):
+        return {
+            "ok": False,
+            "can_submit": False,
+            "matched": [],
+            "warnings": ["課題文のコピーだけでは通りません。理解した内容を自分の言葉で書き直そう。"],
+            "score": 0.0,
+        }
+    matched = [k for k in keywords if k and str(k) in text]
+    if require_keyword and keywords and not matched:
+        return {
+            "ok": False,
+            "can_submit": False,
+            "matched": [],
+            "warnings": ["単元の用語が足りません。ガイドとゴールを見て、要点を自分の言葉で足そう。"],
+            "score": 0.15,
+        }
+    coverage = 1.0
     if keywords:
-        score = len(matched) / max(1, min(3, len(keywords)))
-        score = min(1.0, score)
-        if not matched:
-            warnings.append("キーワードが少ないかも。ガイドやゴールを見ながら、要点を自分の言葉で足してみよう。")
-            score = 0.35
+        coverage = len(matched) / max(1, min(4, len(keywords)))
+        coverage = min(1.0, coverage)
+    length_bonus = min(0.2, max(0.0, (len(text) - min_chars) / 500))
+    score = min(1.0, 0.55 * coverage + 0.3 + length_bonus)
+    if coverage < 0.5:
+        warnings.append("用語カバーがまだ薄い。チェックリストの言葉を使って具体化しよう。")
     return {
         "ok": True,
         "can_submit": True,
@@ -316,9 +399,22 @@ def submit_lesson(state: Dict[str, Any], lesson_id: str, answer: Optional[str] =
     text = answer if answer is not None else (row.get("answer") or "")
     text = (text or "").strip()
     study = build_study_payload(lesson, career_id=j.get("career_id"))
-    check = soft_check_answer(text, study.get("check_keywords") or [], min_chars=study.get("min_answer_chars") or _MIN_ANSWER_CHARS)
-    if not check["can_submit"]:
-        raise ValueError(check["warnings"][0] if check["warnings"] else "answer too short")
+    min_chars = max(_MIN_ANSWER_CHARS, int(study.get("min_answer_chars") or _MIN_ANSWER_CHARS))
+    check = soft_check_answer(
+        text,
+        study.get("check_keywords") or [],
+        min_chars=min_chars,
+        require_keyword=True,
+        reject_prompts=[
+            study.get("problem_ja") or "",
+            study.get("problem_title_ja") or "",
+            lesson.get("title_ja") or "",
+        ],
+    )
+    if not check["can_submit"] or float(check.get("score") or 0) < _LESSON_PASS_SCORE:
+        raise ValueError(
+            (check["warnings"][0] if check.get("warnings") else "解答の習熟が足りません。ガイドを見て書き直そう。")
+        )
 
     row["answer"] = text[:8000]
     row["hints_used"] = int(row.get("hints_used") or 0)
@@ -327,15 +423,93 @@ def submit_lesson(state: Dict[str, Any], lesson_id: str, answer: Optional[str] =
     row["last_score"] = check["score"]
     _attempts(j)[lesson_id] = row
 
+    from career_portfolio import record_study_evidence
+
+    record_study_evidence(
+        state,
+        kind="lesson",
+        item_id=lesson_id,
+        title_ja=lesson.get("title_ja") or lesson_id,
+        answer=text,
+        score=check["score"],
+    )
+
     result = complete_lesson(state, lesson_id)
     result["submit"] = {
         "answer_len": len(text),
         "hints_used": row["hints_used"],
         "soft_check": check,
-        "message_ja": "提出完了！学習がスキルとして記録されたよ。"
+        "message_ja": "提出完了！解答がスキルと就活記録に残ったよ。"
         + (("（" + " / ".join(check["warnings"]) + "）") if check["warnings"] else ""),
     }
     return result
+
+
+def _boss_spec(boss_type: str) -> Dict[str, Any]:
+    return dict(_BOSS_EXAM_SPEC.get(boss_type) or {
+        "questions": 5,
+        "min_chars": _MIN_BOSS_ANSWER_CHARS,
+        "pass_ratio": 0.6,
+        "match_ratio": 0.4,
+        "label_ja": "確認テスト",
+        "briefing_ja": "学習した内容を自分の言葉で説明してください。",
+    })
+
+
+def _collect_exam_questions(
+    cur: Dict[str, Any],
+    *,
+    career_id: Optional[str],
+    completed: set,
+    stage_id: str,
+    boss_type: str,
+    want: int,
+) -> List[Dict[str, Any]]:
+    lessons = [x for x in (cur.get("lessons") or []) if not _is_boss(x)]
+    same = [x for x in lessons if x.get("stage_id") == stage_id and x["id"] in completed]
+    others = [x for x in lessons if x["id"] in completed and x.get("stage_id") != stage_id]
+    if boss_type == "weekly":
+        pool = same or others
+    elif boss_type == "monthly":
+        pool = same + others
+    else:
+        pool = others + same
+        pool = list(reversed(pool))
+    if not pool:
+        pool = [x for x in lessons if x.get("stage_id") == stage_id][:want]
+
+    questions: List[Dict[str, Any]] = []
+    seen: set = set()
+    for src in pool:
+        mat = _attach_material(src)
+        study = build_study_payload(mat, career_id=career_id)
+        prompts: List[str] = []
+        for g in (mat.get("goals_ja") or [])[:2]:
+            if g:
+                prompts.append(str(g))
+        for c in (mat.get("checklist_ja") or [])[:1]:
+            if c:
+                prompts.append(str(c))
+        if not prompts:
+            prompts.append(mat.get("summary_ja") or src.get("title_ja") or "要点を説明せよ")
+        kws = study.get("check_keywords") or []
+        for i, prompt in enumerate(prompts):
+            qid = src["id"] if i == 0 else f"{src['id']}__q{i + 1}"
+            if qid in seen:
+                continue
+            seen.add(qid)
+            questions.append(
+                {
+                    "id": qid,
+                    "prompt_ja": f"「{src.get('title_ja') or src['id']}」について：{prompt}",
+                    "check_keywords": kws,
+                    "source_title_ja": src.get("title_ja"),
+                    "source_lesson_id": src["id"],
+                }
+            )
+            if len(questions) >= want:
+                return questions
+    return questions
 
 
 def build_boss_exam(state: Dict[str, Any], boss_id: str) -> Dict[str, Any]:
@@ -351,32 +525,16 @@ def build_boss_exam(state: Dict[str, Any], boss_id: str) -> Dict[str, Any]:
     if not les:
         raise ValueError("boss lesson missing")
 
-    stage_id = les.get("stage_id")
+    spec = _boss_spec(info.get("boss_type") or "")
     completed = set(j.get("completed_lessons") or [])
-    pool = [
-        x
-        for x in (cur.get("lessons") or [])
-        if not _is_boss(x) and x.get("stage_id") == stage_id and x["id"] in completed
-    ]
-    if len(pool) < 2:
-        pool = [x for x in (cur.get("lessons") or []) if not _is_boss(x) and x["id"] in completed]
-    if not pool:
-        pool = [x for x in (cur.get("lessons") or []) if not _is_boss(x) and x.get("stage_id") == stage_id][:3]
-
-    questions: List[Dict[str, Any]] = []
-    for src in pool[:3]:
-        mat = _attach_material(src)
-        study = build_study_payload(mat, career_id=j.get("career_id"))
-        goals = mat.get("goals_ja") or []
-        q = goals[0] if goals else (mat.get("summary_ja") or src.get("title_ja") or "要点を説明せよ")
-        questions.append(
-            {
-                "id": src["id"],
-                "prompt_ja": f"「{src.get('title_ja') or src['id']}」について：{q}",
-                "check_keywords": study.get("check_keywords") or [],
-                "source_title_ja": src.get("title_ja"),
-            }
-        )
+    questions = _collect_exam_questions(
+        cur,
+        career_id=j.get("career_id"),
+        completed=completed,
+        stage_id=les.get("stage_id") or "",
+        boss_type=info.get("boss_type") or "",
+        want=int(spec["questions"]),
+    )
 
     prev = dict(_boss_attempts(j).get(boss_id) or {})
     return {
@@ -384,17 +542,20 @@ def build_boss_exam(state: Dict[str, Any], boss_id: str) -> Dict[str, Any]:
         "boss": info,
         "title_ja": les.get("title_ja") or info.get("title_ja"),
         "boss_type": info.get("boss_type"),
-        "exam_label_ja": {
-            "weekly": "週次テスト",
-            "monthly": "月次テスト",
-            "career_final": "最終試験",
-        }.get(info.get("boss_type") or "", "確認テスト"),
+        "exam_label_ja": spec["label_ja"],
+        "briefing_ja": spec["briefing_ja"],
         "questions": questions,
         "answers": prev.get("answers") or {},
-        "min_answer_chars": _MIN_BOSS_ANSWER_CHARS,
-        "pass_ratio": 0.5,
+        "min_answer_chars": int(spec["min_chars"]),
+        "pass_ratio": float(spec["pass_ratio"]),
+        "match_ratio": float(spec["match_ratio"]),
         "available": bool(info.get("available")),
         "cleared": bool(info.get("cleared")),
+        "duration_hint_ja": {
+            "weekly": "目安 25〜40分。途中保存はありません。各問を具体的に。",
+            "monthly": "目安 50〜80分。学期末試験と同じ集中で。",
+            "career_final": "目安 90〜120分。資格試験と同じ覚悟で。",
+        }.get(info.get("boss_type") or "", "各問を具体的に書いて提出しよう。"),
     }
 
 
@@ -413,29 +574,42 @@ def submit_boss_exam(
     if not questions:
         raise ValueError("exam has no questions")
 
+    min_chars = int(exam.get("min_answer_chars") or _MIN_BOSS_ANSWER_CHARS)
+    pass_ratio = float(exam.get("pass_ratio") or 0.6)
+    match_ratio = float(exam.get("match_ratio") or 0.4)
     scores: List[float] = []
     details: List[Dict[str, Any]] = []
     clean_answers: Dict[str, str] = {}
-    length_ok = True
+    all_ok = True
+    matched_n = 0
     for q in questions:
         qid = q["id"]
         ans = (answers.get(qid) or "").strip()[:4000]
         clean_answers[qid] = ans
-        check = soft_check_answer(ans, q.get("check_keywords") or [], min_chars=_MIN_BOSS_ANSWER_CHARS)
+        check = soft_check_answer(
+            ans,
+            q.get("check_keywords") or [],
+            min_chars=min_chars,
+            require_keyword=True,
+            reject_prompts=[q.get("prompt_ja") or ""],
+        )
         if not check["can_submit"]:
-            length_ok = False
+            all_ok = False
+        if check.get("matched"):
+            matched_n += 1
         scores.append(float(check["score"] if check["can_submit"] else 0.0))
         details.append({"id": qid, "soft_check": check})
 
     avg = sum(scores) / max(1, len(scores))
-    # Pass if every answer meets minimum length (keyword score is advisory).
-    passed = length_ok and avg >= 0.2
+    need_match = max(1, int(len(questions) * match_ratio + 0.999))
+    passed = all_ok and avg >= pass_ratio and matched_n >= need_match
 
     j = ensure_journey(state)
     _boss_attempts(j)[boss_id] = {
         "answers": clean_answers,
         "score": round(avg, 2),
         "passed": passed,
+        "boss_type": exam.get("boss_type"),
         "updated_at": _utcnow(),
     }
 
@@ -446,16 +620,35 @@ def submit_boss_exam(
             "passed": False,
             "score": round(avg, 2),
             "details": details,
-            "message_ja": "テストはもう少し。各問を短くてもよいので具体的に書いてから再挑戦しよう（進捗は消えません）。",
+            "need_match": need_match,
+            "matched_questions": matched_n,
+            "message_ja": (
+                "不合格。各問を"
+                + str(min_chars)
+                + "文字以上、単元の用語を入れて書き直そう（進捗は消えません）。合格ライン "
+                + str(int(pass_ratio * 100))
+                + "%。"
+            ),
             "exam": exam,
             "status": None,
         }
+
+    from career_portfolio import record_study_evidence
+
+    joined = "\n".join(clean_answers.values())
+    record_study_evidence(
+        state,
+        kind="exam",
+        item_id=boss_id,
+        title_ja=exam.get("title_ja") or boss_id,
+        answer=joined,
+        score=avg,
+        extra={"boss_type": exam.get("boss_type")},
+    )
 
     result = challenge_boss(state, boss_id, success=True)
     result["passed"] = True
     result["score"] = round(avg, 2)
     result["details"] = details
-    result["message_ja"] = (
-        exam.get("exam_label_ja") or "確認テスト"
-    ) + "クリア！これまでの学習が確認できたよ。"
+    result["message_ja"] = (exam.get("exam_label_ja") or "確認テスト") + "合格！記録がポートフォリオに残ったよ。"
     return result

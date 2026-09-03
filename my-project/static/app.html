@@ -891,6 +891,12 @@
     .portfolio-hero .ph-exp{height:8px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden}
     .portfolio-hero .ph-exp span{display:block;height:100%;background:linear-gradient(90deg,#ffd27a,#fff38d);border-radius:inherit}
     .portfolio-hero .ph-story{margin:.65rem 0 0;padding:.65rem .75rem;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:.72rem;line-height:1.55;opacity:.92}
+    .pf-ready{display:inline-block;margin-top:.4rem;padding:.2rem .55rem;border-radius:999px;background:#d4f5e4;color:#145a32;font-size:.62rem;font-weight:800}
+    .pf-evidence{display:flex;flex-direction:column;gap:.45rem}
+    .pf-ev{padding:.55rem .65rem;border-radius:12px;background:#fffdf8;border:1px solid rgba(180,140,70,.25)}
+    .pf-ev .ev-top{display:flex;justify-content:space-between;gap:.4rem;font-size:.68rem;font-weight:800}
+    .pf-ev .ev-sn{margin:.3rem 0 0;font-size:.68rem;line-height:1.5;color:#4a3a22}
+    .pf-pr{margin:0;padding-left:1.1rem;font-size:.72rem;line-height:1.55}
     .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem;margin-bottom:.65rem}
     .stat-box{border-radius:16px;padding:.65rem .45rem;text-align:center;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.15)}
     .stat-box span{display:block;font-size:.58rem;opacity:.88;margin-bottom:.15rem;font-weight:700}
@@ -944,7 +950,7 @@
     .exam-q{border:1px solid #f0c8c8;border-radius:14px;padding:.65rem .7rem;margin-bottom:.55rem;background:linear-gradient(180deg,#fff8f8,#fff)}
     .exam-q .q-lab{font-size:.62rem;font-weight:900;color:#a04040;margin-bottom:.25rem}
     .exam-q p{margin:0 0 .4rem;font-size:.76rem;line-height:1.5;font-weight:700}
-    .exam-q textarea{width:100%;min-height:88px;border:1px solid #e8c0c0;border-radius:12px;padding:.55rem .65rem;font-size:.74rem;box-sizing:border-box;resize:vertical}
+    .exam-q textarea{width:100%;min-height:140px;border:1px solid #e8c0c0;border-radius:12px;padding:.55rem .65rem;font-size:.74rem;box-sizing:border-box;resize:vertical}
     .study-modal{position:fixed;inset:0;background:rgba(20,16,48,.55);display:none;align-items:flex-end;justify-content:center;z-index:85;padding:0;flex-direction:column}
     .study-modal.open{display:flex}
     .study-modal.battle-mode{align-items:center;padding-bottom:0;position:fixed}
@@ -1647,8 +1653,8 @@
             <div class="card fsq-addon-card">
               <div class="section-title"><span>📄 ポートフォリオ化</span><span class="hint">就職活動へ</span></div>
               <div class="portfolio-teaser" id="homePortfolioTeaser">
-                <strong>成長記録がそのまま自己PRになる</strong>
-                <p>クエスト達成、制作物、スキルレベルを記録し、将来はポートフォリオや自己紹介文として活用できます。</p>
+                <strong>提出した課題が、そのまま自己PRになる</strong>
+                <p>感想だけでは経験値は増えません。レッスンと試験に自分の言葉で答え、その記録が就活のポートフォリオになります。</p>
                 <button type="button" id="homePortfolioBtn">冒険録を見る</button>
               </div>
             </div>
@@ -1726,6 +1732,18 @@
               <div class="ph-story" id="portfolioStory">進路を選ぶと、冒険の記録がここに表示されます。</div>
             </div>
             <div class="stats-row" id="portfolioStats"></div>
+            <div class="card">
+              <div class="section-title"><span>🗣 自己PRの種</span></div>
+              <ul class="pf-pr" id="portfolioPr"><li class="hint">課題を提出すると、就活で使える一文が増えます。</li></ul>
+            </div>
+            <div class="card">
+              <div class="section-title"><span>💼 提出エビデンス</span></div>
+              <div class="pf-evidence" id="portfolioEvidence"><p class="hint">レッスンや試験の解答が、ここに作品として残ります。</p></div>
+            </div>
+            <div class="card">
+              <div class="section-title"><span>📝 試験記録</span></div>
+              <div id="portfolioExams"><p class="hint">単元テスト・学期末・認定試験の結果が残ります。</p></div>
+            </div>
             <div class="card">
               <div class="section-title"><span>🧭 選んだ進路</span><button type="button" id="refreshCareerBtn" class="hint" style="border:none;background:none;cursor:pointer;color:var(--lilac)">更新</button></div>
               <div id="routeList"></div>
@@ -1833,7 +1851,7 @@
       <div id="examModal" class="exam-modal" role="dialog" aria-modal="true">
         <div class="exam-sheet">
           <h3 id="examTitle">週次テスト</h3>
-          <p class="hint" id="examSub" style="margin:0 0 .65rem">これまでの学習を確認します。進捗は消えません。</p>
+          <p class="hint" id="examSub" style="margin:0 0 .65rem">学期末・資格試験と同じ覚悟で。各問に用語と手順を書いて提出（不合格でも進捗は消えません）。</p>
           <div id="examQuestions"></div>
           <p class="hint" id="examMsg" style="margin:.35rem 0"></p>
           <div class="study-actions">
@@ -1901,8 +1919,8 @@
   </div>
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js"></script>
-  <script src="/static/world.js?v=20260903b"></script>
+  <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
-  <script src="/static/app.js?v=20260903b"></script>
+  <script src="/static/app.js?v=20260903c"></script>
 </body>
 </html>

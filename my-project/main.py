@@ -1357,5 +1357,10 @@ def rpg_activity_complete(req: RpgActivityRequest, current: User = Depends(get_c
 @app.get("/rpg/portfolio")
 def rpg_portfolio(current: User = Depends(get_current_user)):
     state = load_user_brain(current.public_id)
+    journey = ((state.get("rpg") or {}).get("journey") or {})
+    if journey.get("career_id"):
+        from career_portfolio import build_career_portfolio
+
+        return build_career_portfolio(state)
     return build_portfolio(state)
 

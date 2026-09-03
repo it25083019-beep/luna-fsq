@@ -426,6 +426,11 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
     from life_link import life_quests_for_fsq
 
     life_quests = life_quests_for_fsq(state) if j.get("career_id") else []
+    career_portfolio = None
+    if j.get("career_id"):
+        from career_portfolio import build_career_portfolio
+
+        career_portfolio = build_career_portfolio(state)
     return {
         "selected": bool(j.get("class_id") and j.get("career_id")),
         "class_id": j.get("class_id"),
@@ -451,6 +456,7 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
         "careers": list_careers(),
         "ranks": list_ranks(),
         "life_quests": life_quests,
+        "career_portfolio": career_portfolio,
     }
 
 
@@ -628,31 +634,42 @@ def list_bosses(state: Dict[str, Any]) -> List[Dict[str, Any]]:
         available = False
         reason = ""
         if bt == "weekly":
-            # Need at least 2 non-boss lessons completed in same stage or overall >= 2
             stage_lessons = [
                 x
                 for x in cur["lessons"]
                 if x.get("stage_id") == les.get("stage_id") and (x.get("boss_type") or "none") == "none"
             ]
             done = sum(1 for x in stage_lessons if x["id"] in completed)
-            available = done >= max(1, len(stage_lessons) // 2) and les["id"] not in completed
-            reason = "ステージ学習を半分以上クリア"
+            available = bool(stage_lessons) and done >= len(stage_lessons) and les["id"] not in completed
+            reason = "このステージの学習をすべて提出してから単元テスト"
         elif bt == "monthly":
             stages = sorted(cur.get("stages") or [], key=lambda s: s.get("order", 0))
-            # unlock after stage 3 mostly done
-            early = [s for s in stages if s.get("order", 0) <= 3]
+            monthly_stage = next((s for s in stages if s["id"] == les.get("stage_id")), None)
+            cutoff = int((monthly_stage or {}).get("order") or 99)
             ok = True
-            for st in early[:-1]:
-                sl = [x for x in cur["lessons"] if x.get("stage_id") == st["id"] and (x.get("boss_type") or "none") == "none"]
+            for st in stages:
+                if int(st.get("order") or 0) >= cutoff:
+                    continue
+                sl = [
+                    x
+                    for x in cur["lessons"]
+                    if x.get("stage_id") == st["id"] and (x.get("boss_type") or "none") == "none"
+                ]
                 if sl and not all(x["id"] in completed for x in sl):
                     ok = False
+                    break
             available = ok and les["id"] not in completed
-            reason = "前半ステージの学習クリア"
+            reason = "ここまでの全ステージ学習をクリアしてから学期末試験"
         elif bt == "career_final":
             non_final = [x for x in cur["lessons"] if (x.get("boss_type") or "none") != "career_final"]
-            need = max(1, int(len(non_final) * 0.75))
-            available = len(completed) >= need and rank_order.get(rank_id, 0) >= rank_order.get("veteran", 2) and les["id"] not in completed
-            reason = "学習の大部分クリア＋熟練ランク以上"
+            learning = [x for x in non_final if (x.get("boss_type") or "none") == "none"]
+            need = max(1, int(len(learning) * 0.9)) if learning else max(1, int(len(non_final) * 0.9))
+            available = (
+                len(completed) >= need
+                and rank_order.get(rank_id, 0) >= rank_order.get("veteran", 2)
+                and les["id"] not in completed
+            )
+            reason = "学習の9割以上＋熟練ランク以上で認定試験"
         out.append(
             {
                 "id": les["id"],
