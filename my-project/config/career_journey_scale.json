@@ -1,0 +1,144 @@
+{
+  "version": "1.0",
+  "career_scales": {
+    "software_engineer": {
+      "min_lessons": 50,
+      "difficulty": 4,
+      "map_chapters": 10,
+      "exp_base": 14,
+      "drop_bonus": 0.05,
+      "stage_themes": [
+        "学習の土台", "プログラミング基礎", "Webの三層", "小さなプロダクト", "開発の道具箱",
+        "フロントエンド実践", "バックエンド入門", "データと永続化", "チームで作る", "キャリアの城"
+      ]
+    },
+    "ui_designer": {
+      "min_lessons": 38,
+      "difficulty": 3,
+      "map_chapters": 8,
+      "exp_base": 12,
+      "drop_bonus": 0.04,
+      "stage_themes": [
+        "観察の平原", "ワイヤーの森", "UIの工房", "ユーザビリティの谷", "プロトタイプの橋",
+        "デザインシステム", "ユーザーテストの塔", "ポートフォリオの城"
+      ]
+    },
+    "nurse": {
+      "min_lessons": 38,
+      "difficulty": 3,
+      "map_chapters": 8,
+      "exp_base": 12,
+      "drop_bonus": 0.04,
+      "stage_themes": [
+        "看護の誓い", "バイタルの森", "清潔と安全", "患者ケアの谷", "チーム医療の橋",
+        "急変対応", "倫理とコミュニケーション", "臨床の城"
+      ]
+    },
+    "teacher": {
+      "min_lessons": 38,
+      "difficulty": 3,
+      "map_chapters": 8,
+      "exp_base": 12,
+      "drop_bonus": 0.04,
+      "stage_themes": [
+        "教育の扉", "学びの設計", "授業の森", "評価の谷", "個別支援の橋",
+        "ICT活用", "学級経営", "教育者の城"
+      ]
+    },
+    "data_analyst": {
+      "min_lessons": 34,
+      "difficulty": 3,
+      "map_chapters": 7,
+      "exp_base": 13,
+      "drop_bonus": 0.04,
+      "stage_themes": [
+        "データの入り口", "集計の平原", "可視化の森", "SQLの洞窟", "統計の丘",
+        "ビジネス洞察", "分析官の城"
+      ]
+    },
+    "game_creator": {
+      "min_lessons": 34,
+      "difficulty": 3,
+      "map_chapters": 7,
+      "exp_base": 12,
+      "drop_bonus": 0.05,
+      "stage_themes": [
+        "企画の種", "レベルデザイン", "アートの森", "プログラムの工房", "サウンドの谷",
+        "テストプレイ", "クリエイターの城"
+      ]
+    },
+    "architect": {
+      "min_lessons": 32,
+      "difficulty": 3,
+      "map_chapters": 7,
+      "exp_base": 12,
+      "drop_bonus": 0.03,
+      "stage_themes": [
+        "空間の基礎", "図面の平原", "構造の森", "材料と環境", "模型の工房",
+        "法規と安全", "建築士の城"
+      ]
+    },
+    "marketer": {
+      "min_lessons": 30,
+      "difficulty": 2,
+      "map_chapters": 6,
+      "exp_base": 11,
+      "drop_bonus": 0.04,
+      "stage_themes": [
+        "市場の入り口", "ブランドの森", "SNSの平原", "広告の谷", "データ分析",
+        "マーケターの城"
+      ]
+    },
+    "researcher": {
+      "min_lessons": 36,
+      "difficulty": 4,
+      "map_chapters": 8,
+      "exp_base": 14,
+      "drop_bonus": 0.03,
+      "stage_themes": [
+        "問いの設定", "文献の森", "仮説の平原", "実験の洞窟", "データ収集",
+        "論文執筆", "査読と発表", "研究者の城"
+      ]
+    },
+    "chef": {
+      "min_lessons": 30,
+      "difficulty": 2,
+      "map_chapters": 6,
+      "exp_base": 11,
+      "drop_bonus": 0.04,
+      "stage_themes": [
+        "包丁の基礎", "火入れの平原", "調味の森", "盛り付けの工房", "衛生管理",
+        "シェフの城"
+      ]
+    },
+    "pilot": {
+      "min_lessons": 34,
+      "difficulty": 4,
+      "map_chapters": 7,
+      "exp_base": 14,
+      "drop_bonus": 0.03,
+      "stage_themes": [
+        "航空の基礎", "気象の平原", "操縦の森", "ナビの谷", "緊急手順",
+        "シミュレータ", "パイロットの城"
+      ]
+    },
+    "entrepreneur": {
+      "min_lessons": 32,
+      "difficulty": 3,
+      "map_chapters": 7,
+      "exp_base": 12,
+      "drop_bonus": 0.05,
+      "stage_themes": [
+        "アイデアの種", "市場調査", "事業計画の森", "資金調達の谷", "プロダクト開発",
+        "営業と成長", "起業家の城"
+      ]
+    }
+  },
+  "stub_default": {
+    "min_lessons": 28,
+    "difficulty": 2,
+    "map_chapters": 7,
+    "exp_base": 12,
+    "drop_bonus": 0.04
+  }
+}
