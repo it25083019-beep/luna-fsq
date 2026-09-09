@@ -242,6 +242,16 @@
     return companionCatalog.find((c) => c.id === id) || companionCatalog[0] || null;
   }
 
+  function companionSpokenEn() {
+    const row = companionById(selectedCompanionId || (stateData && stateData.companion_id) || "luna");
+    return (row && (row.label_en || row.label_ja)) || "LUNA";
+  }
+
+  function companionSpokenJa() {
+    const row = companionById(selectedCompanionId || (stateData && stateData.companion_id) || "luna");
+    return (row && (row.label_ja || row.label_en)) || "ルナ";
+  }
+
   function applyCompanionVisual(row) {
     if (!row) return;
     selectedCompanionId = row.id;
@@ -253,6 +263,12 @@
     if (sprite && row.preview) sprite.src = row.preview;
     const who = document.getElementById("companionWho");
     if (who) who.textContent = row.label_en || row.label_ja || "LUNA";
+    const careWho = document.getElementById("careTimelineWho");
+    if (careWho) careWho.textContent = "🌸 " + (row.label_ja || row.label_en || "ルナ") + "の記録";
+    const remind = document.getElementById("mentalRemindText");
+    if (remind && /が今日の気分を聞きたいよ$/.test(remind.textContent || "")) {
+      remind.textContent = (row.label_ja || row.label_en || "ルナ") + "が今日の気分を聞きたいよ";
+    }
     document.querySelectorAll(".nav-luna").forEach((img) => {
       img.src = row.preview || img.src;
       img.alt = row.label_en || row.label_ja || "LUNA";
@@ -2879,7 +2895,7 @@
     const show = !!(s && (s.health?.mental_reminder || note.includes("気分")));
     banner.classList.toggle("open", show && !sessionStorage.getItem("mentalModalOpen"));
     const txt = document.getElementById("mentalRemindText");
-    if (txt) txt.textContent = note || "LUNAが今日の気分を聞きたいよ";
+    if (txt) txt.textContent = note || companionSpokenJa() + "が今日の気分を聞きたいよ";
   }
 
   function formatTimeRange(ev) {
@@ -3254,7 +3270,7 @@
       } else if (st.reminder || st.needed) {
         updateMentalReminderBanner({
           health: { mental_reminder: !!st.reminder || !!st.needed },
-          pending_notification: st.pending_notification || "LUNAが今日の気分を聞きたいよ",
+          pending_notification: st.pending_notification || companionSpokenJa() + "が今日の気分を聞きたいよ",
         });
       } else {
         const banner = document.getElementById("mentalRemindBanner");
@@ -3444,7 +3460,7 @@
     const meta = document.createElement("div");
     meta.className = "meta";
     const time = histTime(turn.at);
-    meta.textContent = (turn.role === "user" ? "あなた" : "LUNA") + (time ? " ・ " + time : "");
+    meta.textContent = (turn.role === "user" ? "あなた" : companionSpokenEn()) + (time ? " ・ " + time : "");
     row.appendChild(txt);
     row.appendChild(meta);
     return row;
@@ -3494,7 +3510,9 @@
       if (!more) list.innerHTML = "";
       if (!turns.length && !more) {
         list.innerHTML =
-          '<p class="hist-empty">まだ会話の記録がないよ。<br />ホームでLUNAに話しかけてみてね。</p>';
+          '<p class="hist-empty">まだ会話の記録がないよ。<br />ホームで' +
+          companionSpokenJa() +
+          "に話しかけてみてね。</p>";
       } else {
         histRender(turns, !!more);
       }
@@ -3965,7 +3983,7 @@
         hideMentalModal();
         updateMentalReminderBanner({
           health: { mental_reminder: true },
-          pending_notification: "LUNAが今日の気分を聞きたいよ",
+          pending_notification: companionSpokenJa() + "が今日の気分を聞きたいよ",
         });
       };
     }

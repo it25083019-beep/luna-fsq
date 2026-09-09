@@ -111,8 +111,8 @@
     @keyframes lunaThink{0%,100%{transform:translateY(0) rotate(-3deg) scale(1)}50%{transform:translateY(-7px) rotate(3deg) scale(1.03)}}
     .luna-tap-bounce{animation:lunaTap .45s ease}
     @keyframes lunaTap{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
-    .bubble{margin:-.4rem 1rem .7rem;background:var(--card);border-radius:20px;padding:.85rem 1rem;box-shadow:var(--shadow);line-height:1.7;white-space:pre-wrap;min-height:4rem;position:relative;z-index:2}
-    .bubble::before{content:"";position:absolute;top:-8px;left:18%;width:16px;height:16px;background:var(--card);transform:rotate(45deg);border-radius:3px}
+    .bubble{margin:-.4rem 1rem .7rem;background:var(--card);border-radius:20px;padding:.85rem 1rem;box-shadow:var(--shadow);line-height:1.7;white-space:pre-wrap;min-height:4rem;position:relative;z-index:2;overflow:visible}
+    .bubble::before{content:"";position:absolute;top:42%;left:-8px;width:16px;height:16px;background:var(--card);transform:rotate(45deg);border-radius:3px}
     .bubble .who{display:inline-block;font-size:.68rem;background:var(--lilac);color:#fff;padding:.12rem .5rem;border-radius:999px;margin-bottom:.4rem}
     .status-row{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;padding:0 1rem .75rem}
     @media (min-width:380px){
@@ -1029,7 +1029,7 @@
     #lunaMainView .home-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
     #lunaMainView .home-dock .chips{padding:.2rem 1rem .3rem}
     #lunaMainView .home-dock .composer-voice{margin:.05rem 1rem .4rem}
-    .home-hero{display:grid;grid-template-columns:minmax(128px,38%) 1fr;gap:.7rem;padding:0 1rem .55rem;align-items:end}
+    .home-hero{display:grid;grid-template-columns:minmax(128px,38%) 1fr;gap:.7rem;padding:0 1rem .55rem;align-items:center;overflow:visible}
     .home-hero-luna{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%}
     .home-hero-luna #lunaSprite{height:min(42vw,200px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 10px 20px rgba(120,90,180,.2));background:transparent}
     .companion-chip{border:2px solid transparent;background:#fff;border-radius:16px;padding:.25rem .4rem .3rem;cursor:pointer;text-align:center}
@@ -1039,8 +1039,8 @@
     .companion-chip.active{border-color:#9b7ed9;box-shadow:0 0 0 2px rgba(155,126,217,.25)}
     .companion-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem;margin:.55rem 0 .75rem}
     .companion-grid .companion-chip{min-width:0;width:100%}
-    .bubble.compact{margin:0;min-height:auto;font-size:.82rem;line-height:1.55}
-    .bubble.compact::before{left:12%;top:-7px}
+    .bubble.compact{margin:0 0 0 .35rem;min-height:auto;font-size:.82rem;line-height:1.55;overflow:visible}
+    .home-hero .bubble.compact::before{top:42%;left:-8px;box-shadow:-2px 2px 0 rgba(120,90,180,.06)}
     .status-head{display:flex;justify-content:space-between;padding:0 1rem .45rem;font-size:.82rem;font-weight:700;color:var(--lilac-deep)}
     .status-head span:last-child{color:var(--muted);font-weight:600}
     .status-card .sub{font-size:.62rem;color:var(--muted);margin-top:.1rem}
@@ -1316,7 +1316,7 @@
             <div id="homeTodayList"><p class="hint">まだ予定はありません。カレンダーから追加できます。</p></div>
           </div>
           <div id="careTimeline" class="care-timeline empty" aria-label="ケアタイムライン">
-            <h3>🌸 LUNAの記録 <span>今日</span></h3>
+            <h3><span id="careTimelineWho">🌸 ルナの記録</span> <span>今日</span></h3>
             <p class="hint">まだ記録はありません。相談や学習をするとここに残ります。</p>
             <ul id="careTimelineList" hidden></ul>
             <button type="button" class="ct-more" id="careTimelineMore" hidden>もっと見る</button>
@@ -1966,6 +1966,6 @@
   <script src="/static/live2d/luna-avatar.js?v=20260909b"></script>
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
-  <script src="/static/app.js?v=20260909e"></script>
+  <script src="/static/app.js?v=20260909f"></script>
 </body>
 </html>

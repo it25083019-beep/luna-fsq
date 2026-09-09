@@ -53,5 +53,34 @@ def fill_talk(template: Optional[str], who: str) -> str:
     return (template or "").replace("{who}", prefix)
 
 
+_LUNA_LABELS = {"luna", "ルナ", "lunaさん", "ルナさん", "luna様", "ルナ様"}
+
+
+def is_stale_luna_name(name: Optional[str]) -> bool:
+    n = (name or "").strip().lower().replace(" ", "")
+    return n in _LUNA_LABELS
+
+
+def companion_spoken_name(user: Optional[Dict[str, Any]] = None) -> str:
+    """Name to speak as — always the selected sprite, never a stale 'LUNA'."""
+    row = get_companion((user or {}).get("companion_id"))
+    return (row.get("label_ja") or row.get("label_en") or row.get("id") or "ルナ")
+
+
+def sync_companion_identity(user: Dict[str, Any]) -> Dict[str, Any]:
+    """Lock sprite id; replace leftover LUNA names when another character is selected.
+
+    Empty companion_name on the default Luna sprite is left empty so onboarding
+    can still ask the user to name them.
+    """
+    cid = normalize_companion_id((user or {}).get("companion_id"))
+    user["companion_id"] = cid
+    spoken = companion_spoken_name(user)
+    current = (user.get("companion_name") or "").strip()
+    if cid != "luna" and (not current or is_stale_luna_name(current)):
+        user["companion_name"] = spoken
+    return user
+
+
 def normalize_companion_id(companion_id: Optional[str]) -> str:
     return get_companion(companion_id)["id"]

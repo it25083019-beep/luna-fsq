@@ -68,7 +68,9 @@ def on_lesson_complete(
     health["updated_at"] = _utcnow_iso()
 
     who = state.get("user_display_name") or "冒険者"
-    cname = state.get("companion_name") or "LUNA"
+    from companions import companion_spoken_name
+
+    cname = companion_spoken_name(state)
     if prior in ("疲れ", "不安", "落ち込み"):
         luna_message = (
             f"{who}さん、お疲れさま！「{title}」クリアしたね。"

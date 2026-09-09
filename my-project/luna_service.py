@@ -463,6 +463,8 @@ def _build_user_system_prompt(
     core: Dict[str, Any],
     user: Dict[str, Any],
 ) -> str:
+    from companions import companion_spoken_name, get_companion
+
     companion = user.get("companion_name")
     display = user.get("user_display_name")
 
@@ -524,14 +526,18 @@ Output Format: ONLY <dialogue>...</dialogue> and <game_state_json>...</game_stat
     from life_modules import modules_prompt_block
 
     modules_block = modules_prompt_block(user)
+    companion = companion_spoken_name(user)
     who = _honorific(user) or (display or "あなた")
-    from companions import get_companion
-
     row = get_companion(user.get("companion_id"))
     persona = (row.get("persona_ja") or f"{companion}として短く話す。").strip()
+    luna_rule = (
+        f"Your name is {companion} ({row.get('label_en')}). Never say you are LUNA or ルナ."
+        if row.get("id") != "luna"
+        else f"Your name is {companion}."
+    )
     return f"""
 # ROLE: Personal Life Operating Companion
-Your name is {companion}. Address the user as {who}. Stay in character.
+{luna_rule} Address the user as {who}. Stay in character.
 
 PERSONA: {persona}
 Keep <dialogue> to 1–2 short sentences. Do not give long lectures. Never call yourself LUNA unless your name is ルナ or LUNA.
@@ -756,6 +762,44 @@ def _honorific(user: Dict[str, Any]) -> str:
     return f"{raw}さん"
 
 
+def companion_hello_line(user: Dict[str, Any]) -> str:
+    """Home greeting that always matches the selected sprite."""
+    from companions import companion_spoken_name, fill_talk, get_companion
+
+    talk = get_companion(user.get("companion_id")).get("talk") or {}
+    who = _honorific(user)
+    tpl = talk.get("hello") or talk.get("greeting") or "{who}こんにちは。"
+    line = fill_talk(tpl, who).strip()
+    if who and who not in line:
+        line = f"{who}、{line}"
+    return line or f"{companion_spoken_name(user)}だよ。"
+
+
+def _stamp_companion_identity(user: Dict[str, Any], dialogue: str) -> str:
+    """If the model slips into LUNA while another sprite is selected, rewrite it."""
+    from companions import companion_spoken_name, get_companion
+
+    row = get_companion(user.get("companion_id"))
+    text = dialogue or ""
+    if row.get("id") == "luna":
+        return text
+    spoken = companion_spoken_name(user)
+    intro = f"{spoken}だ" if row.get("id") == "ren" else f"{spoken}だよ"
+    replacements = (
+        ("ギルドマスターのLUNAです", intro),
+        ("こんにちは。LUNAです", f"こんにちは。{intro}"),
+        ("LUNAだよ", intro),
+        ("LUNAです", intro),
+        ("ルナだよ", intro),
+        ("ルナです", intro),
+    )
+    for old, new in replacements:
+        text = text.replace(old, new)
+    text = re.sub(r"LUNAだよ", intro, text, flags=re.I)
+    text = re.sub(r"LUNAです", intro, text, flags=re.I)
+    return text
+
+
 def _role_for_step(key: str) -> str:
     if key == "gender":
         return "reception"
@@ -837,7 +881,9 @@ def _profile_question_dialogue(user: Dict[str, Any]) -> str:
     if step >= len(PROFILE_QUESTIONS):
         return f"{prefix}プロフィール、ありがとう。これから一緒にいこう。"
     key, q = PROFILE_QUESTIONS[step]
-    companion = user.get("companion_name") or "コンパニオン"
+    from companions import companion_spoken_name
+
+    companion = companion_spoken_name(user)
     if step == 0:
         return f"{prefix}私は「{companion}」です。{q}"
     return f"{prefix}{q}"
@@ -854,11 +900,10 @@ def start_user_greeting(user_id: str) -> str:
 
     if user.get("user_display_name") and user.get("companion_name") and user.get("profile_complete"):
         from care_memory import greeting_care_line
+        from companions import companion_spoken_name, fill_talk, get_companion
 
         lv = _relationship_level(user)
         care_line = greeting_care_line(user)
-        from companions import fill_talk, get_companion
-
         talk = get_companion(user.get("companion_id")).get("talk") or {}
         if care_line:
             who = _honorific(user)
@@ -870,7 +915,7 @@ def start_user_greeting(user_id: str) -> str:
             dialogue = fill_talk(talk.get("greeting") or fallback, _honorific(user))
         return _pack_reply(dialogue, {
             "user_display_name": user.get("user_display_name"),
-            "companion_name": user.get("companion_name"),
+            "companion_name": companion_spoken_name(user),
         })
 
     if user.get("user_display_name") and user.get("companion_name") and not user.get("profile_complete"):
@@ -902,20 +947,25 @@ def start_user_greeting(user_id: str) -> str:
 def safe_chat_start_reply(user_id: str, message: str = "") -> str:
     """Always return a speak-first greeting; never raise for normal UX path."""
     try:
+        user = load_user_brain(user_id)
         if is_admin(user_id):
-            try:
-                return generate_with_retry(user_id, message or "こんにちは", max_retries=2)
-            except Exception:
-                return _pack_reply(
-                    "Hoang-sama、ギルドマスターのLUNAです。本日もご指示をどうぞ。",
-                    {},
-                )
+            from companions import companion_spoken_name
+
+            return _pack_reply(
+                companion_hello_line(user),
+                {
+                    "emotion": "happy",
+                    "companion_name": companion_spoken_name(user),
+                    "companion_id": user.get("companion_id"),
+                },
+            )
         return start_user_greeting(user_id)
     except Exception:
-        return _pack_reply(
-            "こんにちは。LUNAです。今日も一緒にがんばろうね。何か話しかけてください。",
-            {},
-        )
+        try:
+            user = load_user_brain(user_id)
+            return _pack_reply(companion_hello_line(user), {"emotion": "happy"})
+        except Exception:
+            return _pack_reply("こんにちは。今日も一緒にがんばろうね。", {})
 
 
 def soft_chat_failure_reply(exc: BaseException) -> str:
@@ -1003,7 +1053,9 @@ def _crisis_reply(user: Dict[str, Any]) -> str:
     """Local safety path — never wait on the model for a crisis line."""
     who = _honorific(user)
     prefix = f"{who}、" if who else ""
-    cname = user.get("companion_name") or "そばにいるよ"
+    from companions import companion_spoken_name
+
+    cname = companion_spoken_name(user)
     dialogue = (
         f"{prefix}いまの気持ち、受け取ったよ。{cname}はそばにいる。"
         f"いのちの電話（0570-783-556）にもつながれるよ。"
@@ -1114,19 +1166,18 @@ def _companion_consult_followup(user: Dict[str, Any], user_text: str) -> str:
     touch_care_memory(user, topic, user_text, applied)
     composed = compose_companion_dialogue(user, user_text, applied, include_ack=False)
     recorded = format_recorded(applied)
-    next_step = _consult_next_step(topic, applied, user_text)
+    greet = bool(re.search(r"おはよう|こんにちは|こんばんは|hello|hi\b", user_text or "", re.I))
+    next_step = _consult_next_step(topic, applied, user_text or "")
     parts: List[str] = []
     if recorded:
-        parts.append(f"【記録】{recorded}。")
-    else:
-        parts.append("【記録】いまは数値の記録はなし。話は残したよ。")
+        parts.append(f"{recorded}。")
     body = (composed.get("dialogue") or "").strip()
     if body and body not in " ".join(parts):
         parts.append(body if body.endswith(("。", "？", "！", "よ")) else body + "。")
-    if next_step and next_step not in " ".join(parts):
+    if (not greet) and applied and next_step and next_step not in " ".join(parts):
         parts.append(next_step)
     dialogue = "".join(parts)
-    dialogue = _avoid_repeat_dialogue(user, dialogue)
+    dialogue = _avoid_repeat_dialogue(user, _stamp_companion_identity(user, dialogue))
     return _pack_reply(
         dialogue,
         {
@@ -1202,13 +1253,15 @@ def _local_companion_reply(user: Dict[str, Any], user_text: str) -> str:
     except Exception:
         applied = []
     composed = compose_companion_dialogue(user, user_text or "", applied)
-    dialogue = _avoid_repeat_dialogue(user, composed["dialogue"])
+    dialogue = _avoid_repeat_dialogue(user, _stamp_companion_identity(user, composed["dialogue"]))
+    from companions import companion_spoken_name
+
     return _pack_reply(
         dialogue,
         {
             "emotion": composed.get("emotion") or "happy",
             "user_display_name": user.get("user_display_name"),
-            "companion_name": user.get("companion_name"),
+            "companion_name": companion_spoken_name(user),
             "life_saved": applied,
         },
     )
@@ -1348,7 +1401,6 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
         return onboarded
 
     user = load_user_brain(user_id)
-    admin = is_admin(user_id)
 
     # Consult chips + follow-up: all users (including admin) — never depend on Gemini.
     if text_in:
@@ -1365,12 +1417,6 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
         return generate_with_retry(user_id, user_text, skip_onboarding=True)
     except Exception:
         user = load_user_brain(user_id)
-        if admin:
-            who = _honorific(user)
-            return _pack_reply(
-                f"{who}、聞いてるよ。いまの状況をもう少し教えてくれる？",
-                {"emotion": "think"},
-            )
         return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
 
 
@@ -1401,17 +1447,17 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
 
     from llm_client import llm_configured
 
-    if not admin and text_in and not llm_configured():
+    if text_in and not llm_configured():
         _update_relationship(user, text_in)
         return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
 
     # Instant local care for a bare greeting or mood ping (no Gemini wait).
-    if not admin and text_in and _is_bare_mood_ping(text_in):
+    if text_in and _is_bare_mood_ping(text_in):
         _update_relationship(user, text_in)
         return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
 
     # Quota cooldown: answer locally instead of waiting ~30s on Gemini.
-    if not admin and _quota_blocked():
+    if _quota_blocked():
         if text_in:
             _update_relationship(user, text_in)
         return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
@@ -1420,9 +1466,9 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
     policy = load_product_policy()
     core = load_core_brain()
 
-    if not admin and text_in:
+    if text_in:
         _update_relationship(user, text_in)
-        if user.get("profile_complete"):
+        if user.get("profile_complete") or admin:
             from care_memory import maybe_daily_care_notification
 
             note = _activity_notification(text_in)
@@ -1432,12 +1478,9 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
             else:
                 maybe_daily_care_notification(user)
 
-    if admin:
-        system_prompt = _build_admin_system_prompt(blueprint, policy, core)
-        history = core.get("chat_history", [])
-    else:
-        system_prompt = _build_user_system_prompt(blueprint, policy, core, user)
-        history = user.get("chat_history", [])
+    # Home chat always uses the selected companion — Guild Master stays on /admin.
+    system_prompt = _build_user_system_prompt(blueprint, policy, core, user)
+    history = user.get("chat_history", [])
 
     chat_session = None  # legacy var unused; routed via llm_client
     last_error: Optional[Exception] = None
@@ -1456,41 +1499,39 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
             # Normalise whatever shape the model used into our packed format so
             # a missing or unclosed tag can never leak into the chat bubble.
             dialogue, game_state = parse_ai_reply(ai_reply)
+            dialogue = _stamp_companion_identity(user, dialogue)
             ai_reply = _pack_reply(dialogue, game_state)
 
-            if admin:
-                _apply_memory_note_admin(core, game_state)
-                append_turns(core, user_text, ai_reply)
-                save_core_brain(core)
-            else:
-                _apply_user_fields_from_game_state(user, game_state)
-                applied: list = []
-                try:
-                    from chat_life_capture import capture_life_from_chat, enrich_dialogue_with_capture
+            _apply_user_fields_from_game_state(user, game_state)
+            applied: list = []
+            try:
+                from chat_life_capture import capture_life_from_chat, enrich_dialogue_with_capture
 
-                    applied = capture_life_from_chat(user, user_text or "", game_state)
-                    if applied:
-                        dialogue, gs = parse_ai_reply(ai_reply)
-                        dialogue = enrich_dialogue_with_capture(
-                            dialogue, user, user_text or "", applied
-                        )
-                        dialogue = _avoid_repeat_dialogue(user, dialogue)
-                        gs = dict(gs or {})
-                        gs["life_saved"] = applied
-                        if "emotion" not in gs:
-                            gs["emotion"] = "happy"
-                        ai_reply = _pack_reply(dialogue, gs)
-                except Exception:
-                    pass
-                try:
+                applied = capture_life_from_chat(user, user_text or "", game_state)
+                if applied:
                     dialogue, gs = parse_ai_reply(ai_reply)
+                    dialogue = enrich_dialogue_with_capture(
+                        dialogue, user, user_text or "", applied
+                    )
                     dialogue = _avoid_repeat_dialogue(user, dialogue)
+                    dialogue = _stamp_companion_identity(user, dialogue)
                     gs = dict(gs or {})
+                    gs["life_saved"] = applied
+                    if "emotion" not in gs:
+                        gs["emotion"] = "happy"
                     ai_reply = _pack_reply(dialogue, gs)
-                except Exception:
-                    pass
-                append_turns(user, user_text, ai_reply)
-                save_user_brain(user_id, user)
+            except Exception:
+                pass
+            try:
+                dialogue, gs = parse_ai_reply(ai_reply)
+                dialogue = _avoid_repeat_dialogue(user, dialogue)
+                dialogue = _stamp_companion_identity(user, dialogue)
+                gs = dict(gs or {})
+                ai_reply = _pack_reply(dialogue, gs)
+            except Exception:
+                pass
+            append_turns(user, user_text, ai_reply)
+            save_user_brain(user_id, user)
 
             return ai_reply
         except Exception as e:
@@ -1498,33 +1539,20 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
             # Never sleep on quota — fail over to local companion immediately.
             if _is_quota_error(e):
                 _mark_quota_block(_retry_after_from_error(e, 90))
-                if not admin:
-                    return _persist_local_turn(
-                        user_id, user, text_in, _local_companion_reply(user, text_in)
-                    )
-                break
+                return _persist_local_turn(
+                    user_id, user, text_in, _local_companion_reply(user, text_in)
+                )
             if _is_transient_error(e) and i < max_retries - 1:
                 time.sleep(0.8 + random.uniform(0, 0.4))
                 continue
-            if not admin and text_in:
+            if text_in:
                 return _persist_local_turn(
                     user_id, user, text_in, _local_companion_reply(user, text_in)
                 )
             break
 
     assert last_error is not None
-    if not admin:
-        return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
-    retry_after = _retry_after_from_error(last_error)
-    if _is_quota_error(last_error):
-        return _pack_reply(
-            "少し混み合っているみたいだけど、ちゃんと話は聞いているよ。もう一度短く話しかけてね。",
-            {"emotion": "think"},
-        )
-    return _pack_reply(
-        "ごめんね、いまちょっと返事が遅れてる。でも聞いてるから、もう一度ゆっくり話してくれる？",
-        {"emotion": "think"},
-    )
+    return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
 
 
 def generate_json_task(system_instruction: str, user_prompt: str) -> Optional[Any]:

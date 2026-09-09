@@ -1,6 +1,19 @@
 # -*- coding: utf-8 -*-
-from companions import fill_talk, get_companion
-from luna_service import _begin_consult_session, _honorific, parse_ai_reply
+from companions import (
+    companion_spoken_name,
+    fill_talk,
+    get_companion,
+    list_companions,
+    sync_companion_identity,
+)
+from luna_service import (
+    _begin_consult_session,
+    _honorific,
+    _stamp_companion_identity,
+    companion_hello_line,
+    parse_ai_reply,
+)
+from chat_life_capture import compose_companion_dialogue
 
 
 def test_honorific_uses_account_name_not_okyakusama():
@@ -42,8 +55,44 @@ def test_fill_talk_empty_who():
     print("OK fill talk")
 
 
+def test_every_companion_hello_uses_own_name():
+    for row in list_companions():
+        user = {
+            "companion_id": row["id"],
+            "companion_name": "LUNA",
+            "user_display_name": "ユウ",
+            "gender": "female",
+        }
+        sync_companion_identity(user)
+        spoken = companion_spoken_name(user)
+        hello = companion_hello_line(user)
+        assert spoken in hello, (row["id"], hello)
+        if row["id"] != "luna":
+            assert "LUNA" not in hello, (row["id"], hello)
+            assert "ルナ" not in hello, (row["id"], hello)
+            assert user["companion_name"] == spoken
+        greet = compose_companion_dialogue(user, "こんにちは", [])
+        body = greet["dialogue"]
+        assert spoken in body, (row["id"], body)
+        if row["id"] != "luna":
+            assert "LUNA" not in body, (row["id"], body)
+            assert "ルナだよ" not in body, (row["id"], body)
+        stamped = _stamp_companion_identity(
+            user, "Adminさん、こんにちは。LUNAだよ。今日も一緒にがんばろうね。"
+        )
+        if row["id"] != "luna":
+            assert "LUNA" not in stamped, (row["id"], stamped)
+            assert spoken in stamped, (row["id"], stamped)
+        print("OK identity", row["id"], hello)
+    luna_onboard = {"companion_id": "luna", "companion_name": None}
+    sync_companion_identity(luna_onboard)
+    assert not luna_onboard.get("companion_name")
+    print("OK every companion identity")
+
+
 if __name__ == "__main__":
     test_honorific_uses_account_name_not_okyakusama()
     test_consult_is_short_and_named()
     test_fill_talk_empty_who()
+    test_every_companion_hello_uses_own_name()
     print("ALL personalization tests passed")

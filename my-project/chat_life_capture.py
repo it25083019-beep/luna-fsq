@@ -452,18 +452,11 @@ def compose_companion_dialogue(
     Returns {{dialogue, emotion}}. Consult replies keep the ack in a separate
     【記録】 line, so they pass include_ack=False to avoid saying it twice.
     """
-    name = (user.get("user_display_name") or "").strip()
-    gender = str((user.get("life_profile") or {}).get("gender") or "")
-    if name:
-        if gender == "male" or "男" in gender:
-            who = f"{name}くん"
-        elif gender == "female" or "女" in gender:
-            who = f"{name}さん"
-        else:
-            who = f"{name}さん"
-    else:
-        who = "あなた"
-    cname = user.get("companion_name") or "LUNA"
+    from luna_service import _honorific
+    from companions import companion_spoken_name
+
+    who = _honorific(user) or "あなた"
+    cname = companion_spoken_name(user)
     msg = (user_text or "").strip()
     applied = applied or []
     emotion = "happy"

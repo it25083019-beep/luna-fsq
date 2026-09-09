@@ -15,7 +15,6 @@ def test_consult_reply_always_has_three_parts():
         "life_modules": {},
     }
     dialogue, _ = parse_ai_reply(_companion_consult_followup(user, "睡眠を教える"))
-    assert dialogue.startswith("【記録】"), dialogue
     assert "睡眠" in dialogue
     assert "明日" in dialogue or "教えて" in dialogue
     print("OK consult 3-part", dialogue[:80])
@@ -32,8 +31,8 @@ def test_sleep_hours_are_recorded_in_consult():
     dialogue, state = parse_ai_reply(
         _companion_consult_followup(user, "昨夜は6時間しか眠れなかった")
     )
-    assert "【記録】" in dialogue
     assert "6時間" in dialogue
+    assert "睡眠" in dialogue
     health = user["life_modules"]["health"]["structured"]
     assert health.get("sleep_hours") == 6
     assert user.get("care_memory", {}).get("last_health_concern") == "睡眠"

@@ -143,6 +143,7 @@ from luna_service import (
     load_user_brain,
     save_user_brain,
     safe_chat_start_reply,
+    companion_hello_line,
     soft_chat_failure_reply,
     is_admin,
 )
@@ -553,13 +554,13 @@ def evening_checkin(req: CheckinRequest, current: User = Depends(get_current_use
 
 @app.post("/chat/start", response_model=ChatResponse)
 def chat_start(req: ChatRequest, current: User = Depends(get_current_user)):
-    """AI greets first for normal users. Admin gets a short LUNA hello."""
+    """AI greets first using the selected companion."""
     uid = _resolve_user_id(req.user_id, current)
     try:
         raw = safe_chat_start_reply(uid, req.message or "")
         dialogue, ai_state = parse_ai_reply(raw)
         if not (dialogue or "").strip():
-            dialogue = "こんにちは。LUNAです。今日も一緒にがんばろうね。"
+            dialogue = companion_hello_line(load_user_brain(uid))
         state = get_user_state(uid)
         if isinstance(ai_state, dict) and ai_state.get("emotion"):
             state = dict(state)
@@ -575,8 +576,13 @@ def chat_start(req: ChatRequest, current: User = Depends(get_current_user)):
         # Speak-first: never leave the bubble empty on start.
         state = get_user_state(uid)
         dialogue, _ = parse_ai_reply(soft_chat_failure_reply(e))
+        if not (dialogue or "").strip():
+            try:
+                dialogue = companion_hello_line(load_user_brain(uid))
+            except Exception:
+                dialogue = "こんにちは。今日も一緒にがんばろうね。"
         return ChatResponse(
-            dialogue=dialogue or "こんにちは。LUNAです。話しかけてくださいね。",
+            dialogue=dialogue,
             game_state=state,
             suggested_replies=get_suggested_replies(uid, state),
             allow_custom_input=True,
