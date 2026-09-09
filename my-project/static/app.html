@@ -1369,7 +1369,7 @@
           <div class="companion-grid" id="settingsCompanionGrid"></div>
           <button type="button" id="voicePreviewBtn">このコンパニオンの声を聞く</button>
           <h3 style="margin-top:1rem">通知</h3>
-          <p class="hint">毎日、今日の予定を大きな通知でまとめます。各予定の1時間前・30分前・10分前にも、何を・何時に・どこでするかを知らせて、体調と気持ちを聞きます。タブを完全に閉じると届かないことがあります。</p>
+          <p class="hint">メールは用事だけ予定に入れます。急ぎはすぐ大きな通知、普通は1時間前・30分前・10分前、先の予定はその日のまとめと直前だけ。10分前に体調を聞きます。タブを完全に閉じると届かないことがあります。</p>
           <div class="notify-row">
             <span>予定のリマインダー</span>
             <button type="button" id="notifyToggleBtn">オフ</button>
@@ -1384,8 +1384,8 @@
             </select>
           </div>
           <p class="hint" id="notifyStatus"></p>
-          <h3 style="margin-top:1rem">Gmailから予定を入れる</h3>
-          <p class="hint">本文のコピペはしません。Googleの許可をもらったら、会議・提出・締め切りを予定に入れて、1時間前・30分前・10分前に知らせます。</p>
+          <h3 style="margin-top:1rem">Gmail（本物の受信箱）</h3>
+          <p class="hint">受信箱を全部は出しません。「許可する」で本物のGmailを読み、会議・提出・締め切りなどやる用事だけ予定に入れます。</p>
           <div class="mail-box">
             <p class="hint" id="mailLinkStatus">未連携</p>
             <div class="row">
@@ -1394,19 +1394,19 @@
               <button type="button" id="mailDisconnectBtn">連携を解除</button>
             </div>
             <div id="mailSetupBox" class="mail-setup hidden">
-              <p class="hint">はじめてだけ、Google CloudのクライアントIDが必要です（メールのパスワードではないよ）。</p>
+              <p class="hint"><strong>これは偽物のテストメールではないよ。</strong>Googleのルールで、アプリ用の鍵（クライアントID）を1回だけ作る必要がある。メールのパスワードは使わない。</p>
               <ol class="mail-steps">
-                <li><a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" rel="noopener">Gmail APIを有効にする</a></li>
-                <li><a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener">OAuthクライアント（ウェブアプリ）を作る</a></li>
+                <li>先に <a href="https://console.cloud.google.com/auth/branding" target="_blank" rel="noopener">OAuth同意画面</a> を作る（アプリ名は LUNA、ユーザータイプは外部）。これが無いとクライアントIDは作れないよ。</li>
+                <li>同意画面が「テスト中」なら <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener">自分のGmailをテストユーザーに追加</a>。テスト中＝偽物ではなく、まだGoogle審査前。読むのは本物の受信箱。</li>
+                <li>そのあと <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">「認証情報を作成」→ OAuth クライアントID → ウェブアプリケーション</a></li>
                 <li>「承認済みの JavaScript 生成元」に <code id="mailJsOrigin">この画面のURL</code> を入れる</li>
-                <li>テストユーザーに、自分のGmailを追加する</li>
               </ol>
-              <label for="mailClientId">クライアントID</label>
+              <label for="mailClientId">クライアントID（xxxx.apps.googleusercontent.com）</label>
               <input id="mailClientId" type="text" autocomplete="off" placeholder="xxxxx.apps.googleusercontent.com" />
               <label for="mailClientSecret">クライアントシークレット（任意）</label>
               <input id="mailClientSecret" type="password" autocomplete="off" />
               <div class="row">
-                <button type="button" class="primary" id="mailSaveSetupBtn">保存して許可画面を開く</button>
+                <button type="button" class="primary" id="mailSaveSetupBtn">鍵を保存してGmailを許可</button>
               </div>
             </div>
             <p class="hint" id="mailImportMsg"></p>
@@ -2029,6 +2029,6 @@
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20260909j"></script>
+  <script src="/static/app.js?v=20260909n"></script>
 </body>
 </html>

@@ -34,17 +34,19 @@ _WEEKDAY_JA = {
     "日": 6,
 }
 _TASK_HINT = re.compile(
-    r"提出|課題|会議|ミーティング|打ち合わせ|面接|予約|締切|締め切り|"
-    r"対応|ご確認|お願いします|todo|action required|meeting|deadline|"
-    r"due|interview|assignment|please (?:review|confirm|submit)",
+    r"提出|課題|レポート|発表|試験|テスト|会議|ミーティング|打ち合わせ|"
+    r"面接|予約|締切|締め切り|出席|登校|休講|授業変更|課題提出|"
+    r"meeting|deadline|interview|assignment|exam|submit",
     re.I,
 )
 _SKIP_HINT = re.compile(
-    r"配信停止|unsubscribe|newsletter|広告|セール|promo|no-reply|noreply",
+    r"配信停止|unsubscribe|newsletter|広告|セール|promo|キャンペーン|"
+    r"no-reply|noreply|メルマガ|領収|receipt|invoice|shipping|delivered|"
+    r"ポイントが|クーポン|お得な情報",
     re.I,
 )
 _URGENT_HINT = re.compile(
-    r"至急|緊急|今日中|asap|締切|締め切り|deadline|必ず|important|urgent",
+    r"至急|緊急|今日中|本日中|asap|締切|締め切り|deadline|必ず|important|urgent",
     re.I,
 )
 _PLACE_HINT = re.compile(
@@ -64,16 +66,31 @@ def _oauth_file() -> Dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
+def _core_oauth() -> Dict[str, Any]:
+    try:
+        from luna_service import load_core_brain
+
+        core = load_core_brain() or {}
+        row = core.get("google_oauth")
+        return row if isinstance(row, dict) else {}
+    except Exception:
+        return {}
+
+
 def oauth_client_id() -> str:
-    return (os.getenv("GOOGLE_OAUTH_CLIENT_ID") or "").strip() or str(
-        _oauth_file().get("client_id") or ""
-    ).strip()
+    return (
+        (os.getenv("GOOGLE_OAUTH_CLIENT_ID") or "").strip()
+        or str(_oauth_file().get("client_id") or "").strip()
+        or str(_core_oauth().get("client_id") or "").strip()
+    )
 
 
 def oauth_client_secret() -> str:
-    return (os.getenv("GOOGLE_OAUTH_CLIENT_SECRET") or "").strip() or str(
-        _oauth_file().get("client_secret") or ""
-    ).strip()
+    return (
+        (os.getenv("GOOGLE_OAUTH_CLIENT_SECRET") or "").strip()
+        or str(_oauth_file().get("client_secret") or "").strip()
+        or str(_core_oauth().get("client_secret") or "").strip()
+    )
 
 
 def oauth_configured() -> bool:
@@ -91,6 +108,18 @@ def save_oauth_app_credentials(client_id: str, client_secret: str = "") -> Dict[
         data["client_secret"] = secret
     _OAUTH_PATH.parent.mkdir(parents=True, exist_ok=True)
     _OAUTH_PATH.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    try:
+        from luna_service import load_core_brain, save_core_brain
+
+        core = load_core_brain() or {}
+        row = dict(core.get("google_oauth") or {})
+        row["client_id"] = cid
+        if secret:
+            row["client_secret"] = secret
+        core["google_oauth"] = row
+        save_core_brain(core)
+    except Exception:
+        pass
     return {"client_id": cid, "has_secret": bool(oauth_client_secret())}
 
 
@@ -320,8 +349,8 @@ def parse_when(text: str, *, today: Optional[date] = None) -> Tuple[str, Optiona
                     if 0 <= h <= 23:
                         clock = f"{h:02d}:{mi:02d}"
 
-    if clock is None and (day != today or _URGENT_HINT.search(blob) or _TASK_HINT.search(blob)):
-        clock = "09:00"
+    if clock is None:
+        return day.isoformat(), None
     return day.isoformat(), clock
 
 
@@ -334,16 +363,58 @@ def parse_location(text: str) -> Optional[str]:
     return loc[:80] or None
 
 
-def _title_from_mail(subject: str, body: str) -> str:
+def _action_title(subject: str, body: str) -> str:
+    blob = (subject or "") + " " + (body or "")
+    if re.search(r"面接|interview", blob, re.I):
+        return "面接"
+    if re.search(r"会議|ミーティング|打ち合わせ|meeting", blob, re.I):
+        return "打ち合わせ"
+    if re.search(r"提出|課題|assignment|レポート", blob, re.I):
+        return "課題提出"
+    if re.search(r"試験|テスト|exam", blob, re.I):
+        return "試験"
+    if re.search(r"予約", blob):
+        return "予約"
     sub = re.sub(r"^(re|fwd|fw|返信|転送)[:：\s]+", "", (subject or "").strip(), flags=re.I)
     sub = re.sub(r"[\r\n]+", " ", sub).strip()
-    if sub and not _SKIP_HINT.search(sub):
-        return sub[:120]
-    for line in (body or "").splitlines():
-        line = line.strip()
-        if 4 <= len(line) <= 80 and _TASK_HINT.search(line):
-            return line[:120]
-    return (sub or "メールの用事")[:120]
+    return (sub or "用事")[:40]
+
+
+def _urgency_from_when(
+    event_date: str,
+    event_time: Optional[str],
+    text: str,
+    *,
+    today: Optional[date] = None,
+) -> str:
+    if _URGENT_HINT.search(text or ""):
+        return "high"
+    today = today or _today()
+    try:
+        day = date.fromisoformat(event_date[:10])
+    except ValueError:
+        return "normal"
+    clock = None
+    if event_time and ":" in event_time:
+        try:
+            parts = event_time.split(":")
+            clock = datetime.combine(day, datetime.min.time().replace(hour=int(parts[0]), minute=int(parts[1])), tzinfo=JST)
+        except (TypeError, ValueError):
+            clock = None
+    now = datetime.now(JST)
+    if clock:
+        hours = (clock - now).total_seconds() / 3600
+        if hours <= 12:
+            return "high"
+        if hours <= 48:
+            return "normal"
+        return "low"
+    delta_days = (day - today).days
+    if delta_days <= 0:
+        return "high"
+    if delta_days <= 1:
+        return "normal"
+    return "low"
 
 
 def extract_tasks_from_text(
@@ -357,18 +428,12 @@ def extract_tasks_from_text(
         return []
     if _SKIP_HINT.search(blob) and not _TASK_HINT.search(blob):
         return []
-    if not (_TASK_HINT.search(blob) or re.search(r"\d{1,2}[:：時月]", blob) or re.search(r"明日|今日|本日", blob)):
+    if not _TASK_HINT.search(blob):
         return []
     event_date, event_time = parse_when(blob, today=today)
     loc = parse_location(blob)
-    urgency = _norm_urgency(None, text=blob)
-    title = _title_from_mail(subject, raw)
-    note_bits = []
-    if subject and subject.strip() not in title:
-        note_bits.append(subject.strip()[:80])
-    snippet = re.sub(r"\s+", " ", (raw or "").strip())[:160]
-    if snippet:
-        note_bits.append(snippet)
+    urgency = _urgency_from_when(event_date, event_time, blob, today=today)
+    title = _action_title(subject, raw)
     return [
         {
             "title": title,
@@ -376,10 +441,118 @@ def extract_tasks_from_text(
             "time": event_time,
             "location": loc,
             "urgency": urgency,
-            "note": " / ".join(note_bits)[:500] or None,
+            "note": None,
             "source": "email",
         }
     ]
+
+
+def _might_be_task(subject: str, body: str) -> bool:
+    blob = (subject or "") + "\n" + (body or "")
+    if _SKIP_HINT.search(blob) and not _TASK_HINT.search(blob):
+        return False
+    return bool(_TASK_HINT.search(blob))
+
+
+def _refine_with_llm(
+    candidates: List[Dict[str, str]],
+    *,
+    today: Optional[date] = None,
+) -> Dict[int, Dict[str, Any]]:
+    """Map candidate index → understood task. Empty dict on failure."""
+    if not candidates:
+        return {}
+    today = today or _today()
+    try:
+        from luna_service import generate_json_task
+    except Exception:
+        return {}
+    if generate_json_task is None:
+        return {}
+    payload = []
+    for i, row in enumerate(candidates[:8]):
+        payload.append(
+            {
+                "i": i,
+                "subject": (row.get("subject") or "")[:120],
+                "body": (row.get("body") or "")[:500],
+            }
+        )
+    system = (
+        "学生の予定係。メールから本人がやる用事だけ取り出す。"
+        "JSONのみ。形式: {\"items\":[{\"i\":0,\"task\":true,\"action\":\"課題を提出する\","
+        "\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"location\":\"教室B\",\"urgency\":\"high\"}]}"
+        "task=false は広告・お知らせ・領収・お礼・メルマガ。"
+        "actionは短い日本語（何をするか）。件名のコピペ禁止。"
+        "urgency: 12時間以内や至急/今日中なら high。2日以内なら normal。それ以外 low。"
+        f"今日は{today.isoformat()}。"
+        "date/time不明なら null。"
+    )
+    parsed = generate_json_task(
+        system,
+        json.dumps({"today": today.isoformat(), "mails": payload}, ensure_ascii=False),
+        max_tokens=900,
+    )
+    if not isinstance(parsed, dict):
+        return {}
+    items = parsed.get("items") or parsed.get("tasks") or []
+    out: Dict[int, Dict[str, Any]] = {}
+    if not isinstance(items, list):
+        return {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        try:
+            idx = int(item.get("i") if item.get("i") is not None else item.get("subject_index") or -1)
+        except (TypeError, ValueError):
+            continue
+        if idx < 0 or idx >= len(candidates):
+            continue
+        task_flag = item.get("task", item.get("is_task"))
+        if task_flag is False or str(task_flag).lower() in ("false", "no", "0"):
+            out[idx] = {"skip": True}
+            continue
+        action = str(item.get("action") or item.get("title") or "").strip()[:40]
+        if task_flag is not True and str(task_flag).lower() not in ("true", "1", "yes"):
+            if not action:
+                out[idx] = {"skip": True}
+                continue
+        elif not action:
+            out[idx] = {"skip": True}
+            continue
+        ds = str(item.get("date") or "").strip()[:10]
+        if ds.lower() in ("null", "none"):
+            ds = ""
+        tm = str(item.get("time") or "").strip() or None
+        if tm and tm.lower() in ("null", "none"):
+            tm = None
+        if tm and not re.match(r"^\d{2}:\d{2}$", tm):
+            tm = None
+        if not ds:
+            heur = extract_tasks_from_text(
+                candidates[idx].get("body") or "",
+                subject=candidates[idx].get("subject") or "",
+                today=today,
+            )
+            if heur:
+                ds = heur[0]["date"]
+                tm = tm or heur[0].get("time")
+            else:
+                out[idx] = {"skip": True}
+                continue
+        urg = str(item.get("urgency") or "normal").lower()
+        if urg not in ("high", "normal", "low"):
+            urg = "normal"
+        out[idx] = {
+            "title": action,
+            "date": ds,
+            "time": tm,
+            "location": (str(item.get("location") or "").strip()[:80] or None),
+            "urgency": urg,
+            "note": None,
+            "source": "email",
+        }
+    return out
 
 
 def import_extracted_tasks(user: Dict[str, Any], tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -476,7 +649,7 @@ def sync_gmail(user: Dict[str, Any], *, max_messages: int = 12) -> Dict[str, Any
     link = dict(user.get("mail_link") or {})
     seen = list(link.get("seen_ids") or [])
     seen_set = set(seen)
-    added: List[Dict[str, Any]] = []
+    candidates: List[Dict[str, str]] = []
     for mid in ids:
         if mid in seen_set:
             continue
@@ -496,11 +669,24 @@ def sync_gmail(user: Dict[str, Any], *, max_messages: int = 12) -> Dict[str, Any
         meta = _gmail_headers(payload)
         subject = meta.get("subject") or ""
         body = _gmail_plain(payload) or (data.get("snippet") or "")
-        tasks = extract_tasks_from_text(body, subject=subject)
-        new_events = import_extracted_tasks(user, tasks)
-        added.extend(new_events)
         seen.append(mid)
         seen_set.add(mid)
+        if not _might_be_task(subject, body):
+            continue
+        candidates.append({"id": mid, "subject": subject, "body": body})
+        if len(candidates) >= 8:
+            break
+    refined = _refine_with_llm(candidates)
+    tasks: List[Dict[str, Any]] = []
+    for i, cand in enumerate(candidates):
+        row = refined.get(i) if refined else None
+        if row and row.get("skip"):
+            continue
+        if row and not row.get("skip"):
+            tasks.append(row)
+            continue
+        tasks.extend(extract_tasks_from_text(cand.get("body") or "", subject=cand.get("subject") or ""))
+    added = import_extracted_tasks(user, tasks)
     link["seen_ids"] = seen[-80:]
     link["last_sync"] = datetime.now(timezone.utc).isoformat()
     link["imported_total"] = int(link.get("imported_total") or 0) + len(added)

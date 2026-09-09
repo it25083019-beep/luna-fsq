@@ -2413,7 +2413,7 @@
     if (status) {
       if (perm === "unsupported") status.textContent = "このブラウザは通知に対応していません。";
       else if (perm === "denied") status.textContent = "ブラウザで通知が拒否されています。設定から許可してください。";
-      else if (notifyOn && perm === "granted") status.textContent = "毎朝のまとめと、各予定の1時間前・30分前・10分前に知らせます。";
+      else if (notifyOn && perm === "granted") status.textContent = "用事だけ知らせます。急ぎはすぐ、普通は1時間前・30分前・10分前、先の予定はその日のまとめと直前です。";
       else if (notifyOn) status.textContent = "許可すると、今日の予定を知らせます。";
       else status.textContent = "オフです。オンにすると今日の予定を知らせます。";
     }
@@ -2548,6 +2548,15 @@
         reminderTimers.push(
           setTimeout(() => {
             if (!markOnce("urgent", (row.id || "") + day)) return;
+            showReminderNote(row);
+          }, delay)
+        );
+        return;
+      }
+      if (row.kind === "mail_catch") {
+        reminderTimers.push(
+          setTimeout(() => {
+            if (!markOnce("mail", row.id || "")) return;
             showReminderNote(row);
           }, delay)
         );
@@ -4045,13 +4054,15 @@
     if (originEl) originEl.textContent = location.origin;
     if (!el) return;
     if (st && st.connected) {
-      el.textContent = "Gmail連携中。新しい用事は自動で予定に入るよ。";
+      el.textContent = "Gmail連携中。本物の受信箱から用事を予定に入れるよ。";
     } else if (st && st.client_id) {
-      el.textContent = "未連携。『Gmailを許可する』を押すと、Googleの画面が開くよ。";
+      el.textContent = "未連携。『Gmailを許可する』を押すと、Googleが本物のGmailへのアクセスを聞くよ。";
+    } else if (st && st.setup_allowed) {
+      el.textContent = "あと一歩。下の『認証情報を作成』から鍵を1回作ってね。テスト用の偽メールではないよ。";
     } else {
-      el.textContent = "まだGoogleアプリの準備がないよ。下の手順を1回だけやってね。";
+      el.textContent = "管理者がGmail連携をオンにしたら、『許可する』だけで本物の受信箱を読めるよ。";
     }
-    if (setup) setup.classList.toggle("hidden", !!(st && st.client_id));
+    if (setup) setup.classList.toggle("hidden", !(st && st.setup_allowed && !st.client_id));
     if (syncBtn) syncBtn.disabled = !(st && st.connected);
   }
 
@@ -4111,8 +4122,12 @@
     const clientId = st.client_id || "";
     if (!clientId) {
       const setup = document.getElementById("mailSetupBox");
-      if (setup) setup.classList.remove("hidden");
-      if (msg) msg.textContent = "先にクライアントIDを保存してね。メールのパスワードは使わないよ。";
+      if (st.setup_allowed && setup) setup.classList.remove("hidden");
+      if (msg) {
+        msg.textContent = st.setup_allowed
+          ? "Google Cloudで『認証情報を作成』→ OAuthクライアントID（ウェブ）を作り、ここに貼ってね。メールのパスワードは不要。読むのは本物のGmailだよ。"
+          : "管理者がGoogle連携を準備するまで、まだ開けないよ。";
+      }
       return;
     }
     try {

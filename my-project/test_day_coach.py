@@ -2,7 +2,15 @@
 """Schedule load → FSQ pace + reminder payloads."""
 from datetime import date, datetime, timedelta
 
-from day_coach import JST, assess_day_load, build_today_reminders, event_minutes, record_schedule_checkin
+from day_coach import (
+    JST,
+    assess_day_load,
+    build_today_reminders,
+    event_minutes,
+    format_notify_brief,
+    mail_catch_reminders,
+    record_schedule_checkin,
+)
 from life_link import life_quests_for_fsq
 from schedule_service import add_event, home_summary
 from tts_service import resolve_voice_profile
@@ -109,7 +117,7 @@ def test_upcoming_event_becomes_reminder():
     body = " ".join(r["body"] for r in schedule_rows)
     assert "数学" in body
     assert "A棟203" in body
-    assert "やること" in body
+    assert "やること" not in body
     digest = next(r for r in payload["reminders"] if r["kind"] == "digest")
     assert "数学" in digest["body"]
     print("OK reminders", len(payload["reminders"]), sorted(leads))
@@ -133,6 +141,79 @@ def test_hour_lead_when_event_is_later():
     leads = {r["lead_minutes"] for r in payload["reminders"] if r["kind"] == "schedule"}
     assert leads == {60, 30, 10}
     print("OK 60/30/10 leads", sorted(leads))
+
+
+def test_high_urgency_skips_hour_and_pings_now():
+    user = _user()
+    now = datetime.now(JST).replace(second=0, microsecond=0)
+    start_at = now + timedelta(minutes=50)
+    if start_at.date() != now.date():
+        print("SKIP high-urgency near midnight")
+        return
+    add_event(
+        user,
+        title="課題提出",
+        event_date=now.date().isoformat(),
+        event_time=start_at.strftime("%H:%M"),
+        location="教室B",
+        urgency="high",
+    )
+    payload = build_today_reminders(user, now=now)
+    kinds = {r["kind"] for r in payload["reminders"]}
+    assert "urgent" in kinds
+    leads = {r["lead_minutes"] for r in payload["reminders"] if r["kind"] == "schedule"}
+    assert 60 not in leads
+    assert 10 in leads
+    urgent = next(r for r in payload["reminders"] if r["kind"] == "urgent")
+    assert "今すぐ" in urgent["body"]
+    assert "課題提出" in urgent["body"]
+    assert urgent["require_interaction"] is True
+    print("OK high urgency", sorted(leads))
+
+
+def test_low_urgency_only_near_start():
+    user = _user()
+    now = datetime.now(JST).replace(second=0, microsecond=0)
+    start_at = now + timedelta(minutes=90)
+    if start_at.date() != now.date():
+        print("SKIP low-urgency near midnight")
+        return
+    add_event(
+        user,
+        title="予約",
+        event_date=now.date().isoformat(),
+        event_time=start_at.strftime("%H:%M"),
+        urgency="low",
+    )
+    payload = build_today_reminders(user, now=now)
+    leads = {r["lead_minutes"] for r in payload["reminders"] if r["kind"] == "schedule"}
+    assert 60 not in leads
+    assert leads == {30, 10}
+    print("OK low urgency leads", sorted(leads))
+
+
+def test_mail_catch_by_urgency():
+    who_user = _user()
+    high = {
+        "id": "e1",
+        "title": "課題提出",
+        "date": "2026-09-10",
+        "time": "16:00",
+        "location": "教室B",
+        "urgency": "high",
+    }
+    normal = dict(high, id="e2", title="打ち合わせ", urgency="normal")
+    low = dict(high, id="e3", title="予約", urgency="low")
+    rows = mail_catch_reminders([high, normal, low], who_user)
+    kinds = {r["kind"] for r in rows}
+    assert "urgent" in kinds
+    assert "mail_catch" in kinds
+    assert all("教室B" in r["body"] for r in rows)
+    assert not any(r.get("event_id") == "e3" for r in rows)
+    brief = format_notify_brief(high)
+    assert "課題提出" in brief
+    assert "16:00" in brief
+    print("OK mail catch", [r["kind"] for r in rows], brief)
 
 
 def test_event_minutes():
@@ -161,6 +242,9 @@ if __name__ == "__main__":
     test_home_summary_exposes_day_fit()
     test_upcoming_event_becomes_reminder()
     test_hour_lead_when_event_is_later()
+    test_high_urgency_skips_hour_and_pings_now()
+    test_low_urgency_only_near_start()
+    test_mail_catch_by_urgency()
     test_event_minutes()
     test_schedule_checkin_remembers_mood()
     print("ALL day-coach tests passed")

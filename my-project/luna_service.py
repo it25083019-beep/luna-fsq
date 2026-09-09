@@ -1555,7 +1555,7 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
     return _persist_local_turn(user_id, user, text_in, _local_companion_reply(user, text_in))
 
 
-def generate_json_task(system_instruction: str, user_prompt: str) -> Optional[Any]:
+def generate_json_task(system_instruction: str, user_prompt: str, max_tokens: int = 400) -> Optional[Any]:
     """One-shot JSON completion (no chat history). Returns None on failure."""
     try:
         if provider_name() == "openai_compatible":
@@ -1564,7 +1564,7 @@ def generate_json_task(system_instruction: str, user_prompt: str) -> Optional[An
                 history_dicts=[],
                 user_text=user_prompt,
                 temperature=0.35,
-                max_tokens=400,
+                max_tokens=max_tokens,
             )
             text = (raw or "").strip()
             if text.startswith("```"):
@@ -1585,6 +1585,7 @@ def generate_json_task(system_instruction: str, user_prompt: str) -> Optional[An
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 temperature=0.35,
+                max_output_tokens=max_tokens,
                 response_mime_type="application/json",
             ),
         )

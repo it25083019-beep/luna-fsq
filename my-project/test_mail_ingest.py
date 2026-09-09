@@ -39,7 +39,31 @@ def test_import_adds_schedule_event():
     sched = list_events(user, on_date=(today + timedelta(days=1)).isoformat())
     titles = [e.get("title") for e in (sched.get("today_open") or []) + (sched.get("today_done") or [])]
     assert titles
+    assert any("打ち合わせ" in (t or "") or "ミーティング" in (t or "") for t in titles)
     print("OK mail import", result["count"], titles)
+
+
+def test_extract_uses_action_not_subject():
+    tasks = extract_tasks_from_text(
+        "9月10日16時、教室Bでレポートを提出してください。",
+        subject="【重要】Fwd: ご確認ください 大学からのお知らせ",
+        today=date(2026, 9, 9),
+    )
+    assert tasks
+    assert tasks[0]["title"] == "課題提出"
+    assert tasks[0]["note"] is None
+    assert tasks[0]["time"] == "16:00"
+    print("OK action title", tasks[0])
+
+
+def test_skip_fyi_only():
+    tasks = extract_tasks_from_text(
+        "ご確認ください。明日の授業は通常通りです。よろしくお願いします。",
+        subject="お知らせ",
+        today=date(2026, 9, 9),
+    )
+    assert tasks == []
+    print("OK skip FYI")
 
 
 def test_skip_newsletter():
@@ -56,5 +80,7 @@ if __name__ == "__main__":
     test_parse_tomorrow_meeting()
     test_extract_urgent_assignment()
     test_import_adds_schedule_event()
+    test_extract_uses_action_not_subject()
+    test_skip_fyi_only()
     test_skip_newsletter()
     print("ALL mail ingest tests passed")

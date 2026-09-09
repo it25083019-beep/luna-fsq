@@ -12,6 +12,7 @@ DEFAULT_DIGEST_HOUR = 7
 DEFAULT_BLOCK_MIN = 50
 WEEKDAYS_JA = "月火水木金土日"
 LEAD_LABEL_JA = {60: "1時間前", 30: "30分前", 10: "10分前"}
+LEAD_SOON_JA = {60: "1時間後", 30: "30分後", 10: "10分後"}
 
 
 def _now_jst() -> datetime:
@@ -96,6 +97,113 @@ def format_event_detail(event: Dict[str, Any], *, today: Optional[date] = None) 
     if note:
         lines.append(note[:80])
     return "\n".join(lines)
+
+
+def compact_date_ja(iso: Optional[str], *, today: Optional[date] = None) -> str:
+    raw = str(iso or "").strip()[:10]
+    try:
+        d = date.fromisoformat(raw)
+    except ValueError:
+        d = today or _today_jst()
+    return f"{d.month}/{d.day}"
+
+
+def format_notify_brief(event: Dict[str, Any], *, today: Optional[date] = None) -> str:
+    """Short notification line: date time · action · place."""
+    title = (event.get("title") or "予定").strip() or "予定"
+    bits = [f"{compact_date_ja(event.get('date'), today=today)} {clock_label(event)}", title]
+    loc = str(event.get("location") or "").strip()
+    if loc:
+        bits.append(loc)
+    return "・".join(bits)
+
+
+def _leads_for_event(
+    event: Dict[str, Any],
+    *,
+    now: datetime,
+    today: date,
+    allowed: List[int],
+) -> tuple[List[int], bool]:
+    """Pick reminder offsets from remaining time and urgency. Returns (leads, ping_now)."""
+    urgency = str(event.get("urgency") or "normal").lower()
+    start_t = _parse_hhmm(event.get("time"))
+    allowed_set = set(allowed)
+
+    def pick(wanted: List[int]) -> List[int]:
+        return [m for m in wanted if m in allowed_set]
+
+    if start_t is None:
+        return [], urgency == "high"
+    start_at = datetime.combine(today, start_t, tzinfo=JST)
+    mins_left = (start_at - now).total_seconds() / 60
+    if mins_left < -1:
+        return [], False
+    if urgency == "high":
+        return pick([30, 10]), mins_left <= 120
+    if urgency == "low":
+        return pick([30, 10]), False
+    if mins_left <= 70:
+        return pick([30, 10]), mins_left <= 20
+    return pick([60, 30, 10]), False
+
+
+def mail_catch_reminders(
+    events: Optional[List[Dict[str, Any]]],
+    user: Dict[str, Any],
+    *,
+    now: Optional[datetime] = None,
+) -> List[Dict[str, Any]]:
+    """One-shot notices when mail becomes a calendar item. Low urgency stays quiet."""
+    now = now or _now_jst()
+    who = _companion_who(user)
+    rows: List[Dict[str, Any]] = []
+    for ev in events or []:
+        urgency = str(ev.get("urgency") or "normal").lower()
+        brief = format_notify_brief(ev, today=now.date())
+        eid = ev.get("id")
+        if urgency == "high":
+            rows.append(
+                {
+                    "id": f"mail-catch-{eid or ev.get('title')}",
+                    "kind": "urgent",
+                    "fire_at": now.isoformat(),
+                    "title": f"{who}｜急ぎの用事",
+                    "body": f"今すぐ・{brief}",
+                    "event_id": eid,
+                    "url": f"/app?checkin=1&eid={eid or ''}&lead=0",
+                    "require_interaction": True,
+                    "ask_mood": True,
+                    "lead_minutes": 0,
+                }
+            )
+        elif urgency == "normal":
+            rows.append(
+                {
+                    "id": f"mail-catch-{eid or ev.get('title')}",
+                    "kind": "mail_catch",
+                    "fire_at": now.isoformat(),
+                    "title": f"{who}｜予定を入れたよ",
+                    "body": brief,
+                    "event_id": eid,
+                    "url": "/app?digest=1",
+                    "require_interaction": False,
+                    "ask_mood": False,
+                    "lead_minutes": 0,
+                }
+            )
+    return rows
+
+
+def attach_mail_reminders(result: Dict[str, Any], user: Dict[str, Any]) -> Dict[str, Any]:
+    fit = assess_day_load(user)
+    payload = build_today_reminders(user, fit=fit)
+    catch = mail_catch_reminders(result.get("added") or [], user)
+    if catch:
+        payload = dict(payload)
+        payload["reminders"] = catch + list(payload.get("reminders") or [])
+    result["reminders"] = payload
+    return result
 
 
 def _companion_who(user: Dict[str, Any]) -> str:
@@ -257,7 +365,7 @@ def build_today_reminders(
     fit: Optional[Dict[str, Any]] = None,
     now: Optional[datetime] = None,
 ) -> Dict[str, Any]:
-    """Daily digest + 60/30/10-minute reminders with specific what/when/where copy."""
+    """Daily digest + urgency-based lead reminders with short what/when/where copy."""
     now = now or _now_jst()
     today = now.date()
     today_s = today.isoformat()
@@ -267,19 +375,25 @@ def build_today_reminders(
     sched = list_events(user, on_date=today_s)
     open_items = list(sched.get("today_open") or [])
     who = _companion_who(user)
-    leads = _lead_offsets(user)
+    allowed_leads = _lead_offsets(user)
     reminders: List[Dict[str, Any]] = []
 
     digest_at = datetime.combine(today, time(_digest_hour(user), 0), tzinfo=JST)
     if digest_at < now:
         digest_at = now
     if open_items:
-        numbered = []
-        for i, ev in enumerate(open_items, 1):
-            numbered.append(f"{i}. {format_event_detail(ev, today=today)}")
-        digest_body = f"今日の予定は{len(open_items)}件だよ。\n\n" + "\n\n".join(numbered)
+        lines = [f"今日{len(open_items)}件"]
+        for ev in open_items:
+            clock = clock_label(ev)
+            title = (ev.get("title") or "予定").strip() or "予定"
+            loc = str(ev.get("location") or "").strip()
+            bit = f"{clock} {title}"
+            if loc:
+                bit += f"・{loc}"
+            lines.append(bit)
+        digest_body = "\n".join(lines)
     else:
-        digest_body = "今日は予定が空いているよ。新しい用事がメールから入ったら、また知らせるね。"
+        digest_body = "今日は予定なし。用事が入ったら知らせるね。"
     reminders.append(
         {
             "id": f"digest-{today_s}",
@@ -305,36 +419,17 @@ def build_today_reminders(
     )
 
     for ev in open_items:
-        detail = format_event_detail(ev, today=today)
+        brief = format_notify_brief(ev, today=today)
         eid = ev.get("id")
-        urgency = str(ev.get("urgency") or "normal").lower()
-        start_t = _parse_hhmm(ev.get("time"))
-        if start_t is None:
-            if urgency == "high":
-                reminders.append(
-                    {
-                        "id": f"urgent-{eid or ev.get('title')}",
-                        "kind": "urgent",
-                        "fire_at": now.isoformat(),
-                        "title": f"{who}｜急ぎの用事",
-                        "body": detail + "\n\n急ぎみたい。今の体調と気持ち、教えてくれる？",
-                        "event_id": eid,
-                        "url": f"/app?checkin=1&eid={eid or ''}&lead=0",
-                        "require_interaction": True,
-                        "ask_mood": True,
-                        "lead_minutes": 0,
-                    }
-                )
-            continue
-        start_at = datetime.combine(today, start_t, tzinfo=JST)
-        if urgency == "high" and start_at - now <= timedelta(hours=2):
+        event_leads, ping_now = _leads_for_event(ev, now=now, today=today, allowed=allowed_leads)
+        if ping_now:
             reminders.append(
                 {
                     "id": f"urgent-{eid or ev.get('title')}",
                     "kind": "urgent",
                     "fire_at": now.isoformat(),
                     "title": f"{who}｜急ぎの用事",
-                    "body": detail + "\n\n急ぎの予定だよ。体調と気持ち、教えてくれる？",
+                    "body": f"今すぐ・{brief}\n体調はどう？",
                     "event_id": eid,
                     "url": f"/app?checkin=1&eid={eid or ''}&lead=0",
                     "require_interaction": True,
@@ -342,26 +437,30 @@ def build_today_reminders(
                     "lead_minutes": 0,
                 }
             )
-        for lead in leads:
+        start_t = _parse_hhmm(ev.get("time"))
+        if start_t is None:
+            continue
+        start_at = datetime.combine(today, start_t, tzinfo=JST)
+        for lead in event_leads:
             fire_at = start_at - timedelta(minutes=lead)
             if fire_at < now - timedelta(minutes=1):
                 continue
-            label = LEAD_LABEL_JA.get(lead, f"{lead}分前")
+            soon = LEAD_SOON_JA.get(lead, f"{lead}分後")
+            ask_mood = lead <= 10
+            body = f"{soon}・{brief}"
+            if ask_mood:
+                body += "\n体調はどう？"
             reminders.append(
                 {
                     "id": f"evt-{eid or ev.get('title')}-{lead}",
                     "kind": "schedule",
                     "fire_at": fire_at.isoformat(),
-                    "title": f"{who}｜{label}のリマインド",
-                    "body": (
-                        f"{detail}\n\n"
-                        f"あと{label.replace('前', '')}だよ。"
-                        "今の体調と気持ち、教えてくれる？"
-                    ),
+                    "title": f"{who}｜{soon}",
+                    "body": body,
                     "event_id": eid,
                     "url": f"/app?checkin=1&eid={eid or ''}&lead={lead}",
-                    "require_interaction": True,
-                    "ask_mood": True,
+                    "require_interaction": ask_mood,
+                    "ask_mood": ask_mood,
                     "lead_minutes": lead,
                 }
             )
@@ -384,15 +483,14 @@ def build_today_reminders(
         "enabled": enabled,
         "date": today_s,
         "lead_minutes": LEAD_MINUTES,
-        "lead_offsets": leads,
+        "lead_offsets": allowed_leads,
         "digest_hour": _digest_hour(user),
         "day_fit": fit,
         "reminders": reminders,
         "hint_ja": (
-            "毎日、今日の予定を大きな通知でまとめます。"
-            "各予定の1時間前・30分前・10分前にも、何を・いつ・どこでするかを知らせて、体調を聞きます。"
-            "ホーム画面に追加すると使いやすいです。"
-            "タブを完全に閉じると届かないことがあります。"
+            "メールは用事だけ予定に入れます。"
+            "急ぎはすぐ大きな通知、普通は1時間前・30分前・10分前、先の予定はその日のまとめと直前だけ。"
+            "10分前に体調を聞きます。タブを完全に閉じると届かないことがあります。"
         ),
     }
 

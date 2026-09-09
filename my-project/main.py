@@ -899,10 +899,13 @@ def reminders_checkin(req: ReminderCheckinRequest, current: User = Depends(get_c
 @app.get("/mail/status")
 def mail_link_status(request: Request, current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
+    from luna_service import is_admin as luna_is_admin
     from mail_ingest import mail_status
 
     base = (os.getenv("APP_BASE_URL") or str(request.base_url)).rstrip("/")
-    return mail_status(brain, public_base=base)
+    payload = mail_status(brain, public_base=base)
+    payload["setup_allowed"] = bool(current.is_admin or luna_is_admin(current.public_id))
+    return payload
 
 
 @app.post("/mail/import")
@@ -912,10 +915,9 @@ def mail_import_text(req: MailImportRequest, current: User = Depends(get_current
 
     result = import_pasted_mail(brain, req.text, subject=req.subject or "")
     save_user_brain(current.public_id, brain)
-    from day_coach import assess_day_load, build_today_reminders
+    from day_coach import attach_mail_reminders
 
-    fit = assess_day_load(brain)
-    result["reminders"] = build_today_reminders(brain, fit=fit)
+    attach_mail_reminders(result, brain)
     return result
 
 
@@ -927,10 +929,9 @@ def mail_sync_now(current: User = Depends(get_current_user)):
     result = sync_gmail(brain)
     if result.get("count") or result.get("ok") or result.get("error") == "auth":
         save_user_brain(current.public_id, brain)
-    from day_coach import assess_day_load, build_today_reminders
+    from day_coach import attach_mail_reminders
 
-    fit = assess_day_load(brain)
-    result["reminders"] = build_today_reminders(brain, fit=fit)
+    attach_mail_reminders(result, brain)
     return result
 
 
@@ -946,21 +947,26 @@ def mail_disconnect(current: User = Depends(get_current_user)):
 
 @app.post("/mail/google/setup")
 def mail_google_setup(req: MailGoogleSetupRequest, request: Request, current: User = Depends(get_current_user)):
+    from luna_service import is_admin
     from mail_ingest import mail_status, save_oauth_app_credentials
 
+    if not (current.is_admin or is_admin(current.public_id)):
+        raise HTTPException(status_code=403, detail="管理者だけがGmailアプリの鍵を保存できます")
     try:
         save_oauth_app_credentials(req.client_id, req.client_secret or "")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     brain = load_user_brain(current.public_id)
     base = (os.getenv("APP_BASE_URL") or str(request.base_url)).rstrip("/")
-    return {"ok": True, **mail_status(brain, public_base=base)}
+    payload = mail_status(brain, public_base=base)
+    payload["setup_allowed"] = True
+    return {"ok": True, **payload}
 
 
 @app.post("/mail/google/browser-token")
 def mail_google_browser_token(req: MailGoogleBrowserToken, current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
-    from day_coach import assess_day_load, build_today_reminders
+    from day_coach import attach_mail_reminders
     from mail_ingest import save_mail_tokens, sync_gmail
 
     save_mail_tokens(
@@ -969,8 +975,7 @@ def mail_google_browser_token(req: MailGoogleBrowserToken, current: User = Depen
     )
     result = sync_gmail(brain)
     save_user_brain(current.public_id, brain)
-    fit = assess_day_load(brain)
-    result["reminders"] = build_today_reminders(brain, fit=fit)
+    attach_mail_reminders(result, brain)
     result["connected"] = True
     return result
 
