@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
+import companions
 from companions import get_companion, list_companions, normalize_companion_id
+
+companions._CACHE = None
 
 
 def test_catalog_has_luna_and_animals():
@@ -17,8 +20,13 @@ def test_catalog_has_luna_and_animals():
     assert voices["luna"] == "Gacrux"
     assert voices["luno"] == "Leda"
     assert voices["ren"] == "Charon"
+    assert voices["hachi"] == "Fenrir"
     assert len(set(voices.values())) == len(voices)
     assert (get_companion("ren").get("voice") or {}).get("browser_pitch", 1) < 0.7
+    assert (get_companion("hachi").get("voice") or {}).get("browser_pitch", 1) >= 1.6
+    assert (get_companion("momo").get("voice") or {}).get("browser_pitch", 1) >= 1.7
+    assert (get_companion("taro").get("voice") or {}).get("browser_pitch", 1) <= 0.3
+    assert get_companion("hachi").get("talk", {}).get("hello")
     assert normalize_companion_id("nope") == "luna"
     assert normalize_companion_id("REN") == "ren"
     print("OK companions catalog", len(rows))

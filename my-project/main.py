@@ -95,6 +95,7 @@ from schemas import (
     BossExamSubmit,
     TtsSpeakRequest,
     ReminderPrefsRequest,
+    AppearancePrefsRequest,
 )
 from study_workspace import (
     build_boss_exam,
@@ -475,6 +476,9 @@ def companions_catalog():
     return {"ok": True, "companions": list_companions()}
 
 
+_UI_THEMES = {"fsq", "lilac", "mint", "peach", "sky", "night"}
+
+
 @app.post("/companion/sprite")
 def set_companion_sprite(
     req: SetCompanionSpriteRequest,
@@ -482,9 +486,36 @@ def set_companion_sprite(
 ):
     cid = normalize_companion_id(req.companion_id)
     state = load_user_brain(current.public_id)
+    row = get_companion(cid)
     state["companion_id"] = cid
+    state["companion_name"] = row.get("label_ja") or row.get("label_en") or cid
     save_user_brain(current.public_id, state)
-    return {"ok": True, "companion": get_companion(cid), "companion_id": cid}
+    return {"ok": True, "companion": row, "companion_id": cid, "companion_name": state["companion_name"]}
+
+
+@app.post("/prefs/appearance")
+def save_appearance_prefs(
+    req: AppearancePrefsRequest,
+    current: User = Depends(get_current_user),
+):
+    state = load_user_brain(current.public_id)
+    if req.theme_id:
+        theme = str(req.theme_id).strip().lower()
+        if theme not in _UI_THEMES:
+            raise HTTPException(status_code=400, detail="unknown theme")
+        state["ui_theme"] = theme
+    if req.companion_id:
+        cid = normalize_companion_id(req.companion_id)
+        row = get_companion(cid)
+        state["companion_id"] = cid
+        state["companion_name"] = row.get("label_ja") or row.get("label_en") or cid
+    save_user_brain(current.public_id, state)
+    return {
+        "ok": True,
+        "ui_theme": state.get("ui_theme") or "lilac",
+        "companion_id": state.get("companion_id") or "luna",
+        "companion_name": state.get("companion_name"),
+    }
 
 
 @app.post("/user/set-name")

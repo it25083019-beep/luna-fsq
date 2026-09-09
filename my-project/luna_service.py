@@ -157,6 +157,7 @@ def _default_user_brain(user_id: str) -> Dict[str, Any]:
         "streak": 0,
         "companion_name": None,
         "companion_id": "luna",
+        "ui_theme": "lilac",
         "user_display_name": None,
         "current_focus": None,
         "current_plan": None,
@@ -387,6 +388,7 @@ def get_brain_status(user_id: str) -> Dict[str, Any]:
         "core_chat_history_count": len(core.get("chat_history", [])),
         "companion_name": user.get("companion_name"),
         "companion_id": user.get("companion_id") or "luna",
+        "ui_theme": user.get("ui_theme") or "lilac",
         "user_display_name": user.get("user_display_name"),
         "user_chat_history_count": len(user.get("chat_history", [])),
         "onboarding_complete": (bool(user.get("user_display_name")) and bool(user.get("companion_name"))) if not admin else True,
@@ -522,13 +524,20 @@ Output Format: ONLY <dialogue>...</dialogue> and <game_state_json>...</game_stat
     from life_modules import modules_prompt_block
 
     modules_block = modules_prompt_block(user)
-    who = _honorific(user)
+    who = _honorific(user) or (display or "あなた")
+    from companions import get_companion
+
+    row = get_companion(user.get("companion_id"))
+    persona = (row.get("persona_ja") or f"{companion}として短く話す。").strip()
     return f"""
 # ROLE: Personal Life Operating Companion
-Your name is {companion}. Address the user as {who}.
+Your name is {companion}. Address the user as {who}. Stay in character.
+
+PERSONA: {persona}
+Keep <dialogue> to 1–2 short sentences. Do not give long lectures. Never call yourself LUNA unless your name is ルナ or LUNA.
 
 {_speech_style_block(user)}
-- Usually 2–3 short sentences in <dialogue> (warm companion, not a form bot).
+- Usually 1–2 short sentences in <dialogue> (warm companion, not a lecture).
 
 COMPANION REPLY SHAPE (important):
 1) If you saved any life fact, first say you noted it (例:「今日の気分、メモしたよ」「800円の支出、記録したよ」).
@@ -723,13 +732,28 @@ def _speech_style_block(user: Dict[str, Any]) -> str:
 
 
 def _honorific(user: Dict[str, Any]) -> str:
-    name = user.get("user_display_name") or "お客様"
-    gender = str((user.get("life_profile") or {}).get("gender") or "")
+    """Call the signed-in person by their name. Never 'お客様様'."""
+    raw = str(user.get("user_display_name") or user.get("display_name") or "").strip()
+    raw = re.sub(r"(様|さん|くん|君|ちゃん)$", "", raw).strip()
+    if raw in ("", "お客", "お客様", "お客さま", "あなた", "冒険者", "学習者"):
+        return ""
+    profile = user.get("life_profile") if isinstance(user.get("life_profile"), dict) else {}
+    gender = str((profile or {}).get("gender") or user.get("gender") or "")
+    cid = str(user.get("companion_id") or "")
+    animal = False
+    try:
+        from companions import get_companion
+
+        animal = get_companion(cid).get("kind") == "animal"
+    except Exception:
+        animal = cid in ("hachi", "momo", "taro", "ponta")
+    if animal:
+        if gender == "male" or "男" in gender:
+            return f"{raw}くん"
+        return f"{raw}ちゃん"
     if gender == "male" or "男" in gender:
-        return f"{name}くん"
-    if gender == "female" or "女" in gender:
-        return f"{name}さん"
-    return f"{name}様"
+        return f"{raw}くん"
+    return f"{raw}さん"
 
 
 def _role_for_step(key: str) -> str:
@@ -808,22 +832,15 @@ def _activity_notification(user_text: str) -> Optional[str]:
 
 def _profile_question_dialogue(user: Dict[str, Any]) -> str:
     step = int(user.get("profile_intake_step") or 0)
-    if step >= len(PROFILE_QUESTIONS):
-        return f"{_honorific(user)}、プロフィールの確認が完了しました。これから丁寧にサポートいたします。"
-    key, q = PROFILE_QUESTIONS[step]
     who = _honorific(user)
+    prefix = f"{who}、" if who else ""
+    if step >= len(PROFILE_QUESTIONS):
+        return f"{prefix}プロフィール、ありがとう。これから一緒にいこう。"
+    key, q = PROFILE_QUESTIONS[step]
     companion = user.get("companion_name") or "コンパニオン"
     if step == 0:
-        return f"{who}、私は「{companion}」です。生活支援のため、最初に正確な情報を伺います。{q}"
-    # role preface light
-    role = _role_for_step(key)
-    if role == "doctor_intake":
-        return f"{who}、健康管理のため確認します。{q}"
-    if role == "psychologist_intake":
-        return f"{who}、心のサポートのため、初回として丁寧に伺います。{q}"
-    if role == "finance_expert":
-        return f"{who}、家計の安定のため確認します。{q}"
-    return f"{who}、{q}"
+        return f"{prefix}私は「{companion}」です。{q}"
+    return f"{prefix}{q}"
 
 
 def start_user_greeting(user_id: str) -> str:
@@ -839,17 +856,18 @@ def start_user_greeting(user_id: str) -> str:
         from care_memory import greeting_care_line
 
         lv = _relationship_level(user)
-        cname = user['companion_name']
-        who = _honorific(user)
         care_line = greeting_care_line(user)
+        from companions import fill_talk, get_companion
+
+        talk = get_companion(user.get("companion_id")).get("talk") or {}
         if care_line:
-            dialogue = f"{who}、おかえり。{care_line}"
-        elif lv >= 3:
-            dialogue = f"{who}、おかえり。{cname}だよ。今日の調子はどう？"
-        elif lv >= 2:
-            dialogue = f"{who}、おかえりなさい。{cname}です。今日の体調はどうですか？"
+            who = _honorific(user)
+            dialogue = f"{who}、{care_line}" if who else care_line
         else:
-            dialogue = f"{who}、おかえりなさい。私は{cname}です。本日の体調はいかがですか。"
+            fallback = "{who}おかえり。"
+            if lv >= 3:
+                fallback = "{who}おかえり。今日の調子はどう？"
+            dialogue = fill_talk(talk.get("greeting") or fallback, _honorific(user))
         return _pack_reply(dialogue, {
             "user_display_name": user.get("user_display_name"),
             "companion_name": user.get("companion_name"),
@@ -864,7 +882,7 @@ def start_user_greeting(user_id: str) -> str:
         })
 
     if user.get("user_display_name") and not user.get("companion_name"):
-        dialogue = f"{user['user_display_name']}様、続きでございます。私の呼び名を一つお決めください。"
+        dialogue = f"{user['user_display_name']}さん、続きね。私の呼び名を一つ決めてくれる？"
     else:
         dialogue = (
             "こんにちは。私は生活・学習・気持ちを支えるAIコンパニオンです。"
@@ -984,11 +1002,11 @@ def _is_crisis_message(text: str) -> bool:
 def _crisis_reply(user: Dict[str, Any]) -> str:
     """Local safety path — never wait on the model for a crisis line."""
     who = _honorific(user)
-    cname = user.get("companion_name") or "LUNA"
+    prefix = f"{who}、" if who else ""
+    cname = user.get("companion_name") or "そばにいるよ"
     dialogue = (
-        f"{who}、いまの気持ち、ちゃんと受け取ったよ。{cname}はそばにいる。"
-        f"ひとりで抱えなくていい。信頼できる人か、いのちの電話（0570-783-556）に今すぐつながってほしい。"
-        f"診断はできないけど、あなたが大切だよ。"
+        f"{prefix}いまの気持ち、受け取ったよ。{cname}はそばにいる。"
+        f"いのちの電話（0570-783-556）にもつながれるよ。"
     )
     return _pack_reply(dialogue, {"emotion": "sad", "crisis": True})
 
@@ -1043,21 +1061,19 @@ def _begin_consult_session(user: Dict[str, Any], topic: str) -> str:
     user["consult_mode"] = topic
     user["consult_started_at"] = _now_iso()
     user["consult_turns"] = 0
+    from companions import fill_talk, get_companion
+
+    talk = get_companion(user.get("companion_id")).get("talk") or {}
     who = _honorific(user)
-    cname = user.get("companion_name") or "LUNA"
     recall = care_recall_prefix(user, topic)
-    if topic == "health":
-        dialogue = (
-            f"{recall}{who}、体調のこと？ {cname}が聞くね。"
-            f"いまどんな感じ？眠れてる・食べられてる・気分…なんでもいいから、"
-            f"思ったことをそのまま教えて。一緒に整理するし、メモも残しておくよ。"
-        )
-    else:
-        dialogue = (
-            f"{recall}{who}、お金のこと、気になってるんだね。"
-            f"支出でも貯金でも欲しいものでも、いまいちばん心に引っかかってることを教えて。"
-            f"話しながら一緒に整理していこう。"
-        )
+    key = "consult_health" if topic == "health" else "consult_money"
+    fallback = (
+        "{who}体調はどう？いまの感じをひとつ教えて。"
+        if topic == "health"
+        else "{who}お金のこと、聞くね。いちばん気になることを教えて。"
+    )
+    line = fill_talk(talk.get(key) or fallback, who)
+    dialogue = f"{recall}{line}" if recall else line
     return _pack_reply(dialogue, {"emotion": "think", "consult_mode": topic})
 
 
@@ -1141,9 +1157,9 @@ def _dialogue_similar(a: str, b: str) -> bool:
 
 
 _REPEAT_NUDGES = (
-    "{who}、うん、聞いてるよ。もう少しだけ詳しく教えてくれる？",
-    "{who}、それってどんな感じだった？よかったら続きを聞かせて。",
-    "{who}、なるほどね。今いちばん気になってるのはどのあたり？",
+    "{who}うん、聞いてるよ。もう少しだけ詳しく教えてくれる？",
+    "{who}それってどんな感じだった？よかったら続きを聞かせて。",
+    "{who}なるほどね。今いちばん気になってるのはどのあたり？",
 )
 
 
@@ -1169,7 +1185,8 @@ def _avoid_repeat_dialogue(user: Dict[str, Any], dialogue: str) -> str:
         # Rotate, so someone who repeats themselves is not deflected with the
         # very same sentence each time.
         user["repeat_nudge_i"] = (n + 1) % len(_REPEAT_NUDGES)
-        text = _REPEAT_NUDGES[n % len(_REPEAT_NUDGES)].format(who=_honorific(user))
+        who = _honorific(user)
+        text = _REPEAT_NUDGES[n % len(_REPEAT_NUDGES)].format(who=f"{who}、" if who else "")
     if text:
         user["recent_companion_lines"] = (recent + [text[:200]])[-RECENT_LINE_MEMORY:]
     return text

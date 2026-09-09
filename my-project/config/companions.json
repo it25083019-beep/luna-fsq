@@ -1,5 +1,5 @@
 {
-  "version": "1.1",
+  "version": "1.2",
   "default_id": "luna",
   "companions": [
     {
@@ -10,13 +10,20 @@
       "tag_ja": "案内役",
       "prefix": "luna",
       "base": "/static/live2d/luna-expressions",
+      "persona_ja": "30歳前後の女性教師。短く丁寧。長く説明しない。",
       "voice": {
         "gemini_name": "Gacrux",
-        "style_ja": "30歳前後の女性教師。落ち着いて丁寧で温かく、少し指導的。早口にせず、はっきりと話す",
+        "style_ja": "30歳前後の女性教師。落ち着いて丁寧。早口にせず、はっきりと話す。先生の声であり、動物や子供の声にはしない",
         "browser_rate": 0.96,
         "browser_pitch": 0.92,
         "browser_prefer": ["Nanami", "Haruka", "Kyoko"],
         "sample_ja": "こんにちは。今日も一緒に、落ち着いて進めていきましょう。"
+      },
+      "talk": {
+        "hello": "こんにちは。ルナです。",
+        "greeting": "{who}おかえり。今日の調子はどう？",
+        "consult_health": "{who}体調はどう？いまの感じをひとつ教えて。",
+        "consult_money": "{who}お金のこと、聞くね。いちばん気になることを教えて。"
       }
     },
     {
@@ -27,13 +34,20 @@
       "tag_ja": "夜の海",
       "prefix": "luno",
       "base": "/static/live2d/luno-expressions",
+      "persona_ja": "若くて可愛い女の子。短く、親しみやすい。",
       "voice": {
         "gemini_name": "Leda",
-        "style_ja": "10代後半から20代前半の可愛い女の子。明るく少し高い声で、親しみやすくはしゃいだ感じ",
-        "browser_rate": 1.12,
-        "browser_pitch": 1.38,
+        "style_ja": "10代後半の可愛い女の子。高く明るい声。はしゃぎ気味。大人の先生の声にはしない",
+        "browser_rate": 1.14,
+        "browser_pitch": 1.45,
         "browser_prefer": ["Nanami", "Kyoko", "Haruka"],
         "sample_ja": "えへへ、わたしルノだよ。きょうもがんばろー！"
+      },
+      "talk": {
+        "hello": "えへへ、ルノだよ。",
+        "greeting": "{who}おかえり！ルノだよ。",
+        "consult_health": "{who}からだ、だいじょうぶ？ひとこと教えて〜。",
+        "consult_money": "{who}お金のこと？短くでいいよ。"
       }
     },
     {
@@ -44,13 +58,20 @@
       "tag_ja": "先輩",
       "prefix": "ren",
       "base": "/static/live2d/ren-expressions",
+      "persona_ja": "落ち着いた男性の先輩。短く、低く温かい。",
       "voice": {
         "gemini_name": "Charon",
-        "style_ja": "30代の男性。低くて温かい声。落ち着いていて頼りがいがあり、優しく励ます",
+        "style_ja": "30代の男性。低くて温かい声。女性の声には絶対にしない",
         "browser_rate": 0.88,
         "browser_pitch": 0.42,
         "browser_prefer": ["Ichiro", "Keita", "Daichi", "Hayato"],
         "sample_ja": "お疲れ。無理しすぎないようにな。今日も俺がついてる。"
+      },
+      "talk": {
+        "hello": "お疲れ。レンだ。",
+        "greeting": "{who}おかえり。無理するなよ。",
+        "consult_health": "{who}体調はどうだ。いまの感じ、教えてくれ。",
+        "consult_money": "{who}金の話か。要点だけでいい。"
       }
     },
     {
@@ -61,13 +82,20 @@
       "tag_ja": "いぬ",
       "prefix": "hachi",
       "base": "/static/live2d/hachi-expressions",
+      "persona_ja": "元気な犬。わんっと短く。人間の先生の話し方は禁止。",
       "voice": {
-        "gemini_name": "Puck",
-        "style_ja": "元気ないぬ。明るく短めに、しっぽを振るような可愛い声。わんっとした元気さ",
-        "browser_rate": 1.18,
-        "browser_pitch": 1.28,
+        "gemini_name": "Fenrir",
+        "style_ja": "元気ないぬの声。高く弾む。語尾は短い。わんっと混ぜる。大人の女性教師のナレーションには絶対にしない。犬らしく可愛く",
+        "browser_rate": 1.24,
+        "browser_pitch": 1.72,
         "browser_prefer": ["Nanami", "Kyoko"],
-        "sample_ja": "わんっ！一緒にいこう。きょうもおさんぽだよ！"
+        "sample_ja": "わんっ！ハチだよ。おさんぽいこー！"
+      },
+      "talk": {
+        "hello": "わんっ！ハチだよ。",
+        "greeting": "{who}おかえり！わんっ。",
+        "consult_health": "{who}わんっ、げんき？いまの調子だけ教えて。",
+        "consult_money": "{who}わんっ、お金のこと？ひとこと聞かせて。"
       }
     },
     {
@@ -78,13 +106,20 @@
       "tag_ja": "ねこ",
       "prefix": "momo",
       "base": "/static/live2d/momo-expressions",
+      "persona_ja": "おっとりした猫。にゃあと短く。急がない。",
       "voice": {
-        "gemini_name": "Aoede",
-        "style_ja": "おっとりしたねこ。少し鼻にかかった可愛い声。ゆっくり、にゃあと甘える感じ",
-        "browser_rate": 1.02,
-        "browser_pitch": 1.42,
-        "browser_prefer": ["Nanami", "Kyoko"],
-        "sample_ja": "にゃあ。急がなくていいよ。こっちでまるまって待ってる。"
+        "gemini_name": "Enceladus",
+        "style_ja": "ねこの声。鼻にかかって高く、ゆっくり甘える。にゃあ、を混ぜる。人間の先生の声には絶対にしない。猫らしく可愛く",
+        "browser_rate": 0.86,
+        "browser_pitch": 1.82,
+        "browser_prefer": ["Kyoko", "Nanami"],
+        "sample_ja": "にゃあ…モモだよ。急がなくていい。"
+      },
+      "talk": {
+        "hello": "にゃあ。モモだよ。",
+        "greeting": "{who}おかえり。にゃあ。",
+        "consult_health": "{who}にゃあ、からだ大丈夫？短くでいいよ。",
+        "consult_money": "{who}にゃあ、お金？ひとこと聞かせて。"
       }
     },
     {
@@ -95,13 +130,20 @@
       "tag_ja": "パンダ",
       "prefix": "taro",
       "base": "/static/live2d/taro-expressions",
+      "persona_ja": "おっとりパンダ。ゆっくり、もぐもぐ。長くしゃべらない。",
       "voice": {
-        "gemini_name": "Autonoe",
-        "style_ja": "おっとりしたパンダ。低くやわらかく、ゆっくりした可愛い声。もぐもぐした穏やかさ",
-        "browser_rate": 0.86,
-        "browser_pitch": 0.78,
-        "browser_prefer": ["Haruka", "Nanami"],
-        "sample_ja": "もぐもぐ…いっしょに、ゆっくり休もう。"
+        "gemini_name": "Umbriel",
+        "style_ja": "パンダの声。低くてゆっくり、丸く柔らかい。もぐもぐした間を置く。高い女の先生の声には絶対にしない。大きくて優しい動物",
+        "browser_rate": 0.68,
+        "browser_pitch": 0.22,
+        "browser_prefer": ["Ichiro", "Haruka", "Nanami"],
+        "sample_ja": "もぐもぐ…タロだよ。いっしょに、やすもう。"
+      },
+      "talk": {
+        "hello": "もぐもぐ…タロだよ。",
+        "greeting": "{who}おかえり。ゆっくりして。",
+        "consult_health": "{who}もぐ…体調、どう？ひとことでいいよ。",
+        "consult_money": "{who}お金のこと…ゆっくりでいいよ。"
       }
     },
     {
@@ -112,13 +154,20 @@
       "tag_ja": "タヌキ",
       "prefix": "ponta",
       "base": "/static/live2d/ponta-expressions",
+      "persona_ja": "いたずら好きのタヌキ。ぽんっと短く明るい。",
       "voice": {
-        "gemini_name": "Laomedeia",
-        "style_ja": "いたずら好きのタヌキ。弾むような可愛い声。ぽんっと明るい",
-        "browser_rate": 1.16,
-        "browser_pitch": 1.18,
-        "browser_prefer": ["Nanami", "Kyoko"],
-        "sample_ja": "ぽんっ！まかせて〜。いっしょに遊ぼう！"
+        "gemini_name": "Puck",
+        "style_ja": "タヌキの声。弾んで高く、いたずらっぽい。ぽんっと混ぜる。真面目な教師ナレーションにはしない。妖精みたいに軽く可愛く",
+        "browser_rate": 1.22,
+        "browser_pitch": 1.58,
+        "browser_prefer": ["Kyoko", "Nanami"],
+        "sample_ja": "ぽんっ！ポンタだよ。遊ぼう〜！"
+      },
+      "talk": {
+        "hello": "ぽんっ！ポンタだよ。",
+        "greeting": "{who}おかえり！ぽんっ。",
+        "consult_health": "{who}ぽんっ、元気？いまの感じ教えて〜。",
+        "consult_money": "{who}ぽんっ、お金の話？ひとことでいいよ。"
       }
     }
   ]

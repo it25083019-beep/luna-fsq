@@ -127,6 +127,7 @@ def safe_merge_for_save(existing: Dict[str, Any], incoming: Dict[str, Any]) -> D
         "user_display_name",
         "companion_name",
         "companion_id",
+        "ui_theme",
         "current_focus",
         "current_plan",
         "current_do_now",

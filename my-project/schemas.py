@@ -85,6 +85,11 @@ class SetCompanionSpriteRequest(BaseModel):
     companion_id: str
 
 
+class AppearancePrefsRequest(BaseModel):
+    theme_id: Optional[str] = None
+    companion_id: Optional[str] = None
+
+
 class ChatResponse(BaseModel):
     dialogue: str
     game_state: Dict[str, Any]

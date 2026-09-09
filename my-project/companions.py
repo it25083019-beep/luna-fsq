@@ -47,5 +47,11 @@ def get_companion(companion_id: Optional[str]) -> Dict[str, Any]:
     return by_id.get(wanted) or by_id["luna"]
 
 
+def fill_talk(template: Optional[str], who: str) -> str:
+    """Replace {who} with 'Nameさん、' or empty — never 'お客様様'."""
+    prefix = f"{who}、" if (who or "").strip() else ""
+    return (template or "").replace("{who}", prefix)
+
+
 def normalize_companion_id(companion_id: Optional[str]) -> str:
     return get_companion(companion_id)["id"]

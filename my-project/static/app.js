@@ -247,6 +247,7 @@
     selectedCompanionId = row.id;
     localStorage.setItem("companion_id", row.id);
     stateData.companion_id = row.id;
+    stateData.companion_name = row.label_ja || row.label_en || row.id;
     if (luna && luna.setCompanion) luna.setCompanion(row);
     const sprite = document.getElementById("lunaSprite");
     if (sprite && row.preview) sprite.src = row.preview;
@@ -2481,6 +2482,21 @@
     "欲しいものがある",
   ];
 
+  function whoPrefix() {
+    let n = String((stateData && stateData.user_display_name) || "").trim();
+    n = n.replace(/(様|さん|くん|君|ちゃん)$/g, "").trim();
+    if (!n || n === "お客様" || n === "お客さま" || n === "お客") return "";
+    const row = companionById(selectedCompanionId) || {};
+    const suf = row.kind === "animal" ? "ちゃん" : "さん";
+    return n + suf + "、";
+  }
+
+  function talkLine(key, fallback) {
+    const row = companionById(selectedCompanionId) || {};
+    const tpl = (row.talk && row.talk[key]) || fallback || "";
+    return String(tpl).replace(/\{who\}/g, whoPrefix());
+  }
+
   async function runConsult(kind, message) {
     unlockAudio();
     setErr("");
@@ -2488,8 +2504,8 @@
     switchTab("luna");
     const instant =
       kind === "health"
-        ? "体調のこと？ うん、聞いてるよ。いまどんな感じか教えてね。"
-        : "お金のこと、気になってるんだね。いまいちばん気になることを教えて。";
+        ? talkLine("consult_health", "体調はどう？いまの感じをひとつ教えて。")
+        : talkLine("consult_money", "お金のこと、聞くね。いちばん気になることを教えて。");
     const dialogueEl = document.getElementById("dialogue");
     if (dialogueEl) dialogueEl.textContent = instant;
     try {
@@ -2499,8 +2515,8 @@
     if (!ok) {
       const soft =
         kind === "health"
-          ? "体調のこと？ うん、聞いてるよ。いまどんな感じか、思ったことをそのまま教えてね。一緒に整理するし、メモも残しておくよ。"
-          : "お金のこと、気になってるんだね。いまいちばん心に引っかかってることを教えて。話しながら一緒に整理していこう。";
+          ? talkLine("consult_health", "体調はどう？いまの感じをひとつ教えて。")
+          : talkLine("consult_money", "お金のこと、聞くね。いちばん気になることを教えて。");
       const dialogueEl = document.getElementById("dialogue");
       if (dialogueEl) dialogueEl.textContent = soft;
       setErr("");
@@ -2586,7 +2602,7 @@
     const cur = (dialogueEl && dialogueEl.textContent) || "";
     if (!dialogueEl) return;
     if (cur && cur !== "…" && cur !== "...") return;
-    dialogueEl.textContent = "こんにちは。LUNAです。今日も一緒にがんばろうね。";
+    dialogueEl.textContent = talkLine("hello", "こんにちは。");
     renderChips(DEFAULT_CHIPS);
     try {
       if (luna) luna.reactToText(dialogueEl.textContent, { greeting: true, fallback: "happy", force: true });
@@ -2679,6 +2695,10 @@
         b.onclick = () => {
           LunaTheme.applyTheme(t.id);
           renderThemePicker();
+          api("/prefs/appearance", {
+            method: "POST",
+            body: JSON.stringify({ theme_id: t.id }),
+          }).catch(() => {});
         };
         grid.appendChild(b);
       });
@@ -4125,12 +4145,16 @@
       stateData = {
         level: state.current_level || rpg.level || 1,
         total_exp: state.total_exp || rpg.total_exp || 0,
-        companion_name: state.companion_name,
-        user_display_name: state.user_display_name,
-        companion_id: brain.companion_id || state.companion_id || selectedCompanionId || "luna",
+        companion_name: brain.companion_name || state.companion_name,
+        user_display_name: brain.user_display_name || state.user_display_name,
+        companion_id: brain.companion_id || state.companion_id || "luna",
       };
-      if (stateData.companion_id && stateData.companion_id !== selectedCompanionId && companionCatalog.length) {
-        applyCompanionVisual(companionById(stateData.companion_id));
+      if (companionCatalog.length) {
+        applyCompanionVisual(companionById(stateData.companion_id) || companionCatalog[0]);
+      }
+      if (brain.ui_theme && window.LunaTheme) {
+        LunaTheme.applyTheme(brain.ui_theme);
+        renderThemePicker();
       }
       rpgData = rpg.rpg || {};
       regions = rpg.regions || [];

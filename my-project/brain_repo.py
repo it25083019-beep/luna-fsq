@@ -37,6 +37,8 @@ def default_user_brain(user_id: str) -> Dict[str, Any]:
         "daily_exp": 0,
         "streak": 0,
         "companion_name": None,
+        "companion_id": "luna",
+        "ui_theme": "lilac",
         "user_display_name": None,
         "current_focus": None,
         "current_plan": None,
@@ -149,8 +151,13 @@ def load_user_brain(public_id: str, db: Optional[Session] = None) -> Dict[str, A
             cleaned = sanitize_display_name(data.get("user_display_name"))
             if cleaned:
                 data["user_display_name"] = cleaned
+            elif user.display_name:
+                from_account = sanitize_display_name(user.display_name)
+                if from_account:
+                    data["user_display_name"] = from_account
         except Exception:
-            pass
+            if not data.get("user_display_name") and getattr(user, "display_name", None):
+                data["user_display_name"] = user.display_name
         return data
     finally:
         if own:
