@@ -68,6 +68,7 @@ from schemas import (
     RegisterRequest,
     ResetPasswordRequest,
     SetCompanionNameRequest,
+    SetCompanionSpriteRequest,
     TokenResponse,
     CareerSuggestRequest,
     CareerSelectRequest,
@@ -125,6 +126,7 @@ from rpg_engine import (
     load_world,
     start_quest,
 )
+from companions import get_companion, list_companions, normalize_companion_id
 from store import get_user_state, save_user_state
 from exp_engine import add_exp
 from tts_service import synthesize_speech
@@ -433,6 +435,23 @@ def get_state(user_id: str, current: User = Depends(get_current_user)):
 def brain_status(user_id: str, current: User = Depends(get_current_user)):
     uid = _resolve_user_id(user_id, current)
     return get_brain_status(uid)
+
+
+@app.get("/companions")
+def companions_catalog():
+    return {"ok": True, "companions": list_companions()}
+
+
+@app.post("/companion/sprite")
+def set_companion_sprite(
+    req: SetCompanionSpriteRequest,
+    current: User = Depends(get_current_user),
+):
+    cid = normalize_companion_id(req.companion_id)
+    state = load_user_brain(current.public_id)
+    state["companion_id"] = cid
+    save_user_brain(current.public_id, state)
+    return {"ok": True, "companion": get_companion(cid), "companion_id": cid}
 
 
 @app.post("/user/set-name")

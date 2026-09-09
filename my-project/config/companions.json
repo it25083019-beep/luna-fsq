@@ -1,0 +1,69 @@
+{
+  "version": "1.0",
+  "default_id": "luna",
+  "companions": [
+    {
+      "id": "luna",
+      "label_ja": "ルナ",
+      "label_en": "LUNA",
+      "kind": "human",
+      "tag_ja": "案内役",
+      "prefix": "luna",
+      "base": "/static/live2d/luna-expressions"
+    },
+    {
+      "id": "luno",
+      "label_ja": "ルノ",
+      "label_en": "LUNO",
+      "kind": "human",
+      "tag_ja": "夜の海",
+      "prefix": "luno",
+      "base": "/static/live2d/luno-expressions"
+    },
+    {
+      "id": "ren",
+      "label_ja": "レン",
+      "label_en": "REN",
+      "kind": "human",
+      "tag_ja": "先輩",
+      "prefix": "ren",
+      "base": "/static/live2d/ren-expressions"
+    },
+    {
+      "id": "hachi",
+      "label_ja": "ハチ",
+      "label_en": "HACHI",
+      "kind": "animal",
+      "tag_ja": "いぬ",
+      "prefix": "hachi",
+      "base": "/static/live2d/hachi-expressions"
+    },
+    {
+      "id": "momo",
+      "label_ja": "モモ",
+      "label_en": "MOMO",
+      "kind": "animal",
+      "tag_ja": "ねこ",
+      "prefix": "momo",
+      "base": "/static/live2d/momo-expressions"
+    },
+    {
+      "id": "taro",
+      "label_ja": "タロ",
+      "label_en": "TARO",
+      "kind": "animal",
+      "tag_ja": "パンダ",
+      "prefix": "taro",
+      "base": "/static/live2d/taro-expressions"
+    },
+    {
+      "id": "ponta",
+      "label_ja": "ポンタ",
+      "label_en": "PONTA",
+      "kind": "animal",
+      "tag_ja": "タヌキ",
+      "prefix": "ponta",
+      "base": "/static/live2d/ponta-expressions"
+    }
+  ]
+}

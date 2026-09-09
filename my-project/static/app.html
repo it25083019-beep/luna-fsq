@@ -1020,6 +1020,14 @@
     .home-hero{display:grid;grid-template-columns:minmax(128px,38%) 1fr;gap:.7rem;padding:0 1rem .55rem;align-items:end}
     .home-hero-luna{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%}
     .home-hero-luna #lunaSprite{height:min(42vw,200px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 10px 20px rgba(120,90,180,.2));background:transparent}
+    .companion-strip{display:flex;gap:.4rem;overflow-x:auto;padding:.15rem .1rem .35rem;margin:.15rem 0 .2rem;-webkit-overflow-scrolling:touch}
+    .companion-chip{flex:0 0 auto;border:2px solid transparent;background:#fff;border-radius:16px;padding:.25rem .4rem .3rem;cursor:pointer;text-align:center;min-width:58px}
+    .companion-chip img{width:44px;height:44px;object-fit:contain;display:block;margin:0 auto}
+    .companion-chip span{display:block;font-size:.58rem;font-weight:800;color:#5a4a78;margin-top:.1rem}
+    .companion-chip em{display:block;font-style:normal;font-size:.5rem;color:#8a7aa8}
+    .companion-chip.active{border-color:#9b7ed9;box-shadow:0 0 0 2px rgba(155,126,217,.25)}
+    .companion-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem;margin:.55rem 0 .75rem}
+    .companion-grid .companion-chip{min-width:0;width:100%}
     .bubble.compact{margin:0;min-height:auto;font-size:.82rem;line-height:1.55}
     .bubble.compact::before{left:12%;top:-7px}
     .status-head{display:flex;justify-content:space-between;padding:0 1rem .45rem;font-size:.82rem;font-weight:700;color:var(--lilac-deep)}
@@ -1274,7 +1282,8 @@
             <div class="home-hero-luna luna-stage" id="lunaStage">
               <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
             </div>
-            <div class="bubble compact"><span class="who">LUNA</span><div id="dialogue">…</div></div>
+            <div class="companion-strip" id="homeCompanionStrip" aria-label="コンパニオン選択"></div>
+            <div class="bubble compact"><span class="who" id="companionWho">LUNA</span><div id="dialogue">…</div></div>
           </div>
           <div class="status-head"><span>今日のステータス</span><span id="homeDate">—</span></div>
           <div id="mentalRemindBanner" class="home-banner" role="status">
@@ -1316,6 +1325,9 @@
           <h3>一般設定</h3>
           <p class="hint">色テーマはログイン画面にも反映されます。</p>
           <div class="theme-grid" id="themeGrid"></div>
+          <h3 style="margin-top:1rem">コンパニオン</h3>
+          <p class="hint">見た目を選べます。まばたき・口パク・ジェスチャーは全員同じです。</p>
+          <div class="companion-grid" id="settingsCompanionGrid"></div>
           <div class="settings-actions"><button type="button" id="settingsBack">戻る</button></div>
         </div>
       </section>
@@ -1871,6 +1883,7 @@
           <button type="button" data-open="goals">🎯 目標</button>
           <button type="button" data-open="history">💬 会話の履歴</button>
           <button type="button" id="menuThemeBtn">🎨 テーマ設定</button>
+          <button type="button" id="menuCompanionBtn">🐾 コンパニオンを選ぶ</button>
           <button type="button" id="morningBtn">🌅 朝チェックイン</button>
           <button type="button" id="eveningBtn">🌙 夜チェックイン</button>
           <button type="button" id="adminLink" class="hidden" onclick="location.href='/admin'">🔧 管理画面</button>
@@ -1918,9 +1931,9 @@
     </div>
   </div>
   <script src="/static/auth-common.js"></script>
-  <script src="/static/live2d/luna-avatar.js"></script>
+  <script src="/static/live2d/luna-avatar.js?v=20260909a"></script>
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
-  <script src="/static/app.js?v=20260903c"></script>
+  <script src="/static/app.js?v=20260909a"></script>
 </body>
 </html>

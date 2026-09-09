@@ -54,7 +54,9 @@
   let voicesReady = false;
   let currentTab = "luna";
   let currentModule = "health";
-  let stateData = { level: 1, total_exp: 0, companion_name: null, user_display_name: null };
+  let stateData = { level: 1, total_exp: 0, companion_name: null, user_display_name: null, companion_id: "luna" };
+  let companionCatalog = [];
+  let selectedCompanionId = localStorage.getItem("companion_id") || "luna";
   let rpgData = { class_id: null, region_id: "tutorial_plains", active_quests: [] };
   let regions = [];
   let classLabels = {};
@@ -231,6 +233,90 @@
 
   function setNavActive(name) {
     document.querySelectorAll(".nav-item").forEach((n) => n.classList.toggle("active", n.dataset.nav === name));
+  }
+
+  function companionById(id) {
+    return companionCatalog.find((c) => c.id === id) || companionCatalog[0] || null;
+  }
+
+  function applyCompanionVisual(row) {
+    if (!row) return;
+    selectedCompanionId = row.id;
+    localStorage.setItem("companion_id", row.id);
+    stateData.companion_id = row.id;
+    if (luna && luna.setCompanion) luna.setCompanion(row);
+    const sprite = document.getElementById("lunaSprite");
+    if (sprite && row.preview) sprite.src = row.preview;
+    const who = document.getElementById("companionWho");
+    if (who) who.textContent = row.label_en || row.label_ja || "LUNA";
+    document.querySelectorAll(".nav-luna").forEach((img) => {
+      img.src = row.preview || img.src;
+      img.alt = row.label_en || row.label_ja || "LUNA";
+    });
+    const msg = document.getElementById("message");
+    if (msg) msg.placeholder = (row.label_ja || "LUNA") + "に話しかけて…";
+    document.querySelectorAll(".companion-chip").forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-cid") === row.id);
+    });
+  }
+
+  function renderCompanionPickers() {
+    const paint = (el) => {
+      if (!el) return;
+      el.innerHTML = companionCatalog
+        .map((c) => {
+          const active = c.id === selectedCompanionId ? " active" : "";
+          return (
+            '<button type="button" class="companion-chip' +
+            active +
+            '" data-cid="' +
+            c.id +
+            '"><img src="' +
+            (c.preview || "") +
+            '" alt=""><span>' +
+            (c.label_ja || c.id) +
+            "</span><em>" +
+            (c.tag_ja || "") +
+            "</em></button>"
+          );
+        })
+        .join("");
+      el.querySelectorAll(".companion-chip").forEach((btn) => {
+        btn.onclick = () => selectCompanion(btn.getAttribute("data-cid"));
+      });
+    };
+    paint(document.getElementById("homeCompanionStrip"));
+    paint(document.getElementById("settingsCompanionGrid"));
+  }
+
+  async function loadCompanions() {
+    try {
+      const res = await api("/companions");
+      companionCatalog = res.companions || [];
+    } catch (_) {
+      companionCatalog = [
+        {
+          id: "luna",
+          label_ja: "ルナ",
+          label_en: "LUNA",
+          prefix: "luna",
+          base: "/static/live2d/luna-expressions",
+          preview: "/static/live2d/luna-expressions/luna-neutral.png",
+        },
+      ];
+    }
+    renderCompanionPickers();
+    applyCompanionVisual(companionById(selectedCompanionId) || companionCatalog[0]);
+  }
+
+  async function selectCompanion(id) {
+    const row = companionById(id);
+    if (!row) return;
+    applyCompanionVisual(row);
+    if (luna && luna.applyEmotion) luna.applyEmotion("wave", 1800);
+    try {
+      await api("/companion/sprite", { method: "POST", body: JSON.stringify({ companion_id: row.id }) });
+    } catch (_) {}
   }
 
   function setLunaView(view) {
@@ -3563,6 +3649,7 @@
     });
     document.getElementById("settingsBtn").onclick = () => {
       renderThemePicker();
+      renderCompanionPickers();
       setLunaView("settings");
     };
     document.getElementById("settingsBack").onclick = () => setLunaView("main");
@@ -3573,6 +3660,16 @@
         const open = menuSettings.style.display !== "block";
         menuSettings.style.display = open ? "block" : "none";
         if (open) renderThemePicker();
+      };
+    }
+    const menuCompanionBtn = document.getElementById("menuCompanionBtn");
+    if (menuCompanionBtn) {
+      menuCompanionBtn.onclick = () => {
+        switchTab("luna");
+        setLunaView("settings");
+        renderCompanionPickers();
+        const grid = document.getElementById("settingsCompanionGrid");
+        if (grid) grid.scrollIntoView({ behavior: "smooth", block: "center" });
       };
     }
     document.getElementById("toggleAddBtn").onclick = () => {
@@ -3765,7 +3862,11 @@
         total_exp: state.total_exp || rpg.total_exp || 0,
         companion_name: state.companion_name,
         user_display_name: state.user_display_name,
+        companion_id: brain.companion_id || state.companion_id || selectedCompanionId || "luna",
       };
+      if (stateData.companion_id && stateData.companion_id !== selectedCompanionId && companionCatalog.length) {
+        applyCompanionVisual(companionById(stateData.companion_id));
+      }
       rpgData = rpg.rpg || {};
       regions = rpg.regions || [];
       window._careerClusters = tax.career_clusters || [];
@@ -3803,6 +3904,7 @@
       const me = await api("/auth/me");
       if (me.is_admin) document.getElementById("adminLink").classList.remove("hidden");
       luna = new LunaAvatar(document.getElementById("lunaSprite"), null, document.getElementById("lunaStage"));
+      await loadCompanions();
       // Speak-first: greet immediately, refresh other panels in parallel.
       showLocalGreeting();
       const greetP = startChat();

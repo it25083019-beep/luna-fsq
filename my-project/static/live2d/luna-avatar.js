@@ -1,8 +1,14 @@
 /**
- * LUNA 2D avatar — expression / idle / tap / lip-sync / thinking
+ * Companion 2D avatar — expression / idle / tap / lip-sync / thinking
+ * Same gesture API for LUNA and every switchable companion.
  */
 (function (global) {
-  const BASE = "/static/live2d/luna-expressions";
+  const DEFAULT_COMPANION = {
+    id: "luna",
+    label_ja: "ルナ",
+    prefix: "luna",
+    base: "/static/live2d/luna-expressions",
+  };
 
   const EMOTION_MAP = {
     neutral: "neutral",
@@ -17,24 +23,24 @@
     wave: "wave",
   };
 
-  const EXPRESSIONS = {
-    neutral: `${BASE}/luna-neutral.png`,
-    happy: `${BASE}/luna-happy.png`,
-    sad: `${BASE}/luna-sad.png`,
-    surprised: `${BASE}/luna-surprised.png`,
-    talk: `${BASE}/luna-talk.png`,
-    blink: `${BASE}/luna-blink.png`,
-    wave: `${BASE}/luna-wave.png`,
-    cheer: `${BASE}/luna-cheer.png`,
-    think: `${BASE}/luna-think.png`,
-  };
-
+  const EXPR_KEYS = ["neutral", "happy", "sad", "surprised", "talk", "blink", "wave", "cheer", "think"];
   const TAP_MOTIONS = ["happy", "cheer", "wave", "surprised"];
+
+  function expressionsFor(companion) {
+    const row = companion || DEFAULT_COMPANION;
+    const prefix = row.prefix || row.id || "luna";
+    const base = String(row.base || `/static/live2d/${prefix}-expressions`).replace(/\/$/, "");
+    const out = {};
+    EXPR_KEYS.forEach((name) => {
+      out[name] = `${base}/${prefix}-${name}.png`;
+    });
+    return out;
+  }
 
   function mapEmotion(emotion) {
     if (!emotion) return "neutral";
     const k = String(emotion).toLowerCase().trim();
-    return EMOTION_MAP[k] || (EXPRESSIONS[k] ? k : "neutral");
+    return EMOTION_MAP[k] || (EXPR_KEYS.indexOf(k) >= 0 ? k : "neutral");
   }
 
   function detectExpression(text, opts = {}) {
@@ -63,12 +69,15 @@
     /**
      * @param {HTMLImageElement} imgEl
      * @param {HTMLElement|null} statusEl
-     * @param {HTMLElement|null} stageEl — wrapper for CSS idle/tap motion
+     * @param {HTMLElement|null} stageEl
+     * @param {object|null} companion
      */
-    constructor(imgEl, statusEl, stageEl) {
+    constructor(imgEl, statusEl, stageEl, companion) {
       this.img = imgEl;
       this.statusEl = statusEl || null;
       this.stage = stageEl || (imgEl && imgEl.parentElement) || null;
+      this.companion = companion || DEFAULT_COMPANION;
+      this.expressions = expressionsFor(this.companion);
       this.current = "neutral";
       this.blinkTimer = null;
       this.lipTimer = null;
@@ -88,8 +97,16 @@
       }
     }
 
+    setCompanion(companion) {
+      if (!companion || !companion.id) return;
+      this.companion = companion;
+      this.expressions = expressionsFor(companion);
+      this._preload();
+      this.setExpression(this.current || "neutral");
+    }
+
     _preload() {
-      Object.values(EXPRESSIONS).forEach((src) => {
+      Object.values(this.expressions).forEach((src) => {
         const img = new Image();
         img.src = src;
       });
@@ -114,11 +131,12 @@
     }
 
     setExpression(name, holdMs = 0) {
-      const key = EXPRESSIONS[name] ? name : mapEmotion(name);
-      this.current = EXPRESSIONS[key] ? key : "neutral";
+      const key = this.expressions[name] ? name : mapEmotion(name);
+      this.current = this.expressions[key] ? key : "neutral";
       if (this.img) {
-        this.img.src = EXPRESSIONS[this.current];
-        this.img.alt = `LUNA — ${this.current}`;
+        this.img.src = this.expressions[this.current];
+        const label = (this.companion && (this.companion.label_en || this.companion.label_ja)) || "LUNA";
+        this.img.alt = `${label} — ${this.current}`;
         this.img.classList.remove("luna-fade");
         void this.img.offsetWidth;
         this.img.classList.add("luna-fade");
@@ -147,7 +165,6 @@
       this.setExpression(name, holdMs);
     }
 
-    /** Keep think pose until stopThinking() — while waiting for chat reply. */
     startThinking() {
       this.thinking = true;
       this.speaking = false;
@@ -269,13 +286,14 @@
     }
 
     async init() {
-      this._setStatus("LUNA 2D — emotionMap / idle / tap / lip-sync");
+      this._setStatus("companion 2D — emotionMap / idle / tap / lip-sync");
       return true;
     }
   }
 
   global.LunaAvatar = LunaAvatar;
-  global.LunaExpressions = Object.keys(EXPRESSIONS);
+  global.LunaExpressions = EXPR_KEYS.slice();
   global.LunaEmotionMap = EMOTION_MAP;
   global.detectLunaExpression = detectExpression;
+  global.companionExpressions = expressionsFor;
 })(window);

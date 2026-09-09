@@ -76,6 +76,10 @@ class SetCompanionNameRequest(BaseModel):
     user_display_name: Optional[str] = None
 
 
+class SetCompanionSpriteRequest(BaseModel):
+    companion_id: str
+
+
 class ChatResponse(BaseModel):
     dialogue: str
     game_state: Dict[str, Any]
