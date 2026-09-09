@@ -32,7 +32,7 @@
     const base = String(row.base || `/static/live2d/${prefix}-expressions`).replace(/\/$/, "");
     const out = {};
     EXPR_KEYS.forEach((name) => {
-      out[name] = `${base}/${prefix}-${name}.png`;
+      out[name] = `${base}/${prefix}-${name}.png?v=20260909h`;
     });
     return out;
   }
