@@ -57,6 +57,7 @@
   let stateData = { level: 1, total_exp: 0, companion_name: null, user_display_name: null, companion_id: "luna" };
   let companionCatalog = [];
   let selectedCompanionId = localStorage.getItem("companion_id") || "luna";
+  let companionSavePending = false;
   let notifyOn = localStorage.getItem("luna_notify") === "1";
   let reminderTimers = [];
   let lastReminders = null;
@@ -340,16 +341,34 @@
     applyCompanionVisual(companionById(selectedCompanionId) || companionCatalog[0]);
   }
 
+  function paintCompanionHello(row) {
+    const dialogueEl = document.getElementById("dialogue");
+    if (!dialogueEl) return "";
+    const who = whoPrefix();
+    const tpl =
+      (row && row.talk && row.talk.hello) ||
+      ((row && row.label_ja) || "ルナ") + "だよ。";
+    let line = String(tpl).replace(/\{who\}/g, who);
+    if (who && line.indexOf(who) < 0) line = who + line;
+    dialogueEl.textContent = line;
+    try {
+      if (luna) luna.reactToText(line, { greeting: true, fallback: "wave", force: true });
+    } catch (_) {}
+    return line;
+  }
+
   async function selectCompanion(id) {
     const row = companionById(id);
     if (!row) return;
+    companionSavePending = true;
     applyCompanionVisual(row);
     if (luna && luna.applyEmotion) luna.applyEmotion("wave", 1800);
+    const line = paintCompanionHello(row);
+    speakJa(line).catch(() => {});
     try {
       await api("/companion/sprite", { method: "POST", body: JSON.stringify({ companion_id: row.id }) });
     } catch (_) {}
-    const sample = (row.voice && row.voice.sample_ja) || (row.label_ja || "") + "だよ。よろしくね。";
-    speakJa(sample).catch(() => {});
+    companionSavePending = false;
   }
 
   function setLunaView(view) {
@@ -4165,9 +4184,11 @@
         total_exp: state.total_exp || rpg.total_exp || 0,
         companion_name: brain.companion_name || state.companion_name,
         user_display_name: brain.user_display_name || state.user_display_name,
-        companion_id: brain.companion_id || state.companion_id || "luna",
+        companion_id: companionSavePending
+          ? selectedCompanionId
+          : brain.companion_id || state.companion_id || selectedCompanionId || "luna",
       };
-      if (companionCatalog.length) {
+      if (companionCatalog.length && !companionSavePending) {
         applyCompanionVisual(companionById(stateData.companion_id) || companionCatalog[0]);
       }
       if (brain.ui_theme && window.LunaTheme) {
