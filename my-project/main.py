@@ -51,6 +51,7 @@ from schedule_service import (
     extend_recurring_horizons,
     home_summary,
     list_events,
+    prune_noise_events,
     suggest_combined,
     update_event,
 )
@@ -96,6 +97,7 @@ from schemas import (
     TtsSpeakRequest,
     ReminderPrefsRequest,
     ReminderCheckinRequest,
+    PushSubscribeRequest,
     MailImportRequest,
     MailGoogleSetupRequest,
     MailGoogleBrowserToken,
@@ -847,7 +849,10 @@ def life_module_append(
 def get_home_summary(current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
     result = home_summary(brain)
-    if brain.pop("_schedule_dirty", False) or result.get("health", {}).get("mental_reminder"):
+    from push_service import flush_due_pushes
+
+    pushed = flush_due_pushes(brain, (result.get("reminders") or {}).get("reminders"))
+    if brain.pop("_schedule_dirty", False) or result.get("health", {}).get("mental_reminder") or pushed:
         save_user_brain(current.public_id, brain)
     return result
 
@@ -860,6 +865,10 @@ def reminders_today(current: User = Depends(get_current_user)):
     fit = assess_day_load(brain)
     payload = build_today_reminders(brain, fit=fit)
     payload["enabled"] = bool(brain.get("notify_schedule"))
+    from push_service import flush_due_pushes
+
+    if flush_due_pushes(brain, payload.get("reminders")):
+        save_user_brain(current.public_id, brain)
     return payload
 
 
@@ -875,7 +884,63 @@ def reminders_prefs(req: ReminderPrefsRequest, current: User = Depends(get_curre
     fit = assess_day_load(brain)
     payload = build_today_reminders(brain, fit=fit)
     payload["enabled"] = bool(brain["notify_schedule"])
+    from push_service import flush_due_pushes
+
+    flush_due_pushes(brain, payload.get("reminders"))
+    save_user_brain(current.public_id, brain)
     return payload
+
+
+@app.get("/push/vapid-public")
+def push_vapid_public():
+    from push_service import public_key
+
+    return {"public_key": public_key()}
+
+
+@app.post("/push/subscribe")
+def push_subscribe(req: PushSubscribeRequest, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    from push_service import save_subscription, send_push
+
+    try:
+        save_subscription(brain, {"endpoint": req.endpoint, "keys": req.keys})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    send_push(
+        brain,
+        title="LUNA",
+        body="スマホにも届くようにしたよ。ホーム画面に追加したままにしてね。",
+        id="push-test",
+        url="/app",
+    )
+    save_user_brain(current.public_id, brain)
+    return {"ok": True}
+
+
+@app.get("/cron/reminders")
+def cron_reminders(secret: str = ""):
+    expected = (os.getenv("CRON_SECRET") or "").strip()
+    if expected:
+        if secret != expected:
+            raise HTTPException(status_code=403, detail="forbidden")
+    elif os.getenv("ENV", "dev") == "production":
+        raise HTTPException(status_code=403, detail="forbidden")
+    from brain_repo import list_public_ids
+    from push_service import flush_due_pushes
+
+    sent = 0
+    scanned = 0
+    for public_id in list_public_ids():
+        brain = load_user_brain(public_id)
+        if not brain.get("notify_schedule") or not brain.get("push_subscription"):
+            continue
+        scanned += 1
+        n = flush_due_pushes(brain)
+        if n:
+            save_user_brain(public_id, brain)
+            sent += n
+    return {"ok": True, "scanned": scanned, "sent": sent}
 
 
 @app.post("/reminders/checkin")
@@ -1019,6 +1084,7 @@ def mail_google_callback(
 @app.get("/schedule/events")
 def schedule_list(date: Optional[str] = None, current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
+    prune_noise_events(brain)
     result = list_events(brain, on_date=date)
     # Only persist when cleanup mutated schedule data (avoid lag on every open).
     if brain.pop("_schedule_dirty", False):

@@ -14,7 +14,7 @@ import json
 import os
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -417,5 +417,14 @@ def seed_admin_user() -> bool:
     except Exception:
         session.rollback()
         raise
+    finally:
+        session.close()
+
+
+def list_public_ids() -> List[str]:
+    session = SessionLocal()
+    try:
+        rows = session.query(User.public_id).all()
+        return [str(r[0]) for r in rows if r and r[0]]
     finally:
         session.close()

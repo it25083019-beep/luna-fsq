@@ -114,6 +114,11 @@ class ReminderCheckinRequest(BaseModel):
     lead_minutes: int = Field(default=10, ge=0, le=180)
 
 
+class PushSubscribeRequest(BaseModel):
+    endpoint: str = Field(min_length=8, max_length=2000)
+    keys: Dict[str, Any]
+
+
 class MailImportRequest(BaseModel):
     text: str = Field(min_length=4, max_length=8000)
     subject: Optional[str] = Field(default=None, max_length=200)

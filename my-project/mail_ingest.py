@@ -42,8 +42,19 @@ _TASK_HINT = re.compile(
 _SKIP_HINT = re.compile(
     r"配信停止|unsubscribe|newsletter|広告|セール|promo|キャンペーン|"
     r"no-reply|noreply|メルマガ|領収|receipt|invoice|shipping|delivered|"
-    r"ポイントが|クーポン|お得な情報",
+    r"ポイントが|クーポン|お得な情報|お役立ち情報|ご購読|購読者|"
+    r"クラウドワークス|crowdworks|ES対策|PREP法|キャリアタス|CareerTas|"
+    r"県民所得|赤旗|勘違いしたやつ|スカウト",
     re.I,
+)
+_NOISE_TITLE = re.compile(
+    r"お役立ち情報|県民所得|赤旗|クラウドワークス|crowdworks|"
+    r"ES対策|PREP|キャリアタス|CareerTas|スカウト|"
+    r"勘違いしたやつ|ご購読|ニュースレター|新聞",
+    re.I,
+)
+_LMS_OPAQUE = re.compile(
+    r"^新しい課題[:：]\s*[「『]?[A-Za-z]{1,10}[_-]?\d{6,}[」』]?\s*$"
 )
 _URGENT_HINT = re.compile(
     r"至急|緊急|今日中|本日中|asap|締切|締め切り|deadline|必ず|important|urgent",
@@ -434,21 +445,44 @@ def extract_tasks_from_text(
     loc = parse_location(blob)
     urgency = _urgency_from_when(event_date, event_time, blob, today=today)
     title = _action_title(subject, raw)
-    return [
-        {
-            "title": title,
-            "date": event_date,
-            "time": event_time,
-            "location": loc,
-            "urgency": urgency,
-            "note": None,
-            "source": "email",
-        }
-    ]
+    task = {
+        "title": title,
+        "date": event_date,
+        "time": event_time,
+        "location": loc,
+        "urgency": urgency,
+        "note": None,
+        "source": "email",
+    }
+    if event_looks_like_noise(task) or event_looks_like_noise({"title": subject or "", "note": raw or "", "source": "email"}):
+        return []
+    return [task]
+
+
+def event_looks_like_noise(event: Dict[str, Any]) -> bool:
+    """True for newsletters, ads, political forwards, opaque LMS codes — not real work."""
+    title = re.sub(r"\s+", " ", str(event.get("title") or "")).strip()
+    note = str(event.get("note") or "")
+    blob = title + "\n" + note
+    if not title:
+        return True
+    if re.search(r"バイト|授業|登校|面接|試験|提出", title) and len(title) <= 48:
+        if _NOISE_TITLE.search(title):
+            return True
+        return False
+    if _SKIP_HINT.search(blob) or _NOISE_TITLE.search(blob):
+        return True
+    if len(title) >= 70 or title.count("。") >= 2:
+        return True
+    if _LMS_OPAQUE.search(title):
+        return True
+    return False
 
 
 def _might_be_task(subject: str, body: str) -> bool:
     blob = (subject or "") + "\n" + (body or "")
+    if event_looks_like_noise({"title": subject or "", "note": (body or "")[:200], "source": "email"}):
+        return False
     if _SKIP_HINT.search(blob) and not _TASK_HINT.search(blob):
         return False
     return bool(_TASK_HINT.search(blob))

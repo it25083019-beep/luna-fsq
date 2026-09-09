@@ -540,8 +540,27 @@ def _all_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> List[
     return merged
 
 
+def prune_noise_events(user: Dict[str, Any]) -> int:
+    """Drop newsletters and ads already saved as calendar rows."""
+    from mail_ingest import event_looks_like_noise
+
+    store = _events_store(user)
+    kept = [e for e in store if isinstance(e, dict) and not event_looks_like_noise(e)]
+    removed = len(store) - len(kept)
+    if removed:
+        store[:] = kept
+        _mark_schedule_dirty(user)
+    return removed
+
+
+def _keep_visible_event(event: Dict[str, Any]) -> bool:
+    from mail_ingest import event_looks_like_noise
+
+    return isinstance(event, dict) and not event_looks_like_noise(event)
+
+
 def list_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> Dict[str, Any]:
-    events = _all_events(user, on_date=on_date)
+    events = [e for e in _all_events(user, on_date=on_date) if _keep_visible_event(e)]
     today = date.today()
     if on_date:
         try:
@@ -1315,6 +1334,7 @@ def apply_suggestions(
 
 def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
     # Today-only focus keeps this cheap (calendar uses its own month window).
+    prune_noise_events(user)
     today_s = date.today().isoformat()
     sched = list_events(user, on_date=today_s)
     from health_eval import evaluate_health, mental_needed, mental_reminder_due

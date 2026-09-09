@@ -2428,6 +2428,36 @@
     return navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => null);
   }
 
+  function urlBase64ToUint8Array(b64) {
+    const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+    const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  async function subscribeWebPush() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    if (notifyPermission() !== "granted") return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const info = await api("/push/vapid-public");
+      if (!info || !info.public_key) return;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(info.public_key),
+        });
+      }
+      const json = sub.toJSON();
+      await api("/push/subscribe", {
+        method: "POST",
+        body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
+      });
+    } catch (_) {}
+  }
+
   function clearReminderTimers() {
     reminderTimers.forEach((id) => clearTimeout(id));
     reminderTimers = [];
@@ -2625,6 +2655,7 @@
         }
       }
       notifyOn = perm === "granted";
+      if (notifyOn) subscribeWebPush();
     } else {
       notifyOn = false;
       clearReminderTimers();
@@ -2957,7 +2988,7 @@
       const recur = ev.recurrence
         ? '<span class="recur-tag">🔁同じ' + weekdayJaFromIso(ev.date || selectedDate) + "曜</span>"
         : "";
-      row.innerHTML = '<span style="flex:1">' + time + ev.title + place + src + recur + "</span>";
+      row.innerHTML = '<span style="flex:1">' + time + shortEventTitle(ev.title) + place + src + recur + "</span>";
       const acts = document.createElement("div");
       acts.className = "acts";
       const doneBtn = document.createElement("button");
@@ -3099,6 +3130,14 @@
     });
   }
 
+  function shortEventTitle(title) {
+    let t = String(title || "").replace(/\s+/g, " ").trim();
+    t = t.replace(/^新しい課題[:：]\s*[「『]?/, "");
+    t = t.replace(/^明日まで[:：]\s*[「『]?/, "提出・");
+    t = t.replace(/[」』]\s*$/, "");
+    return t || title || "予定";
+  }
+
   function renderHomeToday(items) {
     const el = document.getElementById("homeTodayList");
     if (!el) return;
@@ -3114,10 +3153,9 @@
         '<span class="t">' +
         formatTimeRange(ev) +
         "</span><span style='flex:1'>" +
-        ev.title +
+        shortEventTitle(ev.title) +
         (ev.location ? "<br><span class='hint'>" + ev.location + "</span>" : "") +
         "</span>";
-      // swipe left to delete (no delete button)
       attachSwipeDelete(row, () => deleteScheduleEvent(ev.id));
       el.appendChild(row);
     });
@@ -4637,6 +4675,7 @@
     syncNotifyBtn();
     bindEvents();
     registerLunaWorker();
+    if (notifyOn && notifyPermission() === "granted") subscribeWebPush();
     ensureVoicesLoaded().catch(() => {});
     document.addEventListener(
       "pointerdown",

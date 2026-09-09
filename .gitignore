@@ -17,3 +17,4 @@ scripts/_fix_*.py
 *.bak_*
 **/google_oauth.json
 my-project/data/google_oauth.json
+my-project/data/vapid.json
