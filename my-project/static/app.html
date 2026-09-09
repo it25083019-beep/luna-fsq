@@ -921,10 +921,16 @@
     .notify-row select{border:none;background:var(--input-bg);border-radius:999px;padding:.35rem .7rem;font-weight:800;color:var(--lilac-deep)}
     .notify-row button,#voicePreviewBtn{border:none;border-radius:999px;padding:.4rem .9rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
     .mail-box{margin-top:.55rem;padding:.7rem .75rem;background:#fff;border-radius:14px}
-    .mail-box textarea{width:100%;min-height:5.5rem;border:none;background:var(--input-bg);border-radius:12px;padding:.55rem .65rem;resize:vertical}
+    .mail-box label{display:block;font-size:.72rem;color:var(--muted);margin:.35rem 0 .15rem}
+    .mail-box input{width:100%;padding:.55rem .65rem;border:none;background:var(--input-bg);border-radius:12px;margin-bottom:.2rem}
     .mail-box .row{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
     .mail-box button{border:none;border-radius:999px;padding:.4rem .75rem;font-weight:800;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep)}
     .mail-box button.primary{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .mail-box button:disabled{opacity:.45;cursor:default}
+    .mail-setup{margin-top:.55rem;padding-top:.45rem;border-top:1px dashed #e4d7f4}
+    .mail-steps{margin:.35rem 0 .55rem;padding-left:1.2rem;font-size:.72rem;color:var(--muted);line-height:1.55}
+    .mail-steps a{color:var(--lilac-deep);font-weight:700}
+    .mail-box code{display:inline-block;background:var(--input-bg);border-radius:8px;padding:.05rem .35rem;font-size:.68rem}
     .digest-card{max-height:78vh;overflow:auto}
     .digest-list{display:flex;flex-direction:column;gap:.55rem;margin:0 0 .75rem}
     .digest-item{background:var(--input-bg);border-radius:14px;padding:.65rem .7rem;white-space:pre-wrap;font-size:.8rem;line-height:1.55;color:var(--text)}
@@ -1378,21 +1384,30 @@
             </select>
           </div>
           <p class="hint" id="notifyStatus"></p>
-          <h3 style="margin-top:1rem">メールから予定を取り込む</h3>
-          <p class="hint">Gmailを連携するか、メール本文を貼り付けると、会議・提出・締め切りなどを予定に追加します。パスワードは使いません。本文そのものは保存しません。</p>
+          <h3 style="margin-top:1rem">Gmailから予定を入れる</h3>
+          <p class="hint">本文のコピペはしません。Googleの許可をもらったら、会議・提出・締め切りを予定に入れて、1時間前・30分前・10分前に知らせます。</p>
           <div class="mail-box">
             <p class="hint" id="mailLinkStatus">未連携</p>
             <div class="row">
-              <button type="button" class="primary" id="mailConnectBtn">Gmailを連携</button>
-              <button type="button" id="mailSyncBtn">メールを読み取る</button>
+              <button type="button" class="primary" id="mailConnectBtn">Gmailを許可する</button>
+              <button type="button" id="mailSyncBtn">今すぐ読み取る</button>
               <button type="button" id="mailDisconnectBtn">連携を解除</button>
             </div>
-            <label for="mailPasteSubject">件名（任意）</label>
-            <input id="mailPasteSubject" type="text" placeholder="例：明日14時 会議室A 打ち合わせ" />
-            <label for="mailPasteBody">メール本文</label>
-            <textarea id="mailPasteBody" placeholder="明日14時からA棟203で課題提出の打ち合わせをお願いします。至急ご確認ください。"></textarea>
-            <div class="row">
-              <button type="button" class="primary" id="mailImportBtn">本文から予定を追加</button>
+            <div id="mailSetupBox" class="mail-setup hidden">
+              <p class="hint">はじめてだけ、Google CloudのクライアントIDが必要です（メールのパスワードではないよ）。</p>
+              <ol class="mail-steps">
+                <li><a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" rel="noopener">Gmail APIを有効にする</a></li>
+                <li><a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener">OAuthクライアント（ウェブアプリ）を作る</a></li>
+                <li>「承認済みの JavaScript 生成元」に <code id="mailJsOrigin">この画面のURL</code> を入れる</li>
+                <li>テストユーザーに、自分のGmailを追加する</li>
+              </ol>
+              <label for="mailClientId">クライアントID</label>
+              <input id="mailClientId" type="text" autocomplete="off" placeholder="xxxxx.apps.googleusercontent.com" />
+              <label for="mailClientSecret">クライアントシークレット（任意）</label>
+              <input id="mailClientSecret" type="password" autocomplete="off" />
+              <div class="row">
+                <button type="button" class="primary" id="mailSaveSetupBtn">保存して許可画面を開く</button>
+              </div>
             </div>
             <p class="hint" id="mailImportMsg"></p>
           </div>
@@ -2013,6 +2028,7 @@
   <script src="/static/live2d/luna-avatar.js?v=20260909h"></script>
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
-  <script src="/static/app.js?v=20260909i"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="/static/app.js?v=20260909j"></script>
 </body>
 </html>

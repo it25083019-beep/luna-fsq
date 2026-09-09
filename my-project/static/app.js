@@ -2572,7 +2572,7 @@
       syncMailInbox();
     } else if (mail === "denied" || mail === "fail") {
       const el = document.getElementById("mailImportMsg");
-      if (el) el.textContent = "Gmail連携ができませんでした。本文の貼り付けでも追加できるよ。";
+      if (el) el.textContent = "Gmail連携ができませんでした。もう一度『Gmailを許可する』を押してね。";
     }
     if (url.searchParams.get("digest") === "1" && lastReminders) {
       const digest = (lastReminders.reminders || []).find((r) => r.kind === "digest");
@@ -4039,26 +4039,144 @@
   function renderMailStatus(st) {
     mailStatusCache = st || mailStatusCache;
     const el = document.getElementById("mailLinkStatus");
-    const connectBtn = document.getElementById("mailConnectBtn");
+    const setup = document.getElementById("mailSetupBox");
+    const originEl = document.getElementById("mailJsOrigin");
+    const syncBtn = document.getElementById("mailSyncBtn");
+    if (originEl) originEl.textContent = location.origin;
     if (!el) return;
     if (st && st.connected) {
-      el.textContent = "Gmail連携中" + (st.last_sync ? "（最終読取あり）" : "");
-    } else if (st && st.oauth_ready) {
-      el.textContent = "未連携。Gmailを許可すると、用事を予定に追加します。";
+      el.textContent = "Gmail連携中。新しい用事は自動で予定に入るよ。";
+    } else if (st && st.client_id) {
+      el.textContent = "未連携。『Gmailを許可する』を押すと、Googleの画面が開くよ。";
     } else {
-      el.textContent = "Gmail設定がないときは、下にメール本文を貼り付けて追加できます。";
+      el.textContent = "まだGoogleアプリの準備がないよ。下の手順を1回だけやってね。";
     }
-    if (connectBtn) connectBtn.disabled = !(st && st.oauth_ready);
+    if (setup) setup.classList.toggle("hidden", !!(st && st.client_id));
+    if (syncBtn) syncBtn.disabled = !(st && st.connected);
   }
 
   async function loadMailStatus() {
     try {
       const st = await api("/mail/status");
+      if (!st.js_origin) st.js_origin = location.origin;
       renderMailStatus(st);
       return st;
     } catch (_) {
-      renderMailStatus({ oauth_ready: false, connected: false });
+      renderMailStatus({ oauth_ready: false, connected: false, client_id: "" });
       return null;
+    }
+  }
+
+  function loadGoogleGis() {
+    return new Promise((resolve, reject) => {
+      if (window.google && google.accounts && google.accounts.oauth2) {
+        resolve();
+        return;
+      }
+      const existing = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+      let settled = false;
+      const finishOk = () => {
+        if (settled) return;
+        if (window.google && google.accounts && google.accounts.oauth2) {
+          settled = true;
+          resolve();
+        }
+      };
+      const timer = setInterval(finishOk, 120);
+      setTimeout(() => {
+        clearInterval(timer);
+        if (!settled) {
+          settled = true;
+          reject(new Error("Googleの許可画面を読み込めませんでした"));
+        }
+      }, 8000);
+      if (existing) return;
+      const s = document.createElement("script");
+      s.src = "https://accounts.google.com/gsi/client";
+      s.onload = finishOk;
+      s.onerror = () => {
+        clearInterval(timer);
+        if (!settled) {
+          settled = true;
+          reject(new Error("Googleの許可画面を読み込めませんでした"));
+        }
+      };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function requestGmailAccess() {
+    const msg = document.getElementById("mailImportMsg");
+    const st = mailStatusCache || (await loadMailStatus()) || {};
+    const clientId = st.client_id || "";
+    if (!clientId) {
+      const setup = document.getElementById("mailSetupBox");
+      if (setup) setup.classList.remove("hidden");
+      if (msg) msg.textContent = "先にクライアントIDを保存してね。メールのパスワードは使わないよ。";
+      return;
+    }
+    try {
+      await loadGoogleGis();
+    } catch (e) {
+      if (msg) msg.textContent = e.message || "Googleの画面を開けませんでした。";
+      return;
+    }
+    if (msg) msg.textContent = "Googleの許可画面を開くよ…";
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: "https://www.googleapis.com/auth/gmail.readonly",
+      callback: async (resp) => {
+        if (!resp || resp.error || !resp.access_token) {
+          if (msg) {
+            msg.textContent =
+              resp && resp.error === "popup_closed_by_user"
+                ? "許可がキャンセルされたよ。"
+                : "許可できませんでした。JavaScript生成元とテストユーザーを確認してね。";
+          }
+          return;
+        }
+        try {
+          const res = await api("/mail/google/browser-token", {
+            method: "POST",
+            body: JSON.stringify({
+              access_token: resp.access_token,
+              expires_in: resp.expires_in || 3500,
+            }),
+          });
+          if (res.reminders) scheduleReminderPayload(res.reminders);
+          if (res.count) {
+            if (msg) msg.textContent = res.count + "件を予定に追加したよ。";
+            await loadScheduleView().catch(() => {});
+            await loadHomeSummary();
+          } else if (msg) {
+            msg.textContent = "Gmailを許可したよ。新しい用事が見つかったら予定に入れるね。";
+          }
+          await loadMailStatus();
+        } catch (err) {
+          if (msg) msg.textContent = err.message || "Gmailの読み取りに失敗しました。";
+        }
+      },
+    });
+    tokenClient.requestAccessToken({ prompt: st.connected ? "" : "consent" });
+  }
+
+  async function saveMailSetupAndConnect() {
+    const msg = document.getElementById("mailImportMsg");
+    const clientId = ((document.getElementById("mailClientId") || {}).value || "").trim();
+    const clientSecret = ((document.getElementById("mailClientSecret") || {}).value || "").trim();
+    if (!clientId) {
+      if (msg) msg.textContent = "クライアントIDを入れてね。";
+      return;
+    }
+    try {
+      const st = await api("/mail/google/setup", {
+        method: "POST",
+        body: JSON.stringify({ client_id: clientId, client_secret: clientSecret || null }),
+      });
+      renderMailStatus(st);
+      await requestGmailAccess();
+    } catch (e) {
+      if (msg) msg.textContent = e.message || "保存できませんでした。";
     }
   }
 
@@ -4068,10 +4186,18 @@
     try {
       const res = await api("/mail/sync", { method: "POST", body: "{}" });
       if (res.reminders) scheduleReminderPayload(res.reminders);
+      if (res.error === "auth" || res.error === "not_connected") {
+        if (!quiet) await requestGmailAccess();
+        return;
+      }
       if (!quiet && msg) {
-        if (!res.ok && res.error === "oauth_not_configured") msg.textContent = "Gmail設定がないので、本文の貼り付けを使ってね。";
-        else if (!res.ok && res.error === "not_connected") msg.textContent = "まだGmailが連携されていません。";
-        else if (res.count) msg.textContent = res.count + "件を予定に追加したよ。";
+        if (!res.ok && res.error === "oauth_not_configured") {
+          msg.textContent = "先に『Gmailを許可する』からGoogleの画面を開いてね。";
+          const setup = document.getElementById("mailSetupBox");
+          if (setup) setup.classList.remove("hidden");
+        } else if (!res.ok && res.error === "gmail") {
+          msg.textContent = "Gmail APIが有効か、もう一度確認してね。";
+        } else if (res.count) msg.textContent = res.count + "件を予定に追加したよ。";
         else msg.textContent = "新しい用事は見つからなかったよ。";
       } else if (quiet && res.count && msg) {
         msg.textContent = res.count + "件を予定に追加したよ。";
@@ -4083,35 +4209,6 @@
       await loadMailStatus();
     } catch (e) {
       if (!quiet && msg) msg.textContent = e.message || "読み取りに失敗しました。";
-    }
-  }
-
-  async function importPastedMail() {
-    const body = (document.getElementById("mailPasteBody") || {}).value || "";
-    const subject = (document.getElementById("mailPasteSubject") || {}).value || "";
-    const msg = document.getElementById("mailImportMsg");
-    if (body.trim().length < 4) {
-      if (msg) msg.textContent = "メール本文を貼り付けてね。";
-      return;
-    }
-    try {
-      const res = await api("/mail/import", {
-        method: "POST",
-        body: JSON.stringify({ text: body, subject }),
-      });
-      if (res.reminders) scheduleReminderPayload(res.reminders);
-      if (msg) {
-        msg.textContent = res.count
-          ? res.count + "件を予定に追加したよ。急ぎならすぐ知らせるね。"
-          : "用事らしい文が見つからなかったよ。日時や「会議」「提出」があると拾いやすいよ。";
-      }
-      if (res.count) {
-        document.getElementById("mailPasteBody").value = "";
-        await loadScheduleView().catch(() => {});
-        await loadHomeSummary();
-      }
-    } catch (e) {
-      if (msg) msg.textContent = e.message || "取り込みに失敗しました。";
     }
   }
 
@@ -4164,6 +4261,7 @@
       renderThemePicker();
       renderCompanionPickers();
       setLunaView("settings");
+      loadMailStatus();
     };
     document.getElementById("settingsBack").onclick = () => setLunaView("main");
     const menuThemeBtn = document.getElementById("menuThemeBtn");
@@ -4342,21 +4440,11 @@
       };
     }
     const mailConnect = document.getElementById("mailConnectBtn");
-    if (mailConnect) {
-      mailConnect.onclick = async () => {
-        try {
-          const res = await api("/mail/google/start");
-          if (res.url) location.href = res.url;
-        } catch (e) {
-          const el = document.getElementById("mailImportMsg");
-          if (el) el.textContent = e.message || "Gmail連携は設定されていません。本文の貼り付けを使ってね。";
-        }
-      };
-    }
+    if (mailConnect) mailConnect.onclick = () => requestGmailAccess();
     const mailSync = document.getElementById("mailSyncBtn");
     if (mailSync) mailSync.onclick = () => syncMailInbox();
-    const mailImport = document.getElementById("mailImportBtn");
-    if (mailImport) mailImport.onclick = () => importPastedMail();
+    const mailSaveSetup = document.getElementById("mailSaveSetupBtn");
+    if (mailSaveSetup) mailSaveSetup.onclick = () => saveMailSetupAndConnect();
     const mailDisconnect = document.getElementById("mailDisconnectBtn");
     if (mailDisconnect) {
       mailDisconnect.onclick = async () => {

@@ -6,9 +6,11 @@ Never stores raw inbox bodies. OAuth only — no email passwords.
 from __future__ import annotations
 
 import base64
+import json
 import os
 import re
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlencode
 
@@ -20,6 +22,7 @@ GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me"
+_OAUTH_PATH = Path(__file__).resolve().parent / "data" / "google_oauth.json"
 
 _WEEKDAY_JA = {
     "月": 0,
@@ -53,11 +56,42 @@ _PLACE_HINT = re.compile(
 )
 
 
+def _oauth_file() -> Dict[str, Any]:
+    try:
+        data = json.loads(_OAUTH_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def oauth_client_id() -> str:
+    return (os.getenv("GOOGLE_OAUTH_CLIENT_ID") or "").strip() or str(
+        _oauth_file().get("client_id") or ""
+    ).strip()
+
+
+def oauth_client_secret() -> str:
+    return (os.getenv("GOOGLE_OAUTH_CLIENT_SECRET") or "").strip() or str(
+        _oauth_file().get("client_secret") or ""
+    ).strip()
+
+
 def oauth_configured() -> bool:
-    return bool(
-        (os.getenv("GOOGLE_OAUTH_CLIENT_ID") or "").strip()
-        and (os.getenv("GOOGLE_OAUTH_CLIENT_SECRET") or "").strip()
-    )
+    return bool(oauth_client_id())
+
+
+def save_oauth_app_credentials(client_id: str, client_secret: str = "") -> Dict[str, Any]:
+    cid = (client_id or "").strip()
+    if not cid:
+        raise ValueError("client_id is required")
+    data = _oauth_file()
+    data["client_id"] = cid
+    secret = (client_secret or "").strip()
+    if secret:
+        data["client_secret"] = secret
+    _OAUTH_PATH.parent.mkdir(parents=True, exist_ok=True)
+    _OAUTH_PATH.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    return {"client_id": cid, "has_secret": bool(oauth_client_secret())}
 
 
 def oauth_redirect_uri(base_url: str) -> str:
@@ -65,7 +99,7 @@ def oauth_redirect_uri(base_url: str) -> str:
 
 
 def oauth_authorize_url(*, state: str, base_url: str) -> str:
-    client_id = (os.getenv("GOOGLE_OAUTH_CLIENT_ID") or "").strip()
+    client_id = oauth_client_id()
     params = {
         "client_id": client_id,
         "redirect_uri": oauth_redirect_uri(base_url),
@@ -80,19 +114,19 @@ def oauth_authorize_url(*, state: str, base_url: str) -> str:
 
 
 def exchange_code(code: str, *, base_url: str) -> Dict[str, Any]:
-    client_id = (os.getenv("GOOGLE_OAUTH_CLIENT_ID") or "").strip()
-    client_secret = (os.getenv("GOOGLE_OAUTH_CLIENT_SECRET") or "").strip()
-    res = requests.post(
-        TOKEN_URL,
-        data={
-            "code": code,
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "redirect_uri": oauth_redirect_uri(base_url),
-            "grant_type": "authorization_code",
-        },
-        timeout=20,
-    )
+    client_id = oauth_client_id()
+    client_secret = oauth_client_secret()
+    if not client_id:
+        raise ValueError("Gmailの連携に失敗しました")
+    payload = {
+        "code": code,
+        "client_id": client_id,
+        "redirect_uri": oauth_redirect_uri(base_url),
+        "grant_type": "authorization_code",
+    }
+    if client_secret:
+        payload["client_secret"] = client_secret
+    res = requests.post(TOKEN_URL, data=payload, timeout=20)
     if res.status_code >= 400:
         raise ValueError("Gmailの連携に失敗しました")
     data = res.json()
@@ -118,8 +152,8 @@ def _refresh_access(user: Dict[str, Any]) -> Optional[str]:
     res = requests.post(
         TOKEN_URL,
         data={
-            "client_id": (os.getenv("GOOGLE_OAUTH_CLIENT_ID") or "").strip(),
-            "client_secret": (os.getenv("GOOGLE_OAUTH_CLIENT_SECRET") or "").strip(),
+            "client_id": oauth_client_id(),
+            "client_secret": oauth_client_secret(),
             "refresh_token": refresh,
             "grant_type": "refresh_token",
         },
@@ -189,15 +223,20 @@ def read_oauth_state(state: str) -> str:
     return str(public_id)
 
 
-def mail_status(user: Dict[str, Any]) -> Dict[str, Any]:
+def mail_status(user: Dict[str, Any], *, public_base: str = "") -> Dict[str, Any]:
     link = user.get("mail_link") or {}
     connected = bool(link.get("refresh_token") or link.get("access_token"))
+    base = (public_base or os.getenv("APP_BASE_URL") or "").rstrip("/")
     return {
         "oauth_ready": oauth_configured(),
+        "has_secret": bool(oauth_client_secret()),
+        "client_id": oauth_client_id(),
         "connected": connected,
         "provider": link.get("provider") if connected else None,
         "last_sync": link.get("last_sync"),
         "imported_total": int(link.get("imported_total") or 0),
+        "js_origin": base,
+        "redirect_uri": oauth_redirect_uri(base) if base else "",
     }
 
 
@@ -414,10 +453,10 @@ def _gmail_headers(payload: Dict[str, Any]) -> Dict[str, str]:
 
 
 def sync_gmail(user: Dict[str, Any], *, max_messages: int = 12) -> Dict[str, Any]:
-    if not oauth_configured():
-        return {"ok": False, "error": "oauth_not_configured", "added": [], "count": 0}
     access = _refresh_access(user)
     if not access:
+        if not oauth_configured():
+            return {"ok": False, "error": "oauth_not_configured", "added": [], "count": 0}
         return {"ok": False, "error": "not_connected", "added": [], "count": 0}
     headers = {"Authorization": f"Bearer {access}"}
     try:

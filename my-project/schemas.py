@@ -119,6 +119,16 @@ class MailImportRequest(BaseModel):
     subject: Optional[str] = Field(default=None, max_length=200)
 
 
+class MailGoogleSetupRequest(BaseModel):
+    client_id: str = Field(min_length=8, max_length=300)
+    client_secret: Optional[str] = Field(default=None, max_length=300)
+
+
+class MailGoogleBrowserToken(BaseModel):
+    access_token: str = Field(min_length=20, max_length=4096)
+    expires_in: Optional[int] = Field(default=3500, ge=60, le=86400)
+
+
 
 class AdminUserOut(BaseModel):
     user_id: str

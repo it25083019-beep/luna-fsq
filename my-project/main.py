@@ -97,6 +97,8 @@ from schemas import (
     ReminderPrefsRequest,
     ReminderCheckinRequest,
     MailImportRequest,
+    MailGoogleSetupRequest,
+    MailGoogleBrowserToken,
     AppearancePrefsRequest,
 )
 from study_workspace import (
@@ -895,11 +897,12 @@ def reminders_checkin(req: ReminderCheckinRequest, current: User = Depends(get_c
 
 
 @app.get("/mail/status")
-def mail_link_status(current: User = Depends(get_current_user)):
+def mail_link_status(request: Request, current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
     from mail_ingest import mail_status
 
-    return mail_status(brain)
+    base = (os.getenv("APP_BASE_URL") or str(request.base_url)).rstrip("/")
+    return mail_status(brain, public_base=base)
 
 
 @app.post("/mail/import")
@@ -922,7 +925,7 @@ def mail_sync_now(current: User = Depends(get_current_user)):
     from mail_ingest import sync_gmail
 
     result = sync_gmail(brain)
-    if result.get("count") or result.get("ok"):
+    if result.get("count") or result.get("ok") or result.get("error") == "auth":
         save_user_brain(current.public_id, brain)
     from day_coach import assess_day_load, build_today_reminders
 
@@ -941,12 +944,45 @@ def mail_disconnect(current: User = Depends(get_current_user)):
     return {"ok": True, **mail_status(brain)}
 
 
+@app.post("/mail/google/setup")
+def mail_google_setup(req: MailGoogleSetupRequest, request: Request, current: User = Depends(get_current_user)):
+    from mail_ingest import mail_status, save_oauth_app_credentials
+
+    try:
+        save_oauth_app_credentials(req.client_id, req.client_secret or "")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    brain = load_user_brain(current.public_id)
+    base = (os.getenv("APP_BASE_URL") or str(request.base_url)).rstrip("/")
+    return {"ok": True, **mail_status(brain, public_base=base)}
+
+
+@app.post("/mail/google/browser-token")
+def mail_google_browser_token(req: MailGoogleBrowserToken, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    from day_coach import assess_day_load, build_today_reminders
+    from mail_ingest import save_mail_tokens, sync_gmail
+
+    save_mail_tokens(
+        brain,
+        {"access_token": req.access_token, "expires_in": int(req.expires_in or 3500)},
+    )
+    result = sync_gmail(brain)
+    save_user_brain(current.public_id, brain)
+    fit = assess_day_load(brain)
+    result["reminders"] = build_today_reminders(brain, fit=fit)
+    result["connected"] = True
+    return result
+
+
 @app.get("/mail/google/start")
 def mail_google_start(request: Request, current: User = Depends(get_current_user)):
-    from mail_ingest import make_oauth_state, oauth_authorize_url, oauth_configured
+    from mail_ingest import make_oauth_state, oauth_authorize_url, oauth_client_id, oauth_client_secret
 
-    if not oauth_configured():
-        raise HTTPException(status_code=400, detail="Gmail連携はまだ設定されていません")
+    if not oauth_client_id():
+        raise HTTPException(status_code=400, detail="Gmail APIのクライアントIDを先に保存してください")
+    if not oauth_client_secret():
+        raise HTTPException(status_code=400, detail="popup")
     base = (os.getenv("APP_BASE_URL") or str(request.base_url)).rstrip("/")
     url = oauth_authorize_url(state=make_oauth_state(current.public_id), base_url=base)
     return {"ok": True, "url": url}

@@ -15,3 +15,5 @@ scripts/_patch_*.py
 scripts/_fix_*.py
 *.bak
 *.bak_*
+**/google_oauth.json
+my-project/data/google_oauth.json
