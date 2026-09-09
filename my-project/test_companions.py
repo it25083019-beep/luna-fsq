@@ -11,7 +11,8 @@ def test_catalog_has_luna_and_animals():
     animal = [c for c in rows if c.get("kind") == "animal"]
     assert {c["id"] for c in animal} == {"hachi", "momo", "taro", "ponta"}
     luno = get_companion("luno")
-    assert luno["expressions"]["wave"].endswith("luno-wave.png")
+    assert luno["themes"]["health"].endswith("health-luno.png")
+    assert luno["themes"]["money"].endswith("money-luno.png")
     assert normalize_companion_id("nope") == "luna"
     assert normalize_companion_id("REN") == "ren"
     print("OK companions catalog", len(rows))

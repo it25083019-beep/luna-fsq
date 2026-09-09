@@ -31,6 +31,11 @@ def list_companions() -> List[Dict[str, Any]]:
         base = (item.get("base") or "").rstrip("/")
         item["preview"] = f"{base}/{prefix}-neutral.png"
         item["expressions"] = {name: f"{base}/{prefix}-{name}.png" for name in _EXPRS}
+        item["themes"] = {
+            "health": f"/static/ui/health-{item['id']}.png",
+            "money": f"/static/ui/money-{item['id']}.png",
+            "schedule": f"/static/ui/schedule-{item['id']}.png",
+        }
         out.append(item)
     return out
 

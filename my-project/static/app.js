@@ -255,6 +255,18 @@
     });
     const msg = document.getElementById("message");
     if (msg) msg.placeholder = (row.label_ja || "LUNA") + "に話しかけて…";
+    const themes = row.themes || {};
+    const bannerMap = [
+      ["healthBannerImg", themes.health || "/static/ui/health-luna.png", row.label_ja || "LUNA"],
+      ["moneyBannerImg", themes.money || "/static/ui/money-luna.png", row.label_ja || "LUNA"],
+      ["scheduleBannerImg", themes.schedule || "/static/ui/schedule-luna.png", "スケジュール"],
+    ];
+    bannerMap.forEach(([id, src, alt]) => {
+      const el = document.getElementById(id);
+      if (!el || !src) return;
+      el.src = src + (src.includes("?") ? "&" : "?") + "v=20260909b";
+      el.alt = alt;
+    });
     document.querySelectorAll(".companion-chip").forEach((btn) => {
       btn.classList.toggle("active", btn.getAttribute("data-cid") === row.id);
     });
@@ -285,7 +297,6 @@
         btn.onclick = () => selectCompanion(btn.getAttribute("data-cid"));
       });
     };
-    paint(document.getElementById("homeCompanionStrip"));
     paint(document.getElementById("settingsCompanionGrid"));
   }
 

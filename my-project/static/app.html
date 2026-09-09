@@ -1020,9 +1020,8 @@
     .home-hero{display:grid;grid-template-columns:minmax(128px,38%) 1fr;gap:.7rem;padding:0 1rem .55rem;align-items:end}
     .home-hero-luna{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%}
     .home-hero-luna #lunaSprite{height:min(42vw,200px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 10px 20px rgba(120,90,180,.2));background:transparent}
-    .companion-strip{display:flex;gap:.4rem;overflow-x:auto;padding:.15rem .1rem .35rem;margin:.15rem 0 .2rem;-webkit-overflow-scrolling:touch}
-    .companion-chip{flex:0 0 auto;border:2px solid transparent;background:#fff;border-radius:16px;padding:.25rem .4rem .3rem;cursor:pointer;text-align:center;min-width:58px}
-    .companion-chip img{width:44px;height:44px;object-fit:contain;display:block;margin:0 auto}
+    .companion-chip{border:2px solid transparent;background:#fff;border-radius:16px;padding:.25rem .4rem .3rem;cursor:pointer;text-align:center}
+    .companion-chip img{width:52px;height:52px;object-fit:contain;display:block;margin:0 auto;background:transparent}
     .companion-chip span{display:block;font-size:.58rem;font-weight:800;color:#5a4a78;margin-top:.1rem}
     .companion-chip em{display:block;font-style:normal;font-size:.5rem;color:#8a7aa8}
     .companion-chip.active{border-color:#9b7ed9;box-shadow:0 0 0 2px rgba(155,126,217,.25)}
@@ -1282,7 +1281,6 @@
             <div class="home-hero-luna luna-stage" id="lunaStage">
               <img id="lunaSprite" src="/static/live2d/luna-expressions/luna-neutral.png" alt="LUNA" />
             </div>
-            <div class="companion-strip" id="homeCompanionStrip" aria-label="コンパニオン選択"></div>
             <div class="bubble compact"><span class="who" id="companionWho">LUNA</span><div id="dialogue">…</div></div>
           </div>
           <div class="status-head"><span>今日のステータス</span><span id="homeDate">—</span></div>
@@ -1326,7 +1324,7 @@
           <p class="hint">色テーマはログイン画面にも反映されます。</p>
           <div class="theme-grid" id="themeGrid"></div>
           <h3 style="margin-top:1rem">コンパニオン</h3>
-          <p class="hint">見た目を選べます。まばたき・口パク・ジェスチャーは全員同じです。</p>
+          <p class="hint">設定で見た目を切り替えます。まばたき・口パク・ジェスチャーは全員同じです。健康・お金・予定のイラストも一緒に変わります。</p>
           <div class="companion-grid" id="settingsCompanionGrid"></div>
           <div class="settings-actions"><button type="button" id="settingsBack">戻る</button></div>
         </div>
@@ -1340,7 +1338,7 @@
           <span style="width:2rem"></span>
         </div>
         <div class="module-banner">
-          <img src="/static/ui/schedule-luna.png?v=3" alt="スケジュール" />
+          <img id="scheduleBannerImg" src="/static/ui/schedule-luna.png?v=3" alt="スケジュール" />
         </div>
         <div class="cal-wrap">
           <div class="cal-nav">
@@ -1387,7 +1385,7 @@
         <div class="module-hero">
           <div class="dash-card">
             <div class="health-hero wide">
-              <img src="/static/ui/health-luna.png?v=3" alt="LUNA" />
+              <img id="healthBannerImg" src="/static/ui/health-luna.png?v=3" alt="LUNA" />
               <div class="score-ring"><span id="healthStatus">—</span><strong id="healthScoreBig">—</strong><span>健康スコア</span></div>
             </div>
             <p class="hint" id="healthBmiLine" style="margin:.35rem 0 0">BMI —</p>
@@ -1446,7 +1444,7 @@
         <div class="module-hero">
           <div class="dash-card">
             <div class="health-hero wide">
-              <img src="/static/ui/money-luna.png?v=3" alt="LUNA" />
+              <img id="moneyBannerImg" src="/static/ui/money-luna.png?v=3" alt="LUNA" />
               <div class="score-ring"><span id="moneyStatus">—</span><strong id="moneyScoreBig">—</strong><span>お金スコア</span></div>
             </div>
             <p class="hint" id="moneyAgeLine" style="margin:.35rem 0 0">—</p>
@@ -1931,9 +1929,9 @@
     </div>
   </div>
   <script src="/static/auth-common.js"></script>
-  <script src="/static/live2d/luna-avatar.js?v=20260909a"></script>
+  <script src="/static/live2d/luna-avatar.js?v=20260909b"></script>
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
-  <script src="/static/app.js?v=20260909a"></script>
+  <script src="/static/app.js?v=20260909b"></script>
 </body>
 </html>
