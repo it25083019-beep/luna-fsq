@@ -6,6 +6,8 @@ from day_coach import (
     JST,
     assess_day_load,
     build_today_reminders,
+    companion_agenda_line,
+    companion_evening_line,
     event_minutes,
     format_notify_brief,
     mail_catch_reminders,
@@ -216,6 +218,41 @@ def test_mail_catch_by_urgency():
     print("OK mail catch", [r["kind"] for r in rows], brief)
 
 
+def test_companion_speaks_next_event():
+    user = _user()
+    now = datetime.now(JST).replace(second=0, microsecond=0)
+    start_at = now + timedelta(minutes=80)
+    if start_at.date() != now.date():
+        print("SKIP agenda speak near midnight")
+        return
+    add_event(
+        user,
+        title="課題提出",
+        event_date=now.date().isoformat(),
+        event_time=start_at.strftime("%H:%M"),
+        location="教室B",
+    )
+    line = companion_agenda_line(user, now=now, who="ホアンさん")
+    assert line
+    assert "課題提出" in line
+    assert "教室B" in line
+    assert "ホアンさん" in line
+    empty = companion_agenda_line(_user(), now=now)
+    assert empty is None
+    print("OK agenda speak", line)
+
+
+def test_companion_evening_recap_done():
+    user = _user()
+    today = date.today().isoformat()
+    ev = add_event(user, title="打ち合わせ", event_date=today, event_time="10:00")
+    ev["done"] = True
+    line = companion_evening_line(user, who="ホアンさん")
+    assert "おわった" in line or "空いて" in line
+    assert "打ち合わせ" in line or "1件" in line
+    print("OK evening recap", line)
+
+
 def test_event_minutes():
     assert event_minutes({"time": "09:00", "end_time": "10:30"}) == 90
     assert event_minutes({"time": "09:00"}) == 50
@@ -245,6 +282,8 @@ if __name__ == "__main__":
     test_high_urgency_skips_hour_and_pings_now()
     test_low_urgency_only_near_start()
     test_mail_catch_by_urgency()
+    test_companion_speaks_next_event()
+    test_companion_evening_recap_done()
     test_event_minutes()
     test_schedule_checkin_remembers_mood()
     print("ALL day-coach tests passed")

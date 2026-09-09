@@ -59,6 +59,25 @@ def get_suggested_replies(user_id: str, state: dict) -> list[str]:
         return list(_NANNY_DEFAULT)
 
     if mode == "nanny_companion":
-        return list(_NANNY_DEFAULT)
+        return _chips_with_agenda(brain_user)
 
-    return list(_NANNY_DEFAULT)
+    return _chips_with_agenda(brain_user)
+
+
+def _chips_with_agenda(user: dict) -> list[str]:
+    chips = list(_NANNY_DEFAULT)
+    try:
+        from day_coach import agenda_for_companion
+
+        ag = agenda_for_companion(user)
+    except Exception:
+        return chips
+    extra: list[str] = []
+    if ag.get("next"):
+        extra.append("このあとどうする？")
+    if ag.get("phase") == "evening" or int(ag.get("done_count") or 0):
+        extra.append("今日の振り返り")
+    if not extra:
+        return chips
+    merged = extra + [c for c in chips if c not in extra]
+    return merged[:6]

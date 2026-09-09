@@ -526,6 +526,9 @@ Output Format: ONLY <dialogue>...</dialogue> and <game_state_json>...</game_stat
     from life_modules import modules_prompt_block
 
     modules_block = modules_prompt_block(user)
+    from day_coach import companion_agenda_prompt
+
+    agenda_block = companion_agenda_prompt(user)
     companion = companion_spoken_name(user)
     who = _honorific(user) or (display or "あなた")
     row = get_companion(user.get("companion_id"))
@@ -561,6 +564,8 @@ THREE LIFE MODULES (first-meeting questions are only a baseline; user can add mo
 1) 健康 health  2) お金 money  3) スケジュール schedule
 
 {modules_block}
+
+{agenda_block}
 
 FIVE PILLARS always: 1 health 2 study/future 3 money 4 time 5 goal direction.
 
@@ -765,9 +770,13 @@ def _honorific(user: Dict[str, Any]) -> str:
 def companion_hello_line(user: Dict[str, Any]) -> str:
     """Home greeting that always matches the selected sprite."""
     from companions import companion_spoken_name, fill_talk, get_companion
+    from day_coach import companion_agenda_line
 
     talk = get_companion(user.get("companion_id")).get("talk") or {}
     who = _honorific(user)
+    agenda = companion_agenda_line(user, who=who)
+    if agenda:
+        return agenda
     tpl = talk.get("hello") or talk.get("greeting") or "{who}こんにちは。"
     line = fill_talk(tpl, who).strip()
     if who and who not in line:
@@ -903,10 +912,15 @@ def start_user_greeting(user_id: str) -> str:
         from companions import companion_spoken_name, fill_talk, get_companion
 
         lv = _relationship_level(user)
+        from day_coach import companion_agenda_line
+
+        who = _honorific(user)
+        agenda = companion_agenda_line(user, who=who)
         care_line = greeting_care_line(user)
         talk = get_companion(user.get("companion_id")).get("talk") or {}
-        if care_line:
-            who = _honorific(user)
+        if agenda:
+            dialogue = agenda
+        elif care_line:
             dialogue = f"{who}、{care_line}" if who else care_line
         else:
             fallback = "{who}おかえり。"
@@ -1002,6 +1016,32 @@ def _consult_topic_from_chip(text: str) -> Optional[str]:
     if re.search(r"お金|家計|支出|貯金", t, re.I) and re.search(r"相談|整理", t):
         return "money"
     return None
+
+
+def _agenda_talk_request(text: str) -> Optional[str]:
+    """'next' | 'evening' | None — user asked the companion about today's calendar."""
+    t = (text or "").strip()
+    if not t:
+        return None
+    if "夜チェックイン" in t or "振り返" in t:
+        return "evening"
+    if "このあと" in t or t in ("今日の予定", "予定を見せて"):
+        return "next"
+    return None
+
+
+def _agenda_spoken_reply(user: Dict[str, Any], kind: str) -> str:
+    from day_coach import companion_agenda_line, companion_evening_line
+
+    who = _honorific(user)
+    if kind == "evening":
+        return companion_evening_line(user, who=who)
+    line = companion_agenda_line(user, who=who)
+    if line:
+        return line
+    if who:
+        return f"{who}、今日は予定が空いてるよ。短いクエストでもする？"
+    return "今日は予定が空いてるよ。"
 
 
 # Longest first so that stripping 疲れた does not leave a stray た behind.
@@ -1412,6 +1452,11 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
         if _consult_session_active(user):
             _update_relationship(user, text_in)
             return _persist_local_turn(user_id, user, text_in, _companion_consult_followup(user, text_in))
+        kind = _agenda_talk_request(text_in)
+        if kind:
+            _update_relationship(user, text_in)
+            packed = _pack_reply(_agenda_spoken_reply(user, kind), {"emotion": "cheer"})
+            return _persist_local_turn(user_id, user, text_in, packed)
 
     try:
         return generate_with_retry(user_id, user_text, skip_onboarding=True)

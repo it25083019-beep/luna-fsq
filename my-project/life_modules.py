@@ -148,7 +148,7 @@ def modules_prompt_block(user: Dict[str, Any]) -> str:
         notes = s["notes"][-5:]
         if notes:
             lines.append("recent notes: " + " | ".join(n["text"] for n in notes))
-        if s["structured"]:
+        if s["structured"] and key != "schedule":
             lines.append("structured: " + str(s["structured"]))
     lines.append(
         "When user asks to update health/money/schedule, acknowledge and store facts in memory; "

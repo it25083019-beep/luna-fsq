@@ -118,6 +118,135 @@ def format_notify_brief(event: Dict[str, Any], *, today: Optional[date] = None) 
     return "・".join(bits)
 
 
+def agenda_for_companion(
+    user: Dict[str, Any],
+    *,
+    now: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    """Today's real calendar, compact enough for chat (not the whole inbox)."""
+    now = now or _now_jst()
+    today = now.date()
+    from schedule_service import list_events
+
+    sched = list_events(user, on_date=today.isoformat())
+    open_items = sorted(
+        list(sched.get("today_open") or []),
+        key=lambda e: (e.get("time") or "99:99", e.get("title") or ""),
+    )
+    done_items = list(sched.get("today_done") or [])
+    next_ev: Optional[Dict[str, Any]] = None
+    untimed: Optional[Dict[str, Any]] = None
+    for ev in open_items:
+        start_t = _parse_hhmm(ev.get("time"))
+        if start_t is None:
+            if untimed is None:
+                untimed = ev
+            continue
+        start_at = datetime.combine(today, start_t, tzinfo=JST)
+        if start_at >= now - timedelta(minutes=5):
+            next_ev = ev
+            break
+    if next_ev is None:
+        next_ev = untimed or (open_items[0] if open_items else None)
+    hour = now.hour
+    if hour >= 20:
+        phase = "evening"
+    elif hour < 11:
+        phase = "morning"
+    else:
+        phase = "day"
+    return {
+        "date": today.isoformat(),
+        "phase": phase,
+        "open_count": len(open_items),
+        "done_count": len(done_items),
+        "next": next_ev,
+        "open_items": open_items[:6],
+        "done_items": done_items[:6],
+    }
+
+
+def companion_agenda_line(
+    user: Dict[str, Any],
+    *,
+    now: Optional[datetime] = None,
+    who: str = "",
+) -> Optional[str]:
+    """One spoken sentence about today's next real task. None if the calendar is empty."""
+    now = now or _now_jst()
+    ag = agenda_for_companion(user, now=now)
+    prefix = f"{who}、" if who else ""
+    nxt = ag.get("next")
+    open_n = int(ag.get("open_count") or 0)
+    done_n = int(ag.get("done_count") or 0)
+    brief = format_notify_brief(nxt, today=now.date()) if nxt else ""
+    if ag.get("phase") == "evening":
+        if open_n == 0 and done_n:
+            return f"{prefix}今日の用事は{done_n}件、ぜんぶおわったよ。よくがんばった。"
+        if open_n and brief:
+            return f"{prefix}今日まだ{open_n}件。次は{brief}だよ。"
+        if open_n:
+            return f"{prefix}今日まだ{open_n}件残ってるよ。"
+        return None
+    if not open_n:
+        return None
+    if brief and open_n == 1:
+        return f"{prefix}次は{brief}だよ。"
+    if brief:
+        return f"{prefix}今日{open_n}件。次は{brief}だよ。"
+    return f"{prefix}今日の予定は{open_n}件だよ。"
+
+
+def companion_evening_line(
+    user: Dict[str, Any],
+    *,
+    now: Optional[datetime] = None,
+    who: str = "",
+) -> str:
+    """End-of-day recap from the real calendar."""
+    now = now or _now_jst()
+    ag = agenda_for_companion(user, now=now)
+    prefix = f"{who}、" if who else ""
+    open_n = int(ag.get("open_count") or 0)
+    done_n = int(ag.get("done_count") or 0)
+    nxt = ag.get("next")
+    brief = format_notify_brief(nxt, today=now.date()) if nxt else ""
+    if open_n == 0 and done_n:
+        return f"{prefix}今日の用事は{done_n}件、ぜんぶおわったよ。よくがんばった。"
+    if open_n == 0:
+        return f"{prefix}今日は予定が空いてたよ。ゆっくり休もう。"
+    if done_n and brief:
+        return f"{prefix}今日{done_n}件おわって、まだ{open_n}件。次は{brief}だよ。"
+    if brief:
+        return f"{prefix}今日まだ{open_n}件。次は{brief}だよ。"
+    return f"{prefix}今日まだ{open_n}件残ってるよ。"
+
+
+def companion_agenda_prompt(user: Dict[str, Any], *, now: Optional[datetime] = None) -> str:
+    """System-prompt block so the companion talks about real events, not invented ones."""
+    ag = agenda_for_companion(user, now=now)
+    lines = [
+        "TODAY'S REAL CALENDAR (source of truth — do not invent events or dump mail):",
+        f"phase={ag['phase']} open={ag['open_count']} done={ag['done_count']}",
+    ]
+    nxt = ag.get("next") or {}
+    nid = nxt.get("id")
+    if not ag["open_count"] and not ag["done_count"]:
+        lines.append("No events today. Greet normally. Do not invent a timetable.")
+        return "\n".join(lines)
+    for ev in ag.get("open_items") or []:
+        tag = "NEXT" if nid and ev.get("id") == nid else "open"
+        lines.append(f"- [{tag}] {format_notify_brief(ev)}")
+    for ev in ag.get("done_items") or []:
+        lines.append(f"- [done] {format_notify_brief(ev)}")
+    lines.append(
+        "On greet and when the user talks about today, mention the NEXT item "
+        "(time, action, place) in one short sentence. Never list the whole inbox. "
+        "If they say 夜チェックイン or 振り返り, recap done vs left, then one next step."
+    )
+    return "\n".join(lines)
+
+
 def _leads_for_event(
     event: Dict[str, Any],
     *,
