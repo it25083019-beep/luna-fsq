@@ -400,6 +400,7 @@ def expand_recurring_templates(
                             "time": time_val,
                             "end_time": tpl.get("end_time"),
                             "note": tpl.get("note"),
+                            "location": tpl.get("location"),
                             "done": False,
                             "recurrence_id": tpl_id,
                             "recurrence": recurrence,
@@ -577,6 +578,20 @@ def list_events(user: Dict[str, Any], *, on_date: Optional[str] = None) -> Dict[
     }
 
 
+def _norm_location(value: Optional[str]) -> Optional[str]:
+    text = (value or "").strip()[:80]
+    return text or None
+
+
+def _norm_urgency(value: Optional[str]) -> str:
+    raw = (value or "normal").strip().lower()
+    if raw in ("high", "urgent", "至急"):
+        return "high"
+    if raw in ("low",):
+        return "low"
+    return "normal"
+
+
 def add_recurring_template(
     user: Dict[str, Any],
     *,
@@ -586,6 +601,7 @@ def add_recurring_template(
     event_end_time: Optional[str] = None,
     note: Optional[str] = None,
     recurrence: str = "weekly",
+    location: Optional[str] = None,
 ) -> Dict[str, Any]:
     if recurrence not in ("weekly", "monthly"):
         raise ValueError("recurrence must be weekly or monthly")
@@ -626,6 +642,7 @@ def add_recurring_template(
         "time": start_t,
         "end_time": end_t,
         "note": note_text,
+        "location": _norm_location(location),
         "recurrence": recurrence,
         "weekday": start.weekday(),
         "day_of_month": start.day,
@@ -648,6 +665,9 @@ def add_event(
     event_end_time: Optional[str] = None,
     note: Optional[str] = None,
     recurrence: Optional[str] = None,
+    location: Optional[str] = None,
+    urgency: Optional[str] = None,
+    source: Optional[str] = None,
 ) -> Dict[str, Any]:
     _purge_legacy_recurring_seeds(user)
     _collapse_duplicate_recurring_series(user)
@@ -685,6 +705,7 @@ def add_event(
             event_end_time=end_t,
             note=note_text,
             recurrence=recurrence,
+            location=_norm_location(location),
         )
         # Template reuse may hand back a weekly while the user asked for monthly.
         # In that case store a plain one-off for this date only.
@@ -698,6 +719,7 @@ def add_event(
                 "time": start_t,
                 "end_time": end_t,
                 "note": note_text,
+                "location": _norm_location(location),
                 "done": False,
                 "recurrence_id": tpl["id"],
                 "recurrence": recurrence,
@@ -712,6 +734,9 @@ def add_event(
         "time": start_t,
         "end_time": end_t,
         "note": note_text,
+        "location": _norm_location(location),
+        "urgency": _norm_urgency(urgency),
+        "source": (source or "user").strip()[:20] or "user",
         "done": False,
         "created_at": _utcnow_iso(),
     }
@@ -742,6 +767,7 @@ def _update_recurring_template(
     event_time: Optional[str] = None,
     event_end_time: Optional[str] = None,
     note: Optional[str] = None,
+    location: Optional[str] = None,
 ) -> Dict[str, Any]:
     tpl = next((t for t in _recurring_store(user) if t.get("id") == tpl_id), None)
     if not tpl or not tpl.get("active", True):
@@ -759,6 +785,8 @@ def _update_recurring_template(
     _check_range(tpl.get("time"), tpl.get("end_time"))
     if note is not None:
         tpl["note"] = (note or "").strip()[:500] or None
+    if location is not None:
+        tpl["location"] = _norm_location(location)
     if event_date is not None:
         try:
             start = _parse_date(event_date)
@@ -784,6 +812,7 @@ def _update_recurring_template(
         "time": tpl.get("time"),
         "end_time": tpl.get("end_time"),
         "note": tpl.get("note"),
+        "location": tpl.get("location"),
         "done": False,
         "recurrence_id": tpl_id,
         "recurrence": tpl.get("recurrence"),
@@ -826,6 +855,7 @@ def _materialize_exception(
         "time": tpl.get("time"),
         "end_time": tpl.get("end_time"),
         "note": tpl.get("note"),
+        "location": tpl.get("location"),
         "done": bool(done) if done is not None else False,
         "completed_at": _utcnow_iso() if done else None,
         "created_at": _utcnow_iso(),
@@ -849,6 +879,8 @@ def update_event(
     event_time: Optional[str] = None,
     event_end_time: Optional[str] = None,
     note: Optional[str] = None,
+    location: Optional[str] = None,
+    urgency: Optional[str] = None,
     done: Optional[bool] = None,
     scope: str = "this",
 ) -> Dict[str, Any]:
@@ -874,6 +906,7 @@ def update_event(
             event_time=event_time,
             event_end_time=event_end_time,
             note=note,
+            location=location,
         )
 
     parsed = _parse_virtual_id(event_id)
@@ -910,6 +943,10 @@ def update_event(
         _check_range(e.get("time"), e.get("end_time"))
         if note is not None:
             e["note"] = (note or "").strip()[:500] or None
+        if location is not None:
+            e["location"] = _norm_location(location)
+        if urgency is not None:
+            e["urgency"] = _norm_urgency(urgency)
         if done is not None:
             e["done"] = bool(done)
             e["completed_at"] = _utcnow_iso() if done else None
@@ -919,6 +956,65 @@ def update_event(
         user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
         return e
     raise ValueError("event not found")
+
+
+def event_exists(
+    user: Dict[str, Any],
+    title: str,
+    event_date: str,
+    event_time: Optional[str] = None,
+) -> bool:
+    want = _title_norm(title)
+    ds = (event_date or "")[:10]
+    clock = _norm_time(event_time) if event_time else None
+    for ev in _all_events(user, on_date=ds):
+        if _title_norm(ev.get("title")) != want:
+            continue
+        if (ev.get("date") or "")[:10] != ds:
+            continue
+        if clock and ev.get("time") and ev.get("time") != clock:
+            continue
+        return True
+    return False
+
+
+def get_event(user: Dict[str, Any], event_id: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not event_id:
+        return None
+    for ev in _all_events(user):
+        if ev.get("id") == event_id:
+            return ev
+    return None
+
+
+def attach_event_checkin(
+    user: Dict[str, Any],
+    event_id: Optional[str],
+    *,
+    mood: str,
+    lead_minutes: int = 10,
+) -> Optional[Dict[str, Any]]:
+    if not event_id:
+        return None
+    ev = get_event(user, event_id)
+    if not ev:
+        return None
+    if ev.get("is_generated") and ev.get("recurrence_id"):
+        tpl = next((t for t in _recurring_store(user) if t.get("id") == ev.get("recurrence_id")), None)
+        if tpl:
+            ev = _materialize_exception(user, tpl, ev.get("date") or date.today().isoformat())
+    row = {
+        "mood": (mood or "").strip()[:20],
+        "lead_minutes": int(lead_minutes or 0),
+        "at": _utcnow_iso(),
+    }
+    checks = list(ev.get("checkins") or [])
+    checks.append(row)
+    ev["checkins"] = checks[-12:]
+    ev["updated_at"] = _utcnow_iso()
+    user["life_modules"]["schedule"]["updated_at"] = _utcnow_iso()
+    _mark_schedule_dirty(user)
+    return ev
 
 
 def complete_event(user: Dict[str, Any], event_id: str, done: bool = True) -> Dict[str, Any]:

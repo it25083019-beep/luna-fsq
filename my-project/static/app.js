@@ -61,6 +61,8 @@
   let notifyOn = localStorage.getItem("luna_notify") === "1";
   let reminderTimers = [];
   let lastReminders = null;
+  let pendingEventCheckin = null;
+  let mailStatusCache = null;
   let rpgData = { class_id: null, region_id: "tutorial_plains", active_quests: [] };
   let regions = [];
   let classLabels = {};
@@ -2411,7 +2413,7 @@
     if (status) {
       if (perm === "unsupported") status.textContent = "このブラウザは通知に対応していません。";
       else if (perm === "denied") status.textContent = "ブラウザで通知が拒否されています。設定から許可してください。";
-      else if (notifyOn && perm === "granted") status.textContent = "予定の10分前にリマインダーを出します。";
+      else if (notifyOn && perm === "granted") status.textContent = "毎朝のまとめと、各予定の1時間前・30分前・10分前に知らせます。";
       else if (notifyOn) status.textContent = "許可すると、今日の予定を知らせます。";
       else status.textContent = "オフです。オンにすると今日の予定を知らせます。";
     }
@@ -2419,6 +2421,10 @@
 
   function registerLunaWorker() {
     if (!("serviceWorker" in navigator)) return Promise.resolve(null);
+    navigator.serviceWorker.addEventListener("message", (ev) => {
+      const data = ev.data || {};
+      if (data.type === "luna-open") handleDeepLink(data.url || "/app");
+    });
     return navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => null);
   }
 
@@ -2427,13 +2433,61 @@
     reminderTimers = [];
   }
 
+  function onceKey(kind, id) {
+    return "luna_" + kind + "_" + id;
+  }
+
+  function markOnce(kind, id) {
+    try {
+      const key = onceKey(kind, id);
+      if (localStorage.getItem(key) === "1") return false;
+      localStorage.setItem(key, "1");
+      return true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  function showDayDigest(row) {
+    const overlay = document.getElementById("dayDigestOverlay");
+    const list = document.getElementById("dayDigestList");
+    const title = document.getElementById("dayDigestTitle");
+    if (!overlay || !list) return;
+    if (title) title.textContent = (row && row.title) || companionSpokenJa() + "｜今日の予定";
+    list.innerHTML = "";
+    const events = (row && row.events) || [];
+    if (!events.length) {
+      const empty = document.createElement("div");
+      empty.className = "digest-item";
+      empty.textContent = (row && row.body) || "今日は予定が空いているよ。";
+      list.appendChild(empty);
+    } else {
+      events.forEach((ev) => {
+        const item = document.createElement("div");
+        item.className = "digest-item";
+        item.textContent = ev.detail || ev.title || "";
+        list.appendChild(item);
+      });
+    }
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden", "false");
+  }
+
+  function hideDayDigest() {
+    const overlay = document.getElementById("dayDigestOverlay");
+    if (!overlay) return;
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden", "true");
+  }
+
   function showReminderNote(row) {
     if (!row) return;
-    const title = row.title || "LUNA";
+    const title = row.title || companionSpokenJa();
     const opts = {
       body: row.body || "",
       tag: row.id || "luna",
       icon: "/static/live2d/luna-expressions/luna-neutral.png",
+      requireInteraction: !!row.require_interaction || row.kind === "digest" || row.kind === "urgent",
       data: { url: row.url || "/app" },
     };
     if (navigator.serviceWorker && navigator.serviceWorker.ready) {
@@ -2457,23 +2511,93 @@
       journeyStatus.day_fit = payload.day_fit;
       renderDayPaceBanner();
     }
+    const hourSel = document.getElementById("digestHourSelect");
+    if (hourSel && payload && payload.digest_hour != null) {
+      hourSel.value = String(payload.digest_hour);
+    }
     clearReminderTimers();
-    if (!notifyOn || notifyPermission() !== "granted") return;
     const list = (payload && payload.reminders) || [];
     const now = Date.now();
+    const day = (payload && payload.date) || "";
+    const canOs = notifyOn && notifyPermission() === "granted";
     list.forEach((row) => {
       const at = Date.parse(row.fire_at || "") || now;
       const delay = Math.max(0, at - now);
       if (delay > 14 * 60 * 60 * 1000) return;
+      if (row.kind === "digest") {
+        reminderTimers.push(
+          setTimeout(() => {
+            if (!markOnce("morning", day)) return;
+            showDayDigest(row);
+            if (notifyOn && notifyPermission() === "granted") showReminderNote(row);
+          }, delay)
+        );
+        return;
+      }
+      if (!canOs) return;
       if (row.kind === "coach") {
-        const digestKey = "luna_digest_" + ((payload && payload.date) || "");
-        try {
-          if (localStorage.getItem(digestKey) === "1") return;
-          localStorage.setItem(digestKey, "1");
-        } catch (_) {}
+        reminderTimers.push(
+          setTimeout(() => {
+            if (!markOnce("pace", day)) return;
+            showReminderNote(row);
+          }, delay)
+        );
+        return;
+      }
+      if (row.kind === "urgent") {
+        reminderTimers.push(
+          setTimeout(() => {
+            if (!markOnce("urgent", (row.id || "") + day)) return;
+            showReminderNote(row);
+          }, delay)
+        );
+        return;
       }
       reminderTimers.push(setTimeout(() => showReminderNote(row), delay));
     });
+  }
+
+  function handleDeepLink(raw) {
+    let url;
+    try {
+      url = new URL(raw, location.origin);
+    } catch (_) {
+      return;
+    }
+    const mail = url.searchParams.get("mail");
+    if (mail === "ok") {
+      const el = document.getElementById("mailImportMsg");
+      if (el) el.textContent = "Gmailを連携したよ。これから用事を予定に入れるね。";
+      loadMailStatus();
+      syncMailInbox();
+    } else if (mail === "denied" || mail === "fail") {
+      const el = document.getElementById("mailImportMsg");
+      if (el) el.textContent = "Gmail連携ができませんでした。本文の貼り付けでも追加できるよ。";
+    }
+    if (url.searchParams.get("digest") === "1" && lastReminders) {
+      const digest = (lastReminders.reminders || []).find((r) => r.kind === "digest");
+      if (digest) showDayDigest(digest);
+    }
+    const eid = url.searchParams.get("eid") || "";
+    if (url.searchParams.get("checkin") && eid) {
+      pendingEventCheckin = {
+        eventId: eid,
+        lead: Number(url.searchParams.get("lead") || 10) || 10,
+      };
+      showMentalModal();
+    }
+    if (mail || url.searchParams.get("checkin") || url.searchParams.get("digest")) {
+      try {
+        history.replaceState({}, "", "/app");
+      } catch (_) {}
+    }
+  }
+
+  async function refreshRemindersQuietly() {
+    try {
+      const res = await api("/reminders/today");
+      scheduleReminderPayload(res);
+    } catch (_) {}
   }
 
   async function toggleScheduleNotify() {
@@ -2501,9 +2625,13 @@
     } catch (_) {}
     syncNotifyBtn();
     try {
+      const hourEl = document.getElementById("digestHourSelect");
       const res = await api("/reminders/prefs", {
         method: "POST",
-        body: JSON.stringify({ enabled: notifyOn }),
+        body: JSON.stringify({
+          enabled: notifyOn,
+          digest_hour: hourEl ? Number(hourEl.value) : undefined,
+        }),
       });
       scheduleReminderPayload(res);
     } catch (_) {
@@ -2815,10 +2943,12 @@
       const row = document.createElement("div");
       row.className = "todo-row" + (ev.done ? " done" : "");
       const time = ev.time || ev.end_time ? formatTimeRange(ev) + " · " : "";
+      const place = ev.location ? " · " + ev.location : "";
+      const src = ev.source === "email" || ev.source === "gmail" ? '<span class="recur-tag">メール</span>' : "";
       const recur = ev.recurrence
         ? '<span class="recur-tag">🔁同じ' + weekdayJaFromIso(ev.date || selectedDate) + "曜</span>"
         : "";
-      row.innerHTML = '<span style="flex:1">' + time + ev.title + recur + "</span>";
+      row.innerHTML = '<span style="flex:1">' + time + ev.title + place + src + recur + "</span>";
       const acts = document.createElement("div");
       acts.className = "acts";
       const doneBtn = document.createElement("button");
@@ -2845,6 +2975,7 @@
     document.getElementById("addTitle").value = "";
     document.getElementById("addTime").value = "";
     document.getElementById("addEndTime").value = "";
+    document.getElementById("addLocation").value = "";
     document.getElementById("addNote").value = "";
     document.getElementById("addDate").value = keepDate || selectedDate || todayIso();
     document.getElementById("addSaveBtn").textContent = "保存";
@@ -2975,6 +3106,7 @@
         formatTimeRange(ev) +
         "</span><span style='flex:1'>" +
         ev.title +
+        (ev.location ? "<br><span class='hint'>" + ev.location + "</span>" : "") +
         "</span>";
       // swipe left to delete (no delete button)
       attachSwipeDelete(row, () => deleteScheduleEvent(ev.id));
@@ -3029,6 +3161,7 @@
     document.getElementById("addDate").value = ev.date || selectedDate;
     document.getElementById("addTime").value = ev.time || "";
     document.getElementById("addEndTime").value = ev.end_time || "";
+    document.getElementById("addLocation").value = ev.location || "";
     document.getElementById("addNote").value = ev.note || "";
     document.getElementById("addForm").classList.add("open");
     document.getElementById("addSaveBtn").textContent = "更新";
@@ -3052,6 +3185,7 @@
     const date = document.getElementById("addDate").value;
     const time = (document.getElementById("addTime").value || "").trim();
     const endTime = (document.getElementById("addEndTime").value || "").trim();
+    const locationText = (document.getElementById("addLocation").value || "").trim();
     const note = document.getElementById("addNote").value.trim();
     if (!title || !date) return;
     // Accept both `8:00` and `08:00`, but normalize to `HH:MM` before saving.
@@ -3091,6 +3225,7 @@
             date,
             time: normTime || null,
             end_time: normEndTime || null,
+            location: locationText || null,
             note: note || null,
             scope,
           }),
@@ -3108,6 +3243,7 @@
             date,
             time: normTime || null,
             end_time: normEndTime || null,
+            location: locationText || null,
             note: note || null,
             recurrence,
           }),
@@ -3240,9 +3376,18 @@
     }
   }
 
+  function eventDetailFromReminders(eventId) {
+    const list = (lastReminders && lastReminders.reminders) || [];
+    const match = list.find((r) => r.event_id === eventId && r.body);
+    return match ? match.body.split("\n\n")[0] : "";
+  }
+
   function showMentalModal(choices) {
     const overlay = document.getElementById("mentalOverlay");
     const box = document.getElementById("mentalChoices");
+    const title = document.getElementById("mentalTitle");
+    const lead = document.getElementById("mentalLead");
+    const detail = document.getElementById("mentalEventDetail");
     if (!overlay || !box) return;
     box.innerHTML = "";
     (choices || ["元気", "普通", "疲れ", "落ち込み", "不安"]).forEach((label) => {
@@ -3252,6 +3397,23 @@
       btn.onclick = () => submitMentalStatus(label);
       box.appendChild(btn);
     });
+    if (pendingEventCheckin && pendingEventCheckin.eventId) {
+      const who = companionSpokenJa();
+      if (title) title.textContent = who + "が体調を聞きたいよ";
+      if (lead) lead.textContent = "この予定の前だよ。今の体調と気持ちに近いものを選んでね。記録しておくね。";
+      if (detail) {
+        const text = eventDetailFromReminders(pendingEventCheckin.eventId);
+        detail.textContent = text;
+        detail.classList.toggle("hidden", !text);
+      }
+    } else {
+      if (title) title.textContent = "今日の気分は？";
+      if (lead) lead.textContent = companionSpokenJa() + "が毎日ひとつだけ聞きたいよ。近いものを選んでね。";
+      if (detail) {
+        detail.textContent = "";
+        detail.classList.add("hidden");
+      }
+    }
     overlay.classList.add("open");
     overlay.setAttribute("aria-hidden", "false");
     sessionStorage.setItem("mentalModalOpen", "1");
@@ -3267,10 +3429,23 @@
 
   async function submitMentalStatus(status) {
     try {
-      const res = await api("/life/health/mental", {
-        method: "POST",
-        body: JSON.stringify({ status }),
-      });
+      let res;
+      if (pendingEventCheckin && pendingEventCheckin.eventId) {
+        res = await api("/reminders/checkin", {
+          method: "POST",
+          body: JSON.stringify({
+            event_id: pendingEventCheckin.eventId,
+            mood: status,
+            lead_minutes: pendingEventCheckin.lead || 10,
+          }),
+        });
+        pendingEventCheckin = null;
+      } else {
+        res = await api("/life/health/mental", {
+          method: "POST",
+          body: JSON.stringify({ status }),
+        });
+      }
       hideMentalModal();
       mentalSkippedSession = false;
       const banner = document.getElementById("mentalRemindBanner");
@@ -3284,6 +3459,10 @@
 
   async function checkMentalCheckin(opts) {
     const force = !!(opts && opts.force);
+    if (pendingEventCheckin && pendingEventCheckin.eventId && !force) {
+      showMentalModal();
+      return;
+    }
     try {
       const st = await api("/life/health/mental/status");
       if (st.needed && (force || !mentalSkippedSession)) {
@@ -3857,6 +4036,85 @@
     return t || null;
   }
 
+  function renderMailStatus(st) {
+    mailStatusCache = st || mailStatusCache;
+    const el = document.getElementById("mailLinkStatus");
+    const connectBtn = document.getElementById("mailConnectBtn");
+    if (!el) return;
+    if (st && st.connected) {
+      el.textContent = "Gmail連携中" + (st.last_sync ? "（最終読取あり）" : "");
+    } else if (st && st.oauth_ready) {
+      el.textContent = "未連携。Gmailを許可すると、用事を予定に追加します。";
+    } else {
+      el.textContent = "Gmail設定がないときは、下にメール本文を貼り付けて追加できます。";
+    }
+    if (connectBtn) connectBtn.disabled = !(st && st.oauth_ready);
+  }
+
+  async function loadMailStatus() {
+    try {
+      const st = await api("/mail/status");
+      renderMailStatus(st);
+      return st;
+    } catch (_) {
+      renderMailStatus({ oauth_ready: false, connected: false });
+      return null;
+    }
+  }
+
+  async function syncMailInbox(opts) {
+    const quiet = !!(opts && opts.quiet);
+    const msg = document.getElementById("mailImportMsg");
+    try {
+      const res = await api("/mail/sync", { method: "POST", body: "{}" });
+      if (res.reminders) scheduleReminderPayload(res.reminders);
+      if (!quiet && msg) {
+        if (!res.ok && res.error === "oauth_not_configured") msg.textContent = "Gmail設定がないので、本文の貼り付けを使ってね。";
+        else if (!res.ok && res.error === "not_connected") msg.textContent = "まだGmailが連携されていません。";
+        else if (res.count) msg.textContent = res.count + "件を予定に追加したよ。";
+        else msg.textContent = "新しい用事は見つからなかったよ。";
+      } else if (quiet && res.count && msg) {
+        msg.textContent = res.count + "件を予定に追加したよ。";
+      }
+      if (res.count) {
+        await loadScheduleView().catch(() => {});
+        await loadHomeSummary();
+      }
+      await loadMailStatus();
+    } catch (e) {
+      if (!quiet && msg) msg.textContent = e.message || "読み取りに失敗しました。";
+    }
+  }
+
+  async function importPastedMail() {
+    const body = (document.getElementById("mailPasteBody") || {}).value || "";
+    const subject = (document.getElementById("mailPasteSubject") || {}).value || "";
+    const msg = document.getElementById("mailImportMsg");
+    if (body.trim().length < 4) {
+      if (msg) msg.textContent = "メール本文を貼り付けてね。";
+      return;
+    }
+    try {
+      const res = await api("/mail/import", {
+        method: "POST",
+        body: JSON.stringify({ text: body, subject }),
+      });
+      if (res.reminders) scheduleReminderPayload(res.reminders);
+      if (msg) {
+        msg.textContent = res.count
+          ? res.count + "件を予定に追加したよ。急ぎならすぐ知らせるね。"
+          : "用事らしい文が見つからなかったよ。日時や「会議」「提出」があると拾いやすいよ。";
+      }
+      if (res.count) {
+        document.getElementById("mailPasteBody").value = "";
+        await loadScheduleView().catch(() => {});
+        await loadHomeSummary();
+      }
+    } catch (e) {
+      if (msg) msg.textContent = e.message || "取り込みに失敗しました。";
+    }
+  }
+
   function bindEvents() {
     document.querySelectorAll(".nav-item").forEach((btn) => {
       btn.onclick = () => switchTab(btn.dataset.nav);
@@ -4060,6 +4318,58 @@
     };
     const notifyToggle = document.getElementById("notifyToggleBtn");
     if (notifyToggle) notifyToggle.onclick = () => toggleScheduleNotify();
+    const digestHour = document.getElementById("digestHourSelect");
+    if (digestHour) {
+      digestHour.onchange = async () => {
+        try {
+          const res = await api("/reminders/prefs", {
+            method: "POST",
+            body: JSON.stringify({
+              enabled: notifyOn,
+              digest_hour: Number(digestHour.value),
+            }),
+          });
+          scheduleReminderPayload(res);
+        } catch (_) {}
+      };
+    }
+    const digestClose = document.getElementById("dayDigestClose");
+    if (digestClose) digestClose.onclick = () => hideDayDigest();
+    const digestOverlay = document.getElementById("dayDigestOverlay");
+    if (digestOverlay) {
+      digestOverlay.onclick = (e) => {
+        if (e.target === digestOverlay) hideDayDigest();
+      };
+    }
+    const mailConnect = document.getElementById("mailConnectBtn");
+    if (mailConnect) {
+      mailConnect.onclick = async () => {
+        try {
+          const res = await api("/mail/google/start");
+          if (res.url) location.href = res.url;
+        } catch (e) {
+          const el = document.getElementById("mailImportMsg");
+          if (el) el.textContent = e.message || "Gmail連携は設定されていません。本文の貼り付けを使ってね。";
+        }
+      };
+    }
+    const mailSync = document.getElementById("mailSyncBtn");
+    if (mailSync) mailSync.onclick = () => syncMailInbox();
+    const mailImport = document.getElementById("mailImportBtn");
+    if (mailImport) mailImport.onclick = () => importPastedMail();
+    const mailDisconnect = document.getElementById("mailDisconnectBtn");
+    if (mailDisconnect) {
+      mailDisconnect.onclick = async () => {
+        try {
+          await api("/mail/disconnect", { method: "POST", body: "{}" });
+          await loadMailStatus();
+          const el = document.getElementById("mailImportMsg");
+          if (el) el.textContent = "連携を解除したよ。";
+        } catch (e) {
+          setErr(e.message);
+        }
+      };
+    }
     const voicePreview = document.getElementById("voicePreviewBtn");
     if (voicePreview) {
       voicePreview.onclick = () => {
@@ -4244,7 +4554,13 @@
       await greetP;
       await coreP;
       await loadHomeSummary();
+      await loadMailStatus();
+      handleDeepLink(location.href);
       await checkMentalCheckin();
+      setInterval(refreshRemindersQuietly, 10 * 60 * 1000);
+      setInterval(() => {
+        if (mailStatusCache && mailStatusCache.connected) syncMailInbox({ quiet: true });
+      }, 30 * 60 * 1000);
     } catch (_) {
       LunaAuth.clearToken();
       LunaAuth.goLogin("/app");

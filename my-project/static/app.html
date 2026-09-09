@@ -918,7 +918,18 @@
     .day-pace-banner strong{display:block;font-size:.82rem;color:#1c2a2e}
     .day-pace-banner p{margin:.25rem 0 0;font-size:.72rem;color:#5a6e68;line-height:1.45}
     .notify-row{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin:.45rem 0;padding:.55rem .65rem;background:#fff;border-radius:14px}
+    .notify-row select{border:none;background:var(--input-bg);border-radius:999px;padding:.35rem .7rem;font-weight:800;color:var(--lilac-deep)}
     .notify-row button,#voicePreviewBtn{border:none;border-radius:999px;padding:.4rem .9rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .mail-box{margin-top:.55rem;padding:.7rem .75rem;background:#fff;border-radius:14px}
+    .mail-box textarea{width:100%;min-height:5.5rem;border:none;background:var(--input-bg);border-radius:12px;padding:.55rem .65rem;resize:vertical}
+    .mail-box .row{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
+    .mail-box button{border:none;border-radius:999px;padding:.4rem .75rem;font-weight:800;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep)}
+    .mail-box button.primary{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    .digest-card{max-height:78vh;overflow:auto}
+    .digest-list{display:flex;flex-direction:column;gap:.55rem;margin:0 0 .75rem}
+    .digest-item{background:var(--input-bg);border-radius:14px;padding:.65rem .7rem;white-space:pre-wrap;font-size:.8rem;line-height:1.55;color:var(--text)}
+    .digest-item.urgent{border:1px solid var(--danger)}
+    .mental-card .event-detail{white-space:pre-wrap;font-size:.78rem;line-height:1.5;color:var(--text);background:var(--input-bg);border-radius:12px;padding:.55rem .65rem;margin:0 0 .65rem}
     #voicePreviewBtn{margin:.35rem 0 .55rem}
     .next-boss-hint{margin-top:.55rem;padding:.55rem .65rem;border-radius:14px;background:#fff6ef;border:1px solid #ffd7bf;font-size:.72rem;color:#8a4b20}
     .lesson-row,.boss-row{display:flex;gap:.5rem;align-items:flex-start;padding:.55rem 0;border-bottom:1px solid #ecefff}
@@ -1352,12 +1363,39 @@
           <div class="companion-grid" id="settingsCompanionGrid"></div>
           <button type="button" id="voicePreviewBtn">このコンパニオンの声を聞く</button>
           <h3 style="margin-top:1rem">通知</h3>
-          <p class="hint">今日入れた予定の10分前にリマインダーを出します。あとでアプリにしたときも、同じ内容をプッシュ通知にできます。タブを完全に閉じると届かないことがあります。</p>
+          <p class="hint">毎日、今日の予定を大きな通知でまとめます。各予定の1時間前・30分前・10分前にも、何を・何時に・どこでするかを知らせて、体調と気持ちを聞きます。タブを完全に閉じると届かないことがあります。</p>
           <div class="notify-row">
             <span>予定のリマインダー</span>
             <button type="button" id="notifyToggleBtn">オフ</button>
           </div>
+          <div class="notify-row">
+            <span>朝のまとめ通知</span>
+            <select id="digestHourSelect" aria-label="まとめ通知の時刻">
+              <option value="6">6:00</option>
+              <option value="7" selected>7:00</option>
+              <option value="8">8:00</option>
+              <option value="9">9:00</option>
+            </select>
+          </div>
           <p class="hint" id="notifyStatus"></p>
+          <h3 style="margin-top:1rem">メールから予定を取り込む</h3>
+          <p class="hint">Gmailを連携するか、メール本文を貼り付けると、会議・提出・締め切りなどを予定に追加します。パスワードは使いません。本文そのものは保存しません。</p>
+          <div class="mail-box">
+            <p class="hint" id="mailLinkStatus">未連携</p>
+            <div class="row">
+              <button type="button" class="primary" id="mailConnectBtn">Gmailを連携</button>
+              <button type="button" id="mailSyncBtn">メールを読み取る</button>
+              <button type="button" id="mailDisconnectBtn">連携を解除</button>
+            </div>
+            <label for="mailPasteSubject">件名（任意）</label>
+            <input id="mailPasteSubject" type="text" placeholder="例：明日14時 会議室A 打ち合わせ" />
+            <label for="mailPasteBody">メール本文</label>
+            <textarea id="mailPasteBody" placeholder="明日14時からA棟203で課題提出の打ち合わせをお願いします。至急ご確認ください。"></textarea>
+            <div class="row">
+              <button type="button" class="primary" id="mailImportBtn">本文から予定を追加</button>
+            </div>
+            <p class="hint" id="mailImportMsg"></p>
+          </div>
           <div class="settings-actions"><button type="button" id="settingsBack">戻る</button></div>
         </div>
       </section>
@@ -1392,6 +1430,7 @@
               <div><label>開始（24h）</label><input id="addTime" type="text" placeholder="HH:MM" inputmode="numeric" /></div>
               <div><label>終了（24h）</label><input id="addEndTime" type="text" placeholder="HH:MM" inputmode="numeric" /></div>
             </div>
+            <label>場所（任意）</label><input id="addLocation" type="text" placeholder="例：A棟203 / Zoom" />
             <label>メモ（任意）</label><input id="addNote" type="text" placeholder="詳細メモ" />
             <p class="hint" style="margin:.2rem 0 .55rem">保存時に「同じ曜日へ今後も繰り返すか」を確認します（最初は約1年分）。</p>
             <div class="row">
@@ -1945,10 +1984,18 @@
       </button>
     </nav>
     <p class="err" id="err"></p>
+    <div id="dayDigestOverlay" class="mental-overlay" aria-hidden="true">
+      <div class="mental-card digest-card" role="dialog" aria-labelledby="dayDigestTitle">
+        <h3 id="dayDigestTitle">今日の予定</h3>
+        <div class="digest-list" id="dayDigestList"></div>
+        <button type="button" class="mental-skip" id="dayDigestClose">わかった</button>
+      </div>
+    </div>
     <div id="mentalOverlay" class="mental-overlay" aria-hidden="true">
       <div class="mental-card" role="dialog" aria-labelledby="mentalTitle">
         <h3 id="mentalTitle">今日の気分は？</h3>
-        <p>LUNAが毎日ひとつだけ聞きたいよ。近いものを選んでね。</p>
+        <p id="mentalLead">LUNAが毎日ひとつだけ聞きたいよ。近いものを選んでね。</p>
+        <div class="event-detail hidden" id="mentalEventDetail"></div>
         <div class="mental-choices" id="mentalChoices"></div>
         <button type="button" class="mental-skip" id="mentalSkipBtn">あとで答える</button>
       </div>
@@ -1966,6 +2013,6 @@
   <script src="/static/live2d/luna-avatar.js?v=20260909h"></script>
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
-  <script src="/static/app.js?v=20260909h"></script>
+  <script src="/static/app.js?v=20260909i"></script>
 </body>
 </html>

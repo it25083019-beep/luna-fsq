@@ -105,6 +105,18 @@ class TtsSpeakRequest(BaseModel):
 
 class ReminderPrefsRequest(BaseModel):
     enabled: bool = True
+    digest_hour: Optional[int] = Field(default=None, ge=0, le=23)
+
+
+class ReminderCheckinRequest(BaseModel):
+    event_id: str = Field(min_length=1, max_length=80)
+    mood: str = Field(min_length=1, max_length=20)
+    lead_minutes: int = Field(default=10, ge=0, le=180)
+
+
+class MailImportRequest(BaseModel):
+    text: str = Field(min_length=4, max_length=8000)
+    subject: Optional[str] = Field(default=None, max_length=200)
 
 
 
@@ -170,6 +182,8 @@ class ScheduleEventCreate(BaseModel):
     time: Optional[str] = Field(default=None, max_length=5, description="start HH:MM")
     end_time: Optional[str] = Field(default=None, max_length=5, description="end HH:MM")
     note: Optional[str] = Field(default=None, max_length=500)
+    location: Optional[str] = Field(default=None, max_length=80)
+    urgency: Optional[str] = Field(default=None, max_length=16)
     recurrence: Optional[str] = Field(default=None, description="weekly or monthly")
 
 
@@ -179,6 +193,8 @@ class ScheduleEventUpdate(BaseModel):
     time: Optional[str] = Field(default=None, max_length=5, description="start HH:MM")
     end_time: Optional[str] = Field(default=None, max_length=5, description="end HH:MM")
     note: Optional[str] = Field(default=None, max_length=500)
+    location: Optional[str] = Field(default=None, max_length=80)
+    urgency: Optional[str] = Field(default=None, max_length=16)
     done: Optional[bool] = None
     scope: Optional[str] = Field(
         default="this",

@@ -95,6 +95,8 @@ from schemas import (
     BossExamSubmit,
     TtsSpeakRequest,
     ReminderPrefsRequest,
+    ReminderCheckinRequest,
+    MailImportRequest,
     AppearancePrefsRequest,
 )
 from study_workspace import (
@@ -863,6 +865,8 @@ def reminders_today(current: User = Depends(get_current_user)):
 def reminders_prefs(req: ReminderPrefsRequest, current: User = Depends(get_current_user)):
     brain = load_user_brain(current.public_id)
     brain["notify_schedule"] = bool(req.enabled)
+    if req.digest_hour is not None:
+        brain["notify_digest_hour"] = int(req.digest_hour)
     save_user_brain(current.public_id, brain)
     from day_coach import assess_day_load, build_today_reminders
 
@@ -870,6 +874,105 @@ def reminders_prefs(req: ReminderPrefsRequest, current: User = Depends(get_curre
     payload = build_today_reminders(brain, fit=fit)
     payload["enabled"] = bool(brain["notify_schedule"])
     return payload
+
+
+@app.post("/reminders/checkin")
+def reminders_checkin(req: ReminderCheckinRequest, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    from day_coach import record_schedule_checkin
+
+    try:
+        result = record_schedule_checkin(
+            brain,
+            event_id=req.event_id,
+            mood=req.mood,
+            lead_minutes=req.lead_minutes,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return result
+
+
+@app.get("/mail/status")
+def mail_link_status(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    from mail_ingest import mail_status
+
+    return mail_status(brain)
+
+
+@app.post("/mail/import")
+def mail_import_text(req: MailImportRequest, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    from mail_ingest import import_pasted_mail
+
+    result = import_pasted_mail(brain, req.text, subject=req.subject or "")
+    save_user_brain(current.public_id, brain)
+    from day_coach import assess_day_load, build_today_reminders
+
+    fit = assess_day_load(brain)
+    result["reminders"] = build_today_reminders(brain, fit=fit)
+    return result
+
+
+@app.post("/mail/sync")
+def mail_sync_now(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    from mail_ingest import sync_gmail
+
+    result = sync_gmail(brain)
+    if result.get("count") or result.get("ok"):
+        save_user_brain(current.public_id, brain)
+    from day_coach import assess_day_load, build_today_reminders
+
+    fit = assess_day_load(brain)
+    result["reminders"] = build_today_reminders(brain, fit=fit)
+    return result
+
+
+@app.post("/mail/disconnect")
+def mail_disconnect(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    from mail_ingest import disconnect_mail, mail_status
+
+    disconnect_mail(brain)
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, **mail_status(brain)}
+
+
+@app.get("/mail/google/start")
+def mail_google_start(request: Request, current: User = Depends(get_current_user)):
+    from mail_ingest import make_oauth_state, oauth_authorize_url, oauth_configured
+
+    if not oauth_configured():
+        raise HTTPException(status_code=400, detail="Gmail連携はまだ設定されていません")
+    base = (os.getenv("APP_BASE_URL") or str(request.base_url)).rstrip("/")
+    url = oauth_authorize_url(state=make_oauth_state(current.public_id), base_url=base)
+    return {"ok": True, "url": url}
+
+
+@app.get("/mail/google/callback")
+def mail_google_callback(
+    request: Request,
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    error: Optional[str] = None,
+):
+    from mail_ingest import exchange_code, read_oauth_state, save_mail_tokens
+
+    if error or not code:
+        return RedirectResponse(url="/app?mail=denied")
+    try:
+        public_id = read_oauth_state(state or "")
+        base = (os.getenv("APP_BASE_URL") or str(request.base_url)).rstrip("/")
+        tokens = exchange_code(code, base_url=base)
+    except ValueError:
+        return RedirectResponse(url="/app?mail=fail")
+    brain = load_user_brain(public_id)
+    save_mail_tokens(brain, tokens)
+    save_user_brain(public_id, brain)
+    return RedirectResponse(url="/app?mail=ok")
 
 
 @app.get("/schedule/events")
@@ -894,6 +997,8 @@ def schedule_create(req: ScheduleEventCreate, current: User = Depends(get_curren
             event_end_time=req.end_time,
             note=req.note,
             recurrence=req.recurrence,
+            location=req.location,
+            urgency=req.urgency,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -913,6 +1018,8 @@ def schedule_update(event_id: str, req: ScheduleEventUpdate, current: User = Dep
             event_time=req.time,
             event_end_time=req.end_time,
             note=req.note,
+            location=req.location,
+            urgency=req.urgency,
             done=req.done,
             scope=req.scope or "this",
         )

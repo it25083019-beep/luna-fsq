@@ -7,7 +7,11 @@ from typing import Any, Dict, List, Optional
 
 JST = timezone(timedelta(hours=9))
 LEAD_MINUTES = 10
+LEAD_OFFSETS = (60, 30, 10)
+DEFAULT_DIGEST_HOUR = 7
 DEFAULT_BLOCK_MIN = 50
+WEEKDAYS_JA = "月火水木金土日"
+LEAD_LABEL_JA = {60: "1時間前", 30: "30分前", 10: "10分前"}
 
 
 def _now_jst() -> datetime:
@@ -56,6 +60,71 @@ def _sleep_hours(health: Dict[str, Any]) -> Optional[float]:
         return float(raw)
     except (TypeError, ValueError):
         return None
+
+
+def date_label_ja(iso: Optional[str], *, today: Optional[date] = None) -> str:
+    raw = str(iso or "").strip()[:10]
+    try:
+        d = date.fromisoformat(raw)
+    except ValueError:
+        d = today or _today_jst()
+    return f"{d.year}年{d.month}月{d.day}日（{WEEKDAYS_JA[d.weekday()]}）"
+
+
+def clock_label(event: Dict[str, Any]) -> str:
+    start = (event.get("time") or "").strip()
+    end = (event.get("end_time") or "").strip()
+    if start and end:
+        return f"{start}〜{end}"
+    if start:
+        return start
+    if end:
+        return f"〜{end}"
+    return "終日"
+
+
+def format_event_detail(event: Dict[str, Any], *, today: Optional[date] = None) -> str:
+    title = (event.get("title") or "予定").strip() or "予定"
+    lines = [
+        f"{date_label_ja(event.get('date'), today=today)} {clock_label(event)}",
+        f"やること：{title}",
+    ]
+    loc = str(event.get("location") or "").strip()
+    if loc:
+        lines.append(f"場所：{loc}")
+    note = str(event.get("note") or "").strip()
+    if note:
+        lines.append(note[:80])
+    return "\n".join(lines)
+
+
+def _companion_who(user: Dict[str, Any]) -> str:
+    name = str(user.get("companion_name") or "ルナ").strip()
+    return name or "ルナ"
+
+
+def _digest_hour(user: Dict[str, Any]) -> int:
+    try:
+        hour = int(user.get("notify_digest_hour") if user.get("notify_digest_hour") is not None else DEFAULT_DIGEST_HOUR)
+    except (TypeError, ValueError):
+        hour = DEFAULT_DIGEST_HOUR
+    return max(0, min(23, hour))
+
+
+def _lead_offsets(user: Dict[str, Any]) -> List[int]:
+    raw = user.get("notify_leads")
+    if isinstance(raw, list) and raw:
+        out: List[int] = []
+        for item in raw:
+            try:
+                n = int(item)
+            except (TypeError, ValueError):
+                continue
+            if n in LEAD_OFFSETS and n not in out:
+                out.append(n)
+        if out:
+            return out
+    return list(LEAD_OFFSETS)
 
 
 def rest_actions(load: str) -> List[Dict[str, Any]]:
@@ -188,7 +257,7 @@ def build_today_reminders(
     fit: Optional[Dict[str, Any]] = None,
     now: Optional[datetime] = None,
 ) -> Dict[str, Any]:
-    """Web/native-shaped reminder list from today's open events."""
+    """Daily digest + 60/30/10-minute reminders with specific what/when/where copy."""
     now = now or _now_jst()
     today = now.date()
     today_s = today.isoformat()
@@ -197,41 +266,114 @@ def build_today_reminders(
 
     sched = list_events(user, on_date=today_s)
     open_items = list(sched.get("today_open") or [])
+    who = _companion_who(user)
+    leads = _lead_offsets(user)
     reminders: List[Dict[str, Any]] = []
 
+    digest_at = datetime.combine(today, time(_digest_hour(user), 0), tzinfo=JST)
+    if digest_at < now:
+        digest_at = now
+    if open_items:
+        numbered = []
+        for i, ev in enumerate(open_items, 1):
+            numbered.append(f"{i}. {format_event_detail(ev, today=today)}")
+        digest_body = f"今日の予定は{len(open_items)}件だよ。\n\n" + "\n\n".join(numbered)
+    else:
+        digest_body = "今日は予定が空いているよ。新しい用事がメールから入ったら、また知らせるね。"
+    reminders.append(
+        {
+            "id": f"digest-{today_s}",
+            "kind": "digest",
+            "fire_at": digest_at.isoformat(),
+            "title": f"{who}｜今日の予定",
+            "body": digest_body,
+            "url": "/app?digest=1",
+            "require_interaction": True,
+            "events": [
+                {
+                    "id": ev.get("id"),
+                    "title": ev.get("title"),
+                    "date": ev.get("date") or today_s,
+                    "time": ev.get("time"),
+                    "end_time": ev.get("end_time"),
+                    "location": ev.get("location"),
+                    "detail": format_event_detail(ev, today=today),
+                }
+                for ev in open_items
+            ],
+        }
+    )
+
     for ev in open_items:
+        detail = format_event_detail(ev, today=today)
+        eid = ev.get("id")
+        urgency = str(ev.get("urgency") or "normal").lower()
         start_t = _parse_hhmm(ev.get("time"))
         if start_t is None:
+            if urgency == "high":
+                reminders.append(
+                    {
+                        "id": f"urgent-{eid or ev.get('title')}",
+                        "kind": "urgent",
+                        "fire_at": now.isoformat(),
+                        "title": f"{who}｜急ぎの用事",
+                        "body": detail + "\n\n急ぎみたい。今の体調と気持ち、教えてくれる？",
+                        "event_id": eid,
+                        "url": f"/app?checkin=1&eid={eid or ''}&lead=0",
+                        "require_interaction": True,
+                        "ask_mood": True,
+                        "lead_minutes": 0,
+                    }
+                )
             continue
         start_at = datetime.combine(today, start_t, tzinfo=JST)
-        fire_at = start_at - timedelta(minutes=LEAD_MINUTES)
-        if fire_at < now - timedelta(minutes=1):
-            continue
-        title = (ev.get("title") or "予定").strip() or "予定"
-        time_label = start_t.strftime("%H:%M")
-        end_t = _parse_hhmm(ev.get("end_time"))
-        if end_t:
-            time_label += "–" + end_t.strftime("%H:%M")
-        reminders.append(
-            {
-                "id": f"evt-{(ev.get('id') or title)}",
-                "kind": "schedule",
-                "fire_at": fire_at.isoformat(),
-                "title": "もうすぐ予定",
-                "body": f"{time_label} {title}（{LEAD_MINUTES}分前）",
-                "event_id": ev.get("id"),
-                "url": "/app",
-            }
-        )
+        if urgency == "high" and start_at - now <= timedelta(hours=2):
+            reminders.append(
+                {
+                    "id": f"urgent-{eid or ev.get('title')}",
+                    "kind": "urgent",
+                    "fire_at": now.isoformat(),
+                    "title": f"{who}｜急ぎの用事",
+                    "body": detail + "\n\n急ぎの予定だよ。体調と気持ち、教えてくれる？",
+                    "event_id": eid,
+                    "url": f"/app?checkin=1&eid={eid or ''}&lead=0",
+                    "require_interaction": True,
+                    "ask_mood": True,
+                    "lead_minutes": 0,
+                }
+            )
+        for lead in leads:
+            fire_at = start_at - timedelta(minutes=lead)
+            if fire_at < now - timedelta(minutes=1):
+                continue
+            label = LEAD_LABEL_JA.get(lead, f"{lead}分前")
+            reminders.append(
+                {
+                    "id": f"evt-{eid or ev.get('title')}-{lead}",
+                    "kind": "schedule",
+                    "fire_at": fire_at.isoformat(),
+                    "title": f"{who}｜{label}のリマインド",
+                    "body": (
+                        f"{detail}\n\n"
+                        f"あと{label.replace('前', '')}だよ。"
+                        "今の体調と気持ち、教えてくれる？"
+                    ),
+                    "event_id": eid,
+                    "url": f"/app?checkin=1&eid={eid or ''}&lead={lead}",
+                    "require_interaction": True,
+                    "ask_mood": True,
+                    "lead_minutes": lead,
+                }
+            )
 
     if fit.get("recommend") in ("rest", "micro") and fit.get("coach_ja"):
         reminders.insert(
-            0,
+            1,
             {
                 "id": f"pace-{today_s}",
                 "kind": "coach",
                 "fire_at": now.isoformat(),
-                "title": "今日のペース",
+                "title": f"{who}｜今日のペース",
                 "body": fit["coach_ja"],
                 "url": "/app",
             },
@@ -242,12 +384,52 @@ def build_today_reminders(
         "enabled": enabled,
         "date": today_s,
         "lead_minutes": LEAD_MINUTES,
+        "lead_offsets": leads,
+        "digest_hour": _digest_hour(user),
         "day_fit": fit,
         "reminders": reminders,
         "hint_ja": (
-            "予定の10分前にリマインダーを出します。"
+            "毎日、今日の予定を大きな通知でまとめます。"
+            "各予定の1時間前・30分前・10分前にも、何を・いつ・どこでするかを知らせて、体調を聞きます。"
             "ホーム画面に追加すると使いやすいです。"
             "タブを完全に閉じると届かないことがあります。"
-            "ネイティブアプリでは同じ内容をプッシュ通知にできます。"
         ),
+    }
+
+
+def record_schedule_checkin(
+    user: Dict[str, Any],
+    *,
+    event_id: str,
+    mood: str,
+    lead_minutes: int = 10,
+) -> Dict[str, Any]:
+    """Remember how the user felt before a specific event."""
+    from care_memory import touch_care_memory
+    from care_timeline import append_care_event
+    from life_dashboard import save_mental_checkin
+    from schedule_service import attach_event_checkin, get_event
+
+    ev = get_event(user, event_id)
+    title = ((ev or {}).get("title") or "予定").strip() or "予定"
+    when = clock_label(ev or {}) if ev else ""
+    dash = save_mental_checkin(user, mood)
+    stored = attach_event_checkin(
+        user,
+        event_id,
+        mood=mood,
+        lead_minutes=lead_minutes,
+    )
+    lead_ja = LEAD_LABEL_JA.get(int(lead_minutes or 0), f"{lead_minutes}分前") if lead_minutes else "直前"
+    snippet = f"「{title}」の{lead_ja}、気分は{mood}"
+    if when:
+        snippet = f"{when} {snippet}"
+    touch_care_memory(user, "health", snippet, applied=[f"気分→{mood}"])
+    append_care_event(user, "schedule", f"「{title}」前に気分「{mood}」", detail=snippet)
+    return {
+        "ok": True,
+        "dashboard": dash,
+        "event": stored or ev,
+        "mood": mood,
+        "lead_minutes": lead_minutes,
     }
