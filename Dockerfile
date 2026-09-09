@@ -15,4 +15,5 @@ COPY scripts ./scripts
 WORKDIR /app/my-project
 
 EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Render injects PORT (usually 10000). Exec-form CMD cannot expand env vars.
+CMD ["sh", "/app/scripts/start.sh"]

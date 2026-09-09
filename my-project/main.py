@@ -238,24 +238,20 @@ def service_worker():
 
 @app.get("/health")
 def health():
-    try:
-        from llm_client import active_backend_label
-
-        backend = active_backend_label()
-    except Exception:
-        backend = {"provider": os.getenv("LLM_PROVIDER", "gemini")}
+    # Keep this tiny: Render probes it on $PORT and will SIGTERM if it fails/hangs.
+    db_url = os.getenv("DATABASE_URL", "")
+    if "postgres" in db_url.lower():
+        db = "postgres"
+    elif "mysql" in db_url.lower():
+        db = "mysql"
+    else:
+        db = "sqlite"
     return {
         "ok": True,
         "env": os.getenv("ENV", "dev"),
-        "llm": backend,
-        "model": backend.get("model") or os.getenv("MODEL_NAME", "gemini-2.5-flash"),
-        "db": (
-            "postgres"
-            if "postgres" in os.getenv("DATABASE_URL", "").lower()
-            else "mysql"
-            if "mysql" in os.getenv("DATABASE_URL", "").lower()
-            else "sqlite"
-        ),
+        "llm": os.getenv("LLM_PROVIDER", "gemini"),
+        "model": os.getenv("MODEL_NAME", "gemini-2.5-flash"),
+        "db": db,
     }
 
 

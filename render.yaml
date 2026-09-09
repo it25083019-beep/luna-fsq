@@ -10,6 +10,7 @@ services:
     runtime: docker
     plan: free
     healthCheckPath: /health
+    dockerCommand: sh /app/scripts/start.sh
     envVars:
       - key: ENV
         value: production
