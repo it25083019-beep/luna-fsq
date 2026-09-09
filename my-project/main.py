@@ -94,6 +94,7 @@ from schemas import (
     LessonSubmit,
     BossExamSubmit,
     TtsSpeakRequest,
+    ReminderPrefsRequest,
 )
 from study_workspace import (
     build_boss_exam,
@@ -221,6 +222,18 @@ def root():
 @app.get("/login")
 def login_page():
     return FileResponse(_STATIC_DIR / "login.html")
+
+
+@app.get("/sw.js")
+def service_worker():
+    return FileResponse(
+        _STATIC_DIR / "sw.js",
+        media_type="application/javascript",
+        headers={
+            "Service-Worker-Allowed": "/",
+            "Cache-Control": "no-cache",
+        },
+    )
 
 
 @app.get("/health")
@@ -590,7 +603,7 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
 def tts_speak(req: TtsSpeakRequest, current: User = Depends(get_current_user)):
     del current
     try:
-        wav = synthesize_speech(req.text)
+        wav = synthesize_speech(req.text, companion_id=req.companion_id)
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     if not wav:
@@ -800,6 +813,30 @@ def get_home_summary(current: User = Depends(get_current_user)):
     if brain.pop("_schedule_dirty", False) or result.get("health", {}).get("mental_reminder"):
         save_user_brain(current.public_id, brain)
     return result
+
+
+@app.get("/reminders/today")
+def reminders_today(current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    from day_coach import assess_day_load, build_today_reminders
+
+    fit = assess_day_load(brain)
+    payload = build_today_reminders(brain, fit=fit)
+    payload["enabled"] = bool(brain.get("notify_schedule"))
+    return payload
+
+
+@app.post("/reminders/prefs")
+def reminders_prefs(req: ReminderPrefsRequest, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    brain["notify_schedule"] = bool(req.enabled)
+    save_user_brain(current.public_id, brain)
+    from day_coach import assess_day_load, build_today_reminders
+
+    fit = assess_day_load(brain)
+    payload = build_today_reminders(brain, fit=fit)
+    payload["enabled"] = bool(brain["notify_schedule"])
+    return payload
 
 
 @app.get("/schedule/events")

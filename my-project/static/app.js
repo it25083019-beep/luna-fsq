@@ -57,6 +57,9 @@
   let stateData = { level: 1, total_exp: 0, companion_name: null, user_display_name: null, companion_id: "luna" };
   let companionCatalog = [];
   let selectedCompanionId = localStorage.getItem("companion_id") || "luna";
+  let notifyOn = localStorage.getItem("luna_notify") === "1";
+  let reminderTimers = [];
+  let lastReminders = null;
   let rpgData = { class_id: null, region_id: "tutorial_plains", active_quests: [] };
   let regions = [];
   let classLabels = {};
@@ -328,6 +331,8 @@
     try {
       await api("/companion/sprite", { method: "POST", body: JSON.stringify({ companion_id: row.id }) });
     } catch (_) {}
+    const sample = (row.voice && row.voice.sample_ja) || (row.label_ja || "") + "だよ。よろしくね。";
+    speakJa(sample).catch(() => {});
   }
 
   function setLunaView(view) {
@@ -490,6 +495,7 @@
     }
     renderHomeHeader();
     renderHomeClassStrip();
+    renderDayPaceBanner();
     renderHomeDailyQuests();
     renderHomeFinalForm();
     renderHomePortfolioTeaser();
@@ -1007,10 +1013,30 @@
     });
   }
 
+  function renderDayPaceBanner() {
+    const el = document.getElementById("dayPaceBanner");
+    if (!el) return;
+    const fit = journeyStatus.day_fit || (lastReminders && lastReminders.day_fit);
+    if (!fit || !fit.coach_ja) {
+      el.hidden = true;
+      el.innerHTML = "";
+      return;
+    }
+    el.hidden = false;
+    el.className = "day-pace-banner " + (fit.load || "");
+    el.innerHTML =
+      "<strong>" +
+      (fit.label_ja || "今日のペース") +
+      "</strong><p>" +
+      fit.coach_ja +
+      "</p>";
+  }
+
   function renderHomeDailyQuests() {
     const box = document.getElementById("homeDailyQuestList");
     if (!box) return;
     box.innerHTML = "";
+    const fit = journeyStatus.day_fit || {};
     const lifeRows = (journeyStatus.life_quests || []).map((q) => ({
       life: q,
       done: false,
@@ -1024,10 +1050,12 @@
     const next = journeyStatus.next_lesson;
     const rows = lifeRows.slice();
     if (journeyStatus.selected) {
-      if (next) rows.push({ les: next, done: false, main: true });
+      if (next && fit.recommend !== "rest") rows.push({ les: next, done: false, main: true });
+      else if (next && fit.recommend === "rest") rows.push({ les: next, done: false, main: false, optional: true });
+      const extra = fit.recommend === "rest" ? 0 : Math.max(0, 2 - lifeRows.length);
       lessons
         .filter((l) => l.available && !l.completed && (!next || l.id !== next.id))
-        .slice(0, Math.max(0, 2 - lifeRows.length))
+        .slice(0, extra)
         .forEach((l) => rows.push({ les: l, done: false, main: false }));
       lessons
         .filter((l) => l.completed)
@@ -1043,18 +1071,24 @@
       const div = document.createElement("div");
       if (row.life) {
         const q = row.life;
-        div.className = "demo-quest-row life-quest";
+        const restEmoji = { rest_stretch: "🤸", rest_water: "💧", rest_eyes: "👁", rest_walk: "🚶" };
+        const isRest = q.type === "rest";
+        div.className = "demo-quest-row life-quest" + (isRest ? " rest-quest" : "");
         div.innerHTML =
           '<div class="quest-icon ' +
           (q.icon_class || "green") +
-          '">🌸</div><div class="quest-text"><strong>' +
+          '">' +
+          (isRest ? restEmoji[q.id] || "🌿" : "🌸") +
+          '</div><div class="quest-text"><strong>' +
           (q.title_ja || "ケア") +
-          "</strong><span>ライフ ・ +" +
+          "</strong><span>" +
+          (isRest ? "回復 ・ +" : "ライフ ・ +") +
           (q.exp || 8) +
           ' EXP</span></div><div class="check"></div>';
         div.onclick = () => {
           const chip = q.chip || q.title_ja;
-          if (chip.includes("体調") || chip === "元気") runConsult("health", chip.includes("体調") ? chip : "体調を相談したい");
+          if (isRest) sendMessage(chip);
+          else if (chip.includes("体調") || chip === "元気") runConsult("health", chip.includes("体調") ? chip : "体調を相談したい");
           else if (chip.includes("お金")) runConsult("money", chip);
           else sendMessage(chip);
           switchTab("luna");
@@ -1076,7 +1110,9 @@
           ? "クリア済 ・ +" + (row.les.exp || 0) + " EXP"
           : row.main
             ? "メイン ・ +" + (row.les.exp || 0) + " EXP"
-            : "サブ ・ +" + (row.les.exp || 0) + " EXP") +
+            : row.optional
+              ? "余裕があれば ・ +" + (row.les.exp || 0) + " EXP"
+              : "サブ ・ +" + (row.les.exp || 0) + " EXP") +
         '</span></div><div class="check"></div>';
       if (!row.done) {
         div.onclick = () => {
@@ -1142,6 +1178,12 @@
     if (!box) return;
     const les = journeyStatus.next_lesson;
     const boss = journeyStatus.next_boss;
+    const fit = journeyStatus.day_fit || {};
+    const tag = document.querySelector("#tab-fsq .quest-board .quest-tag");
+    if (tag) {
+      tag.textContent =
+        fit.recommend === "rest" ? "きょうは回復" : fit.recommend === "micro" ? "短い学習" : "次の学習";
+    }
     box.innerHTML = "";
     if (!les) {
       const p = document.createElement("p");
@@ -1153,15 +1195,22 @@
       box.appendChild(p);
     } else {
       const left = document.createElement("div");
+      const paceHint =
+        fit.recommend === "rest"
+          ? "今日は休むのがおすすめ。学習したくなったら出撃してね。"
+          : fit.recommend === "micro"
+            ? "短いクエスト（約" + (fit.study_minutes || 12) + "分）がおすすめ"
+            : "報酬 +" + (les.exp || 0) + " EXP ・ 教材クエスト";
       left.innerHTML =
         "<strong>⚔ " +
         (les.title_ja || les.id) +
-        '</strong><div class="hint">報酬 +' +
-        (les.exp || 0) +
-        " EXP ・ 教材クエスト</div>";
+        '</strong><div class="hint">' +
+        paceHint +
+        "</div>";
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.textContent = "出撃する";
+      btn.textContent = fit.recommend === "rest" ? "それでも学習する" : "出撃する";
+      if (fit.recommend === "rest") btn.className = "ghost";
       btn.onclick = () => openStudyLesson(les.id);
       box.appendChild(left);
       box.appendChild(btn);
@@ -2208,9 +2257,19 @@
     });
   }
 
+  function currentVoiceProfile() {
+    const row = companionById(selectedCompanionId) || {};
+    return row.voice || {};
+  }
+
   function pickJaBrowserVoice(voices) {
     const list = voices || (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
-    const prefer = ["Nanami", "Haruka", "Kyoko", "Google 日本語", "Microsoft Ayumi", "Ichiro"];
+    const profile = currentVoiceProfile();
+    const prefer = (profile.browser_prefer || []).concat(
+      selectedCompanionId === "ren"
+        ? ["Ichiro", "Keita", "Daichi", "Hayato", "Google 日本語"]
+        : ["Nanami", "Haruka", "Kyoko", "Google 日本語", "Microsoft Ayumi"]
+    );
     for (const name of prefer) {
       const hit = list.find((v) => (v.name || "").includes(name));
       if (hit) return hit;
@@ -2223,9 +2282,13 @@
     unlockAudio();
     window.speechSynthesis.cancel();
     const voices = await ensureVoicesLoaded();
+    const profile = currentVoiceProfile();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "ja-JP";
-    u.rate = 1.05;
+    const rate = Number(profile.browser_rate);
+    const pitch = Number(profile.browser_pitch);
+    u.rate = Number.isFinite(rate) ? rate : 1.05;
+    u.pitch = Number.isFinite(pitch) ? pitch : 1;
     const voice = pickJaBrowserVoice(voices);
     if (voice) u.voice = voice;
     u.onstart = () => {
@@ -2246,8 +2309,8 @@
     const mySeq = ++speakSeq;
     unlockAudio();
     stopLunaSpeech();
-    // Chat path: browser voice only (instant). Gemini TTS competes with chat
-    // quota/latency — keep it opt-in via localStorage luna_gemini_voice=1.
+    // Chat path: browser voice first (instant, per-character pitch). Gemini TTS
+    // is opt-in via localStorage luna_gemini_voice=1 because of quota/latency.
     const wantGemini = localStorage.getItem("luna_gemini_voice") === "1" && ttsFailStreak < 3;
     await speakJaBrowserFallback(line);
     if (!wantGemini || mySeq !== speakSeq) return;
@@ -2260,7 +2323,7 @@
       const res = await fetch("/tts/speak", {
         method: "POST",
         headers,
-        body: JSON.stringify({ text: line }),
+        body: JSON.stringify({ text: line, companion_id: selectedCompanionId || "luna" }),
         signal: ctrl ? ctrl.signal : undefined,
       });
       if (!res.ok) throw new Error("tts");
@@ -2295,6 +2358,119 @@
     try {
       localStorage.setItem("luna_voice", voiceOn ? "1" : "0");
     } catch (_) {}
+  }
+
+  function notifyPermission() {
+    if (!("Notification" in window)) return "unsupported";
+    return Notification.permission;
+  }
+
+  function syncNotifyBtn() {
+    const btn = document.getElementById("notifyToggleBtn");
+    const status = document.getElementById("notifyStatus");
+    const perm = notifyPermission();
+    if (btn) btn.textContent = notifyOn ? "オン" : "オフ";
+    if (status) {
+      if (perm === "unsupported") status.textContent = "このブラウザは通知に対応していません。";
+      else if (perm === "denied") status.textContent = "ブラウザで通知が拒否されています。設定から許可してください。";
+      else if (notifyOn && perm === "granted") status.textContent = "予定の10分前にリマインダーを出します。";
+      else if (notifyOn) status.textContent = "許可すると、今日の予定を知らせます。";
+      else status.textContent = "オフです。オンにすると今日の予定を知らせます。";
+    }
+  }
+
+  function registerLunaWorker() {
+    if (!("serviceWorker" in navigator)) return Promise.resolve(null);
+    return navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => null);
+  }
+
+  function clearReminderTimers() {
+    reminderTimers.forEach((id) => clearTimeout(id));
+    reminderTimers = [];
+  }
+
+  function showReminderNote(row) {
+    if (!row) return;
+    const title = row.title || "LUNA";
+    const opts = {
+      body: row.body || "",
+      tag: row.id || "luna",
+      icon: "/static/live2d/luna-expressions/luna-neutral.png",
+      data: { url: row.url || "/app" },
+    };
+    if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+      navigator.serviceWorker.ready
+        .then((reg) => reg.showNotification(title, opts))
+        .catch(() => {
+          try {
+            new Notification(title, opts);
+          } catch (_) {}
+        });
+      return;
+    }
+    try {
+      new Notification(title, opts);
+    } catch (_) {}
+  }
+
+  function scheduleReminderPayload(payload) {
+    lastReminders = payload || lastReminders;
+    if (payload && payload.day_fit && journeyStatus) {
+      journeyStatus.day_fit = payload.day_fit;
+      renderDayPaceBanner();
+    }
+    clearReminderTimers();
+    if (!notifyOn || notifyPermission() !== "granted") return;
+    const list = (payload && payload.reminders) || [];
+    const now = Date.now();
+    list.forEach((row) => {
+      const at = Date.parse(row.fire_at || "") || now;
+      const delay = Math.max(0, at - now);
+      if (delay > 14 * 60 * 60 * 1000) return;
+      if (row.kind === "coach") {
+        const digestKey = "luna_digest_" + ((payload && payload.date) || "");
+        try {
+          if (localStorage.getItem(digestKey) === "1") return;
+          localStorage.setItem(digestKey, "1");
+        } catch (_) {}
+      }
+      reminderTimers.push(setTimeout(() => showReminderNote(row), delay));
+    });
+  }
+
+  async function toggleScheduleNotify() {
+    if (!("Notification" in window)) {
+      notifyOn = false;
+      syncNotifyBtn();
+      return;
+    }
+    if (!notifyOn) {
+      let perm = Notification.permission;
+      if (perm !== "granted") {
+        try {
+          perm = await Notification.requestPermission();
+        } catch (_) {
+          perm = Notification.permission;
+        }
+      }
+      notifyOn = perm === "granted";
+    } else {
+      notifyOn = false;
+      clearReminderTimers();
+    }
+    try {
+      localStorage.setItem("luna_notify", notifyOn ? "1" : "0");
+    } catch (_) {}
+    syncNotifyBtn();
+    try {
+      const res = await api("/reminders/prefs", {
+        method: "POST",
+        body: JSON.stringify({ enabled: notifyOn }),
+      });
+      scheduleReminderPayload(res);
+    } catch (_) {
+      if (lastReminders) scheduleReminderPayload(lastReminders);
+    }
   }
 
   const DEFAULT_CHIPS = [
@@ -3570,6 +3746,15 @@
       }
       renderCareTimeline(s.care_timeline || []);
       renderWeeklyReview(s.weekly_review || null);
+      if (s.day_fit) {
+        journeyStatus.day_fit = s.day_fit;
+        renderDayPaceBanner();
+        if (currentTab === "fsq") {
+          renderHomeDailyQuests();
+          renderNextLesson();
+        }
+      }
+      if (s.reminders) scheduleReminderPayload(s.reminders);
     } catch (_) {}
   }
 
@@ -3814,6 +3999,19 @@
         if (sample && sample !== "…" && sample !== "...") speakJa(sample).catch(() => {});
       }
     };
+    const notifyToggle = document.getElementById("notifyToggleBtn");
+    if (notifyToggle) notifyToggle.onclick = () => toggleScheduleNotify();
+    const voicePreview = document.getElementById("voicePreviewBtn");
+    if (voicePreview) {
+      voicePreview.onclick = () => {
+        unlockAudio();
+        voiceOn = true;
+        syncVoiceBtn();
+        const row = companionById(selectedCompanionId) || {};
+        const sample = (row.voice && row.voice.sample_ja) || "こんにちは。";
+        speakJa(sample).catch(() => {});
+      };
+    }
     document.getElementById("refreshCareerBtn").onclick = () => loadJourney().catch((e) => setErr(e.message));
     const backClass = document.getElementById("backToClassBtn");
     if (backClass) {
@@ -3958,7 +4156,9 @@
     if (!LunaAuth.requireLogin("/app")) return;
     token = LunaAuth.getToken();
     syncVoiceBtn();
+    syncNotifyBtn();
     bindEvents();
+    registerLunaWorker();
     ensureVoicesLoaded().catch(() => {});
     document.addEventListener(
       "pointerdown",

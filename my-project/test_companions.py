@@ -13,6 +13,12 @@ def test_catalog_has_luna_and_animals():
     luno = get_companion("luno")
     assert luno["themes"]["health"].endswith("health-luno.png")
     assert luno["themes"]["money"].endswith("money-luno.png")
+    voices = {c["id"]: (c.get("voice") or {}).get("gemini_name") for c in rows}
+    assert voices["luna"] == "Gacrux"
+    assert voices["luno"] == "Leda"
+    assert voices["ren"] == "Charon"
+    assert len(set(voices.values())) == len(voices)
+    assert (get_companion("ren").get("voice") or {}).get("browser_pitch", 1) < 0.7
     assert normalize_companion_id("nope") == "luna"
     assert normalize_companion_id("REN") == "ren"
     print("OK companions catalog", len(rows))

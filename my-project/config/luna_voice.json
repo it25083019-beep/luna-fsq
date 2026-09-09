@@ -1,6 +1,7 @@
 {
   "reference_audio": "/static/audio/luna-voice-reference.mp3",
   "model": "gemini-2.5-flash-preview-tts",
-  "voice_name": "Leda",
-  "style_ja": "明るく自然な女性ナレーション（エネルギッシュで優しい）"
+  "voice_name": "Gacrux",
+  "style_ja": "30歳前後の女性教師。落ち着いて丁寧で温かく、少し指導的",
+  "note": "Per-companion voices live in config/companions.json. This file is Luna's default fallback."
 }

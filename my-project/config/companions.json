@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "default_id": "luna",
   "companions": [
     {
@@ -9,7 +9,15 @@
       "kind": "human",
       "tag_ja": "案内役",
       "prefix": "luna",
-      "base": "/static/live2d/luna-expressions"
+      "base": "/static/live2d/luna-expressions",
+      "voice": {
+        "gemini_name": "Gacrux",
+        "style_ja": "30歳前後の女性教師。落ち着いて丁寧で温かく、少し指導的。早口にせず、はっきりと話す",
+        "browser_rate": 0.96,
+        "browser_pitch": 0.92,
+        "browser_prefer": ["Nanami", "Haruka", "Kyoko"],
+        "sample_ja": "こんにちは。今日も一緒に、落ち着いて進めていきましょう。"
+      }
     },
     {
       "id": "luno",
@@ -18,7 +26,15 @@
       "kind": "human",
       "tag_ja": "夜の海",
       "prefix": "luno",
-      "base": "/static/live2d/luno-expressions"
+      "base": "/static/live2d/luno-expressions",
+      "voice": {
+        "gemini_name": "Leda",
+        "style_ja": "10代後半から20代前半の可愛い女の子。明るく少し高い声で、親しみやすくはしゃいだ感じ",
+        "browser_rate": 1.12,
+        "browser_pitch": 1.38,
+        "browser_prefer": ["Nanami", "Kyoko", "Haruka"],
+        "sample_ja": "えへへ、わたしルノだよ。きょうもがんばろー！"
+      }
     },
     {
       "id": "ren",
@@ -27,7 +43,15 @@
       "kind": "human",
       "tag_ja": "先輩",
       "prefix": "ren",
-      "base": "/static/live2d/ren-expressions"
+      "base": "/static/live2d/ren-expressions",
+      "voice": {
+        "gemini_name": "Charon",
+        "style_ja": "30代の男性。低くて温かい声。落ち着いていて頼りがいがあり、優しく励ます",
+        "browser_rate": 0.88,
+        "browser_pitch": 0.42,
+        "browser_prefer": ["Ichiro", "Keita", "Daichi", "Hayato"],
+        "sample_ja": "お疲れ。無理しすぎないようにな。今日も俺がついてる。"
+      }
     },
     {
       "id": "hachi",
@@ -36,7 +60,15 @@
       "kind": "animal",
       "tag_ja": "いぬ",
       "prefix": "hachi",
-      "base": "/static/live2d/hachi-expressions"
+      "base": "/static/live2d/hachi-expressions",
+      "voice": {
+        "gemini_name": "Puck",
+        "style_ja": "元気ないぬ。明るく短めに、しっぽを振るような可愛い声。わんっとした元気さ",
+        "browser_rate": 1.18,
+        "browser_pitch": 1.28,
+        "browser_prefer": ["Nanami", "Kyoko"],
+        "sample_ja": "わんっ！一緒にいこう。きょうもおさんぽだよ！"
+      }
     },
     {
       "id": "momo",
@@ -45,7 +77,15 @@
       "kind": "animal",
       "tag_ja": "ねこ",
       "prefix": "momo",
-      "base": "/static/live2d/momo-expressions"
+      "base": "/static/live2d/momo-expressions",
+      "voice": {
+        "gemini_name": "Aoede",
+        "style_ja": "おっとりしたねこ。少し鼻にかかった可愛い声。ゆっくり、にゃあと甘える感じ",
+        "browser_rate": 1.02,
+        "browser_pitch": 1.42,
+        "browser_prefer": ["Nanami", "Kyoko"],
+        "sample_ja": "にゃあ。急がなくていいよ。こっちでまるまって待ってる。"
+      }
     },
     {
       "id": "taro",
@@ -54,7 +94,15 @@
       "kind": "animal",
       "tag_ja": "パンダ",
       "prefix": "taro",
-      "base": "/static/live2d/taro-expressions"
+      "base": "/static/live2d/taro-expressions",
+      "voice": {
+        "gemini_name": "Autonoe",
+        "style_ja": "おっとりしたパンダ。低くやわらかく、ゆっくりした可愛い声。もぐもぐした穏やかさ",
+        "browser_rate": 0.86,
+        "browser_pitch": 0.78,
+        "browser_prefer": ["Haruka", "Nanami"],
+        "sample_ja": "もぐもぐ…いっしょに、ゆっくり休もう。"
+      }
     },
     {
       "id": "ponta",
@@ -63,7 +111,15 @@
       "kind": "animal",
       "tag_ja": "タヌキ",
       "prefix": "ponta",
-      "base": "/static/live2d/ponta-expressions"
+      "base": "/static/live2d/ponta-expressions",
+      "voice": {
+        "gemini_name": "Laomedeia",
+        "style_ja": "いたずら好きのタヌキ。弾むような可愛い声。ぽんっと明るい",
+        "browser_rate": 1.16,
+        "browser_pitch": 1.18,
+        "browser_prefer": ["Nanami", "Kyoko"],
+        "sample_ja": "ぽんっ！まかせて〜。いっしょに遊ぼう！"
+      }
     }
   ]
 }

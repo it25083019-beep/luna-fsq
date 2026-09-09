@@ -424,8 +424,10 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
         j.get("glamour") or {},
     )
     from life_link import life_quests_for_fsq
+    from day_coach import assess_day_load
 
     life_quests = life_quests_for_fsq(state) if j.get("career_id") else []
+    day_fit = assess_day_load(state)
     career_portfolio = None
     if j.get("career_id"):
         from career_portfolio import build_career_portfolio
@@ -457,6 +459,7 @@ def journey_status(state: Dict[str, Any]) -> Dict[str, Any]:
         "ranks": list_ranks(),
         "life_quests": life_quests,
         "career_portfolio": career_portfolio,
+        "day_fit": day_fit,
     }
 
 

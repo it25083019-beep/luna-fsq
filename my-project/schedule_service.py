@@ -1249,6 +1249,10 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
         money_label = f"今日{int(money_pace['today_spent']):,}円"
     elif money_ev.get("score") is not None:
         money_label = f"{money_ev.get('status_ja') or '—'} {money_ev.get('score')}"
+    from day_coach import assess_day_load, build_today_reminders
+
+    day_fit = assess_day_load(user)
+    reminders = build_today_reminders(user, fit=day_fit)
     return {
         "schedule": {
             "open_count": today_open_n,
@@ -1276,4 +1280,6 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
         "care_quests": build_care_quests(user),
         "care_timeline": build_care_timeline(user, schedule_items=today_items),
         "weekly_review": build_weekly_review(user),
+        "day_fit": day_fit,
+        "reminders": reminders,
     }

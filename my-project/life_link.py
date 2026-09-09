@@ -93,12 +93,16 @@ def on_lesson_complete(
 
 
 def life_quests_for_fsq(user: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Care quests formatted for FSQ home (life data → daily quests)."""
-    out: List[Dict[str, Any]] = []
+    """Care + rest quests for FSQ home, paced by today's calendar load."""
+    from day_coach import assess_day_load
+
+    fit = assess_day_load(user)
+    rest = list(fit.get("rest_actions") or [])
+    care: List[Dict[str, Any]] = []
     for q in build_care_quests(user):
         qid = q.get("id") or "care"
         icon = {"mood": "pink", "sleep": "blue", "spend": "yellow", "follow_health": "green"}.get(qid, "green")
-        out.append(
+        care.append(
             {
                 "id": f"life_{qid}",
                 "type": "life",
@@ -109,4 +113,8 @@ def life_quests_for_fsq(user: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "consult": qid in ("mood", "sleep", "spend", "follow_health"),
             }
         )
-    return out[:3]
+    if fit.get("recommend") == "rest":
+        return (rest + care)[:4]
+    if fit.get("recommend") == "micro":
+        return (rest[:2] + care)[:3]
+    return care[:3]

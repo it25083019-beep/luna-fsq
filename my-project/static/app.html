@@ -495,7 +495,7 @@
     .rpg-exp{flex:1;height:10px;background:rgba(0,0,0,.3);border:1px solid rgba(212,168,75,.35)}
     .rpg-exp span{background:linear-gradient(90deg,#5ecfc0,#f0d9a0,#d4a84b)}
     #tab-fsq .role{font-family:"Shippori Mincho",serif;letter-spacing:.03em}
-    #tab-fsq .next-lesson button,
+    #tab-fsq .next-lesson button:not(.ghost),
     #tab-fsq .lesson-row button:not(.ghost),
     #tab-fsq .boss-row button:not(.ghost){
       background:linear-gradient(135deg,var(--fsq-gold),#a87828);color:#1a1204;
@@ -911,7 +911,15 @@
     .study-check{list-style:none;padding:0;margin:0 0 .7rem}
     .study-check li{font-size:.72rem;padding:.35rem 0 .35rem 1.2rem;position:relative;color:#445;border-bottom:1px dashed #e8eaff}
     .study-check li::before{content:"☐";position:absolute;left:0;top:.3rem}
-    .next-lesson{display:flex;gap:.55rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .next-lesson button.ghost{background:#ebe0c8;color:#5a4a28;box-shadow:none}
+    .day-pace-banner{margin:0 0 .65rem;padding:.7rem .85rem;border-radius:16px;background:linear-gradient(160deg,#e8f6f1,#fff8e8);border:1px solid rgba(31,122,110,.22)}
+    .day-pace-banner.rest{background:linear-gradient(160deg,#ffe8e8,#fff6f0);border-color:rgba(224,122,138,.3)}
+    .day-pace-banner.busy,.day-pace-banner.heavy{background:linear-gradient(160deg,#fff4e0,#fffdf6)}
+    .day-pace-banner strong{display:block;font-size:.82rem;color:#1c2a2e}
+    .day-pace-banner p{margin:.25rem 0 0;font-size:.72rem;color:#5a6e68;line-height:1.45}
+    .notify-row{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin:.45rem 0;padding:.55rem .65rem;background:#fff;border-radius:14px}
+    .notify-row button,#voicePreviewBtn{border:none;border-radius:999px;padding:.4rem .9rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
+    #voicePreviewBtn{margin:.35rem 0 .55rem}
     .next-boss-hint{margin-top:.55rem;padding:.55rem .65rem;border-radius:14px;background:#fff6ef;border:1px solid #ffd7bf;font-size:.72rem;color:#8a4b20}
     .lesson-row,.boss-row{display:flex;gap:.5rem;align-items:flex-start;padding:.55rem 0;border-bottom:1px solid #ecefff}
     .lesson-row:last-child,.boss-row:last-child{border-bottom:none}
@@ -1340,8 +1348,16 @@
             <p class="pw-msg hint" id="pwChangeMsg"></p>
           </div>
           <h3 style="margin-top:1rem">コンパニオン</h3>
-          <p class="hint">設定で見た目を切り替えます。まばたき・口パク・ジェスチャーは全員同じです。健康・お金・予定のイラストも一緒に変わります。</p>
+          <p class="hint">設定で見た目と声を切り替えます。ルナは落ち着いた先生、ルノは若くて可愛い、レンは低い男性の声。動物はそれぞれの雰囲気です。</p>
           <div class="companion-grid" id="settingsCompanionGrid"></div>
+          <button type="button" id="voicePreviewBtn">このコンパニオンの声を聞く</button>
+          <h3 style="margin-top:1rem">通知</h3>
+          <p class="hint">今日入れた予定の10分前にリマインダーを出します。あとでアプリにしたときも、同じ内容をプッシュ通知にできます。タブを完全に閉じると届かないことがあります。</p>
+          <div class="notify-row">
+            <span>予定のリマインダー</span>
+            <button type="button" id="notifyToggleBtn">オフ</button>
+          </div>
+          <p class="hint" id="notifyStatus"></p>
           <div class="settings-actions"><button type="button" id="settingsBack">戻る</button></div>
         </div>
       </section>
@@ -1662,6 +1678,7 @@
             </div>
             <div class="card fsq-addon-card">
               <div class="section-title"><span>✅ 今日のクエスト</span><span class="hint">タップで出撃</span></div>
+              <div id="dayPaceBanner" class="day-pace-banner" hidden></div>
               <div id="homeDailyQuestList"><p class="hint" style="margin:0">進路を選ぶとクエストが表示されます。</p></div>
             </div>
             <div class="card quest-board">
@@ -1949,6 +1966,6 @@
   <script src="/static/live2d/luna-avatar.js?v=20260909b"></script>
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
-  <script src="/static/app.js?v=20260909c"></script>
+  <script src="/static/app.js?v=20260909d"></script>
 </body>
 </html>

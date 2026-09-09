@@ -95,6 +95,11 @@ class ChatResponse(BaseModel):
 
 class TtsSpeakRequest(BaseModel):
     text: str = Field(min_length=1, max_length=1000)
+    companion_id: Optional[str] = None
+
+
+class ReminderPrefsRequest(BaseModel):
+    enabled: bool = True
 
 
 
