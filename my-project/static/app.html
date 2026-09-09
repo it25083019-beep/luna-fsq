@@ -142,7 +142,11 @@
     .module-panel .row,.settings-actions{display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap}
     .module-panel .row button,.settings-actions button{border:none;border-radius:999px;padding:.55rem .9rem;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep)}
     .module-panel .row .amber{background:linear-gradient(135deg,var(--mint),var(--lilac-deep));color:#fff;font-weight:600}
-    .theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.4rem}
+    .pw-box{margin:.7rem 0 .35rem}
+    .pw-box label{display:block;font-size:.72rem;color:var(--muted);margin:.4rem 0 .2rem}
+    .pw-box input{width:100%;padding:.65rem .8rem;border:none;background:var(--input-bg);color:var(--text);border-radius:14px;outline:none;font:inherit}
+    .pw-box button{margin-top:.55rem;border:none;border-radius:999px;padding:.55rem .95rem;cursor:pointer;background:linear-gradient(135deg,var(--mint),var(--lilac-deep));color:#fff;font-weight:700}
+    .pw-msg{min-height:1.1em;font-size:.72rem;margin:.35rem 0 0}
     .theme-btn{border:2px solid transparent;background:var(--input-bg);border-radius:14px;padding:.55rem;cursor:pointer;display:flex;align-items:center;gap:.45rem;font-size:.72rem}
     .theme-btn.active{border-color:var(--lilac)}
     .theme-swatch{width:2rem;height:2rem;border-radius:10px;background:linear-gradient(135deg,var(--sw0,#ccc),var(--sw1,#999),var(--sw2,#666))}
@@ -1323,6 +1327,18 @@
           <h3>一般設定</h3>
           <p class="hint">色テーマはログイン画面にも反映されます。</p>
           <div class="theme-grid" id="themeGrid"></div>
+          <h3 style="margin-top:1rem">パスワード</h3>
+          <p class="hint">ログイン中に、今のパスワードから新しいパスワードへ変更できます。</p>
+          <div class="pw-box">
+            <label for="pwCurrent">現在のパスワード</label>
+            <input id="pwCurrent" type="password" autocomplete="current-password" />
+            <label for="pwNew">新しいパスワード（6文字以上）</label>
+            <input id="pwNew" type="password" autocomplete="new-password" minlength="6" />
+            <label for="pwNew2">新しいパスワード（確認）</label>
+            <input id="pwNew2" type="password" autocomplete="new-password" minlength="6" />
+            <button type="button" id="pwChangeBtn">パスワードを更新</button>
+            <p class="pw-msg hint" id="pwChangeMsg"></p>
+          </div>
           <h3 style="margin-top:1rem">コンパニオン</h3>
           <p class="hint">設定で見た目を切り替えます。まばたき・口パク・ジェスチャーは全員同じです。健康・お金・予定のイラストも一緒に変わります。</p>
           <div class="companion-grid" id="settingsCompanionGrid"></div>
@@ -1882,6 +1898,7 @@
           <button type="button" data-open="history">💬 会話の履歴</button>
           <button type="button" id="menuThemeBtn">🎨 テーマ設定</button>
           <button type="button" id="menuCompanionBtn">🐾 コンパニオンを選ぶ</button>
+          <button type="button" id="menuPasswordBtn">🔑 パスワードを変更</button>
           <button type="button" id="morningBtn">🌅 朝チェックイン</button>
           <button type="button" id="eveningBtn">🌙 夜チェックイン</button>
           <button type="button" id="adminLink" class="hidden" onclick="location.href='/admin'">🔧 管理画面</button>
@@ -1932,6 +1949,6 @@
   <script src="/static/live2d/luna-avatar.js?v=20260909b"></script>
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
-  <script src="/static/app.js?v=20260909b"></script>
+  <script src="/static/app.js?v=20260909c"></script>
 </body>
 </html>

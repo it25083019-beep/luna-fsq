@@ -42,6 +42,11 @@ class ForgotPasswordRequest(BaseModel):
         return _normalize_email(v)
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=6)
+
+
 class ResetPasswordRequest(BaseModel):
     token: str = Field(min_length=20)
     new_password: str = Field(min_length=6)

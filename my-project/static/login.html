@@ -67,17 +67,20 @@
     <section class="panel" id="authPanel">
       <h2 id="authTitle">LUNAへようこそ</h2>
       <form id="authForm">
-        <label for="email">メールアドレス</label>
-        <input id="email" type="email" autocomplete="username" required placeholder="you@example.com" />
+        <div id="emailBlock">
+          <label for="email">メールアドレス</label>
+          <input id="email" type="email" autocomplete="username" required placeholder="you@example.com" />
+        </div>
         <div id="passwordBlock">
           <label for="password">パスワード</label>
           <input id="password" type="password" autocomplete="current-password" required minlength="6" />
         </div>
         <div id="resetTokenBlock" class="hidden">
-          <label for="resetToken">再設定トークン</label>
-          <input id="resetToken" type="text" autocomplete="off" />
-          <label for="newPassword">新しいパスワード</label>
+          <input id="resetToken" type="hidden" autocomplete="off" />
+          <label for="newPassword">新しいパスワード（6文字以上）</label>
           <input id="newPassword" type="password" autocomplete="new-password" minlength="6" />
+          <label for="newPassword2">新しいパスワード（確認）</label>
+          <input id="newPassword2" type="password" autocomplete="new-password" minlength="6" />
         </div>
         <div class="row">
           <button type="submit" id="authSubmit" class="primary">ログイン</button>
@@ -150,13 +153,20 @@
       document.getElementById("toggleMode").classList.toggle("hidden", forgotMode || resetMode);
       document.getElementById("forgotBtn").classList.toggle("hidden", forgotMode || resetMode);
       document.getElementById("backToLoginWrap").classList.toggle("hidden", login);
+      document.getElementById("emailBlock").classList.toggle("hidden", resetMode);
       document.getElementById("passwordBlock").classList.toggle("hidden", forgotMode || resetMode);
       document.getElementById("resetTokenBlock").classList.toggle("hidden", !resetMode);
+      document.getElementById("email").required = !resetMode;
       document.getElementById("password").required = login || registerMode;
-      document.getElementById("resetToken").required = resetMode;
       document.getElementById("newPassword").required = resetMode;
+      document.getElementById("newPassword2").required = resetMode;
+      authHint.textContent = forgotMode
+        ? "登録したメールアドレスを入力すると、再設定リンクを発行します。"
+        : resetMode
+          ? "新しいパスワードを入力して更新してください。"
+          : "管理者・ユーザー共通。ログイン後、行き先を選べます（管理者のみ管理画面）。";
       authError.textContent = "";
-      resetDevLink.classList.add("hidden");
+      if (!forgotMode) resetDevLink.classList.add("hidden");
     }
 
     async function api(path, opts = {}) {
@@ -194,14 +204,21 @@
           authError.textContent = data.message || "送信しました";
           if (data.reset_url) {
             resetDevLink.classList.remove("hidden");
-            resetDevLink.innerHTML = '開発用: <a href="' + data.reset_url + '">再設定リンク</a>';
+            resetDevLink.innerHTML = '再設定リンク: <a href="' + data.reset_url + '">ここをタップして新しいパスワードを設定</a>';
+          } else {
+            resetDevLink.classList.remove("hidden");
+            resetDevLink.textContent = "メールの案内に従って再設定してください。届かない場合は数分待って再試行してください。";
           }
-          setAuthMode("reset");
           return;
         }
         if (resetMode) {
           const tokenVal = document.getElementById("resetToken").value.trim() || new URLSearchParams(location.search).get("reset") || "";
-          await api("/auth/reset-password", { method: "POST", body: JSON.stringify({ token: tokenVal, new_password: document.getElementById("newPassword").value }) });
+          const np = document.getElementById("newPassword").value;
+          const np2 = document.getElementById("newPassword2").value;
+          if (np.length < 6) throw new Error("パスワードは6文字以上にしてください");
+          if (np !== np2) throw new Error("確認用パスワードが一致しません");
+          if (!tokenVal) throw new Error("再設定リンクが無効です。もう一度「パスワードを忘れた場合」からやり直してください。");
+          await api("/auth/reset-password", { method: "POST", body: JSON.stringify({ token: tokenVal, new_password: np }) });
           history.replaceState({}, "", "/login");
           setAuthMode("login");
           authError.style.color = "var(--mint)";

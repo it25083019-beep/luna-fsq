@@ -67,6 +67,7 @@ from schemas import (
     LoginRequest,
     RegisterRequest,
     ResetPasswordRequest,
+    ChangePasswordRequest,
     SetCompanionNameRequest,
     SetCompanionSpriteRequest,
     TokenResponse,
@@ -366,11 +367,17 @@ def auth_forgot_password(
     base = (os.getenv("APP_BASE_URL") or str(request.base_url)).rstrip("/")
     reset_url = f"{base}/login?reset={raw_token}"
     sent = send_password_reset_email(user.email, reset_url)
-    dev_mode = os.getenv("ENV", "dev").lower() not in {"prod", "production"}
+    # If mail is not configured (or failed), return the link so the user can finish reset.
     return ForgotPasswordResponse(
-        message=generic,
-        reset_url=reset_url if dev_mode and not sent else None,
+        message=generic if sent else "再設定用のリンクを発行しました。下のリンクから新しいパスワードを設定してください。",
+        reset_url=None if sent else reset_url,
     )
+
+
+def _as_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 @app.post("/auth/reset-password")
@@ -382,11 +389,10 @@ def auth_reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)
         .filter(
             PasswordResetToken.token_hash == token_hash,
             PasswordResetToken.used_at.is_(None),
-            PasswordResetToken.expires_at > now,
         )
         .first()
     )
-    if not row:
+    if not row or _as_utc(row.expires_at) <= now:
         raise HTTPException(status_code=400, detail="Invalid or expired reset link")
     user = db.query(User).filter(User.id == row.user_id).first()
     if not user or user.is_admin:
@@ -398,6 +404,24 @@ def auth_reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)
     row.used_at = now
     db.commit()
     return {"message": "Password updated. You can log in now."}
+
+
+@app.post("/auth/change-password")
+def auth_change_password(
+    req: ChangePasswordRequest,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == current.id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    if not verify_password(req.current_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="現在のパスワードが違います")
+    if req.current_password == req.new_password:
+        raise HTTPException(status_code=400, detail="新しいパスワードは現在と別にしてください")
+    user.password_hash = hash_password(req.new_password)
+    db.commit()
+    return {"ok": True, "message": "パスワードを更新しました。"}
 
 
 # ----- Me routes (token) -----

@@ -3683,6 +3683,62 @@
         if (grid) grid.scrollIntoView({ behavior: "smooth", block: "center" });
       };
     }
+    const menuPasswordBtn = document.getElementById("menuPasswordBtn");
+    if (menuPasswordBtn) {
+      menuPasswordBtn.onclick = () => {
+        switchTab("luna");
+        setLunaView("settings");
+        const box = document.getElementById("pwCurrent");
+        if (box) box.scrollIntoView({ behavior: "smooth", block: "center" });
+      };
+    }
+    const pwChangeBtn = document.getElementById("pwChangeBtn");
+    if (pwChangeBtn) {
+      pwChangeBtn.onclick = async () => {
+        const msg = document.getElementById("pwChangeMsg");
+        const cur = (document.getElementById("pwCurrent") || {}).value || "";
+        const nw = (document.getElementById("pwNew") || {}).value || "";
+        const nw2 = (document.getElementById("pwNew2") || {}).value || "";
+        if (msg) {
+          msg.style.color = "";
+          msg.textContent = "";
+        }
+        if (!cur || !nw) {
+          if (msg) msg.textContent = "現在と新しいパスワードを入力してください。";
+          return;
+        }
+        if (nw.length < 6) {
+          if (msg) msg.textContent = "新しいパスワードは6文字以上です。";
+          return;
+        }
+        if (nw !== nw2) {
+          if (msg) msg.textContent = "確認用パスワードが一致しません。";
+          return;
+        }
+        pwChangeBtn.disabled = true;
+        try {
+          const res = await api("/auth/change-password", {
+            method: "POST",
+            body: JSON.stringify({ current_password: cur, new_password: nw }),
+          });
+          if (msg) {
+            msg.style.color = "#1f7a6e";
+            msg.textContent = res.message || "更新しました。";
+          }
+          ["pwCurrent", "pwNew", "pwNew2"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+          });
+        } catch (e) {
+          if (msg) {
+            msg.style.color = "var(--danger)";
+            msg.textContent = e.message || String(e);
+          }
+        } finally {
+          pwChangeBtn.disabled = false;
+        }
+      };
+    }
     document.getElementById("toggleAddBtn").onclick = () => {
       resetAddForm(selectedDate || todayIso());
       document.getElementById("addForm").classList.add("open");
