@@ -14,6 +14,7 @@
       --shadow:0 14px 36px rgba(120,90,180,.16);
       --input-bg:#f6f1fc; --ghost-bg:#efe8f8;
       --glow-a:rgba(155,126,217,.35); --glow-b:rgba(240,168,200,.3);
+      --sprite-glow:rgba(255,252,248,.55); --sprite-outline:rgba(255,255,255,.75);
     }
     *{box-sizing:border-box}
     body{margin:0;min-height:100vh;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text);
@@ -25,8 +26,15 @@
     .shell{max-width:420px;margin:0 auto;padding:1.25rem 1rem 2rem}
     .top{text-align:center;margin-bottom:.25rem}
     .top h1{margin:0;font-family:"Zen Maru Gothic",sans-serif;font-size:1.15rem;color:var(--lilac-deep);font-weight:700}
-    .hero{display:flex;justify-content:center;margin:.4rem 0 .2rem}
-    .hero img{height:min(46vh,320px);width:auto;max-width:100%;object-fit:contain;background:transparent;filter:drop-shadow(0 14px 26px rgba(120,90,180,.28));
+    .hero{display:flex;justify-content:center;margin:.4rem 0 .2rem;position:relative}
+    .hero::before{
+      content:"";position:absolute;z-index:0;pointer-events:none;
+      left:50%;bottom:4%;width:78%;height:78%;transform:translateX(-50%);
+      border-radius:50%;
+      background:radial-gradient(ellipse at 50% 58%, var(--sprite-glow) 0%, rgba(255,255,255,.14) 48%, transparent 72%);
+    }
+    .hero img{height:min(46vh,320px);width:auto;max-width:100%;object-fit:contain;background:transparent;position:relative;z-index:1;
+      filter:drop-shadow(0 0 0.7px var(--sprite-outline)) drop-shadow(0 0 12px var(--sprite-glow)) drop-shadow(0 14px 26px rgba(120,90,180,.28));
       animation:loginFloat 2.8s ease-in-out infinite;transform-origin:50% 80%}
     @keyframes loginFloat{
       0%,100%{transform:translateY(0) rotate(0)}
@@ -55,7 +63,7 @@
     #destPanel .row{margin-top:.65rem}
     button.admin{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;font-weight:700;min-width:60%}
   </style>
-  <script src="/static/theme.js?v=20260909e"></script>
+  <script src="/static/theme.js?v=20260910a"></script>
   <script>LunaTheme.boot();</script>
 </head>
 <body>

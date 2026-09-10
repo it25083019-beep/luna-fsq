@@ -2876,6 +2876,63 @@
     }
   }
 
+  let hueSaveTimer = null;
+
+  function scheduleHueSave(h) {
+    clearTimeout(hueSaveTimer);
+    hueSaveTimer = setTimeout(() => {
+      api("/prefs/appearance", {
+        method: "POST",
+        body: JSON.stringify({ theme_id: "custom", hue: h }),
+      }).catch(() => {});
+    }, 280);
+  }
+
+  function syncHueControls() {
+    if (!window.LunaTheme || !LunaTheme.currentHue) return;
+    const h = LunaTheme.currentHue();
+    const hex = LunaTheme.hueToHex(h);
+    [
+      ["hueStrip", "hueColor"],
+      ["hueStripMenu", "hueColorMenu"],
+    ].forEach(([rangeId, colorId]) => {
+      const range = document.getElementById(rangeId);
+      const color = document.getElementById(colorId);
+      if (range && document.activeElement !== range) range.value = String(h);
+      if (color && document.activeElement !== color) color.value = hex;
+    });
+  }
+
+  function bindHueControls() {
+    const hook = (rangeId, colorId) => {
+      const range = document.getElementById(rangeId);
+      const color = document.getElementById(colorId);
+      if (range && !range.dataset.bound) {
+        range.dataset.bound = "1";
+        range.addEventListener("input", () => {
+          const h = Number(range.value);
+          LunaTheme.applyCustomHue(h);
+          if (color) color.value = LunaTheme.hueToHex(h);
+          renderThemePicker();
+          scheduleHueSave(h);
+        });
+      }
+      if (color && !color.dataset.bound) {
+        color.dataset.bound = "1";
+        color.addEventListener("input", () => {
+          const h = LunaTheme.hexToHue(color.value);
+          LunaTheme.applyCustomHue(h);
+          if (range) range.value = String(h);
+          renderThemePicker();
+          scheduleHueSave(h);
+        });
+      }
+    };
+    hook("hueStrip", "hueColor");
+    hook("hueStripMenu", "hueColorMenu");
+    syncHueControls();
+  }
+
   function renderThemePicker() {
     const cur = LunaTheme.currentTheme();
     ["themeGrid", "themeGridMenu"].forEach((id) => {
@@ -2908,6 +2965,7 @@
         grid.appendChild(b);
       });
     });
+    syncHueControls();
   }
 
   async function loadScheduleView(opts) {
@@ -4310,6 +4368,7 @@
         await sendMessage(ask);
       };
     });
+    bindHueControls();
     document.getElementById("settingsBtn").onclick = () => {
       renderThemePicker();
       renderCompanionPickers();
@@ -4645,7 +4704,16 @@
         applyCompanionVisual(companionById(stateData.companion_id) || companionCatalog[0]);
       }
       if (brain.ui_theme && window.LunaTheme) {
-        LunaTheme.applyTheme(brain.ui_theme);
+        if (brain.ui_hue != null) {
+          try {
+            localStorage.setItem(LunaTheme.HUE_KEY, String(brain.ui_hue));
+          } catch (_) {}
+        }
+        if (brain.ui_theme === "custom") {
+          LunaTheme.applyCustomHue(brain.ui_hue != null ? brain.ui_hue : LunaTheme.currentHue());
+        } else {
+          LunaTheme.applyTheme(brain.ui_theme);
+        }
         renderThemePicker();
       }
       rpgData = rpg.rpg || {};

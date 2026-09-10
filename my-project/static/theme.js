@@ -214,13 +214,156 @@
     },
   };
 
-  function applyTheme(id) {
-    const theme = THEMES[id] || THEMES.lilac;
+  const HUE_KEY = "luna_theme_hue";
+
+  function clampHue(h) {
+    const n = Number(h);
+    if (!Number.isFinite(n)) return 258;
+    return ((Math.round(n) % 360) + 360) % 360;
+  }
+
+  function hsl(h, s, l, a) {
+    const hue = clampHue(h);
+    if (a == null) return "hsl(" + hue + " " + s + "% " + l + "%)";
+    return "hsl(" + hue + " " + s + "% " + l + "% / " + a + ")";
+  }
+
+  function spriteVarsFor(id) {
+    if (id === "night") {
+      return {
+        "--sprite-glow": "rgba(220,255,248,.82)",
+        "--sprite-outline": "rgba(255,255,255,.96)",
+      };
+    }
+    if (id === "fsq") {
+      return {
+        "--sprite-glow": "rgba(255,244,220,.88)",
+        "--sprite-outline": "rgba(255,255,255,.97)",
+      };
+    }
+    return {
+      "--sprite-glow": "rgba(255,252,248,.55)",
+      "--sprite-outline": "rgba(255,255,255,.75)",
+    };
+  }
+
+  function currentHue() {
+    try {
+      const saved = localStorage.getItem(HUE_KEY);
+      if (saved != null && saved !== "") return clampHue(saved);
+    } catch (_) {}
+    return 258;
+  }
+
+  function hueToHex(h) {
+    h = clampHue(h);
+    const s = 0.58;
+    const l = 0.52;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n) => {
+      const k = (n + h / 30) % 12;
+      const c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * c)
+        .toString(16)
+        .padStart(2, "0");
+    };
+    return "#" + f(0) + f(8) + f(4);
+  }
+
+  function hexToHue(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ""));
+    if (!m) return currentHue();
+    const n = parseInt(m[1], 16);
+    const r = ((n >> 16) & 255) / 255;
+    const g = ((n >> 8) & 255) / 255;
+    const b = (n & 255) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    if (max === min) return 0;
+    const d = max - min;
+    let h = 0;
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+    return Math.round(h);
+  }
+
+  function themeFromHue(h) {
+    h = clampHue(h);
+    const h2 = (h + 28) % 360;
+    const h3 = (h + 332) % 360;
+    return {
+      id: "custom",
+      label: "カスタム",
+      swatch: [hsl(h, 32, 90), hsl(h, 55, 58), hsl(h2, 50, 62)],
+      vars: {
+        "--bg0": hsl(h, 38, 92),
+        "--bg1": hsl(h2, 32, 91),
+        "--bg2": hsl(h3, 34, 92),
+        "--card": "rgba(255,255,255,.92)",
+        "--text": hsl(h, 32, 24),
+        "--muted": hsl(h, 14, 48),
+        "--lilac": hsl(h, 55, 58),
+        "--lilac-deep": hsl(h, 48, 42),
+        "--pink": hsl(h3, 52, 72),
+        "--mint": hsl((h + 140) % 360, 42, 52),
+        "--amber": "hsl(38 70% 62%)",
+        "--danger": "#e07a8a",
+        "--shadow": "0 12px 32px " + hsl(h, 40, 30, 0.16),
+        "--input-bg": hsl(h, 36, 96),
+        "--ghost-bg": hsl(h, 30, 93),
+        "--composer-bg": "#ffffff",
+        "--glow-a": hsl(h, 70, 70, 0.35),
+        "--glow-b": hsl(h2, 60, 68, 0.28),
+        "--st1": "linear-gradient(160deg," + hsl(h, 40, 94) + ",#fff)",
+        "--st2": "linear-gradient(160deg," + hsl(h2, 40, 94) + ",#fff)",
+        "--st3": "linear-gradient(160deg," + hsl(h3, 40, 94) + ",#fff)",
+        "--hero-top": hsl(h, 42, 22),
+        "--hero-mid": hsl(h, 40, 36),
+        "--nav-bg": "rgba(255,255,255,.97)",
+        "--nav-active": hsl(h, 48, 42),
+        "--nav-idle": hsl(h, 12, 48),
+        "--panel-light": hsl(h, 30, 97),
+        "--sprite-glow": hsl(h, 40, 96, 0.88),
+        "--sprite-outline": "rgba(255,255,255,.95)",
+      },
+      themeColor: hsl(h, 40, 36),
+    };
+  }
+
+  function paint(theme) {
     const root = document.documentElement;
-    Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+    const extra = theme.id === "custom" ? {} : spriteVarsFor(theme.id);
+    Object.entries(Object.assign({}, extra, theme.vars)).forEach(([k, v]) => root.style.setProperty(k, v));
     root.dataset.theme = theme.id;
+    root.style.setProperty("--hue", String(currentHue()));
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", theme.themeColor);
+  }
+
+  function applyCustomHue(h) {
+    h = clampHue(h);
+    try {
+      localStorage.setItem(HUE_KEY, String(h));
+      localStorage.setItem(KEY, "custom");
+    } catch (_) {}
+    const theme = themeFromHue(h);
+    const root = document.documentElement;
+    Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+    root.dataset.theme = "custom";
+    root.style.setProperty("--hue", String(h));
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", theme.themeColor);
+    document.dispatchEvent(new CustomEvent("luna-theme", { detail: "custom" }));
+    return "custom";
+  }
+
+  function applyTheme(id) {
+    if (id === "custom") return applyCustomHue(currentHue());
+    const theme = THEMES[id] || THEMES.lilac;
+    paint(theme);
     try {
       localStorage.setItem(KEY, theme.id);
     } catch (_) {}
@@ -231,6 +374,7 @@
   function currentTheme() {
     try {
       const saved = localStorage.getItem(KEY);
+      if (saved === "custom") return "custom";
       if (saved && THEMES[saved]) return saved;
       return "lilac";
     } catch (_) {
@@ -242,5 +386,16 @@
     applyTheme(currentTheme());
   }
 
-  global.LunaTheme = { THEMES, applyTheme, currentTheme, boot, KEY };
+  global.LunaTheme = {
+    THEMES,
+    applyTheme,
+    applyCustomHue,
+    currentTheme,
+    currentHue,
+    hueToHex,
+    hexToHue,
+    boot,
+    KEY,
+    HUE_KEY,
+  };
 })(window);

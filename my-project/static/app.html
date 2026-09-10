@@ -33,6 +33,11 @@
       --fsq-muted:#5a6e68;
       --fsq-card:#f7efe0;
       --radius:22px;
+      --hero-top:#6b5a9a;
+      --hero-mid:#9b7ed9;
+      --sprite-glow:rgba(255,252,248,.55);
+      --sprite-outline:rgba(255,255,255,.75);
+      --hue:258;
     }
     *{box-sizing:border-box}
     html,body{margin:0;min-height:100%;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text)}
@@ -94,9 +99,16 @@
     .stats{display:flex;gap:.35rem;flex-wrap:wrap;justify-content:flex-end}
     .pill{font-size:.68rem;background:var(--card);padding:.28rem .55rem;color:var(--lilac-deep);border-radius:999px;box-shadow:var(--shadow)}
     .hero{padding:.2rem .8rem 0;min-height:280px}
-    .luna-stage{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%}
+    .luna-stage{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%;position:relative}
     .hero .luna-stage,.home-hero-luna.luna-stage{min-height:0}
-    #lunaSprite{height:min(52vh,360px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 14px 24px rgba(120,90,180,.22));background:transparent}
+    .luna-stage::before{
+      content:"";position:absolute;z-index:0;pointer-events:none;
+      left:48%;bottom:2%;width:118%;height:90%;transform:translateX(-50%);
+      border-radius:50%;
+      background:radial-gradient(ellipse at 50% 58%, var(--sprite-glow) 0%, rgba(255,255,255,.12) 46%, transparent 72%);
+    }
+    #lunaSprite{height:min(52vh,360px);width:auto;max-width:100%;object-fit:contain;position:relative;z-index:1;background:transparent;
+      filter:drop-shadow(0 0 0.7px var(--sprite-outline)) drop-shadow(0 0 10px var(--sprite-glow)) drop-shadow(0 12px 18px rgba(20,16,48,.28))}
     .luna-idle{animation:lunaIdle 3.8s ease-in-out infinite}
     @keyframes lunaIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
     .luna-bob{animation:lunaBob .9s ease}
@@ -147,9 +159,20 @@
     .pw-box input{width:100%;padding:.65rem .8rem;border:none;background:var(--input-bg);color:var(--text);border-radius:14px;outline:none;font:inherit}
     .pw-box button{margin-top:.55rem;border:none;border-radius:999px;padding:.55rem .95rem;cursor:pointer;background:linear-gradient(135deg,var(--mint),var(--lilac-deep));color:#fff;font-weight:700}
     .pw-msg{min-height:1.1em;font-size:.72rem;margin:.35rem 0 0}
+    .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
     .theme-btn{border:2px solid transparent;background:var(--input-bg);border-radius:14px;padding:.55rem;cursor:pointer;display:flex;align-items:center;gap:.45rem;font-size:.72rem}
     .theme-btn.active{border-color:var(--lilac)}
     .theme-swatch{width:2rem;height:2rem;border-radius:10px;background:linear-gradient(135deg,var(--sw0,#ccc),var(--sw1,#999),var(--sw2,#666))}
+    .hue-custom{margin:.65rem 0 .2rem;padding:.7rem .7rem .8rem;background:var(--card);border-radius:16px;box-shadow:var(--shadow)}
+    .hue-custom .hint{margin:0 0 .55rem}
+    .hue-row{display:flex;align-items:center;gap:.5rem}
+    .hue-strip{-webkit-appearance:none;appearance:none;flex:1;height:18px;border-radius:999px;outline:none;cursor:pointer;
+      background:linear-gradient(90deg,#ff5a5a,#ffb14a,#f2e14a,#4ad46a,#4ac7e0,#5a6bff,#c45aff,#ff5a5a)}
+    .hue-strip::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;
+      border:3px solid hsl(var(--hue,258) 58% 52%);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+    .hue-strip::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;
+      border:3px solid hsl(var(--hue,258) 58% 52%);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+    .hue-pick{width:2.15rem;height:2.15rem;padding:0;border:none;border-radius:10px;background:transparent;cursor:pointer;flex-shrink:0}
     #lunaMainView.hidden{display:none!important}
 
     /* ===== FSQ RPG World (distinct from LUNA chat soft lilac) ===== */
@@ -1047,8 +1070,9 @@
     #lunaMainView .home-dock .chips{padding:.2rem 1rem .3rem}
     #lunaMainView .home-dock .composer-voice{margin:.05rem 1rem .4rem}
     .home-hero{display:grid;grid-template-columns:minmax(128px,38%) 1fr;gap:.7rem;padding:0 1rem .55rem;align-items:center;overflow:visible}
-    .home-hero-luna{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%}
-    .home-hero-luna #lunaSprite{height:min(42vw,200px);width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 10px 20px rgba(120,90,180,.2));background:transparent}
+    .home-hero-luna{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%;position:relative;overflow:visible}
+    .home-hero-luna #lunaSprite{height:min(42vw,200px);width:auto;max-width:100%;object-fit:contain;position:relative;z-index:1;background:transparent;
+      filter:drop-shadow(0 0 0.7px var(--sprite-outline)) drop-shadow(0 0 9px var(--sprite-glow)) drop-shadow(0 10px 16px rgba(20,16,48,.28))}
     .companion-chip{border:2px solid transparent;background:#fff;border-radius:16px;padding:.25rem .4rem .3rem;cursor:pointer;text-align:center}
     .companion-chip img{width:52px;height:52px;object-fit:contain;display:block;margin:0 auto;background:transparent}
     .companion-chip span{display:block;font-size:.58rem;font-weight:800;color:#5a4a78;margin-top:.1rem}
@@ -1289,7 +1313,7 @@
     .btn-glamour-open{margin:.45rem .85rem 0;border:none;border-radius:12px;padding:.5rem .75rem;background:linear-gradient(135deg,#1f7a6e,#145a52);color:#f7efe0;font-size:.72rem;font-weight:700;cursor:pointer;width:calc(100% - 1.7rem)}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="/static/theme.js?v=20260909e"></script>
+  <script src="/static/theme.js?v=20260910a"></script>
   <script>LunaTheme.boot();</script>
 </head>
 <body>
@@ -1352,6 +1376,13 @@
           <h3>一般設定</h3>
           <p class="hint">色テーマはログイン画面にも反映されます。</p>
           <div class="theme-grid" id="themeGrid"></div>
+          <div class="hue-custom">
+            <p class="hint">プリセット以外の好きな色。虹のバーを動かしてね。</p>
+            <div class="hue-row">
+              <input type="range" id="hueStrip" class="hue-strip" min="0" max="360" value="258" aria-label="テーマの色" />
+              <input type="color" id="hueColor" class="hue-pick" value="#7b5eb8" title="色を選ぶ" />
+            </div>
+          </div>
           <h3 style="margin-top:1rem">パスワード</h3>
           <p class="hint">ログイン中に、今のパスワードから新しいパスワードへ変更できます。</p>
           <div class="pw-box">
@@ -1977,6 +2008,13 @@
         </div>
         <div id="menuSettings" class="settings-panel" style="margin:1rem;display:none">
           <div class="theme-grid" id="themeGridMenu"></div>
+          <div class="hue-custom">
+            <p class="hint">プリセット以外の好きな色。虹のバーを動かしてね。</p>
+            <div class="hue-row">
+              <input type="range" id="hueStripMenu" class="hue-strip" min="0" max="360" value="258" aria-label="テーマの色" />
+              <input type="color" id="hueColorMenu" class="hue-pick" value="#7b5eb8" title="色を選ぶ" />
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -2029,6 +2067,6 @@
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20260909p"></script>
+  <script src="/static/app.js?v=20260910a"></script>
 </body>
 </html>

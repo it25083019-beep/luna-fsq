@@ -88,6 +88,7 @@ class SetCompanionSpriteRequest(BaseModel):
 class AppearancePrefsRequest(BaseModel):
     theme_id: Optional[str] = None
     companion_id: Optional[str] = None
+    hue: Optional[int] = Field(default=None, ge=0, le=360)
 
 
 class ChatResponse(BaseModel):

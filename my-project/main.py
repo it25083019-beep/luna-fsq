@@ -483,7 +483,7 @@ def companions_catalog():
     return {"ok": True, "companions": list_companions()}
 
 
-_UI_THEMES = {"fsq", "lilac", "mint", "peach", "sky", "night"}
+_UI_THEMES = {"fsq", "lilac", "mint", "peach", "sky", "night", "custom"}
 
 
 @app.post("/companion/sprite")
@@ -511,6 +511,8 @@ def save_appearance_prefs(
         if theme not in _UI_THEMES:
             raise HTTPException(status_code=400, detail="unknown theme")
         state["ui_theme"] = theme
+    if req.hue is not None:
+        state["ui_hue"] = int(req.hue) % 360
     if req.companion_id:
         cid = normalize_companion_id(req.companion_id)
         row = get_companion(cid)
@@ -520,6 +522,7 @@ def save_appearance_prefs(
     return {
         "ok": True,
         "ui_theme": state.get("ui_theme") or "lilac",
+        "ui_hue": state.get("ui_hue"),
         "companion_id": state.get("companion_id") or "luna",
         "companion_name": state.get("companion_name"),
     }
