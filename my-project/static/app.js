@@ -263,7 +263,7 @@
     stateData.companion_name = row.label_ja || row.label_en || row.id;
     if (luna && luna.setCompanion) luna.setCompanion(row);
     const sprite = document.getElementById("lunaSprite");
-    if (sprite && row.preview) sprite.src = row.preview + (row.preview.includes("?") ? "&" : "?") + "v=20260909h";
+    if (sprite && row.preview) sprite.src = row.preview + (row.preview.includes("?") ? "&" : "?") + "v=20260914d";
     const who = document.getElementById("companionWho");
     if (who) who.textContent = row.label_en || row.label_ja || "LUNA";
     const careWho = document.getElementById("careTimelineWho");
@@ -273,7 +273,7 @@
       remind.textContent = (row.label_ja || row.label_en || "ルナ") + "が今日の気分を聞きたいよ";
     }
     document.querySelectorAll(".nav-luna").forEach((img) => {
-      img.src = (row.preview || img.src) + ((row.preview || img.src).includes("?") ? "&" : "?") + "v=20260909h";
+      img.src = (row.preview || img.src) + ((row.preview || img.src).includes("?") ? "&" : "?") + "v=20260914d";
       img.alt = row.label_en || row.label_ja || "LUNA";
     });
     const msg = document.getElementById("message");
@@ -309,7 +309,7 @@
             '"><img src="' +
             (c.preview || "") +
             ((c.preview || "").includes("?") ? "&" : "?") +
-            "v=20260909h" +
+            "v=20260914d" +
             '" alt=""><span>' +
             (c.label_ja || c.id) +
             "</span><em>" +
