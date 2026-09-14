@@ -544,8 +544,8 @@
     if (ko) ko.hidden = true;
     const combo = arena.querySelector(".sba-combo");
     if (combo) combo.hidden = true;
-    if (bossWrap) bossWrap.classList.remove("ko", "atk-boss", "hit", "rush", "dodge");
-    if (heroWrap) heroWrap.classList.remove("ko", "hit", "struggle", "rush", "dodge", "atk-swordsman", "atk-mage", "atk-archer");
+    if (bossWrap) bossWrap.classList.remove("ko", "atk-boss", "hit", "rush", "cast", "windup", "dodge");
+    if (heroWrap) heroWrap.classList.remove("ko", "hit", "struggle", "rush", "cast", "windup", "dodge", "atk-swordsman", "atk-mage", "atk-archer");
   }
 
   const FIGHT_POSES = {
@@ -687,7 +687,7 @@
     el.classList.remove("go");
     void el.offsetWidth;
     el.classList.add("go");
-    setTimeout(() => el.classList.remove("go"), 720);
+    setTimeout(() => el.classList.remove("go"), 1100);
   }
 
   function fireShot(arena, kind) {
@@ -712,6 +712,8 @@
     if (!el) return;
     el.classList.remove(
       "rush",
+      "cast",
+      "windup",
       "hit",
       "dodge",
       "struggle",
@@ -784,6 +786,11 @@
     }
   }
 
+  function trailGhosts(side) {
+    if (!side) return;
+    [0, 45, 90, 135].forEach((ms) => setTimeout(() => spawnGhost(side), ms));
+  }
+
   function playStrike(term, opts) {
     const arena = activeArena();
     if (!arena || timedOut) return;
@@ -792,6 +799,7 @@
     lastHitAt = Date.now();
     lastPlayerAct = lastHitAt;
     const cls = arena.dataset.heroClass || window.FsqHeroClass || "swordsman";
+    const melee = cls === "swordsman";
     arena.classList.remove("striking", "clashing", "boss-striking");
     void arena.offsetWidth;
     arena.classList.add("striking");
@@ -804,19 +812,25 @@
     } else {
       showSkillName(arena, skillLabel(cls, combatTurn), false);
     }
-    fireShot(arena, shotKind(cls));
     const hero = arena.querySelector(".sba-side.player");
     const boss = arena.querySelector(".sba-side.monster");
     clearFighterState(hero);
     if (hero) {
       busy(hero, true);
-      setPose(hero, "atk");
-      void hero.offsetWidth;
-      hero.classList.add("rush", "atk-" + cls);
-      spawnGhost(hero);
-      setTimeout(() => spawnGhost(hero), 90);
-      setTimeout(() => hero.classList.remove("rush", "atk-swordsman", "atk-mage", "atk-archer"), 640);
-      releaseBusy(hero, 700);
+      hero.classList.add("windup");
+      setTimeout(() => {
+        hero.classList.remove("windup");
+        setPose(hero, "atk");
+        void hero.offsetWidth;
+        hero.classList.add(melee ? "rush" : "cast", "atk-" + cls);
+        if (melee) trailGhosts(hero);
+        else fireShot(arena, shotKind(cls));
+      }, 90);
+      setTimeout(() => {
+        hero.classList.remove("rush", "cast", "atk-swordsman", "atk-mage", "atk-archer");
+        setPose(hero, "idle");
+      }, 1120);
+      releaseBusy(hero, 1180);
     }
     setTimeout(() => {
       if (miss) {
@@ -826,27 +840,27 @@
           clearFighterState(boss);
           void boss.offsetWidth;
           boss.classList.add("dodge");
-          setTimeout(() => boss.classList.remove("dodge"), 480);
-          releaseBusy(boss, 520);
+          setTimeout(() => boss.classList.remove("dodge"), 520);
+          releaseBusy(boss, 560);
         }
         spawnHitFloater("回避", "miss");
         return;
       }
       arena.classList.add("clashing");
       burstClash(arena, false);
-      hitFreeze(arena, 80);
+      hitFreeze(arena, 150);
       if (boss) {
         busy(boss, true);
         setPose(boss, "hit");
         clearFighterState(boss);
         void boss.offsetWidth;
         boss.classList.add("hit");
-        setTimeout(() => boss.classList.remove("hit"), 400);
-        releaseBusy(boss, 480);
+        setTimeout(() => boss.classList.remove("hit"), 480);
+        releaseBusy(boss, 520);
       }
       Sfx.hit();
-      setTimeout(() => arena.classList.remove("clashing"), 420);
-    }, 240);
+      setTimeout(() => arena.classList.remove("clashing"), 560);
+    }, melee ? 230 : 340);
   }
 
   function playBossStrike(opts) {
@@ -857,36 +871,42 @@
     void arena.offsetWidth;
     arena.classList.add("boss-striking");
     showSkillName(arena, skillLabel("boss", Math.floor(Math.random() * 3)), true);
-    fireShot(arena, "boss");
     const boss = arena.querySelector(".sba-side.monster");
     const hero = arena.querySelector(".sba-side.player");
     clearFighterState(boss);
     if (boss) {
       busy(boss, true);
-      setPose(boss, "atk");
-      void boss.offsetWidth;
-      boss.classList.add("rush", "atk-boss");
-      spawnGhost(boss);
-      setTimeout(() => spawnGhost(boss), 90);
-      setTimeout(() => boss.classList.remove("rush", "atk-boss"), 640);
-      releaseBusy(boss, 700);
+      boss.classList.add("windup");
+      setTimeout(() => {
+        boss.classList.remove("windup");
+        setPose(boss, "atk");
+        void boss.offsetWidth;
+        boss.classList.add("rush", "atk-boss");
+        trailGhosts(boss);
+        fireShot(arena, "boss");
+      }, 90);
+      setTimeout(() => {
+        boss.classList.remove("rush", "atk-boss");
+        setPose(boss, "idle");
+      }, 1120);
+      releaseBusy(boss, 1180);
     }
     setTimeout(() => {
       arena.classList.add("clashing");
       burstClash(arena, true);
-      hitFreeze(arena, opts.heavy ? 110 : 80);
+      hitFreeze(arena, opts.heavy ? 180 : 150);
       if (hero) {
         busy(hero, true);
         setPose(hero, "hit");
         clearFighterState(hero);
         void hero.offsetWidth;
         hero.classList.add("hit");
-        setTimeout(() => hero.classList.remove("hit"), 400);
-        releaseBusy(hero, 480);
+        setTimeout(() => hero.classList.remove("hit"), 480);
+        releaseBusy(hero, 520);
       }
       spawnHitFloater(opts.heavy ? "-TIME" : "-" + (6 + Math.floor(Math.random() * 8)), "dmg");
       Sfx.hit();
-      setTimeout(() => arena.classList.remove("clashing"), 420);
+      setTimeout(() => arena.classList.remove("clashing"), 560);
     }, 240);
   }
 
@@ -900,7 +920,7 @@
     stopCombatLoop();
     const arena = activeArena();
     if (arena) arena.classList.add("fighting");
-    combatTimer = setInterval(combatTick, 1600);
+    combatTimer = setInterval(combatTick, 2200);
     startIdleLoop();
   }
 
@@ -921,7 +941,7 @@
     if (!arena || arena.hidden || timedOut) return;
     if (arena.classList.contains("ko-boss") || arena.classList.contains("ko-player")) return;
     const now = Date.now();
-    if (now - lastHitAt < 700) return;
+    if (now - lastHitAt < 1200) return;
     if (fightBlank || !fightArmed) {
       if (combatTurn % 3 === 0) {
         playStrike(null, { miss: true });
