@@ -327,7 +327,7 @@
     .map-node:not(.locked):hover{transform:translateX(-50%) scale(1.06)}
     .study-modal.battle-mode,.exam-modal.open.boss-mode,.exam-modal.battle-mode{background:rgba(8,20,28,.88);flex-direction:column;align-items:center;justify-content:flex-start;overflow:hidden}
     .study-battle-hud{display:none;padding:.45rem .85rem 0;background:linear-gradient(180deg,#0f2a32,#145a52);border:2px solid rgba(212,168,75,.45);border-top:none;border-bottom:none;margin:0 auto;max-width:440px;width:100%;flex:0 0 auto}
-    .study-modal.battle-mode .study-battle-hud{display:block}
+    .study-modal.battle-mode .study-battle-hud{display:none!important}
     .study-modal.battle-mode .study-sheet,.exam-modal.open.boss-mode .exam-sheet,.exam-modal.battle-mode .exam-sheet{flex:1 1 auto;min-height:0;max-height:none;max-width:440px;width:100%;overflow:auto;border-radius:0;border:2px solid rgba(212,168,75,.45);border-top:1px dashed rgba(212,168,75,.25)}
     .sbh-left{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
     .sbh-tag{font-family:Cinzel,serif;font-size:.58rem;letter-spacing:.2em;color:var(--fsq-gold-soft);font-weight:700}
@@ -394,7 +394,13 @@
     @keyframes bossBlink{0%,100%{opacity:1}50%{opacity:.55}}
     @keyframes bossBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
     .study-battle-arena{display:none;position:relative;z-index:8;width:100%;max-width:440px;margin:0 auto;flex:0 0 auto;min-height:232px;height:min(58vw,300px);max-height:320px;overflow:hidden;border:2px solid rgba(212,168,75,.55);border-bottom:none;border-radius:0;
+      --skill:#7ad7ff;--skill2:#ffd27a;
       background:#0b1220 url("/static/rpg/bosses/battle-arena-bg.png") center bottom / cover no-repeat}
+    .study-battle-arena.hero-swordsman{--skill:#7ad7ff;--skill2:#ffe08a}
+    .study-battle-arena.hero-mage{--skill:#d4a0ff;--skill2:#77f1ff}
+    .study-battle-arena.hero-archer{--skill:#b6ff8a;--skill2:#ffd27a}
+    .study-battle-arena.combo-hot{box-shadow:inset 0 0 55px color-mix(in srgb, var(--skill) 28%, transparent)}
+    .study-battle-arena.mind-cast .sba-side.player .fighter-sprite{filter:drop-shadow(0 0 16px var(--skill)) drop-shadow(0 8px 10px rgba(0,0,0,.55))}
     .study-modal.battle-mode .study-battle-arena,.exam-modal.battle-mode .study-battle-arena,.exam-modal.open.boss-mode .study-battle-arena{display:block}
     .sba-vignette{position:absolute;inset:0;pointer-events:none;z-index:3;background:radial-gradient(ellipse at 50% 68%,transparent 38%,rgba(0,0,0,.5) 100%)}
     .sba-impact{position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(circle at 68% 52%,rgba(255,210,120,.55),transparent 52%)}
@@ -411,39 +417,30 @@
       radial-gradient(3px 3px at 40% 80%,rgba(255,220,160,.5),transparent);
       animation:emberDrift 4s linear infinite}
     @keyframes emberDrift{0%{transform:translateY(8px);opacity:.4}100%{transform:translateY(-18px);opacity:.9}}
-    .sba-stage{position:absolute;left:0;right:0;bottom:16%;display:flex;align-items:flex-end;justify-content:space-between;padding:0 4%;z-index:2;max-width:440px;margin:0 auto}
-    .sba-side{text-align:center;width:42%;position:relative}
-    .sba-side .fighter-sprite{height:9.2rem;width:auto;max-width:10.2rem;object-fit:contain;filter:drop-shadow(0 10px 12px rgba(0,0,0,.65));transform-origin:50% 90%}
-    .sba-side.player .fighter-sprite{animation:idleHero 1.5s ease-in-out infinite}
-    .sba-side.monster .fighter-sprite{animation:idleBoss 1.7s ease-in-out infinite;transform:scaleX(-1)}
-    .study-battle-arena.fighting .sba-side.player .fighter-sprite{animation:fightReady .85s ease-in-out infinite}
-    .study-battle-arena.fighting .sba-side.monster .fighter-sprite{animation:bossReady .95s ease-in-out infinite}
-    @keyframes idleHero{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-9px) rotate(2deg)}}
-    @keyframes idleBoss{0%,100%{transform:scaleX(-1) translateY(0)}50%{transform:scaleX(-1) translateY(-7px) rotate(-2deg)}}
-    @keyframes fightReady{0%,100%{transform:translate(0,0) rotate(-6deg)}40%{transform:translate(10px,-12px) rotate(8deg)}70%{transform:translate(-6px,3px)}}
-    @keyframes bossReady{0%,100%{transform:scaleX(-1) translate(0,0)}45%{transform:scaleX(-1) translate(-14px,-10px) rotate(-8deg)}}
-    .study-battle-arena.clashing .sba-side.player .fighter-sprite{animation:clashHero .5s ease}
-    .study-battle-arena.clashing .sba-side.monster .fighter-sprite{animation:clashBoss .5s ease}
-    @keyframes clashHero{0%{transform:translate(0,0)}45%{transform:translate(28px,-8px) rotate(12deg)}100%{transform:translate(0,0)}}
-    @keyframes clashBoss{0%{transform:scaleX(-1) translate(0,0)}45%{transform:scaleX(-1) translate(-24px,-6px) rotate(-8deg)}100%{transform:scaleX(-1)}}
-    .sba-side.atk-swordsman .fighter-sprite,.study-battle-arena.fighting .sba-side.player.atk-swordsman .fighter-sprite{animation:atkSword .42s cubic-bezier(.2,.8,.3,1)}
-    @keyframes atkSword{0%{transform:translate(0,0) rotate(0)}22%{transform:translate(-14px,6px) rotate(-22deg)}48%{transform:translate(62px,-14px) rotate(28deg)}100%{transform:translate(0,0) rotate(0)}}
-    .sba-side.atk-mage .fighter-sprite,.study-battle-arena.fighting .sba-side.player.atk-mage .fighter-sprite{animation:atkMage .46s ease}
-    @keyframes atkMage{0%{transform:translateY(0) scale(1);filter:drop-shadow(0 10px 12px rgba(0,0,0,.65))}40%{transform:translateY(-26px) scale(1.1);filter:drop-shadow(0 0 22px #7cf)}100%{transform:translateY(0)}}
-    .sba-side.atk-archer .fighter-sprite,.study-battle-arena.fighting .sba-side.player.atk-archer .fighter-sprite{animation:atkArcher .4s ease}
-    @keyframes atkArcher{0%{transform:translateX(0)}28%{transform:translateX(-22px)}52%{transform:translateX(38px)}100%{transform:translateX(0)}}
-    .sba-side.monster.atk-boss .fighter-sprite,.study-battle-arena.fighting .sba-side.monster.atk-boss .fighter-sprite{animation:bossLunge .4s ease}
-    @keyframes bossLunge{0%{transform:scaleX(-1) translateX(0)}40%{transform:scaleX(-1) translateX(-52px) rotate(-10deg)}100%{transform:scaleX(-1)}}
-    .sba-side.player.struggle .fighter-sprite,.study-battle-arena.fighting .sba-side.player.struggle .fighter-sprite{animation:heroStruggle .36s ease}
-    @keyframes heroStruggle{0%,100%{transform:translateX(0)}30%{transform:translateX(-12px) rotate(-10deg)}60%{transform:translateX(8px)}}
-    .sba-side.hit .fighter-sprite{animation:sbaHit .28s ease}
-    .sba-side.monster.hit .fighter-sprite,.study-battle-arena.fighting .sba-side.monster.hit .fighter-sprite{animation:bossHit .32s ease}
-    @keyframes sbaHit{0%{transform:translateX(0)}30%{transform:translateX(12px) rotate(3deg)}100%{transform:translateX(0)}}
-    @keyframes bossHit{0%{transform:scaleX(-1) translateX(0);filter:brightness(2)}35%{transform:scaleX(-1) translateX(16px) rotate(4deg);filter:brightness(3)}100%{transform:scaleX(-1);filter:none}}
+    .sba-stage{position:absolute;left:0;right:0;bottom:14%;display:flex;align-items:flex-end;justify-content:space-between;padding:0 6%;z-index:2;max-width:440px;margin:0 auto}
+    .sba-side{text-align:center;width:38%;position:relative}
+    .sba-side .fighter-sprite{height:8.6rem;width:auto;max-width:9.2rem;object-fit:contain;filter:drop-shadow(0 8px 10px rgba(0,0,0,.6));transform-origin:50% 90%}
+    .sba-side.monster .fighter-sprite{mix-blend-mode:screen;transform:scaleX(-1)}
+    .sba-side.player .fighter-sprite{animation:qBreathe 2.6s ease-in-out infinite}
+    .sba-side.monster .fighter-sprite{animation:qBreatheBoss 2.8s ease-in-out infinite}
+    @keyframes qBreathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+    @keyframes qBreatheBoss{0%,100%{transform:scaleX(-1) translateY(0)}50%{transform:scaleX(-1) translateY(-3px)}}
+    .sba-side.atk-swordsman .fighter-sprite,.study-battle-arena.fighting .sba-side.player.atk-swordsman .fighter-sprite{animation:atkSword .48s cubic-bezier(.2,.8,.3,1)}
+    @keyframes atkSword{0%{transform:translate(0,0) rotate(0)}22%{transform:translate(-6px,2px) rotate(-16deg)}52%{transform:translate(12px,-8px) rotate(18deg)}100%{transform:translate(0,0) rotate(0)}}
+    .sba-side.atk-mage .fighter-sprite,.study-battle-arena.fighting .sba-side.player.atk-mage .fighter-sprite{animation:atkMage .55s ease}
+    @keyframes atkMage{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-10px) scale(1.06);filter:drop-shadow(0 0 18px #7cf)}100%{transform:translateY(0)}}
+    .sba-side.atk-archer .fighter-sprite,.study-battle-arena.fighting .sba-side.player.atk-archer .fighter-sprite{animation:atkArcher .46s ease}
+    @keyframes atkArcher{0%{transform:translateX(0)}30%{transform:translateX(-10px)}55%{transform:translateX(8px)}100%{transform:translateX(0)}}
+    .sba-side.monster.atk-boss .fighter-sprite,.study-battle-arena.fighting .sba-side.monster.atk-boss .fighter-sprite{animation:bossSkill .5s ease}
+    @keyframes bossSkill{0%{transform:scaleX(-1) translateX(0)}35%{transform:scaleX(-1) translateX(-14px) rotate(-6deg)}100%{transform:scaleX(-1)}}
+    .sba-side.player.hit .fighter-sprite,.study-battle-arena.fighting .sba-side.player.hit .fighter-sprite{animation:qHurtL .38s ease}
+    .sba-side.monster.hit .fighter-sprite,.study-battle-arena.fighting .sba-side.monster.hit .fighter-sprite{animation:qHurtR .38s ease}
+    @keyframes qHurtL{0%{transform:translateX(0);filter:brightness(1)}30%{transform:translateX(-10px);filter:brightness(2.2) sepia(.4) hue-rotate(-20deg)}100%{transform:translateX(0)}}
+    @keyframes qHurtR{0%{transform:scaleX(-1) translateX(0);filter:brightness(1)}30%{transform:scaleX(-1) translateX(10px);filter:brightness(2.4) sepia(.5) hue-rotate(-25deg)}100%{transform:scaleX(-1)}}
     .sba-side.ko .fighter-sprite,.sba-side.monster.ko .fighter-sprite{animation:sbaKo .75s ease forwards}
     .sba-side.player.ko .fighter-sprite{animation:sbaKoLeft .75s ease forwards}
-    @keyframes sbaKo{0%{opacity:1}100%{transform:scaleX(-1) translate(32px,22px) rotate(82deg);opacity:.3}}
-    @keyframes sbaKoLeft{0%{opacity:1}100%{transform:translate(-32px,22px) rotate(-82deg);opacity:.3}}
+    @keyframes sbaKo{0%{opacity:1}100%{transform:scaleX(-1) translate(24px,18px) rotate(70deg);opacity:.35}}
+    @keyframes sbaKoLeft{0%{opacity:1}100%{transform:translate(-24px,18px) rotate(-70deg);opacity:.35}}
     .sba-shadow{display:block;width:58%;height:10px;margin:-6px auto 0;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent 70%)}
     .sba-plate{margin-top:.15rem}
     .sba-plate em{display:block;font-style:normal;font-size:.58rem;font-weight:800;color:#fff;text-shadow:0 1px 4px #000;letter-spacing:.04em}
@@ -451,31 +448,41 @@
     .sba-side .hp span{display:block;height:100%;border-radius:inherit;transition:width .3s}
     .sba-side.monster .hp span{background:linear-gradient(90deg,#ff4d4d,#ffb06a);width:88%}
     .sba-side.player .hp span{background:linear-gradient(90deg,#5ecfc0,#77f1ff);width:12%}
-    .sba-fx{position:absolute;left:28%;right:28%;top:38%;height:48px;pointer-events:none;z-index:4;opacity:0}
-    .sba-fx.fx-swordsman.go{opacity:1;background:linear-gradient(118deg,transparent 30%,#fff 46%,#7ad7ff 52%,transparent 68%);animation:slashSweep .34s ease-out}
-    .sba-fx.fx-mage.go{opacity:1;left:38%;right:18%;top:30%;height:90px;border-radius:50%;box-shadow:0 0 0 3px rgba(140,220,255,.9),0 0 28px #6cf;animation:mageBurst .42s ease-out}
-    .sba-fx.fx-archer.go{opacity:1;height:4px;top:48%;left:30%;right:18%;background:linear-gradient(90deg,#fff,#ffd27a);animation:arrowFly .32s linear;box-shadow:0 0 8px #ffd}
-    @keyframes slashSweep{0%{transform:scaleX(.2) rotate(-18deg);opacity:1}100%{transform:scaleX(1.4) rotate(12deg);opacity:0}}
-    @keyframes mageBurst{0%{transform:scale(.2);opacity:1}100%{transform:scale(1.6);opacity:0}}
-    @keyframes arrowFly{0%{transform:translateX(-20px);opacity:1}100%{transform:translateX(80px);opacity:0}}
-    .sba-buddy{position:absolute;left:8%;top:10%;height:3.2rem;width:auto;animation:buddyFly 2.6s ease-in-out infinite;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4));z-index:5}
-    @keyframes buddyFly{0%,100%{transform:translate(0,0) rotate(-6deg)}50%{transform:translate(12px,-14px) rotate(8deg)}}
+    .sba-fx{display:none}
+    .sba-shot{position:absolute;z-index:6;pointer-events:none;opacity:0;top:44%}
+    .sba-shot.slash.go{width:96px;height:22px;background:linear-gradient(90deg,transparent,#fff 40%,#7ad7ff);clip-path:polygon(0 45%,78% 0,100% 50%,78% 100%,0 55%);filter:drop-shadow(0 0 8px #9ef);animation:qShot .42s linear forwards}
+    .sba-shot.bolt.go{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle,#fff,#6cf);box-shadow:0 0 18px #6cf,0 0 8px #fff;animation:qShot .48s linear forwards}
+    .sba-shot.arrow.go{width:78px;height:5px;border-radius:2px;background:linear-gradient(90deg,#fff,#ffd27a);box-shadow:0 0 10px #ffd27a;animation:qShot .36s linear forwards}
+    .sba-shot.boss.go{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle,#fff,#ff6b4a);box-shadow:0 0 18px #ff6b4a;animation:qShotBack .46s linear forwards}
+    @keyframes qShot{0%{left:24%;opacity:1;transform:scale(.7)}100%{left:64%;opacity:0;transform:scale(1.15)}}
+    @keyframes qShotBack{0%{left:64%;opacity:1;transform:scale(.7)}100%{left:24%;opacity:0;transform:scale(1.15)}}
+    .sba-skill-name{position:absolute;left:10%;top:12%;z-index:7;margin:0;font-family:Cinzel,"Shippori Mincho",serif;font-size:.78rem;font-weight:900;letter-spacing:.18em;color:#ffe9b0;text-shadow:0 0 12px #c45c3a,0 2px 6px #000;opacity:0;pointer-events:none}
+    .sba-skill-name.from-boss{left:auto;right:10%;color:#ffb09a}
+    .sba-skill-name.go{animation:skillName .7s ease forwards}
+    @keyframes skillName{0%{opacity:0;transform:translateY(8px) scale(.9)}25%{opacity:1;transform:translateY(0) scale(1.08)}100%{opacity:0;transform:translateY(-10px)}}
+    .sba-runes{position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden}
+    .sba-rune{position:absolute;left:var(--x,28%);bottom:10%;font-size:.7rem;font-weight:900;color:var(--skill);text-shadow:0 0 10px var(--skill),0 2px 6px #000;animation:runeUp .95s ease-out forwards;white-space:nowrap}
+    @keyframes runeUp{0%{opacity:0;transform:translateY(12px) scale(.7)}20%{opacity:1}100%{opacity:0;transform:translateY(-130px) scale(1.2)}}
+    .sba-mindbeam{position:absolute;left:18%;right:42%;bottom:12%;height:4px;z-index:5;pointer-events:none;opacity:0;background:linear-gradient(90deg,transparent,var(--skill),var(--skill2));filter:blur(.4px);box-shadow:0 0 12px var(--skill)}
+    .study-battle-arena.mind-cast .sba-mindbeam{animation:mindBeam .55s ease-out}
+    @keyframes mindBeam{0%{opacity:0;transform:scaleX(.2);transform-origin:left}40%{opacity:1;transform:scaleX(1)}100%{opacity:0;transform:scaleX(1.1)}}
+    .sba-buddy{display:none!important}
     .sba-tension{position:absolute;left:0;right:0;bottom:6px;z-index:5;margin:0;text-align:center;font-size:.62rem;font-weight:800;letter-spacing:.12em;color:#ffd27a;text-shadow:0 2px 8px #000}
     .sba-combo{position:absolute;top:10px;right:12px;z-index:5}
+    .sba-combo[hidden],.fs-ko[hidden],.battle-combo[hidden]{display:none!important}
     .fs-ko{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:Cinzel,serif;font-size:2.6rem;letter-spacing:.22em;color:#fff;text-shadow:0 0 22px #c45c3a;z-index:8;pointer-events:none;background:rgba(0,0,0,.25)}
-    .live-hud{position:fixed;left:0;top:0;z-index:88;pointer-events:none;will-change:transform}
-    .live-hud img{height:72px;width:auto;filter:drop-shadow(0 8px 14px rgba(30,20,50,.45))}
-    .live-hud.suspect img{animation:suspectShake .4s ease infinite}
-    @keyframes suspectShake{0%,100%{transform:translateX(0)}50%{transform:translateX(-6px) rotate(-8deg)}}
-    .live-hud .lh-bubble{position:absolute;left:64px;top:8px;width:150px;background:#fff;color:#3a2a58;font-size:.66rem;font-weight:700;padding:.4rem .5rem;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.18)}
-    .lh-watch{position:absolute;left:64px;top:52px;width:168px;background:rgba(12,14,24,.88);color:#f3f1f6;border-radius:12px;padding:.35rem .45rem;font-size:.58rem;border:1px solid rgba(255,210,122,.35)}
-    .lh-watch strong{display:block;color:#ffd27a;font-size:.6rem}
-    .lh-watch em{display:block;font-style:normal;margin:.15rem 0;color:#fff}
-    .lh-watch ul{margin:.15rem 0 0;padding-left:1rem;opacity:.8}
-    .lh-watch .lh-hint{margin:.25rem 0 0;opacity:.7;font-size:.52rem;line-height:1.35}
-    .study-judge{margin:.4rem 0;padding:.45rem .55rem;border-radius:12px;background:#1b2030;color:#f3f1f6;font-size:.72rem}
-    .study-judge.ok{background:#14322a}
+    .live-hud{position:fixed;left:max(4px,calc(50% - 220px + 2px));top:auto;bottom:calc(92px + env(safe-area-inset-bottom));z-index:87;pointer-events:none}
+    .live-hud.study-watch{bottom:calc(108px + env(safe-area-inset-bottom))}
+    .live-hud img{height:58px;width:auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45));transform:scaleX(-1);transform-origin:60% 80%;animation:peekInward 3.4s ease-in-out infinite}
+    .live-hud.idle img{animation:peekInward 4.2s ease-in-out infinite;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45)) grayscale(.15)}
+    @keyframes peekInward{0%,100%{transform:scaleX(-1) translate(0,0) rotate(6deg)}50%{transform:scaleX(-1) translate(7px,2px) rotate(1deg)}}
+    .live-hud .lh-bubble{position:absolute;left:50px;top:-6px;width:124px;background:#fff;color:#3a2a58;font-size:.6rem;font-weight:700;padding:.3rem .4rem;border-radius:10px 10px 10px 4px;box-shadow:0 6px 14px rgba(0,0,0,.16)}
+    .lh-watch{display:none!important}
+    .study-judge{margin:.4rem 0;padding:.45rem .55rem;border-radius:12px;background:#1b2030;color:#f3f1f6;font-size:.72rem;transition:box-shadow .25s,background .25s}
+    .study-judge.ok{background:#14322a;box-shadow:0 0 18px rgba(94,207,192,.25)}
     .study-judge.bad{background:#3a1820}
+    .study-modal.battle-mode.mind-flow .study-workspace{box-shadow:0 0 0 2px color-mix(in srgb, #7ad7ff 55%, transparent),0 -16px 36px rgba(122,215,255,.2)}
+    .study-modal.battle-mode.mind-flow #studyAnswer{caret-color:#7ad7ff}
     .study-judge b{color:#ffd27a}
     .boss-intro .bi-face img{height:9.5rem;width:auto;filter:drop-shadow(0 0 24px rgba(255,80,40,.7))}
     .study-modal.battle-mode .study-battle-hud{border-radius:0;border-top:none}
@@ -1100,7 +1107,8 @@
     .study-sample .note{font-size:.62rem;color:var(--muted);margin:0}
     .study-workspace{margin:.75rem 0 .55rem;padding:.75rem;border:2px solid #c9a227;border-radius:16px;background:linear-gradient(180deg,#fff8e8,#fff)}
     .study-workspace textarea{width:100%;min-height:220px;border:1px solid #cfd5ff;border-radius:14px;padding:.7rem .75rem;font-size:.78rem;line-height:1.5;resize:vertical;box-sizing:border-box;font-family:inherit;background:#fff;color:#111;pointer-events:auto;position:relative;z-index:2}
-    .study-workspace textarea.code-mode{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;min-height:260px;background:#0f1224;color:#e8ecff;border-color:#3a4270}
+    .study-modal.battle-mode .study-workspace textarea{min-height:140px}
+    .study-modal.battle-mode .study-workspace textarea.code-mode{min-height:150px}
     .study-guide-list{display:flex;flex-direction:column;gap:.4rem;margin:.4rem 0}
     .study-guide-card{border:1px solid #e4e8ff;border-radius:14px;padding:.6rem .7rem;background:#fafbff}
     .study-guide-card strong{display:block;font-size:.72rem;margin-bottom:.2rem}
@@ -2118,14 +2126,16 @@
                 <span class="sba-shadow"></span>
                 <div class="sba-plate"><em class="js-player-name">YOU</em><div class="hp"><span class="js-player-hp" id="battlePlayerMp"></span></div></div>
               </div>
-              <span class="sba-fx"></span>
+              <span class="sba-shot" aria-hidden="true"></span>
+              <span class="sba-skill-name" aria-hidden="true"></span>
+              <div class="sba-runes" aria-hidden="true"></div>
+              <span class="sba-mindbeam" aria-hidden="true"></span>
               <div class="sba-side monster">
                 <img class="fighter-sprite js-boss-img" id="battleBossImg" alt="">
                 <span class="sba-shadow"></span>
                 <div class="sba-plate"><em class="js-boss-name" id="battleMonsterName">課題モンスター</em><div class="hp"><span class="js-boss-hp" id="battleMonsterHp"></span></div></div>
               </div>
             </div>
-            <img class="sba-buddy js-buddy-img" id="battleBuddyImg" alt="">
             <span class="battle-combo sba-combo" id="battleCombo" hidden>0 COMBO</span>
             <div class="fs-ko" id="fightKo" hidden>K.O.</div>
           </div>
@@ -2205,14 +2215,16 @@
                 <span class="sba-shadow"></span>
                 <div class="sba-plate"><em class="js-player-name">YOU</em><div class="hp"><span class="js-player-hp" id="examPlayerHp"></span></div></div>
               </div>
-              <span class="sba-fx"></span>
+              <span class="sba-shot" aria-hidden="true"></span>
+              <span class="sba-skill-name" aria-hidden="true"></span>
+              <div class="sba-runes" aria-hidden="true"></div>
+              <span class="sba-mindbeam" aria-hidden="true"></span>
               <div class="sba-side monster">
                 <img class="fighter-sprite js-boss-img" id="examBossImg" alt="">
                 <span class="sba-shadow"></span>
                 <div class="sba-plate"><em class="js-boss-name" id="examBossName">試験の番人</em><div class="hp"><span class="js-boss-hp" id="examBossHp"></span></div></div>
               </div>
             </div>
-            <img class="sba-buddy js-buddy-img" id="examBuddyImg" alt="">
             <span class="battle-combo sba-combo" hidden>0 COMBO</span>
             <div class="fs-ko" hidden>K.O.</div>
           </div>
@@ -2300,15 +2312,9 @@
         </div>
       </div>
     </div>
-    <div id="liveHud" class="live-hud" hidden>
+    <div id="liveHud" class="live-hud inward" hidden>
       <div class="lh-bubble" id="liveHudBubble" hidden></div>
       <img id="liveHudSprite" alt="">
-      <div class="lh-watch">
-        <strong>👁 観察中（アプリ内）</strong>
-        <em id="liveWatchNow">—</em>
-        <ul id="liveWatchLog"></ul>
-        <p class="lh-hint">テスト：スクロールする／8秒タブを隠して戻る／用語なしで入力</p>
-      </div>
     </div>
     <div id="mentalOverlay" class="mental-overlay" aria-hidden="true">
       <div class="mental-card" role="dialog" aria-labelledby="mentalTitle">
@@ -2330,10 +2336,10 @@
   </div>
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js?v=20260914e"></script>
-  <script src="/static/live-hud.js?v=20260914c"></script>
-  <script src="/static/world.js?v=20260914c"></script>
+  <script src="/static/live-hud.js?v=20260914d"></script>
+  <script src="/static/world.js?v=20260914d"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20260914g"></script>
+  <script src="/static/app.js?v=20260914h"></script>
 </body>
 </html>

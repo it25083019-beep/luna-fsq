@@ -1883,7 +1883,7 @@
       judge.classList.toggle("bad", matched.length < need);
     }
     if (window.FsqWorld) {
-      FsqWorld.onQuestProgress(pct, hit);
+      FsqWorld.onQuestProgress(pct, hit, matched[matched.length - 1] || "");
       if (!silent && FsqWorld.noteTyping) FsqWorld.noteTyping(hit);
     }
     if (hit && window.LiveHud && LiveHud.noteHit) LiveHud.noteHit(matched[matched.length - 1] || "");
@@ -1906,7 +1906,7 @@
     lastExamKwCount = matched.length;
     const pct = total ? 10 + Math.round((matched.length / Math.max(1, total)) * 86) : 12;
     if (window.FsqWorld) {
-      FsqWorld.onQuestProgress(pct, hit);
+      FsqWorld.onQuestProgress(pct, hit, matched[matched.length - 1] || "");
       if (!silent && FsqWorld.noteTyping) FsqWorld.noteTyping(hit);
     }
     if (hit && window.LiveHud && LiveHud.noteHit) LiveHud.noteHit(matched[matched.length - 1] || "");
