@@ -90,9 +90,34 @@
 
     /* ===== LUNA main (default) ===== */
     #tab-luna{background:
-      radial-gradient(900px 500px at 10% -10%, var(--glow-a), transparent 55%),
-      radial-gradient(800px 480px at 100% 0%, var(--glow-b), transparent 50%),
-      linear-gradient(165deg, var(--bg0), var(--bg1) 45%, var(--bg2))}
+      radial-gradient(900px 500px at 10% -10%, var(--aura-glow, var(--glow-a)), transparent 55%),
+      radial-gradient(800px 480px at 100% 0%, var(--aura-mid, var(--glow-b)), transparent 50%),
+      linear-gradient(165deg, var(--bg0), var(--bg1) 45%, var(--bg2));
+      transition:background .6s ease}
+    html.whisper-mode #tab-luna{
+      --bg0:#10131a;--bg1:#161b24;--bg2:#1a1520;
+      --card:rgba(22,26,36,.92);--composer-bg:#161b24;
+    }
+    .crisis-fab{border:none;background:linear-gradient(135deg,#e07a8a,#c45c3a);color:#fff;width:2.2rem;height:2.2rem;border-radius:12px;box-shadow:var(--shadow);cursor:pointer;font-size:.85rem;font-weight:800}
+    .life-pulse{margin:0 1rem .45rem;padding:.6rem .75rem;border-radius:16px;background:var(--card);box-shadow:var(--shadow);display:flex;align-items:center;gap:.7rem}
+    .life-pulse .lp-ring{width:3.1rem;height:3.1rem;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.85rem;color:#fff;flex-shrink:0;
+      background:conic-gradient(var(--lilac) calc(var(--lp,60)*1%), rgba(120,90,180,.15) 0)}
+    .life-pulse .lp-ring span{background:var(--card);width:2.25rem;height:2.25rem;border-radius:50%;display:grid;place-items:center;color:var(--lilac-deep);font-size:.72rem}
+    .life-pulse strong{display:block;font-size:.78rem;color:var(--lilac-deep)}
+    .life-pulse em{font-style:normal;font-size:.64rem;color:var(--muted)}
+    .mode-row{display:flex;flex-wrap:wrap;gap:.35rem;margin:.35rem 0 .55rem}
+    .mode-row button{border:2px solid transparent;background:var(--input-bg);border-radius:999px;padding:.35rem .7rem;font-size:.7rem;cursor:pointer;color:var(--lilac-deep);font-weight:700}
+    .mode-row button.active{border-color:var(--lilac);background:var(--card)}
+    .crisis-overlay{position:fixed;inset:0;background:rgba(12,16,28,.72);z-index:95;display:none;align-items:flex-end;justify-content:center;padding:1rem}
+    .crisis-overlay.open{display:flex}
+    .crisis-card{width:100%;max-width:420px;background:linear-gradient(180deg,#1b2030,#12151f);color:#f3f1f6;border-radius:22px 22px 18px 18px;padding:1.1rem 1rem 1.2rem}
+    .crisis-card h3{margin:0 0 .25rem;font-size:1rem}
+    .crisis-card p{margin:0 0 .55rem;font-size:.82rem;line-height:1.55}
+    .crisis-card .cr-step{font-size:.68rem;letter-spacing:.08em;color:#c9b6e8;font-weight:800}
+    .crisis-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;margin:.45rem 0 .7rem}
+    .crisis-bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#9b7ed9,#e07a8a);transition:width .2s linear}
+    .crisis-card button{border:none;border-radius:999px;padding:.55rem .9rem;font-weight:800;cursor:pointer;background:#fff;color:#3a2a58}
+    .crisis-card .cr-hotline{margin:.2rem 0 .7rem;font-size:.68rem;color:#d7c4ef}
     .luna-header{display:flex;align-items:flex-start;justify-content:space-between;padding:1rem 1.1rem .35rem}
     .brand{font-family:"Zen Maru Gothic",sans-serif;font-size:1.55rem;font-weight:700;color:var(--lilac-deep);letter-spacing:.04em}
     .brand span{display:block;font-size:.78rem;font-weight:400;color:var(--muted);margin-top:.15rem}
@@ -1363,6 +1388,7 @@
           <div class="home-title-row">
             <div><h1>ホーム</h1><p id="greetingSub">今日も一緒に遊ぼうね</p></div>
             <div style="display:flex;gap:.4rem">
+              <button type="button" class="crisis-fab" id="crisisBtn" title="60秒レスキュー">救</button>
               <button type="button" class="icon-btn" data-open="history" title="会話の履歴">💬</button>
               <button type="button" class="icon-btn" id="settingsBtn" title="設定">⚙️</button>
             </div>
@@ -1374,6 +1400,10 @@
             <div class="bubble compact"><span class="who" id="companionWho">LUNA</span><div id="dialogue">…</div></div>
           </div>
           <div class="status-head"><span>今日のステータス</span><span id="homeDate">—</span></div>
+          <div id="lifePulse" class="life-pulse" hidden>
+            <div class="lp-ring" id="lifePulseRing" style="--lp:60"><span id="lifePulseScore">—</span></div>
+            <div><strong id="lifePulseTitle">ライフパルス</strong><em id="lifePulseLine">健康・お金・予定のいまの拍</em></div>
+          </div>
           <div id="mentalRemindBanner" class="home-banner" role="status">
             <p id="mentalRemindText">LUNAが今日の気分を聞きたいよ</p>
             <button type="button" id="mentalRemindBtn">答える</button>
@@ -1453,6 +1483,20 @@
           <p class="hint">設定で見た目と声を切り替えます。ルナは落ち着いた先生、ルノは若くて可愛い、レンは低い男性の声。動物はそれぞれの雰囲気です。</p>
           <div class="companion-grid" id="settingsCompanionGrid"></div>
           <button type="button" id="voicePreviewBtn">このコンパニオンの声を聞く</button>
+          <h3 style="margin-top:1rem">デュアルモード</h3>
+          <p class="hint">ジェントルは抱きしめる。コマンドはきびしく導く。オートは今日の気分で選ぶ。</p>
+          <div class="mode-row" id="lunaModeRow">
+            <button type="button" data-mode="auto">オート</button>
+            <button type="button" data-mode="gentle">ジェントル</button>
+            <button type="button" data-mode="command">コマンド</button>
+          </div>
+          <h3>ナイトウィスパー</h3>
+          <p class="hint">夜は暗く、声は小さく、言葉は短く。22時〜6時はオートで静かに。</p>
+          <div class="mode-row" id="whisperRow">
+            <button type="button" data-whisper="auto">オート</button>
+            <button type="button" data-whisper="on">オン</button>
+            <button type="button" data-whisper="off">オフ</button>
+          </div>
           <h3 style="margin-top:1rem">評議会の声</h3>
           <p class="hint">見た目はそのまま。アドバイスの角度だけ変えるよ。オートは今日の状態で選ぶ。</p>
           <div class="advisor-style-row" id="advisorStyleRow">
@@ -2119,6 +2163,16 @@
         <button type="button" class="mental-skip" id="dayDigestClose">わかった</button>
       </div>
     </div>
+    <div id="crisisOverlay" class="crisis-overlay" aria-hidden="true">
+      <div class="crisis-card" role="dialog" aria-labelledby="crisisTitle">
+        <div class="cr-step" id="crisisStepLabel">1 / 3</div>
+        <h3 id="crisisTitle">60秒レスキュー</h3>
+        <p id="crisisLead">いまは助ける番。呼吸から。</p>
+        <div class="crisis-bar"><span id="crisisBar"></span></div>
+        <p class="cr-hotline" id="crisisHotline">つらいときは いのちの電話 0570-783-556</p>
+        <button type="button" id="crisisSkipBtn">閉じる</button>
+      </div>
+    </div>
     <div id="mentalOverlay" class="mental-overlay" aria-hidden="true">
       <div class="mental-card" role="dialog" aria-labelledby="mentalTitle">
         <h3 id="mentalTitle">今日の気分は？</h3>
@@ -2142,6 +2196,6 @@
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20260914a"></script>
+  <script src="/static/app.js?v=20260914c"></script>
 </body>
 </html>

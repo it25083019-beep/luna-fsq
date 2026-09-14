@@ -97,6 +97,13 @@ def resolve_voice_profile(companion_id: Optional[str] = None) -> Dict[str, Any]:
 def synthesize_speech(text: str, companion_id: Optional[str] = None) -> bytes:
     """Return WAV bytes for Japanese narration of `text` in that companion's voice."""
     spoken = (text or "").strip()
+    try:
+        from privacy_vault import looks_secret, REDACTED
+
+        if looks_secret(spoken):
+            spoken = "そばにいるよ。"
+    except Exception:
+        pass
     if not spoken:
         return b""
     if len(spoken) > TTS_MAX_CHARS:

@@ -91,7 +91,14 @@ def save_mental_checkin(user: Dict[str, Any], status: str) -> Dict[str, Any]:
     ensure_life_modules(user)
     row = user["life_modules"]["health"]
     structured = dict(row.get("structured") or {})
+    previous = structured.get("mental_status")
     record_mental_status(structured, status)
+    try:
+        from memory_drama_service import note_mood_shift
+
+        note_mood_shift(user, previous, status)
+    except Exception:
+        pass
     update_module_structured(
         user,
         "health",

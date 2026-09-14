@@ -160,7 +160,9 @@ def _default_user_brain(user_id: str) -> Dict[str, Any]:
         "ui_theme": "lilac",
         "ui_hue": None,
         "advisor_style": "auto",
+        "luna_mode": "auto",
         "rescue_quests": [],
+        "emotion_milestones": [],
         "user_display_name": None,
         "current_focus": None,
         "current_plan": None,
@@ -206,6 +208,12 @@ def load_user_brain(user_id: str) -> Dict[str, Any]:
                 data = json.load(f)
             base = _parse_state(json.dumps(data, ensure_ascii=False), _default_user_brain(user_id))
             base["user_id"] = user_id
+            try:
+                from privacy_vault import unseal_brain_after_load
+
+                unseal_brain_after_load(base)
+            except Exception:
+                pass
             return base
         return _default_user_brain(user_id)
     from brain_repo import load_user_brain as _db_load_user
@@ -232,6 +240,12 @@ def save_user_brain(user_id: str, brain_data: Dict[str, Any]) -> None:
                 existing = {}
         payload = safe_merge_for_save(existing, dict(brain_data))
         payload["user_id"] = user_id
+        try:
+            from privacy_vault import seal_brain_for_storage
+
+            seal_brain_for_storage(payload)
+        except Exception:
+            pass
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=4, ensure_ascii=False)
         return
@@ -259,8 +273,16 @@ def append_turns(store: Dict[str, Any], user_text: str, ai_reply: str) -> None:
     history = store.setdefault("chat_history", [])
     stamp = _now_iso()
     if (user_text or "").strip():
-        history.append({"role": "user", "content": user_text, "at": stamp})
+        from privacy_vault import looks_secret
+
+        row = {"role": "user", "content": user_text, "at": stamp}
+        if looks_secret(user_text):
+            row["secret"] = True
+        history.append(row)
     history.append({"role": "model", "content": ai_reply, "at": stamp})
+    from privacy_vault import cap_chat_history
+
+    cap_chat_history(store)
 
 
 def get_chat_history(
@@ -288,6 +310,10 @@ def get_chat_history(
             continue
         role = "user" if turn.get("role") == "user" else "luna"
         content = turn.get("content") or ""
+        if turn.get("sealed") or str(content).startswith("luna1:"):
+            from privacy_vault import unseal_text
+
+            content = unseal_text(content)
         if role == "luna":
             text, _ = parse_ai_reply(content)
         else:
@@ -526,8 +552,10 @@ Shared product mission: {policy.get('mission', '')}
 Output Format: ONLY <dialogue>...</dialogue> and <game_state_json>...</game_state_json>.
 """
 
-    profile = json.dumps(user.get("life_profile", {}), ensure_ascii=False)
-    reminders = json.dumps(user.get("schedule_reminders", []), ensure_ascii=False)
+    from privacy_vault import privacy_prompt_rules, profile_for_llm, reminders_for_llm
+
+    profile = json.dumps(profile_for_llm(user.get("life_profile", {})), ensure_ascii=False)
+    reminders = json.dumps(reminders_for_llm(user.get("schedule_reminders", [])), ensure_ascii=False)
     from life_modules import modules_prompt_block
 
     modules_block = modules_prompt_block(user)
@@ -540,6 +568,15 @@ Output Format: ONLY <dialogue>...</dialogue> and <game_state_json>...</game_stat
         council_block = council_prompt_block(user)
     except Exception:
         council_block = ""
+    try:
+        from mood_runtime import runtime_prompt_block
+        from memory_drama_service import drama_prompt_block
+
+        mood_block = runtime_prompt_block(user)
+        drama_block = drama_prompt_block(user)
+    except Exception:
+        mood_block, drama_block = "", ""
+    privacy_block = privacy_prompt_rules()
     companion = companion_spoken_name(user)
     who = _honorific(user) or (display or "あなた")
     row = get_companion(user.get("companion_id"))
@@ -580,6 +617,10 @@ THREE LIFE MODULES (first-meeting questions are only a baseline; user can add mo
 
 {council_block}
 
+{mood_block}
+
+{drama_block}
+
 FIVE PILLARS always: 1 health 2 study/future 3 money 4 time 5 goal direction.
 
 EMOTION TAGS (like VTuber emotionMap — put ONE tag right after <dialogue> when fitting):
@@ -609,9 +650,7 @@ Use ONLY these keys when confident:
 If unsure, omit life_updates. Never wipe calendars, funds, or goals.
 
 
-# PRIVACY
-- You only know THIS user. Never invent or reference other users' private data.
-- Do not ask for email/password. Auth is outside chat.
+{privacy_block}
 
 # SAFETY
 {chr(10).join("- " + r for r in (policy.get("safety_rules") or [])) or "- No medical/mental diagnosis. If crisis signals appear: empathize and suggest contacting a trusted person or professional support immediately."}
@@ -650,6 +689,10 @@ def _apply_user_fields_from_game_state(user: Dict[str, Any], game_state: Dict[st
             cleaned = sanitize_display_name(str(val))
             if cleaned:
                 user[key] = cleaned
+            continue
+        from privacy_vault import looks_secret
+
+        if looks_secret(val):
             continue
         user[key] = val
 
@@ -790,6 +833,11 @@ def companion_hello_line(user: Dict[str, Any]) -> str:
     agenda = companion_agenda_line(user, who=who)
     if agenda:
         return agenda
+    from care_memory import greeting_care_line
+
+    care = greeting_care_line(user)
+    if care:
+        return care
     tpl = talk.get("hello") or talk.get("greeting") or "{who}こんにちは。"
     line = fill_talk(tpl, who).strip()
     if who and who not in line:
@@ -1100,6 +1148,13 @@ CRISIS_RE = re.compile(
 
 def _is_crisis_message(text: str) -> bool:
     return bool(CRISIS_RE.search(text or ""))
+
+
+def _secret_keep_reply(user: Dict[str, Any]) -> str:
+    """Local vault path — secrets never leave the device for the model or TTS."""
+    from privacy_vault import keep_secret_dialogue
+
+    return _pack_reply(keep_secret_dialogue(user), {"emotion": "think", "secret_held": True})
 
 
 def _crisis_reply(user: Dict[str, Any]) -> str:
@@ -1448,6 +1503,12 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
     if text_in and _is_crisis_message(text_in):
         user = load_user_brain(user_id)
         return _persist_local_turn(user_id, user, text_in, _crisis_reply(user))
+    if text_in:
+        from privacy_vault import looks_secret
+
+        if looks_secret(text_in):
+            user = load_user_brain(user_id)
+            return _persist_local_turn(user_id, user, text_in, _secret_keep_reply(user))
 
     onboarded = handle_user_onboarding_turn(user_id, user_text)
     if onboarded is not None:
@@ -1483,6 +1544,12 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
     if text_in and _is_crisis_message(text_in):
         user = load_user_brain(user_id)
         return _persist_local_turn(user_id, user, text_in, _crisis_reply(user))
+    if text_in:
+        from privacy_vault import looks_secret
+
+        if looks_secret(text_in):
+            user = load_user_brain(user_id)
+            return _persist_local_turn(user_id, user, text_in, _secret_keep_reply(user))
 
     if not skip_onboarding:
         onboarded = handle_user_onboarding_turn(user_id, user_text)
@@ -1544,10 +1611,13 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
     last_error: Optional[Exception] = None
     for i in range(max_retries):
         try:
+            from privacy_vault import history_for_llm
+
+            safe_history = history_for_llm(history, limit=CHAT_CONTEXT_TURNS)
             ai_reply = complete_chat(
                 system_prompt,
-                history_dicts=history,
-                history_contents=_history_to_contents(history, limit=CHAT_CONTEXT_TURNS),
+                history_dicts=safe_history,
+                history_contents=_history_to_contents(safe_history, limit=CHAT_CONTEXT_TURNS),
                 user_text=user_text,
                 temperature=0.6,
                 max_tokens=CHAT_REPLY_TOKENS,

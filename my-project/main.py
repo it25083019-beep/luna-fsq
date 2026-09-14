@@ -104,6 +104,8 @@ from schemas import (
     AppearancePrefsRequest,
     AdvisorStyleRequest,
     RescueQuestCompleteRequest,
+    LunaModeRequest,
+    NightWhisperRequest,
 )
 from study_workspace import (
     build_boss_exam,
@@ -159,10 +161,11 @@ from luna_service import (
 app = FastAPI(title="FSQ Luna Backend")
 
 _ALLOWED = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",") if o.strip()]
+_CORS_STAR = _ALLOWED == ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_ALLOWED,
-    allow_credentials=True,
+    allow_origins=["*"] if _CORS_STAR else _ALLOWED,
+    allow_credentials=not _CORS_STAR,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -386,10 +389,10 @@ def auth_forgot_password(
     base = (os.getenv("APP_BASE_URL") or str(request.base_url)).rstrip("/")
     reset_url = f"{base}/login?reset={raw_token}"
     sent = send_password_reset_email(user.email, reset_url)
-    # If mail is not configured (or failed), return the link so the user can finish reset.
+    dev = os.getenv("ENV", "dev").lower() not in {"prod", "production"}
     return ForgotPasswordResponse(
         message=generic if sent else "再設定用のリンクを発行しました。下のリンクから新しいパスワードを設定してください。",
-        reset_url=None if sent else reset_url,
+        reset_url=(reset_url if (not sent and dev) else None),
     )
 
 
@@ -654,7 +657,7 @@ def tts_speak(req: TtsSpeakRequest, current: User = Depends(get_current_user)):
     try:
         wav = synthesize_speech(req.text, companion_id=req.companion_id)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise HTTPException(status_code=503, detail="voice unavailable") from exc
     if not wav:
         raise HTTPException(status_code=400, detail="empty text")
     return Response(content=wav, media_type="audio/wav")
@@ -909,6 +912,49 @@ def save_advisor_style(req: AdvisorStyleRequest, current: User = Depends(get_cur
     brain["advisor_style"] = normalize_advisor_style(req.style)
     save_user_brain(current.public_id, brain)
     return {"ok": True, "advisor_style": brain["advisor_style"], "council": build_council(brain)}
+
+
+@app.post("/prefs/luna-mode")
+def save_luna_mode(req: LunaModeRequest, current: User = Depends(get_current_user)):
+    mode = str(req.mode or "auto").strip().lower()
+    if mode not in {"auto", "gentle", "command"}:
+        raise HTTPException(status_code=400, detail="unknown mode")
+    brain = load_user_brain(current.public_id)
+    brain["luna_mode"] = mode
+    save_user_brain(current.public_id, brain)
+    from mood_runtime import build_mood_runtime
+
+    return {"ok": True, "luna_mode": mode, "mood_runtime": build_mood_runtime(brain)}
+
+
+@app.post("/prefs/night-whisper")
+def save_night_whisper(req: NightWhisperRequest, current: User = Depends(get_current_user)):
+    brain = load_user_brain(current.public_id)
+    if req.enabled is None:
+        brain.pop("night_whisper", None)
+    else:
+        brain["night_whisper"] = bool(req.enabled)
+    save_user_brain(current.public_id, brain)
+    from mood_runtime import build_mood_runtime
+
+    return {"ok": True, "night_whisper": brain.get("night_whisper"), "mood_runtime": build_mood_runtime(brain)}
+
+
+@app.get("/crisis/switch")
+def crisis_switch_get(current: User = Depends(get_current_user)):
+    from crisis_switch_service import build_crisis_protocol
+
+    return build_crisis_protocol(load_user_brain(current.public_id))
+
+
+@app.post("/crisis/complete")
+def crisis_switch_done(current: User = Depends(get_current_user)):
+    from crisis_switch_service import complete_crisis_switch
+
+    brain = load_user_brain(current.public_id)
+    result = complete_crisis_switch(brain)
+    save_user_brain(current.public_id, brain)
+    return result
 
 
 @app.get("/portfolio/export")
@@ -1363,16 +1409,17 @@ def admin_export(
             brain = _json.loads(brain_raw)
         except Exception:
             brain = {"_raw": brain_raw}
+        from privacy_vault import sanitize_admin_export_brain
+
         users_out.append(
             {
                 "public_id": u.public_id,
                 "email": u.email,
-                "password_hash": u.password_hash,
                 "display_name": u.display_name,
                 "is_admin": u.is_admin,
                 "is_locked": getattr(u, "is_locked", False),
                 "created_at": u.created_at.isoformat() if u.created_at else None,
-                "brain": brain,
+                "brain": sanitize_admin_export_brain(brain),
             }
         )
     core_row = db.query(CoreBrain).filter_by(id=1).first()

@@ -100,6 +100,14 @@ class RescueQuestCompleteRequest(BaseModel):
     quest_id: str = Field(min_length=3, max_length=40)
 
 
+class LunaModeRequest(BaseModel):
+    mode: str = Field(min_length=3, max_length=16)
+
+
+class NightWhisperRequest(BaseModel):
+    enabled: Optional[bool] = None
+
+
 class ChatResponse(BaseModel):
     dialogue: str
     game_state: Dict[str, Any]

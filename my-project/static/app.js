@@ -2304,9 +2304,16 @@
     });
   }
 
+  let moodRuntime = null;
+
   function currentVoiceProfile() {
     const row = companionById(selectedCompanionId) || {};
-    return row.voice || {};
+    const base = Object.assign({}, row.voice || {});
+    if (moodRuntime && moodRuntime.voice) {
+      base.browser_rate = moodRuntime.voice.rate;
+      base.browser_pitch = moodRuntime.voice.pitch;
+    }
+    return base;
   }
 
   function pickJaBrowserVoice(voices) {
@@ -4076,6 +4083,122 @@
   }
 
   let homeExtras = { future_twin: null, risk_radar: null, council: null };
+  let crisisTimer = null;
+
+  function applyMoodRuntime(rt) {
+    moodRuntime = rt || null;
+    const root = document.documentElement;
+    if (!rt) {
+      root.classList.remove("whisper-mode");
+      root.removeAttribute("data-aura");
+      return;
+    }
+    const aura = rt.aura || {};
+    root.style.setProperty("--aura-glow", aura.glow || "");
+    root.style.setProperty("--aura-mid", aura.mid || "");
+    root.setAttribute("data-aura", aura.id || "");
+    root.classList.toggle("whisper-mode", !!rt.whisper);
+    const sub = document.getElementById("greetingSub");
+    if (sub && aura.label_ja) sub.textContent = aura.label_ja + (rt.whisper ? " ・ ナイトウィスパー" : "");
+    try {
+      if (luna && aura.emotion) luna.applyEmotion(aura.emotion);
+    } catch (_) {}
+    renderLunaModeRow(rt.mode_pref || rt.mode);
+    renderWhisperRow(rt.whisper_pref);
+  }
+
+  function renderLifePulse(pulse) {
+    const box = document.getElementById("lifePulse");
+    if (!box) return;
+    if (!pulse) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    const ring = document.getElementById("lifePulseRing");
+    const score = document.getElementById("lifePulseScore");
+    const title = document.getElementById("lifePulseTitle");
+    const line = document.getElementById("lifePulseLine");
+    if (ring) ring.style.setProperty("--lp", String(pulse.score || 0));
+    if (score) score.textContent = String(pulse.score || "—");
+    if (title) title.textContent = "ライフパルス ・ " + (pulse.label_ja || "");
+    if (line) line.textContent = pulse.line_ja || "";
+  }
+
+  function renderLunaModeRow(mode) {
+    const row = document.getElementById("lunaModeRow");
+    if (!row) return;
+    row.querySelectorAll("button[data-mode]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.mode === (mode || "auto"));
+    });
+  }
+
+  function renderWhisperRow(pref) {
+    const row = document.getElementById("whisperRow");
+    if (!row) return;
+    row.querySelectorAll("button[data-whisper]").forEach((b) => {
+      if (b.dataset.whisper === "on") b.classList.toggle("active", pref === true);
+      else if (b.dataset.whisper === "off") b.classList.toggle("active", pref === false);
+      else b.classList.toggle("active", pref !== true && pref !== false);
+    });
+  }
+
+  async function startCrisisSwitch() {
+    try {
+      const proto = await api("/crisis/switch");
+      const ov = document.getElementById("crisisOverlay");
+      const title = document.getElementById("crisisTitle");
+      const lead = document.getElementById("crisisLead");
+      const stepEl = document.getElementById("crisisStepLabel");
+      const bar = document.getElementById("crisisBar");
+      if (!ov) return;
+      ov.classList.add("open");
+      ov.setAttribute("aria-hidden", "false");
+      const steps = proto.steps || [];
+      if (title) title.textContent = proto.title_ja || "60秒レスキュー";
+      const hotline = document.getElementById("crisisHotline");
+      if (hotline) hotline.textContent = proto.hotline_ja || hotline.textContent;
+      let elapsed = 0;
+      const paint = () => {
+        const idx = elapsed < 20 ? 0 : elapsed < 40 ? 1 : 2;
+        const st = steps[idx] || {};
+        if (stepEl) stepEl.textContent = (idx + 1) + " / 3 ・ " + (st.title_ja || "");
+        if (lead) lead.textContent = st.line_ja || proto.lead_ja || "";
+        if (bar) bar.style.width = Math.min(100, (elapsed / 60) * 100) + "%";
+      };
+      paint();
+      if (crisisTimer) clearInterval(crisisTimer);
+      crisisTimer = setInterval(async () => {
+        elapsed += 0.25;
+        paint();
+        if (elapsed >= 60) {
+          clearInterval(crisisTimer);
+          crisisTimer = null;
+          try {
+            await api("/crisis/complete", { method: "POST", body: "{}" });
+          } catch (_) {}
+          ov.classList.remove("open");
+          ov.setAttribute("aria-hidden", "true");
+          const d = document.getElementById("dialogue");
+          if (d) d.textContent = "戻ってきたね。いのちの電話 0570-783-556 もあるよ。";
+        }
+      }, 250);
+    } catch (err) {
+      setErr(err.message || "レスキューを開けなかったよ");
+    }
+  }
+
+  function closeCrisisSwitch() {
+    if (crisisTimer) {
+      clearInterval(crisisTimer);
+      crisisTimer = null;
+    }
+    const ov = document.getElementById("crisisOverlay");
+    if (ov) {
+      ov.classList.remove("open");
+      ov.setAttribute("aria-hidden", "true");
+    }
+  }
 
   function twinMetricHtml(label, snap) {
     if (!snap) return "";
@@ -4289,6 +4412,8 @@
       renderRiskRadar(s.risk_radar || null);
       renderFutureTwin(s.future_twin || null);
       renderCouncil(s.council || null);
+      applyMoodRuntime(s.mood_runtime || null);
+      renderLifePulse(s.life_pulse || null);
       if (s.day_fit) {
         journeyStatus.day_fit = s.day_fit;
         renderDayPaceBanner();
@@ -4569,6 +4694,41 @@
       };
     });
     bindHueControls();
+    const crisisBtn = document.getElementById("crisisBtn");
+    if (crisisBtn) crisisBtn.onclick = () => startCrisisSwitch();
+    const crisisSkip = document.getElementById("crisisSkipBtn");
+    if (crisisSkip) crisisSkip.onclick = () => closeCrisisSwitch();
+    const modeRow = document.getElementById("lunaModeRow");
+    if (modeRow) {
+      modeRow.querySelectorAll("button[data-mode]").forEach((b) => {
+        b.onclick = async () => {
+          try {
+            const res = await api("/prefs/luna-mode", {
+              method: "POST",
+              body: JSON.stringify({ mode: b.dataset.mode }),
+            });
+            applyMoodRuntime(res.mood_runtime);
+            renderLunaModeRow(b.dataset.mode);
+          } catch (_) {}
+        };
+      });
+    }
+    const whisperRow = document.getElementById("whisperRow");
+    if (whisperRow) {
+      whisperRow.querySelectorAll("button[data-whisper]").forEach((b) => {
+        b.onclick = async () => {
+          const v = b.dataset.whisper;
+          const enabled = v === "on" ? true : v === "off" ? false : null;
+          try {
+            const res = await api("/prefs/night-whisper", {
+              method: "POST",
+              body: JSON.stringify({ enabled: enabled }),
+            });
+            applyMoodRuntime(res.mood_runtime);
+          } catch (_) {}
+        };
+      });
+    }
     const advisorRow = document.getElementById("advisorStyleRow");
     if (advisorRow) {
       advisorRow.querySelectorAll("button[data-advisor]").forEach((btn) => {

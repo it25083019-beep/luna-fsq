@@ -333,10 +333,15 @@ def apply_life_updates(user: Dict[str, Any], updates: Dict[str, Any]) -> List[st
 
             amt = int(spend.get("amount") or 0)
             if amt > 0:
+                from privacy_vault import looks_secret
+
+                spend_note = str(spend.get("note") or "チャット記録")[:200]
+                if looks_secret(spend_note):
+                    spend_note = "チャット記録"
                 add_money_spend(
                     user,
                     amount=amt,
-                    note=str(spend.get("note") or "チャット記録")[:200],
+                    note=spend_note,
                     on_date=str(spend.get("date") or "")[:10] or None,
                 )
                 applied.append(f"支出+{amt:,}円")
@@ -347,11 +352,15 @@ def apply_life_updates(user: Dict[str, Any], updates: Dict[str, Any]) -> List[st
     sched = updates.get("schedule_add")
     if isinstance(sched, dict) and (sched.get("title") or "").strip():
         try:
+            from privacy_vault import looks_secret
             from schedule_service import add_event
 
+            title = str(sched.get("title")).strip()[:80]
+            if looks_secret(title):
+                raise ValueError("secret title")
             add_event(
                 user,
-                title=str(sched.get("title")).strip()[:80],
+                title=title,
                 event_date=str(sched.get("date") or _today().isoformat())[:10],
                 event_time=sched.get("time"),
                 event_end_time=sched.get("end_time"),
@@ -369,6 +378,10 @@ def apply_life_updates(user: Dict[str, Any], updates: Dict[str, Any]) -> List[st
             from goals_service import add_goal, goals_dashboard
 
             title = str(goal.get("title")).strip()[:80]
+            from privacy_vault import looks_secret
+
+            if looks_secret(title):
+                raise ValueError("secret title")
             existing = goals_dashboard(user).get("items") or []
             if not any(g.get("title") == title for g in existing):
                 add_goal(
@@ -417,6 +430,10 @@ def apply_life_updates(user: Dict[str, Any], updates: Dict[str, Any]) -> List[st
             body = (str(text or "")).strip()
             if not body:
                 continue
+            from privacy_vault import looks_secret
+
+            if looks_secret(body):
+                continue
             try:
                 append_module_note(user, mod, f"チャットメモ: {body[:500]}")
                 applied.append(f"{mod}メモ")
@@ -432,6 +449,10 @@ def capture_life_from_chat(
     game_state: Optional[Dict[str, Any]] = None,
 ) -> List[str]:
     """Extract from user text + optional LLM life_updates; apply additively."""
+    from privacy_vault import looks_secret
+
+    if looks_secret(user_text):
+        return []
     hints = extract_life_hints_from_text(user_text)
     llm_updates = None
     if isinstance(game_state, dict):

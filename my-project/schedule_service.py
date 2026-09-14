@@ -1379,6 +1379,15 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
         council = build_council(user, twin=twin, radar=radar)
     except Exception:
         twin, radar, council = None, None, None
+    try:
+        from mood_runtime import build_life_pulse, build_mood_runtime
+        from crisis_switch_service import build_crisis_protocol
+
+        mood = build_mood_runtime(user)
+        pulse = build_life_pulse(user)
+        crisis = build_crisis_protocol(user) if mood.get("crisis_ready") else None
+    except Exception:
+        mood, pulse, crisis = None, None, None
     return {
         "schedule": {
             "open_count": today_open_n,
@@ -1411,4 +1420,7 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
         "future_twin": twin,
         "risk_radar": radar,
         "council": council,
+        "mood_runtime": mood,
+        "life_pulse": pulse,
+        "crisis": crisis,
     }

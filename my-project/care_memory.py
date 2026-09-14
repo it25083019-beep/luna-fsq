@@ -17,6 +17,13 @@ def touch_care_memory(
     cm["last_topic"] = topic
     cm["last_touch"] = today
     snippet = (user_text or "").strip()
+    try:
+        from privacy_vault import looks_secret
+
+        if looks_secret(snippet):
+            snippet = ""
+    except Exception:
+        pass
     if snippet:
         cm[f"last_{topic}_message"] = snippet[:160]
     for tag in applied or []:
@@ -128,13 +135,27 @@ def build_care_prompt(user: Dict[str, Any]) -> Optional[str]:
 
 def greeting_care_line(user: Dict[str, Any]) -> Optional[str]:
     """Spoken on app open — last concern, then how are you today."""
+    from privacy_vault import looks_secret
+
+    try:
+        from memory_drama_service import drama_line
+
+        drama = drama_line(user)
+        if drama:
+            return drama
+    except Exception:
+        pass
     cm = user.get("care_memory") or {}
     concern = cm.get("last_health_concern")
+    if concern and looks_secret(concern):
+        return "今日の調子、聞いてもいい？"
     if concern == "睡眠":
         return "前回、睡眠が心配だったよね。今日はどう？"
     if concern:
         return f"前回、「{concern}」が気になってたよね。今日はどう？"
     if cm.get("last_money_worry") or cm.get("last_money_note"):
+        if looks_secret(cm.get("last_money_worry") or ""):
+            return "今日の調子はどう？"
         return "前回、お金のことが引っかかってたよね。今日の調子はどう？"
     return None
 

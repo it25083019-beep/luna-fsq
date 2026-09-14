@@ -37,6 +37,11 @@ def normalize_advisor_style(raw: Any) -> str:
 
 
 def resolve_advisor_style(user: Dict[str, Any], facts: Optional[Dict[str, Any]] = None) -> str:
+    mode = str(user.get("luna_mode") or "auto").strip().lower()
+    if mode == "gentle":
+        return "empathic"
+    if mode == "command":
+        return "strict"
     chosen = normalize_advisor_style(user.get("advisor_style"))
     if chosen != "auto":
         return chosen

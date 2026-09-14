@@ -280,6 +280,16 @@ def mail_status(user: Dict[str, Any], *, public_base: str = "") -> Dict[str, Any
     }
 
 
+def _safe_mail_body(text: Any) -> str:
+    raw = str(text or "")[:400]
+    try:
+        from privacy_vault import redact_mail_body
+
+        return redact_mail_body(raw)
+    except Exception:
+        return raw
+
+
 def _today() -> date:
     return datetime.now(JST).date()
 
@@ -509,7 +519,7 @@ def _refine_with_llm(
             {
                 "i": i,
                 "subject": (row.get("subject") or "")[:120],
-                "body": (row.get("body") or "")[:500],
+                "body": _safe_mail_body(row.get("body")),
             }
         )
     system = (

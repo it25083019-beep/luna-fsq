@@ -41,7 +41,10 @@ def default_user_brain(user_id: str) -> Dict[str, Any]:
         "ui_theme": "lilac",
         "ui_hue": None,
         "advisor_style": "auto",
+        "luna_mode": "auto",
+        "night_whisper": None,
         "rescue_quests": [],
+        "emotion_milestones": [],
         "user_display_name": None,
         "current_focus": None,
         "current_plan": None,
@@ -167,6 +170,12 @@ def load_user_brain(public_id: str, db: Optional[Session] = None) -> Dict[str, A
             sync_companion_identity(data)
         except Exception:
             pass
+        try:
+            from privacy_vault import unseal_brain_after_load
+
+            unseal_brain_after_load(data)
+        except Exception:
+            pass
         return data
     finally:
         if own:
@@ -207,6 +216,12 @@ def save_user_brain(public_id: str, data: Dict[str, Any], db: Optional[Session] 
                 user.display_name = cleaned
             elif raw_name and user.display_name == raw_name:
                 user.display_name = None
+        except Exception:
+            pass
+        try:
+            from privacy_vault import seal_brain_for_storage
+
+            seal_brain_for_storage(payload)
         except Exception:
             pass
         raw = json.dumps(payload, ensure_ascii=False)

@@ -132,26 +132,7 @@ def update_module_structured(
 
 
 def modules_prompt_block(user: Dict[str, Any]) -> str:
-    """Inject into companion system prompt."""
-    ensure_life_modules(user)
-    lines: List[str] = [
-        "LIFE MODULES (baseline from first meeting + later notes). "
-        "Initial questions are only a start; user may add details anytime.",
-    ]
-    for key in MODULE_KEYS:
-        s = summarize_module(user, key)
-        lines.append(f"### {s['title_ja']} ({key})")
-        if s["baseline"]:
-            lines.append("baseline: " + "; ".join(f"{k}={v}" for k, v in s["baseline"].items()))
-        else:
-            lines.append("baseline: (empty)")
-        notes = s["notes"][-5:]
-        if notes:
-            lines.append("recent notes: " + " | ".join(n["text"] for n in notes))
-        if s["structured"] and key != "schedule":
-            lines.append("structured: " + str(s["structured"]))
-    lines.append(
-        "When user asks to update health/money/schedule, acknowledge and store facts in memory; "
-        "UI also has /life endpoints for explicit append."
-    )
-    return "\n".join(lines)
+    """Inject a privacy-safe summary into the companion system prompt."""
+    from privacy_vault import modules_prompt_safe
+
+    return modules_prompt_safe(user)

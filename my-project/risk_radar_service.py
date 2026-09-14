@@ -230,6 +230,12 @@ def complete_rescue_quest(user: Dict[str, Any], quest_id: str) -> Dict[str, Any]
     found["done_at"] = _iso(now)
     gain, _ = grant_exp(user, int(found.get("exp") or 6))
     append_care_event(user, "care", f"レスキュー達成：{found.get('title_ja')}", detail=f"+{gain} EXP")
+    try:
+        from memory_drama_service import remember_milestone
+
+        remember_milestone(user, "rescue", "小さなレスキューをやり切った")
+    except Exception:
+        pass
     user["_radar_dirty"] = True
     radar = refresh_risk_radar(user, now=now)
     return {"ok": True, "already": False, "quest": found, "exp_gained": gain, "radar": radar}
