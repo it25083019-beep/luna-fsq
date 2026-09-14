@@ -1369,6 +1369,16 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
 
     day_fit = assess_day_load(user)
     reminders = build_today_reminders(user, fit=day_fit)
+    from future_twin_service import build_future_twin
+    from risk_radar_service import refresh_risk_radar
+    from companion_council import build_council
+
+    try:
+        twin = build_future_twin(user)
+        radar = refresh_risk_radar(user)
+        council = build_council(user, twin=twin, radar=radar)
+    except Exception:
+        twin, radar, council = None, None, None
     return {
         "schedule": {
             "open_count": today_open_n,
@@ -1398,4 +1408,7 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
         "weekly_review": build_weekly_review(user),
         "day_fit": day_fit,
         "reminders": reminders,
+        "future_twin": twin,
+        "risk_radar": radar,
+        "council": council,
     }

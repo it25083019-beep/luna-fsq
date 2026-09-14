@@ -159,6 +159,8 @@ def _default_user_brain(user_id: str) -> Dict[str, Any]:
         "companion_id": "luna",
         "ui_theme": "lilac",
         "ui_hue": None,
+        "advisor_style": "auto",
+        "rescue_quests": [],
         "user_display_name": None,
         "current_focus": None,
         "current_plan": None,
@@ -391,6 +393,7 @@ def get_brain_status(user_id: str) -> Dict[str, Any]:
         "companion_id": user.get("companion_id") or "luna",
         "ui_theme": user.get("ui_theme") or "lilac",
         "ui_hue": user.get("ui_hue"),
+        "advisor_style": user.get("advisor_style") or "auto",
         "user_display_name": user.get("user_display_name"),
         "user_chat_history_count": len(user.get("chat_history", [])),
         "onboarding_complete": (bool(user.get("user_display_name")) and bool(user.get("companion_name"))) if not admin else True,
@@ -531,6 +534,12 @@ Output Format: ONLY <dialogue>...</dialogue> and <game_state_json>...</game_stat
     from day_coach import companion_agenda_prompt
 
     agenda_block = companion_agenda_prompt(user)
+    from companion_council import council_prompt_block
+
+    try:
+        council_block = council_prompt_block(user)
+    except Exception:
+        council_block = ""
     companion = companion_spoken_name(user)
     who = _honorific(user) or (display or "あなた")
     row = get_companion(user.get("companion_id"))
@@ -568,6 +577,8 @@ THREE LIFE MODULES (first-meeting questions are only a baseline; user can add mo
 {modules_block}
 
 {agenda_block}
+
+{council_block}
 
 FIVE PILLARS always: 1 health 2 study/future 3 money 4 time 5 goal direction.
 

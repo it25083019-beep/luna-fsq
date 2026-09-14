@@ -102,6 +102,8 @@ from schemas import (
     MailGoogleSetupRequest,
     MailGoogleBrowserToken,
     AppearancePrefsRequest,
+    AdvisorStyleRequest,
+    RescueQuestCompleteRequest,
 )
 from study_workspace import (
     build_boss_exam,
@@ -518,6 +520,10 @@ def save_appearance_prefs(
         row = get_companion(cid)
         state["companion_id"] = cid
         state["companion_name"] = row.get("label_ja") or row.get("label_en") or cid
+    if req.advisor_style:
+        from companion_council import normalize_advisor_style
+
+        state["advisor_style"] = normalize_advisor_style(req.advisor_style)
     save_user_brain(current.public_id, state)
     return {
         "ok": True,
@@ -525,6 +531,7 @@ def save_appearance_prefs(
         "ui_hue": state.get("ui_hue"),
         "companion_id": state.get("companion_id") or "luna",
         "companion_name": state.get("companion_name"),
+        "advisor_style": state.get("advisor_style") or "auto",
     }
 
 
@@ -855,9 +862,70 @@ def get_home_summary(current: User = Depends(get_current_user)):
     from push_service import flush_due_pushes
 
     pushed = flush_due_pushes(brain, (result.get("reminders") or {}).get("reminders"))
-    if brain.pop("_schedule_dirty", False) or result.get("health", {}).get("mental_reminder") or pushed:
+    if brain.pop("_schedule_dirty", False) or brain.pop("_radar_dirty", False) or result.get("health", {}).get("mental_reminder") or pushed:
         save_user_brain(current.public_id, brain)
     return result
+
+
+@app.get("/future/twin")
+def future_twin_me(current: User = Depends(get_current_user)):
+    from future_twin_service import build_future_twin
+
+    return build_future_twin(load_user_brain(current.public_id))
+
+
+@app.get("/risk/radar")
+def risk_radar_me(current: User = Depends(get_current_user)):
+    from risk_radar_service import refresh_risk_radar
+
+    brain = load_user_brain(current.public_id)
+    radar = refresh_risk_radar(brain)
+    if brain.pop("_radar_dirty", False):
+        save_user_brain(current.public_id, brain)
+    return radar
+
+
+@app.post("/risk/rescue/complete")
+def risk_rescue_complete(
+    req: RescueQuestCompleteRequest,
+    current: User = Depends(get_current_user),
+):
+    from risk_radar_service import complete_rescue_quest
+
+    brain = load_user_brain(current.public_id)
+    try:
+        result = complete_rescue_quest(brain, req.quest_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    save_user_brain(current.public_id, brain)
+    return result
+
+
+@app.post("/prefs/advisor-style")
+def save_advisor_style(req: AdvisorStyleRequest, current: User = Depends(get_current_user)):
+    from companion_council import build_council, normalize_advisor_style
+
+    brain = load_user_brain(current.public_id)
+    brain["advisor_style"] = normalize_advisor_style(req.style)
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "advisor_style": brain["advisor_style"], "council": build_council(brain)}
+
+
+@app.get("/portfolio/export")
+def portfolio_export_me(current: User = Depends(get_current_user)):
+    from portfolio_export_service import build_growth_export
+
+    return build_growth_export(load_user_brain(current.public_id))
+
+
+@app.get("/portfolio/export.html")
+def portfolio_export_html(current: User = Depends(get_current_user)):
+    from portfolio_export_service import render_export_html
+
+    return Response(
+        content=render_export_html(load_user_brain(current.public_id)),
+        media_type="text/html; charset=utf-8",
+    )
 
 
 @app.get("/reminders/today")

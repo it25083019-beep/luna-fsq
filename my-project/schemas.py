@@ -89,6 +89,15 @@ class AppearancePrefsRequest(BaseModel):
     theme_id: Optional[str] = None
     companion_id: Optional[str] = None
     hue: Optional[int] = Field(default=None, ge=0, le=360)
+    advisor_style: Optional[str] = None
+
+
+class AdvisorStyleRequest(BaseModel):
+    style: str = Field(min_length=3, max_length=20)
+
+
+class RescueQuestCompleteRequest(BaseModel):
+    quest_id: str = Field(min_length=3, max_length=40)
 
 
 class ChatResponse(BaseModel):

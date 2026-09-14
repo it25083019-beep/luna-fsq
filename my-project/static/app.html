@@ -1296,6 +1296,43 @@
     .weekly-review h4{margin:0 0 .2rem;font-size:.78rem;color:#145a52}
     .weekly-review ul{margin:0;padding:0 0 0 1rem;font-size:.68rem;line-height:1.4;color:var(--text);max-height:3.6rem;overflow:hidden}
     .weekly-review p{margin:.25rem 0 0;font-size:.66rem;color:var(--muted);line-height:1.35}
+    .risk-radar{margin:0 1rem .45rem;padding:.6rem .75rem;border-radius:16px;background:linear-gradient(135deg,#fff4ee,#fff);border:1px solid rgba(196,92,58,.28);display:none}
+    .risk-radar.open{display:block}
+    .risk-radar.ok{background:linear-gradient(135deg,#eef8f4,#fff);border-color:rgba(31,122,110,.22)}
+    .risk-radar h4{margin:0 0 .3rem;font-size:.78rem;color:#8a3a28}
+    .risk-radar.ok h4{color:#145a52}
+    .risk-item{display:flex;align-items:flex-start;justify-content:space-between;gap:.45rem;padding:.35rem 0;border-top:1px solid rgba(196,92,58,.12)}
+    .risk-item:first-of-type{border-top:none}
+    .risk-item strong{display:block;font-size:.74rem}
+    .risk-item span{display:block;font-size:.64rem;color:var(--muted);line-height:1.35}
+    .risk-item button{border:none;border-radius:999px;padding:.32rem .55rem;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;font-size:.64rem;font-weight:800;cursor:pointer;flex-shrink:0}
+    .risk-item button[disabled]{opacity:.55;cursor:default}
+    .twin-card{margin:0 1rem .45rem;padding:.65rem .75rem;border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
+    .twin-card h4{margin:0 0 .15rem;font-size:.8rem;color:var(--lilac-deep)}
+    .twin-card .tagline{margin:0 0 .45rem;font-size:.62rem;color:var(--muted);line-height:1.35}
+    .twin-cols{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
+    .twin-col{border-radius:12px;padding:.45rem .5rem;background:var(--input-bg)}
+    .twin-col.plan{background:linear-gradient(160deg,#efe6ff,#fff)}
+    .twin-col b{display:block;font-size:.68rem;margin-bottom:.2rem}
+    .twin-col p{margin:0;font-size:.62rem;line-height:1.4;color:var(--text)}
+    .twin-shock{margin:.4rem 0 0;font-size:.68rem;line-height:1.4;color:var(--lilac-deep);font-weight:700}
+    .council-strip{margin:0 1rem .5rem}
+    .council-strip h4{margin:0 0 .35rem;font-size:.78rem;color:var(--lilac-deep)}
+    .council-voices{display:flex;flex-direction:column;gap:.35rem}
+    .council-voice{border:2px solid transparent;background:var(--card);border-radius:14px;padding:.45rem .55rem;text-align:left;cursor:pointer;box-shadow:var(--shadow)}
+    .council-voice.active{border-color:var(--lilac)}
+    .council-voice em{display:block;font-style:normal;font-size:.62rem;font-weight:800;color:var(--lilac-deep)}
+    .council-voice span{display:block;font-size:.66rem;line-height:1.35;color:var(--text);margin-top:.12rem}
+    .advisor-style-row{display:flex;flex-wrap:wrap;gap:.35rem;margin:.45rem 0 .7rem}
+    .advisor-style-row button{border:2px solid transparent;background:var(--input-bg);border-radius:999px;padding:.35rem .7rem;font-size:.7rem;cursor:pointer;color:var(--lilac-deep);font-weight:700}
+    .advisor-style-row button.active{border-color:var(--lilac);background:var(--card)}
+    .shock-panel .twin-cols{margin-top:.35rem}
+    .shock-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;margin:.45rem 0}
+    .shock-metrics div{background:rgba(11,28,34,.06);border-radius:10px;padding:.35rem;text-align:center;color:var(--fsq-text,#1c2a2e)}
+    .shock-metrics b{display:block;font-size:.9rem}
+    .shock-metrics span{font-size:.58rem;opacity:.8}
+    .pf-export-row{display:flex;gap:.4rem;flex-wrap:wrap;margin:.45rem 0 .2rem}
+    .pf-export-row button{border:none;border-radius:999px;padding:.45rem .85rem;cursor:pointer;font-weight:800;font-size:.72rem;background:linear-gradient(135deg,#d4a84b,#f0d9a0);color:#1c2a2e}
     .demo-quest-row.life-quest{border-left:3px solid var(--fsq-teal,#1f7a6e);padding-left:.5rem;margin-left:-.15rem}
     .demo-quest-row.life-quest .quest-text span{color:#145a52}
     .edit-panel .ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
@@ -1345,6 +1382,23 @@
             <h4 id="weeklyReviewTitle">今週のふりかえり</h4>
             <ul id="weeklyReviewList"></ul>
             <p id="weeklyReviewGoal"></p>
+          </div>
+          <div id="riskRadar" class="risk-radar" role="status" hidden>
+            <h4 id="riskRadarTitle">リスクレーダー</h4>
+            <div id="riskRadarList"></div>
+          </div>
+          <div id="futureTwinCard" class="twin-card" hidden>
+            <h4>フューチャーセルフ</h4>
+            <p class="tagline" id="twinTagline">他のアプリは行動を追う。LUNAは起きる前の結果を見せる。</p>
+            <div class="twin-cols">
+              <div class="twin-col" id="twinColA"></div>
+              <div class="twin-col plan" id="twinColB"></div>
+            </div>
+            <p class="twin-shock" id="twinShock"></p>
+          </div>
+          <div id="councilStrip" class="council-strip" hidden>
+            <h4>今日の評議会</h4>
+            <div class="council-voices" id="councilVoices"></div>
           </div>
           <div class="status-row">
             <button type="button" class="status-card" data-open="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
@@ -1399,6 +1453,14 @@
           <p class="hint">設定で見た目と声を切り替えます。ルナは落ち着いた先生、ルノは若くて可愛い、レンは低い男性の声。動物はそれぞれの雰囲気です。</p>
           <div class="companion-grid" id="settingsCompanionGrid"></div>
           <button type="button" id="voicePreviewBtn">このコンパニオンの声を聞く</button>
+          <h3 style="margin-top:1rem">評議会の声</h3>
+          <p class="hint">見た目はそのまま。アドバイスの角度だけ変えるよ。オートは今日の状態で選ぶ。</p>
+          <div class="advisor-style-row" id="advisorStyleRow">
+            <button type="button" data-advisor="auto">オート</button>
+            <button type="button" data-advisor="strategist">戦略・ルナ</button>
+            <button type="button" data-advisor="strict">厳しめ・レン</button>
+            <button type="button" data-advisor="empathic">寄り添い・ルノ</button>
+          </div>
           <h3 style="margin-top:1rem">通知</h3>
           <p class="hint">用事だけ予定に入れます。スマホはSafari/Chromeの「ホーム画面に追加」をしてから通知をオン。閉じても届きます。iPhoneはホーム追加が必要です。</p>
           <div class="notify-row">
@@ -1756,6 +1818,16 @@
               <div class="evolution-strip" id="homeEvolutionStrip" hidden></div>
             </div>
             <div id="worldNarrator" class="world-narrator" title="タップで全文"></div>
+            <div class="card fsq-addon-card shock-panel" id="shockPanel">
+              <div class="section-title"><span>⚡ ショックモード</span><span class="hint">2つの未来</span></div>
+              <p class="hint" id="shockTagline" style="margin:0 0 .35rem">他のアプリは行動を追う。LUNAは起きる前の結果を見せる。</p>
+              <div class="shock-metrics" id="shockNow"></div>
+              <div class="twin-cols">
+                <div class="twin-col" id="shockColA"></div>
+                <div class="twin-col plan" id="shockColB"></div>
+              </div>
+              <p class="twin-shock" id="shockLine"></p>
+            </div>
             <div class="card fsq-addon-card">
               <div class="section-title"><span>🛡️ クラス</span><span class="hint">自分の分身</span></div>
               <div class="classes home-class-strip" id="homeClassStrip"></div>
@@ -1858,6 +1930,9 @@
                 </div>
               </div>
               <div class="ph-story" id="portfolioStory">進路を選ぶと、冒険の記録がここに表示されます。</div>
+              <div class="pf-export-row">
+                <button type="button" id="portfolioExportBtn">学習CV・ボス攻略記を印刷</button>
+              </div>
             </div>
             <div class="stats-row" id="portfolioStats"></div>
             <div class="card">
@@ -2067,6 +2142,6 @@
   <script src="/static/world.js?v=20260903c"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20260910a"></script>
+  <script src="/static/app.js?v=20260914a"></script>
 </body>
 </html>

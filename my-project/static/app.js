@@ -486,6 +486,12 @@
     setTimeout(() => scrollFsqTop(), 180);
     if (window.FsqWorld) FsqWorld.onEnterTab();
     loadJourney().catch((e) => setErr(e.message));
+    if (homeExtras.future_twin) renderFutureTwin(homeExtras.future_twin);
+    else {
+      api("/future/twin")
+        .then((t) => renderFutureTwin(t))
+        .catch(() => {});
+    }
   }
 
   function showFsqOnboarding(show) {
@@ -534,6 +540,7 @@
       return;
     }
     renderHomeHeader();
+    if (homeExtras.future_twin) renderFutureTwin(homeExtras.future_twin);
     renderHomeClassStrip();
     renderDayPaceBanner();
     renderHomeDailyQuests();
@@ -4068,6 +4075,196 @@
     goal.textContent = review.goal_next_week || "";
   }
 
+  let homeExtras = { future_twin: null, risk_radar: null, council: null };
+
+  function twinMetricHtml(label, snap) {
+    if (!snap) return "";
+    return (
+      "<b>" +
+      label +
+      "</b><p>Lv." +
+      (snap.level || 1) +
+      " ・ スキル" +
+      (snap.skills || 0) +
+      "<br>ストレス " +
+      (snap.stress || 0) +
+      " ・ 目標 " +
+      (snap.goals || 0) +
+      "%<br>お金 " +
+      (snap.money || 0) +
+      " ・ 進路 " +
+      (snap.career || 0) +
+      "</p>"
+    );
+  }
+
+  function renderFutureTwin(twin) {
+    homeExtras.future_twin = twin || null;
+    const card = document.getElementById("futureTwinCard");
+    if (card) {
+      if (!twin) {
+        card.hidden = true;
+      } else {
+        card.hidden = false;
+        const tag = document.getElementById("twinTagline");
+        if (tag) tag.textContent = twin.tagline_ja || tag.textContent;
+        const a = document.getElementById("twinColA");
+        const b = document.getElementById("twinColB");
+        const week = twin.week || {};
+        if (a) a.innerHTML = twinMetricHtml(twin.label_a || "このまま", week.a);
+        if (b) b.innerHTML = twinMetricHtml(twin.label_b || "ルナ案", week.b);
+        const shock = document.getElementById("twinShock");
+        if (shock) shock.textContent = week.shock_ja || "";
+      }
+    }
+    const sa = document.getElementById("shockColA");
+    const sb = document.getElementById("shockColB");
+    const sl = document.getElementById("shockLine");
+    const sn = document.getElementById("shockNow");
+    const st = document.getElementById("shockTagline");
+    if (st && twin && twin.tagline_ja) st.textContent = twin.tagline_ja;
+    if (sa && twin) sa.innerHTML = twinMetricHtml((twin.label_a || "このまま") + "・4週", (twin.week || {}).a);
+    if (sb && twin) sb.innerHTML = twinMetricHtml((twin.label_b || "ルナ案") + "・4週", (twin.week || {}).b);
+    if (sl && twin) sl.textContent = ((twin.month || {}).shock_ja || (twin.week || {}).shock_ja || "");
+    if (sn && twin && twin.now) {
+      const n = twin.now;
+      sn.innerHTML =
+        "<div><span>今Lv</span><b>" +
+        (n.level || 1) +
+        "</b></div><div><span>ストレス</span><b>" +
+        (n.stress || 0) +
+        "</b></div><div><span>進路</span><b>" +
+        (n.career || 0) +
+        "</b></div>";
+    }
+  }
+
+  function renderRiskRadar(radar) {
+    homeExtras.risk_radar = radar || null;
+    const box = document.getElementById("riskRadar");
+    const list = document.getElementById("riskRadarList");
+    if (!box || !list) return;
+    const alerts = (radar && radar.alerts) || [];
+    if (!radar) {
+      box.hidden = true;
+      box.classList.remove("open", "ok");
+      return;
+    }
+    box.hidden = false;
+    box.classList.add("open");
+    box.classList.toggle("ok", !alerts.length);
+    const title = document.getElementById("riskRadarTitle");
+    if (title) title.textContent = radar.title_ja || "リスクレーダー";
+    if (!alerts.length) {
+      list.innerHTML = "<p class=\"hint\" style=\"margin:0\">" + (radar.empty_ja || "危険信号なし") + "</p>";
+      return;
+    }
+    list.innerHTML = "";
+    alerts.forEach((a) => {
+      const q = a.rescue || {};
+      const row = document.createElement("div");
+      row.className = "risk-item";
+      const done = q.status === "done";
+      const expired = q.status === "expired";
+      row.innerHTML =
+        "<div><strong>" +
+        String(a.title_ja || "").replace(/</g, "") +
+        "</strong><span>" +
+        String(a.body_ja || "").replace(/</g, "") +
+        (q.title_ja ? " ／ 24h：" + String(q.title_ja).replace(/</g, "") : "") +
+        "</span></div>";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = done ? "達成" : expired ? "期限切れ" : q.chip || "やる";
+      btn.disabled = done || expired || !q.id;
+      if (!btn.disabled) {
+        btn.onclick = () => completeRescueQuest(q.id);
+      }
+      row.appendChild(btn);
+      list.appendChild(row);
+    });
+  }
+
+  async function completeRescueQuest(questId) {
+    try {
+      const res = await api("/risk/rescue/complete", {
+        method: "POST",
+        body: JSON.stringify({ quest_id: questId }),
+      });
+      if (res.radar) renderRiskRadar(res.radar);
+      await loadHomeSummary();
+      if (res.exp_gained) {
+        const d = document.getElementById("dialogue");
+        if (d) d.textContent = "レスキュー達成。EXP +" + res.exp_gained + "。未来側に1歩寄ったよ。";
+      }
+    } catch (err) {
+      setErr(err.message || "レスキューに失敗したよ");
+    }
+  }
+
+  function renderCouncil(council) {
+    homeExtras.council = council || null;
+    const strip = document.getElementById("councilStrip");
+    const box = document.getElementById("councilVoices");
+    if (!strip || !box) return;
+    const voices = (council && council.voices) || [];
+    if (!voices.length) {
+      strip.hidden = true;
+      return;
+    }
+    strip.hidden = false;
+    box.innerHTML = "";
+    voices.forEach((v) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "council-voice" + (v.active ? " active" : "");
+      b.innerHTML =
+        "<em>" +
+        String(v.who_ja || "").replace(/</g, "") +
+        " · " +
+        String(v.label_ja || "").replace(/</g, "") +
+        "</em><span>" +
+        String(v.line_ja || "").replace(/</g, "") +
+        "</span>";
+      b.onclick = () => setAdvisorStyle(v.id);
+      box.appendChild(b);
+    });
+    renderAdvisorStyleRow(council.advisor_style || "auto");
+  }
+
+  function renderAdvisorStyleRow(style) {
+    const row = document.getElementById("advisorStyleRow");
+    if (!row) return;
+    row.querySelectorAll("button[data-advisor]").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.advisor === (style || "auto"));
+    });
+  }
+
+  async function setAdvisorStyle(style) {
+    try {
+      const res = await api("/prefs/advisor-style", {
+        method: "POST",
+        body: JSON.stringify({ style: style }),
+      });
+      renderCouncil(res.council);
+      renderAdvisorStyleRow((res.council && res.council.advisor_style) || style);
+    } catch (_) {}
+  }
+
+  async function openPortfolioExport() {
+    try {
+      const res = await fetch("/portfolio/export.html", {
+        headers: token ? { Authorization: "Bearer " + token } : {},
+      });
+      const html = await res.text();
+      if (!res.ok) throw new Error("export failed");
+      const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+      window.open(url, "_blank");
+    } catch (err) {
+      setErr("学習CVを開けなかったよ");
+    }
+  }
+
   async function loadHomeSummary() {
     try {
       const s = await api("/home/summary");
@@ -4089,6 +4286,9 @@
       }
       renderCareTimeline(s.care_timeline || []);
       renderWeeklyReview(s.weekly_review || null);
+      renderRiskRadar(s.risk_radar || null);
+      renderFutureTwin(s.future_twin || null);
+      renderCouncil(s.council || null);
       if (s.day_fit) {
         journeyStatus.day_fit = s.day_fit;
         renderDayPaceBanner();
@@ -4369,6 +4569,14 @@
       };
     });
     bindHueControls();
+    const advisorRow = document.getElementById("advisorStyleRow");
+    if (advisorRow) {
+      advisorRow.querySelectorAll("button[data-advisor]").forEach((btn) => {
+        btn.onclick = () => setAdvisorStyle(btn.dataset.advisor);
+      });
+    }
+    const exportBtn = document.getElementById("portfolioExportBtn");
+    if (exportBtn) exportBtn.onclick = () => openPortfolioExport();
     document.getElementById("settingsBtn").onclick = () => {
       renderThemePicker();
       renderCompanionPickers();

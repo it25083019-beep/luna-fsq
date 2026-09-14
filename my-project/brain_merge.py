@@ -120,7 +120,7 @@ def safe_merge_for_save(existing: Dict[str, Any], incoming: Dict[str, Any]) -> D
         merged_rpg["journey"] = existing_rpg["journey"]
     payload["rpg"] = merged_rpg
 
-    for list_key in ("chat_history", "trained_knowledge", "schedule_reminders"):
+    for list_key in ("chat_history", "trained_knowledge", "schedule_reminders", "rescue_quests"):
         payload[list_key] = preserve_nonempty_list(existing.get(list_key), payload.get(list_key))
 
     for scalar_key in (
@@ -129,6 +129,7 @@ def safe_merge_for_save(existing: Dict[str, Any], incoming: Dict[str, Any]) -> D
         "companion_id",
         "ui_theme",
         "ui_hue",
+        "advisor_style",
         "current_focus",
         "current_plan",
         "current_do_now",

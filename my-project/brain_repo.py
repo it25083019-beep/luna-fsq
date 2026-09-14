@@ -40,6 +40,8 @@ def default_user_brain(user_id: str) -> Dict[str, Any]:
         "companion_id": "luna",
         "ui_theme": "lilac",
         "ui_hue": None,
+        "advisor_style": "auto",
+        "rescue_quests": [],
         "user_display_name": None,
         "current_focus": None,
         "current_plan": None,
