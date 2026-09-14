@@ -494,6 +494,7 @@
         wrap.appendChild(pImg);
       }
       pImg.src = heroSprite();
+      pImg.dataset.baseSrc = pImg.src;
     }
     if (bImg) {
       if (bImg.parentElement && !bImg.parentElement.classList.contains("sba-body")) {
@@ -503,11 +504,23 @@
         wrap.appendChild(bImg);
       }
       bImg.src = bossArt(kind || "lesson");
+      bImg.dataset.baseSrc = bImg.src;
     }
     if (pName) pName.textContent = window.FsqHeroName || "YOU";
     if (bName) bName.textContent = monsterName || "課題モンスター";
     const cls = window.FsqHeroClass || "swordsman";
     arena.dataset.heroClass = cls;
+    arena.dataset.bossKind = kind || "lesson";
+    const heroWrap = arena.querySelector(".sba-side.player");
+    const bossWrap = arena.querySelector(".sba-side.monster");
+    if (heroWrap) {
+      heroWrap.dataset.pack = cls;
+      heroWrap.dataset.busy = "0";
+    }
+    if (bossWrap) {
+      bossWrap.dataset.pack = kind === "lesson" ? "slime" : "knight";
+      bossWrap.dataset.busy = "0";
+    }
     arena.classList.remove("hero-swordsman", "hero-mage", "hero-archer", "combo-hot", "mind-cast");
     arena.classList.add("hero-" + cls);
     const tension = arena.querySelector(".sba-tension") || $("battleTension");
@@ -525,10 +538,96 @@
     if (ko) ko.hidden = true;
     const combo = arena.querySelector(".sba-combo");
     if (combo) combo.hidden = true;
-    const bossWrap = arena.querySelector(".sba-side.monster");
-    const heroWrap = arena.querySelector(".sba-side.player");
     if (bossWrap) bossWrap.classList.remove("ko", "atk-boss", "hit", "rush", "dodge");
     if (heroWrap) heroWrap.classList.remove("ko", "hit", "struggle", "rush", "dodge", "atk-swordsman", "atk-mage", "atk-archer");
+  }
+
+  const FIGHT_POSES = {
+    swordsman: {
+      idle: "/static/rpg/fight/swordsman_idle.png",
+      atk: "/static/rpg/fight/swordsman_atk.png",
+      hit: "/static/rpg/fight/swordsman_hit.png",
+    },
+    mage: {
+      idle: "/static/rpg/fight/mage_idle.png",
+      atk: "/static/rpg/fight/mage_atk.png",
+    },
+    archer: {
+      idle: "/static/rpg/fight/archer_idle.png",
+      atk: "/static/rpg/fight/archer_atk.png",
+    },
+    slime: {
+      idle: "/static/rpg/fight/slime_idle.png",
+      atk: "/static/rpg/fight/slime_atk.png",
+      dodge: "/static/rpg/fight/slime_dodge.png",
+      hit: "/static/rpg/fight/slime_hit.png",
+    },
+    knight: {
+      atk: "/static/rpg/fight/knight_atk.png",
+    },
+  };
+
+  let idleTimer = 0;
+  let idleFlip = 0;
+
+  function poseUrl(side, pose) {
+    const pack = (side && side.dataset.pack) || "";
+    const map = FIGHT_POSES[pack];
+    return map && map[pose];
+  }
+
+  function setPose(side, pose) {
+    if (!side) return;
+    const img = side.querySelector(".fighter-sprite");
+    if (!img) return;
+    const base = img.dataset.baseSrc;
+    if (pose === "base") {
+      if (base) img.src = base;
+      return;
+    }
+    const url = poseUrl(side, pose);
+    img.src = url || base || img.src;
+  }
+
+  function busy(side, on) {
+    if (side) side.dataset.busy = on ? "1" : "0";
+  }
+
+  function releaseBusy(side, ms) {
+    setTimeout(() => {
+      busy(side, false);
+      setPose(side, idleFlip ? "idle" : "base");
+    }, ms || 640);
+  }
+
+  function preloadFightPoses() {
+    Object.keys(FIGHT_POSES).forEach((pack) => {
+      Object.keys(FIGHT_POSES[pack]).forEach((pose) => {
+        const im = new Image();
+        im.src = FIGHT_POSES[pack][pose];
+      });
+    });
+  }
+
+  function startIdleLoop() {
+    if (idleTimer) clearInterval(idleTimer);
+    idleFlip = 0;
+    idleTimer = setInterval(() => {
+      idleFlip ^= 1;
+      const arena = activeArena();
+      if (!arena || timedOut) return;
+      arena.querySelectorAll(".sba-side").forEach((side) => {
+        if (side.dataset.busy === "1") return;
+        setPose(side, idleFlip ? "idle" : "base");
+      });
+    }, 460);
+  }
+
+  function stopIdleLoop() {
+    if (idleTimer) {
+      clearInterval(idleTimer);
+      idleTimer = 0;
+    }
   }
 
   const SKILL_NAME = {
@@ -677,19 +776,25 @@
     const boss = arena.querySelector(".sba-side.monster");
     clearFighterState(hero);
     if (hero) {
+      busy(hero, true);
+      setPose(hero, "atk");
       void hero.offsetWidth;
       hero.classList.add("rush", "atk-" + cls);
       spawnGhost(hero);
       setTimeout(() => spawnGhost(hero), 90);
       setTimeout(() => hero.classList.remove("rush", "atk-swordsman", "atk-mage", "atk-archer"), 640);
+      releaseBusy(hero, 700);
     }
     setTimeout(() => {
       if (miss) {
         if (boss) {
+          busy(boss, true);
+          setPose(boss, "dodge");
           clearFighterState(boss);
           void boss.offsetWidth;
           boss.classList.add("dodge");
           setTimeout(() => boss.classList.remove("dodge"), 480);
+          releaseBusy(boss, 520);
         }
         spawnHitFloater("回避", "miss");
         return;
@@ -698,10 +803,13 @@
       burstClash(arena, false);
       hitFreeze(arena, 80);
       if (boss) {
+        busy(boss, true);
+        setPose(boss, "hit");
         clearFighterState(boss);
         void boss.offsetWidth;
         boss.classList.add("hit");
         setTimeout(() => boss.classList.remove("hit"), 400);
+        releaseBusy(boss, 480);
       }
       Sfx.hit();
       setTimeout(() => arena.classList.remove("clashing"), 420);
@@ -721,21 +829,27 @@
     const hero = arena.querySelector(".sba-side.player");
     clearFighterState(boss);
     if (boss) {
+      busy(boss, true);
+      setPose(boss, "atk");
       void boss.offsetWidth;
       boss.classList.add("rush", "atk-boss");
       spawnGhost(boss);
       setTimeout(() => spawnGhost(boss), 90);
       setTimeout(() => boss.classList.remove("rush", "atk-boss"), 640);
+      releaseBusy(boss, 700);
     }
     setTimeout(() => {
       arena.classList.add("clashing");
       burstClash(arena, true);
       hitFreeze(arena, opts.heavy ? 110 : 80);
       if (hero) {
+        busy(hero, true);
+        setPose(hero, "hit");
         clearFighterState(hero);
         void hero.offsetWidth;
         hero.classList.add("hit");
         setTimeout(() => hero.classList.remove("hit"), 400);
+        releaseBusy(hero, 480);
       }
       spawnHitFloater(opts.heavy ? "-TIME" : "-" + (6 + Math.floor(Math.random() * 8)), "dmg");
       Sfx.hit();
@@ -754,6 +868,7 @@
     const arena = activeArena();
     if (arena) arena.classList.add("fighting");
     combatTimer = setInterval(combatTick, 1600);
+    startIdleLoop();
   }
 
   function stopCombatLoop() {
@@ -761,6 +876,7 @@
       clearInterval(combatTimer);
       combatTimer = 0;
     }
+    stopIdleLoop();
     ["studyBattleArena", "examBattleArena"].forEach((id) => {
       const el = $(id);
       if (el) el.classList.remove("fighting", "striking", "boss-striking", "clashing", "mind-cast", "combo-hot");
@@ -1119,6 +1235,7 @@
     init: function () {
       initAmbient();
       initLayers();
+      preloadFightPoses();
     },
     onEnterTab: function () {
       initAmbient();
