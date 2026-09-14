@@ -55,6 +55,9 @@
   let mapDepartHandler = null;
   let lastToastAt = 0;
   let lastHitAt = 0;
+  let lastPlayerAct = 0;
+  let lastMissAt = 0;
+  let combatTimer = 0;
   let battlePct = 12;
   let typingCombo = 0;
   let travelAnimating = false;
@@ -445,7 +448,11 @@
   };
 
   function heroSprite() {
-    return (window.FsqHeroSprite || "/static/rpg/characters/swordsman_novice_stand.png") + "";
+    if (window.FsqHeroSprite) return window.FsqHeroSprite;
+    if (window.CharacterDoll && CharacterDoll.chibiPath) {
+      return CharacterDoll.chibiPath(window.FsqHeroClass || "swordsman", window.FsqHeroRank || "novice");
+    }
+    return "/static/rpg/chibi/swordsman_novice.png";
   }
 
   function buddySprite(expr) {
@@ -477,33 +484,154 @@
     if (buddy) buddy.src = buddySprite("cheer");
     if (pName) pName.textContent = window.FsqHeroName || "YOU";
     if (bName) bName.textContent = monsterName || "課題モンスター";
-    arena.classList.remove("ko-boss", "ko-player", "striking");
+    const cls = window.FsqHeroClass || "swordsman";
+    arena.dataset.heroClass = cls;
+    arena.classList.remove("hero-swordsman", "hero-mage", "hero-archer");
+    arena.classList.add("hero-" + cls);
+    const tension = arena.querySelector(".sba-tension") || $("battleTension");
+    if (tension) {
+      const line = {
+        swordsman: "頭を使え。解答が剣になる。",
+        mage: "頭を使え。解答が呪文になる。",
+        archer: "頭を使え。解答が矢になる。",
+      };
+      tension.textContent = line[cls] || line.swordsman;
+    }
+    arena.classList.remove("ko-boss", "ko-player", "striking", "boss-striking", "clashing");
+    arena.classList.add("fighting");
     const ko = arena.querySelector(".fs-ko");
     if (ko) ko.hidden = true;
     const bossWrap = arena.querySelector(".sba-side.monster");
     const heroWrap = arena.querySelector(".sba-side.player");
-    if (bossWrap) bossWrap.classList.remove("ko");
-    if (heroWrap) heroWrap.classList.remove("ko");
+    if (bossWrap) bossWrap.classList.remove("ko", "atk-boss", "hit");
+    if (heroWrap) heroWrap.classList.remove("ko", "hit", "struggle", "atk-swordsman", "atk-mage", "atk-archer");
   }
 
   function playStrike() {
     const arena = activeArena();
     if (!arena) return;
-    arena.classList.remove("striking");
+    lastHitAt = Date.now();
+    lastPlayerAct = lastHitAt;
+    const cls = arena.dataset.heroClass || window.FsqHeroClass || "swordsman";
+    arena.classList.remove("striking", "clashing", "boss-striking");
     void arena.offsetWidth;
     arena.classList.add("striking");
+    const hero = arena.querySelector(".sba-side.player");
+    if (hero) {
+      hero.classList.remove("atk-swordsman", "atk-mage", "atk-archer", "struggle", "hit");
+      void hero.offsetWidth;
+      hero.classList.add("atk-" + cls);
+      setTimeout(() => hero.classList.remove("atk-swordsman", "atk-mage", "atk-archer"), 420);
+    }
+    const fx = arena.querySelector(".sba-fx");
+    if (fx) {
+      fx.className = "sba-fx fx-" + cls;
+      void fx.offsetWidth;
+      fx.classList.add("go");
+      setTimeout(() => fx.classList.remove("go"), 420);
+    }
     const boss = arena.querySelector(".sba-side.monster");
     if (boss) {
-      boss.classList.remove("hit");
+      boss.classList.remove("hit", "atk-boss");
       void boss.offsetWidth;
       boss.classList.add("hit");
       setTimeout(() => boss.classList.remove("hit"), 280);
     }
   }
 
+  function playBossStrike() {
+    const arena = activeArena();
+    if (!arena) return;
+    arena.classList.remove("boss-striking", "clashing", "striking");
+    void arena.offsetWidth;
+    arena.classList.add("boss-striking");
+    const boss = arena.querySelector(".sba-side.monster");
+    if (boss) {
+      boss.classList.remove("atk-boss", "hit");
+      void boss.offsetWidth;
+      boss.classList.add("atk-boss");
+      setTimeout(() => boss.classList.remove("atk-boss"), 400);
+    }
+    const hero = arena.querySelector(".sba-side.player");
+    if (hero) {
+      hero.classList.remove("hit", "struggle");
+      void hero.offsetWidth;
+      hero.classList.add("hit");
+      setTimeout(() => hero.classList.remove("hit"), 280);
+    }
+    Sfx.hit();
+  }
+
+  function playClash() {
+    const arena = activeArena();
+    if (!arena) return;
+    arena.classList.remove("clashing");
+    void arena.offsetWidth;
+    arena.classList.add("clashing");
+    setTimeout(() => arena.classList.remove("clashing"), 520);
+  }
+
+  function playStruggle() {
+    const arena = activeArena();
+    if (!arena) return;
+    const hero = arena.querySelector(".sba-side.player");
+    if (hero) {
+      hero.classList.remove("struggle");
+      void hero.offsetWidth;
+      hero.classList.add("struggle");
+      setTimeout(() => hero.classList.remove("struggle"), 360);
+    }
+    spawnHitFloater("MISS", "miss");
+  }
+
+  function startCombatLoop() {
+    lastPlayerAct = Date.now();
+    stopCombatLoop();
+    const arena = activeArena();
+    if (arena) arena.classList.add("fighting");
+    combatTimer = setInterval(combatTick, 1080);
+  }
+
+  function stopCombatLoop() {
+    if (combatTimer) {
+      clearInterval(combatTimer);
+      combatTimer = 0;
+    }
+    ["studyBattleArena", "examBattleArena"].forEach((id) => {
+      const el = $(id);
+      if (el) el.classList.remove("fighting", "striking", "boss-striking", "clashing");
+    });
+  }
+
+  function combatTick() {
+    const arena = activeArena();
+    if (!arena || arena.hidden) return;
+    if (arena.classList.contains("ko-boss") || arena.classList.contains("ko-player")) return;
+    const now = Date.now();
+    if (now - lastHitAt < 520) return;
+    if (now - lastPlayerAct > 3800) {
+      playBossStrike();
+      spawnHitFloater("-" + (5 + Math.floor(Math.random() * 9)), "dmg");
+      battlePct = Math.max(8, battlePct - 3);
+      updateBattleBars(battlePct);
+      return;
+    }
+    playClash();
+  }
+
+  function noteTyping(hit) {
+    lastPlayerAct = Date.now();
+    if (hit) return;
+    const now = Date.now();
+    if (now - lastMissAt < 2200) return;
+    lastMissAt = now;
+    playStruggle();
+  }
+
   function playKo(who) {
     const arena = activeArena();
     if (!arena) return;
+    if (who === "boss") stopCombatLoop();
     const side = who === "player" ? arena.querySelector(".sba-side.player") : arena.querySelector(".sba-side.monster");
     if (side) side.classList.add("ko");
     arena.classList.add(who === "player" ? "ko-player" : "ko-boss");
@@ -513,7 +641,16 @@
       ko.textContent = who === "player" ? "YOU LOSE" : "K.O.";
     }
     flash(who === "player" ? "red" : "gold");
-    Sfx.questClear();
+    if (who === "boss") Sfx.questClear();
+    else Sfx.hit();
+    if (who === "player") {
+      setTimeout(() => {
+        if (!arena.classList.contains("ko-player")) return;
+        arena.classList.remove("ko-player");
+        if (side) side.classList.remove("ko");
+        if (ko) ko.hidden = true;
+      }, 1600);
+    }
   }
 
   function spawnHitFloater(text, kind) {
@@ -538,7 +675,7 @@
     const playerMp = (arena && arena.querySelector(".js-player-hp")) || $("battlePlayerMp");
     if (monsterHp) monsterHp.style.width = Math.max(4, 100 - battlePct) + "%";
     if (playerMp) playerMp.style.width = battlePct + "%";
-    const combo = $("battleCombo");
+    const combo = (arena && arena.querySelector(".sba-combo")) || $("battleCombo");
     if (combo) {
       if (typingCombo >= 3) {
         combo.hidden = false;
@@ -580,38 +717,40 @@
     if (exam && exam.classList.contains("open")) exam.classList.add("battle-mode");
     const arena = activeArena();
     if (arena) arena.hidden = false;
+    startCombatLoop();
     flash("teal");
     toast("QUEST START — " + (lesson.title_ja || "課題"), "teal");
     if (window.LiveHud) LiveHud.enterStudy();
   }
 
-  function onQuestProgress(pct) {
-    const prev = battlePct;
+  function onQuestProgress(pct, hit) {
     updateBattleBars(pct);
+    if (!hit) return;
     const now = Date.now();
-    if (pct > prev + 1 && now - lastHitAt > 180) {
-      lastHitAt = now;
-      typingCombo += 1;
-      Sfx.hit();
-      playStrike();
-      spawnHitFloater("-" + (8 + Math.floor(Math.random() * 12)), "dmg");
-      if (typingCombo === 5) {
-        toast("コンボ！ 解答が刺さっている", "gold");
-        if (window.LiveHud) LiveHud.emit("cheer");
-      }
-      if (typingCombo === 10) {
-        toast("CRITICAL HIT!", "gold");
-        flash("gold");
-        spawnHitFloater("CRITICAL", "crit");
-      }
+    if (now - lastHitAt < 160) return;
+    lastHitAt = now;
+    lastPlayerAct = now;
+    typingCombo += 1;
+    Sfx.hit();
+    playStrike();
+    spawnHitFloater("-" + (12 + Math.floor(Math.random() * 18)), "dmg");
+    if (typingCombo === 5) {
+      toast("コンボ！ 解答が刺さっている", "gold");
+      if (window.LiveHud) LiveHud.emit("cheer");
+    }
+    if (typingCombo >= 8 && typingCombo % 4 === 0) {
+      toast("CRITICAL HIT!", "gold");
+      flash("gold");
+      spawnHitFloater("CRITICAL", "crit");
     }
   }
 
-  function onTypingTick() {
-    typingCombo = Math.min(99, typingCombo + 1);
+  function onTypingTick(hit) {
+    noteTyping(!!hit);
   }
 
   function closeQuest() {
+    stopCombatLoop();
     const modal = $("studyModal");
     if (modal) modal.classList.remove("battle-mode");
     const exam = $("examModal");
@@ -753,6 +892,7 @@
     onOpenQuest: onOpenQuest,
     onQuestProgress: onQuestProgress,
     onTypingTick: onTypingTick,
+    noteTyping: noteTyping,
     closeQuest: closeQuest,
     showVictory: showVictory,
     onSubSwitch: onSubSwitch,

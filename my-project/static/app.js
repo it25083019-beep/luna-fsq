@@ -559,8 +559,7 @@
     updateFsqCompactMode();
     if (!needOnboard) scrollFsqTop();
     if (window.FsqWorld) {
-      window.FsqHeroSprite = evolutionSpritePath(journeyStatus.class_id, journeyStatus.rank_id);
-      window.FsqHeroName = classLabel(journeyStatus.class_id);
+      syncHeroSprite();
       FsqWorld.renderHud(journeyStatus, journeyMap, expProgress);
       FsqWorld.renderNarrator(journeyStatus, journeyMap);
       FsqWorld.checkLevelUp(journeyStatus.level || stateData.level || 1);
@@ -668,6 +667,26 @@
   function classLabel(id) {
     if (!id) return "冒険者";
     return classLabels[id] || CLASSES.find((c) => c.id === id)?.label || id;
+  }
+
+  function chibiSpritePath(classId, rankId) {
+    if (window.CharacterDoll && CharacterDoll.chibiPath) {
+      return CharacterDoll.chibiPath(classId, rankId);
+    }
+    const allowed = { swordsman: 1, mage: 1, archer: 1 };
+    const ranks = { novice: 1, intermediate: 1, veteran: 1, saint: 1 };
+    const cls = allowed[classId] ? classId : "swordsman";
+    const rank = ranks[rankId] ? rankId : "novice";
+    return "/static/rpg/chibi/" + cls + "_" + rank + ".png";
+  }
+
+  function syncHeroSprite() {
+    const classId = journeyStatus.class_id || selectedClass || "swordsman";
+    const rankId = journeyStatus.rank_id || "novice";
+    window.FsqHeroClass = classId;
+    window.FsqHeroRank = rankId;
+    window.FsqHeroSprite = chibiSpritePath(classId, rankId);
+    window.FsqHeroName = classLabel(classId);
   }
 
   function evolutionSpritePath(classId, rankId) {
@@ -1460,6 +1479,7 @@
         min_answer_chars: les.min_answer_chars || 24,
         samples: les.samples || [],
         starter_code: les.starter_code || {},
+        check_keywords: les.check_keywords || [],
       };
       const study = Object.assign({}, fromLes, (attempt && attempt.study) || {});
       if (!(study.problem_ja || "").trim()) {
@@ -1490,6 +1510,10 @@
           if (starter) ta.value = starter;
         }
       }
+      lastStudyKwCount = countMatchedKeywords(
+        (document.getElementById("studyAnswer") || {}).value || "",
+        study.check_keywords || []
+      ).length;
       const ansHint = document.getElementById("studyAnswerHint");
       if (ansHint) {
         ansHint.textContent =
@@ -1518,6 +1542,7 @@
       document.getElementById("studyModal").classList.add("open");
       if (window.FsqWorld) FsqWorld.onOpenQuest(les);
       if (window.LiveHud) LiveHud.enterStudy();
+      updateStudyBattleProgress(true);
       const buddyLine = document.getElementById("battleBuddyLine");
       if (buddyLine) {
         buddyLine.hidden = false;
@@ -1619,6 +1644,13 @@
     } catch (e) {
       setErr(e.message);
       setStudyTab("solve");
+      const jm = document.getElementById("studyJudgeMsg");
+      const judge = document.getElementById("studyJudge");
+      if (jm) jm.textContent = e.message || "提出できない。用語を足そう。";
+      if (judge) {
+        judge.classList.add("bad");
+        judge.classList.remove("ok");
+      }
     }
   }
 
@@ -1663,7 +1695,10 @@
             minC +
             '文字以上）"></textarea>';
           const ta = div.querySelector("textarea");
-          if (ta && saved[q.id]) ta.value = saved[q.id];
+          if (ta) {
+            ta.dataset.kws = (q.check_keywords || []).join("|");
+            if (saved[q.id]) ta.value = saved[q.id];
+          }
           box.appendChild(div);
         });
         const submitBtn = document.getElementById("examSubmitBtn");
@@ -1679,6 +1714,8 @@
             { isBoss: true, bossType: exam.boss_type || "weekly" }
           );
         }
+        lastExamKwCount = 0;
+        updateExamBattleProgress(true);
       };
       if (window.FsqWorld && FsqWorld.showBossIntro) {
         FsqWorld.showBossIntro(
@@ -1702,6 +1739,7 @@
     if (examModal) examModal.classList.remove("open", "boss-mode", "battle-mode");
     if (window.FsqWorld) FsqWorld.closeQuest();
     currentExamBossId = null;
+    lastExamKwCount = 0;
   }
 
   async function submitBossExamAnswers() {
@@ -1811,14 +1849,68 @@
     }
   }
 
-  function updateStudyBattleProgress() {
-    if (!window.FsqWorld || !currentStudyMeta) return;
+  let lastStudyKwCount = 0;
+  let lastExamKwCount = 0;
+
+  function countMatchedKeywords(text, keywords) {
+    const kws = (keywords || []).filter(Boolean);
+    return kws.filter((k) => String(text || "").includes(String(k)));
+  }
+
+  function updateStudyBattleProgress(silent) {
+    if (!currentStudyMeta) return;
     const ta = document.getElementById("studyAnswer");
-    const min = currentStudyMeta.min_answer_chars || 24;
-    const len = ta ? (ta.value || "").trim().length : 0;
-    const guides = document.querySelectorAll("#studyGuideList .guide-item, #studyGuideList li").length;
-    const pct = Math.min(92, 12 + Math.round((len / Math.max(min, 1)) * 55) + guides * 8);
-    FsqWorld.onQuestProgress(pct);
+    const text = ta ? ta.value || "" : "";
+    const kws = currentStudyMeta.check_keywords || [];
+    const matched = countMatchedKeywords(text, kws);
+    const need = kws.length <= 2 ? kws.length : Math.max(2, Math.ceil(kws.length / 2));
+    const pct = kws.length ? 10 + Math.round((matched.length / kws.length) * 86) : 12;
+    const hit = !silent && matched.length > lastStudyKwCount;
+    lastStudyKwCount = matched.length;
+    const judge = document.getElementById("studyJudge");
+    const jk = document.getElementById("studyJudgeKws");
+    const jm = document.getElementById("studyJudgeMsg");
+    if (jk) jk.textContent = "用語 " + matched.length + " / " + (need || kws.length) + " 必要";
+    if (jm) {
+      jm.textContent = hit
+        ? "届いた！上の自分が攻撃した。"
+        : matched.length >= need
+          ? "用語は足りている。提出できる。"
+          : "まだ攻撃できない。課題の用語を自分の解答に書け。";
+    }
+    if (judge) {
+      judge.classList.toggle("ok", matched.length >= need && need > 0);
+      judge.classList.toggle("bad", matched.length < need);
+    }
+    if (window.FsqWorld) {
+      FsqWorld.onQuestProgress(pct, hit);
+      if (!silent && FsqWorld.noteTyping) FsqWorld.noteTyping(hit);
+    }
+    if (hit && window.LiveHud && LiveHud.noteHit) LiveHud.noteHit(matched[matched.length - 1] || "");
+    else if (!silent && !hit && text.length > 8 && window.LiveHud && LiveHud.noteMiss) LiveHud.noteMiss();
+  }
+
+  function updateExamBattleProgress(silent) {
+    const tas = document.querySelectorAll("#examQuestions textarea[data-qid]");
+    if (!tas.length) return;
+    let matched = [];
+    let total = 0;
+    tas.forEach((ta) => {
+      const kws = String(ta.dataset.kws || "")
+        .split("|")
+        .filter(Boolean);
+      total += kws.length;
+      matched = matched.concat(countMatchedKeywords(ta.value || "", kws));
+    });
+    const hit = !silent && matched.length > lastExamKwCount;
+    lastExamKwCount = matched.length;
+    const pct = total ? 10 + Math.round((matched.length / Math.max(1, total)) * 86) : 12;
+    if (window.FsqWorld) {
+      FsqWorld.onQuestProgress(pct, hit);
+      if (!silent && FsqWorld.noteTyping) FsqWorld.noteTyping(hit);
+    }
+    if (hit && window.LiveHud && LiveHud.noteHit) LiveHud.noteHit(matched[matched.length - 1] || "");
+    else if (!silent && !hit && window.LiveHud && LiveHud.noteMiss) LiveHud.noteMiss();
   }
 
   function showRewardModal(title, lines, chips) {
@@ -2009,14 +2101,7 @@
       const pos = MAP_POSITIONS[curIdx] || MAP_POSITIONS[MAP_POSITIONS.length - 1];
       mapAv.hidden = false;
       mapAv.classList.add("alive");
-      const ap = journeyStatus.appearance || {};
-      let src =
-        ap.evolution_sprite ||
-        evolutionSpritePath(journeyStatus.class_id || selectedClass, journeyStatus.rank_id || "novice");
-      if (src && src.indexOf("_stand.png") < 0 && /\/static\/rpg\/characters\/[^/]+\.png$/.test(src)) {
-        src = src.replace(/\.png$/, "_stand.png");
-      }
-      mapAvImg.src = src;
+      mapAvImg.src = chibiSpritePath(journeyStatus.class_id || selectedClass, journeyStatus.rank_id || "novice");
       const moved = lastMapAvatarPos && (lastMapAvatarPos.left !== pos.left || lastMapAvatarPos.top !== pos.top);
       if (moved && window.FsqWorld && FsqWorld.animateMapTravel) {
         FsqWorld.animateMapTravel(lastMapAvatarPos, pos, null);
@@ -5071,7 +5156,6 @@
     if (studyAnswer) {
       studyAnswer.addEventListener("input", () => {
         updateStudyBattleProgress();
-        if (window.FsqWorld && FsqWorld.onTypingTick) FsqWorld.onTypingTick();
         if (studyAutosaveTimer) clearTimeout(studyAutosaveTimer);
         studyAutosaveTimer = setTimeout(() => saveStudyAnswerDraft(), 900);
       });
@@ -5105,14 +5189,7 @@
     const examBox = document.getElementById("examQuestions");
     if (examBox) {
       examBox.addEventListener("input", () => {
-        if (!window.FsqWorld || !FsqWorld.onQuestProgress) return;
-        let len = 0;
-        examBox.querySelectorAll("textarea").forEach((t) => {
-          len += (t.value || "").trim().length;
-        });
-        const pct = Math.min(94, 10 + Math.round(len / 28));
-        FsqWorld.onQuestProgress(pct);
-        if (FsqWorld.onTypingTick) FsqWorld.onTypingTick();
+        updateExamBattleProgress();
       });
     }
     const mini = document.getElementById("lunaStage");

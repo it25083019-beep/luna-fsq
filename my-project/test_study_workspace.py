@@ -48,6 +48,13 @@ def test_soft_check_min_length():
     assert "学習" in r2["matched"] or "カレンダー" in r2["matched"]
     filler = soft_check_answer("あ" * 60, ["学習"], min_chars=24)
     assert filler["can_submit"] is False
+    starter = soft_check_answer(
+        "print('hello world')\n" + "x = 1\n",
+        ["input", "print"],
+        min_chars=24,
+        starters=["print('hello world')\n" + "x = 1\n"],
+    )
+    assert starter["can_submit"] is False
     nokw = soft_check_answer(
         "今日はなんとなく頑張ったことを長く書いたけれど単元の言葉は入れていません。",
         ["学習", "カレンダー"],

@@ -22,7 +22,7 @@ from journey_engine import (
 
 _MIN_ANSWER_CHARS = 48
 _MIN_BOSS_ANSWER_CHARS = 40
-_LESSON_PASS_SCORE = 0.48
+_LESSON_PASS_SCORE = 0.5
 _BOSS_EXAM_SPEC = {
     "weekly": {
         "questions": 5,
@@ -310,6 +310,29 @@ def _looks_like_filler(text: str) -> bool:
     return False
 
 
+def _need_keywords(n: int) -> int:
+    if n <= 0:
+        return 0
+    if n <= 2:
+        return n
+    return max(2, (n + 1) // 2)
+
+
+def _authored_part(answer: str, starters: Optional[List[str]] = None) -> str:
+    a = (answer or "").replace("\r\n", "\n")
+    best = a.strip()
+    for s in starters or []:
+        blob = (s or "").replace("\r\n", "\n").strip()
+        if len(blob) < 16:
+            continue
+        stripped = a.strip()
+        if stripped.startswith(blob):
+            rest = stripped[len(blob) :].strip()
+            if len(rest) <= len(best):
+                best = rest
+    return best
+
+
 def _copied_prompt(text: str, prompts: List[str]) -> bool:
     src = re.sub(r"\s+", "", text)
     if len(src) < 20:
@@ -334,54 +357,49 @@ def soft_check_answer(
     min_chars: int = _MIN_ANSWER_CHARS,
     require_keyword: bool = True,
     reject_prompts: Optional[List[str]] = None,
+    starters: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     text = (answer or "").strip()
     warnings: List[str] = []
+    authored = _authored_part(text, starters)
+    kws = [str(k) for k in (keywords or []) if k]
+    need = _need_keywords(len(kws))
+    empty = {
+        "ok": False,
+        "can_submit": False,
+        "matched": [],
+        "need": need,
+        "score": 0.0,
+    }
     if len(text) < min_chars:
-        return {
-            "ok": False,
-            "can_submit": False,
-            "matched": [],
-            "warnings": [f"解答は{min_chars}文字以上、用語と手順を入れて書いてから提出しよう。"],
-            "score": 0.0,
-        }
-    if _looks_like_filler(text):
-        return {
-            "ok": False,
-            "can_submit": False,
-            "matched": [],
-            "warnings": ["同じ文字の繰り返しや意味のない文字列では提出できません。自分の言葉で説明しよう。"],
-            "score": 0.0,
-        }
+        return {**empty, "warnings": [f"解答は{min_chars}文字以上、用語と手順を入れて書いてから提出しよう。"]}
+    if starters and len(authored) < max(20, min_chars // 2):
+        return {**empty, "warnings": ["スターターのままでは出せない。自分の手順・コードを足そう。"]}
+    if _looks_like_filler(authored or text):
+        return {**empty, "warnings": ["同じ文字の繰り返しや意味のない文字列では提出できません。自分の言葉で説明しよう。"]}
     if reject_prompts and _copied_prompt(text, reject_prompts):
+        return {**empty, "warnings": ["課題文のコピーだけでは通りません。理解した内容を自分の言葉で書き直そう。"]}
+    scan = authored if authored else text
+    matched = [k for k in kws if k in scan]
+    if require_keyword and kws and len(matched) < need:
         return {
             "ok": False,
             "can_submit": False,
-            "matched": [],
-            "warnings": ["課題文のコピーだけでは通りません。理解した内容を自分の言葉で書き直そう。"],
-            "score": 0.0,
+            "matched": matched,
+            "need": need,
+            "warnings": [f"単元の用語が足りない（{len(matched)}/{need}）。ガイドの言葉で、自分の解答を書こう。"],
+            "score": round(len(matched) / max(1, len(kws)), 2),
         }
-    matched = [k for k in keywords if k and str(k) in text]
-    if require_keyword and keywords and not matched:
-        return {
-            "ok": False,
-            "can_submit": False,
-            "matched": [],
-            "warnings": ["単元の用語が足りません。ガイドとゴールを見て、要点を自分の言葉で足そう。"],
-            "score": 0.15,
-        }
-    coverage = 1.0
-    if keywords:
-        coverage = len(matched) / max(1, min(4, len(keywords)))
-        coverage = min(1.0, coverage)
-    length_bonus = min(0.2, max(0.0, (len(text) - min_chars) / 500))
-    score = min(1.0, 0.55 * coverage + 0.3 + length_bonus)
-    if coverage < 0.5:
+    coverage = 1.0 if not kws else len(matched) / max(1, len(kws))
+    length_bonus = min(0.15, max(0.0, (len(scan) - min_chars) / 600))
+    score = min(1.0, 0.85 * coverage + length_bonus)
+    if coverage < 0.75 and kws:
         warnings.append("用語カバーがまだ薄い。チェックリストの言葉を使って具体化しよう。")
     return {
         "ok": True,
         "can_submit": True,
         "matched": matched,
+        "need": need,
         "warnings": warnings,
         "score": round(score, 2),
     }
@@ -400,6 +418,8 @@ def submit_lesson(state: Dict[str, Any], lesson_id: str, answer: Optional[str] =
     text = (text or "").strip()
     study = build_study_payload(lesson, career_id=j.get("career_id"))
     min_chars = max(_MIN_ANSWER_CHARS, int(study.get("min_answer_chars") or _MIN_ANSWER_CHARS))
+    starter_map = study.get("starter_code") if isinstance(study.get("starter_code"), dict) else {}
+    starters = [str(v) for v in (starter_map or {}).values() if v]
     check = soft_check_answer(
         text,
         study.get("check_keywords") or [],
@@ -410,6 +430,7 @@ def submit_lesson(state: Dict[str, Any], lesson_id: str, answer: Optional[str] =
             study.get("problem_title_ja") or "",
             lesson.get("title_ja") or "",
         ],
+        starters=starters,
     )
     if not check["can_submit"] or float(check.get("score") or 0) < _LESSON_PASS_SCORE:
         raise ValueError(
