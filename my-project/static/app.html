@@ -419,29 +419,43 @@
     @keyframes emberDrift{0%{transform:translateY(8px);opacity:.4}100%{transform:translateY(-18px);opacity:.9}}
     .sba-stage{position:absolute;left:0;right:0;bottom:14%;display:flex;align-items:flex-end;justify-content:space-between;padding:0 6%;z-index:2;max-width:440px;margin:0 auto}
     .sba-side{text-align:center;width:38%;position:relative}
-    .sba-side .fighter-sprite{height:8.6rem;width:auto;max-width:9.2rem;object-fit:contain;filter:drop-shadow(0 8px 10px rgba(0,0,0,.6));transform-origin:50% 90%}
-    .sba-side.monster .fighter-sprite{mix-blend-mode:screen;transform:scaleX(-1)}
-    .sba-side.player .fighter-sprite{animation:qBreathe 2.6s ease-in-out infinite}
-    .sba-side.monster .fighter-sprite{animation:qBreatheBoss 2.8s ease-in-out infinite}
-    @keyframes qBreathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-    @keyframes qBreatheBoss{0%,100%{transform:scaleX(-1) translateY(0)}50%{transform:scaleX(-1) translateY(-3px)}}
-    .sba-side.atk-swordsman .fighter-sprite,.study-battle-arena.fighting .sba-side.player.atk-swordsman .fighter-sprite{animation:atkSword .48s cubic-bezier(.2,.8,.3,1)}
-    @keyframes atkSword{0%{transform:translate(0,0) rotate(0)}22%{transform:translate(-6px,2px) rotate(-16deg)}52%{transform:translate(12px,-8px) rotate(18deg)}100%{transform:translate(0,0) rotate(0)}}
-    .sba-side.atk-mage .fighter-sprite,.study-battle-arena.fighting .sba-side.player.atk-mage .fighter-sprite{animation:atkMage .55s ease}
-    @keyframes atkMage{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-10px) scale(1.06);filter:drop-shadow(0 0 18px #7cf)}100%{transform:translateY(0)}}
-    .sba-side.atk-archer .fighter-sprite,.study-battle-arena.fighting .sba-side.player.atk-archer .fighter-sprite{animation:atkArcher .46s ease}
-    @keyframes atkArcher{0%{transform:translateX(0)}30%{transform:translateX(-10px)}55%{transform:translateX(8px)}100%{transform:translateX(0)}}
-    .sba-side.monster.atk-boss .fighter-sprite,.study-battle-arena.fighting .sba-side.monster.atk-boss .fighter-sprite{animation:bossSkill .5s ease}
-    @keyframes bossSkill{0%{transform:scaleX(-1) translateX(0)}35%{transform:scaleX(-1) translateX(-14px) rotate(-6deg)}100%{transform:scaleX(-1)}}
-    .sba-side.player.hit .fighter-sprite,.study-battle-arena.fighting .sba-side.player.hit .fighter-sprite{animation:qHurtL .38s ease}
-    .sba-side.monster.hit .fighter-sprite,.study-battle-arena.fighting .sba-side.monster.hit .fighter-sprite{animation:qHurtR .38s ease}
-    @keyframes qHurtL{0%{transform:translateX(0);filter:brightness(1)}30%{transform:translateX(-10px);filter:brightness(2.2) sepia(.4) hue-rotate(-20deg)}100%{transform:translateX(0)}}
-    @keyframes qHurtR{0%{transform:scaleX(-1) translateX(0);filter:brightness(1)}30%{transform:scaleX(-1) translateX(10px);filter:brightness(2.4) sepia(.5) hue-rotate(-25deg)}100%{transform:scaleX(-1)}}
-    .sba-side.ko .fighter-sprite,.sba-side.monster.ko .fighter-sprite{animation:sbaKo .75s ease forwards}
-    .sba-side.player.ko .fighter-sprite{animation:sbaKoLeft .75s ease forwards}
-    @keyframes sbaKo{0%{opacity:1}100%{transform:scaleX(-1) translate(24px,18px) rotate(70deg);opacity:.35}}
-    @keyframes sbaKoLeft{0%{opacity:1}100%{transform:translate(-24px,18px) rotate(-70deg);opacity:.35}}
-    .sba-shadow{display:block;width:58%;height:10px;margin:-6px auto 0;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent 70%)}
+    .sba-body{display:inline-block;transform-origin:50% 88%;will-change:transform}
+    .sba-side.player .sba-body{transform:scaleX(-1)}
+    .sba-side .fighter-sprite{height:8.6rem;width:auto;max-width:9.2rem;object-fit:contain;filter:drop-shadow(0 8px 10px rgba(0,0,0,.6));transform-origin:50% 90%;display:block}
+    .sba-side.player .fighter-sprite{animation:qBreathe 1.55s ease-in-out infinite}
+    .sba-side.monster .fighter-sprite{mix-blend-mode:lighten;animation:qBreatheBoss 1.65s ease-in-out infinite}
+    @keyframes qBreathe{0%,100%{transform:translateY(0) scale(1,1)}45%{transform:translateY(-9px) scale(1.07,.95)}}
+    @keyframes qBreatheBoss{0%,100%{transform:translateY(0) scale(1,1)}38%{transform:translateY(-11px) scale(1.1,.9)}58%{transform:translateY(-1px) scale(.94,1.1)}}
+    .sba-side.player.atk-swordsman .sba-body,.study-battle-arena.fighting .sba-side.player.atk-swordsman .sba-body{animation:atkSword .56s cubic-bezier(.15,.85,.25,1)}
+    .sba-side.player.atk-swordsman .fighter-sprite{animation:none}
+    @keyframes atkSword{0%{transform:scaleX(-1) translate(0,0) rotate(0)}18%{transform:scaleX(-1) translate(14px,8px) rotate(20deg)}46%{transform:scaleX(-1) translate(-30px,-16px) rotate(-30deg)}100%{transform:scaleX(-1) translate(0,0) rotate(0)}}
+    .sba-side.player.atk-mage .sba-body,.study-battle-arena.fighting .sba-side.player.atk-mage .sba-body{animation:atkMage .6s ease}
+    .sba-side.player.atk-mage .fighter-sprite{animation:none}
+    @keyframes atkMage{0%{transform:scaleX(-1) translateY(0)}35%{transform:scaleX(-1) translate(-8px,-18px) scale(1.1);filter:drop-shadow(0 0 18px #7cf)}100%{transform:scaleX(-1) translateY(0)}}
+    .sba-side.player.atk-archer .sba-body,.study-battle-arena.fighting .sba-side.player.atk-archer .sba-body{animation:atkArcher .52s ease}
+    .sba-side.player.atk-archer .fighter-sprite{animation:none}
+    @keyframes atkArcher{0%{transform:scaleX(-1) translateX(0)}26%{transform:scaleX(-1) translateX(14px)}52%{transform:scaleX(-1) translateX(-16px)}100%{transform:scaleX(-1)}}
+    .sba-side.monster.atk-boss .sba-body,.study-battle-arena.fighting .sba-side.monster.atk-boss .sba-body{animation:bossSkill .58s ease}
+    .sba-side.monster.atk-boss .fighter-sprite{animation:none}
+    @keyframes bossSkill{0%{transform:translateX(0) scale(1)}28%{transform:translateX(-6px) scale(1.08,.88) rotate(-4deg)}48%{transform:translateX(-22px) scale(.92,1.12) rotate(-10deg)}100%{transform:translateX(0) scale(1)}}
+    .sba-side.player.hit .sba-body,.study-battle-arena.fighting .sba-side.player.hit .sba-body{animation:qHurtL .42s ease}
+    .sba-side.player.hit .fighter-sprite{animation:none}
+    .sba-side.monster.hit .sba-body,.study-battle-arena.fighting .sba-side.monster.hit .sba-body{animation:qHurtR .42s ease}
+    .sba-side.monster.hit .fighter-sprite{animation:none}
+    @keyframes qHurtL{0%{transform:scaleX(-1) translateX(0);filter:brightness(1)}32%{transform:scaleX(-1) translateX(16px);filter:brightness(2.4) sepia(.4) hue-rotate(-20deg)}100%{transform:scaleX(-1)}}
+    @keyframes qHurtR{0%{transform:translateX(0);filter:brightness(1)}32%{transform:translateX(16px) rotate(8deg);filter:brightness(2.4) sepia(.5) hue-rotate(-25deg)}100%{transform:none}}
+    .sba-side.ko .sba-body,.sba-side.monster.ko .sba-body{animation:sbaKo .75s ease forwards}
+    .sba-side.player.ko .sba-body{animation:sbaKoLeft .75s ease forwards}
+    .sba-side.ko .fighter-sprite{animation:none}
+    @keyframes sbaKo{0%{opacity:1}100%{transform:translate(20px,16px) rotate(68deg);opacity:.35}}
+    @keyframes sbaKoLeft{0%{opacity:1}100%{transform:scaleX(-1) translate(20px,16px) rotate(-68deg);opacity:.35}}
+    .sba-shadow{display:block;width:58%;height:10px;margin:-6px auto 0;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent 70%);animation:shadowBreath 1.6s ease-in-out infinite}
+    .sba-side.atk-swordsman .sba-shadow,.sba-side.atk-mage .sba-shadow,.sba-side.atk-archer .sba-shadow,.sba-side.atk-boss .sba-shadow{animation:shadowDash .5s ease}
+    @keyframes shadowDash{0%,100%{transform:scaleX(1);opacity:.7}45%{transform:scaleX(1.35);opacity:.35}}
+    .sba-dust{position:absolute;left:18%;bottom:18%;width:28px;height:8px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,230,180,.45),transparent 70%);opacity:0;pointer-events:none}
+    .sba-side.monster .sba-dust{left:auto;right:18%}
+    .sba-side.atk-swordsman .sba-dust,.sba-side.atk-mage .sba-dust,.sba-side.atk-archer .sba-dust,.sba-side.atk-boss .sba-dust{animation:dustPuff .5s ease}
+    @keyframes dustPuff{0%{opacity:0;transform:scale(.4)}35%{opacity:.9;transform:scale(1.2)}100%{opacity:0;transform:scale(1.6)}}
     .sba-plate{margin-top:.15rem}
     .sba-plate em{display:block;font-style:normal;font-size:.58rem;font-weight:800;color:#fff;text-shadow:0 1px 4px #000;letter-spacing:.04em}
     .sba-side .hp{height:9px;border-radius:999px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.2);overflow:hidden;margin:.15rem auto 0;width:6.4rem}
@@ -468,16 +482,23 @@
     @keyframes mindBeam{0%{opacity:0;transform:scaleX(.2);transform-origin:left}40%{opacity:1;transform:scaleX(1)}100%{opacity:0;transform:scaleX(1.1)}}
     .sba-buddy{display:none!important}
     .sba-tension{position:absolute;left:0;right:0;bottom:6px;z-index:5;margin:0;text-align:center;font-size:.62rem;font-weight:800;letter-spacing:.12em;color:#ffd27a;text-shadow:0 2px 8px #000}
+    .sba-clock{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:6;font-family:Cinzel,ui-monospace,monospace;font-size:.78rem;font-weight:900;letter-spacing:.08em;color:#ffe9b0;text-shadow:0 0 10px #000;padding:.12rem .5rem;border-radius:999px;background:rgba(0,0,0,.4);border:1px solid rgba(255,210,122,.35)}
+    .study-battle-arena.hurry .sba-clock{color:#ff8a7a;border-color:#ff6b5a;animation:clockPulse .7s ease infinite}
+    @keyframes clockPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.08)}}
     .sba-combo{position:absolute;top:10px;right:12px;z-index:5}
     .sba-combo[hidden],.fs-ko[hidden],.battle-combo[hidden]{display:none!important}
     .fs-ko{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:Cinzel,serif;font-size:2.6rem;letter-spacing:.22em;color:#fff;text-shadow:0 0 22px #c45c3a;z-index:8;pointer-events:none;background:rgba(0,0,0,.25)}
-    .live-hud{position:fixed;left:max(4px,calc(50% - 220px + 2px));top:auto;bottom:calc(92px + env(safe-area-inset-bottom));z-index:87;pointer-events:none}
-    .live-hud.study-watch{bottom:calc(108px + env(safe-area-inset-bottom))}
-    .live-hud img{height:58px;width:auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45));transform:scaleX(-1);transform-origin:60% 80%;animation:peekInward 3.4s ease-in-out infinite}
-    .live-hud.idle img{animation:peekInward 4.2s ease-in-out infinite;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45)) grayscale(.15)}
-    @keyframes peekInward{0%,100%{transform:scaleX(-1) translate(0,0) rotate(6deg)}50%{transform:scaleX(-1) translate(7px,2px) rotate(1deg)}}
-    .live-hud .lh-bubble{position:absolute;left:50px;top:-6px;width:124px;background:#fff;color:#3a2a58;font-size:.6rem;font-weight:700;padding:.3rem .4rem;border-radius:10px 10px 10px 4px;box-shadow:0 6px 14px rgba(0,0,0,.16)}
+    .live-hud{position:fixed;left:max(8px,calc(50% - 220px - 52px));top:96px;bottom:auto;z-index:84;pointer-events:none}
+    .live-hud.study-watch,.live-hud.sheet-docked{position:absolute;left:4px;top:44px;bottom:auto;right:auto;z-index:1;transform:none}
+    .live-hud img{height:54px;width:auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45));transform-origin:50% 80%;animation:peekInward 3.2s ease-in-out infinite}
+    .live-hud.idle img{animation:peekInward 4s ease-in-out infinite}
+    .live-hud.sheet-docked img{height:48px;animation:peekInward 2.8s ease-in-out infinite}
+    @keyframes peekInward{0%,100%{transform:translate(2px,0) rotate(12deg)}50%{transform:translate(10px,4px) rotate(5deg)}}
+    .live-hud .lh-bubble{position:absolute;left:46px;top:-8px;width:120px;background:#fff;color:#3a2a58;font-size:.6rem;font-weight:700;padding:.3rem .4rem;border-radius:10px 10px 10px 4px;box-shadow:0 6px 14px rgba(0,0,0,.16)}
+    .live-hud.sheet-docked .lh-bubble{left:40px;top:-30px}
     .lh-watch{display:none!important}
+    .study-workspace,.exam-sheet{position:relative}
+    .study-actions{position:sticky;bottom:0;z-index:20;isolation:isolate}
     .study-judge{margin:.4rem 0;padding:.45rem .55rem;border-radius:12px;background:#1b2030;color:#f3f1f6;font-size:.72rem;transition:box-shadow .25s,background .25s}
     .study-judge.ok{background:#14322a;box-shadow:0 0 18px rgba(94,207,192,.25)}
     .study-judge.bad{background:#3a1820}
@@ -1107,8 +1128,8 @@
     .study-sample .note{font-size:.62rem;color:var(--muted);margin:0}
     .study-workspace{margin:.75rem 0 .55rem;padding:.75rem;border:2px solid #c9a227;border-radius:16px;background:linear-gradient(180deg,#fff8e8,#fff)}
     .study-workspace textarea{width:100%;min-height:220px;border:1px solid #cfd5ff;border-radius:14px;padding:.7rem .75rem;font-size:.78rem;line-height:1.5;resize:vertical;box-sizing:border-box;font-family:inherit;background:#fff;color:#111;pointer-events:auto;position:relative;z-index:2}
-    .study-modal.battle-mode .study-workspace textarea{min-height:140px}
-    .study-modal.battle-mode .study-workspace textarea.code-mode{min-height:150px}
+    .study-modal.battle-mode .study-workspace textarea{min-height:96px;height:7rem;max-height:9.5rem}
+    .study-modal.battle-mode .study-workspace textarea.code-mode{min-height:104px;height:7.4rem}
     .study-guide-list{display:flex;flex-direction:column;gap:.4rem;margin:.4rem 0}
     .study-guide-card{border:1px solid #e4e8ff;border-radius:14px;padding:.6rem .7rem;background:#fafbff}
     .study-guide-card strong{display:block;font-size:.72rem;margin-bottom:.2rem}
@@ -1138,7 +1159,7 @@
     .study-step p{margin:0;font-size:.72rem;color:var(--muted);line-height:1.5}
     .study-resources{display:flex;flex-direction:column;gap:.35rem;margin:.55rem 0 .8rem}
     .study-resources a{font-size:.72rem;font-weight:700;color:var(--lilac-deep);text-decoration:none;padding:.45rem .6rem;border-radius:12px;background:#f3f0ff;border:1px solid #e4defe}
-    .study-actions{display:flex;gap:.45rem;flex-wrap:wrap;position:sticky;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%);padding-top:.8rem}
+    .study-actions{display:flex;gap:.45rem;flex-wrap:wrap;position:sticky;bottom:0;z-index:20;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%);padding-top:.8rem}
     .study-actions button{flex:1;min-width:120px;border:none;border-radius:999px;padding:.55rem .8rem;font-size:.78rem;font-weight:800;cursor:pointer}
     .study-actions .primary{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
     .study-actions .ghost{background:#eef0ff;color:var(--lilac-deep)}
@@ -2122,7 +2143,8 @@
           <div class="sba-shake">
             <div class="sba-stage">
               <div class="sba-side player">
-                <img class="fighter-sprite js-player-img" id="battlePlayerImg" alt="">
+                <div class="sba-body"><img class="fighter-sprite js-player-img" id="battlePlayerImg" alt=""></div>
+                <span class="sba-dust" aria-hidden="true"></span>
                 <span class="sba-shadow"></span>
                 <div class="sba-plate"><em class="js-player-name">YOU</em><div class="hp"><span class="js-player-hp" id="battlePlayerMp"></span></div></div>
               </div>
@@ -2131,11 +2153,13 @@
               <div class="sba-runes" aria-hidden="true"></div>
               <span class="sba-mindbeam" aria-hidden="true"></span>
               <div class="sba-side monster">
-                <img class="fighter-sprite js-boss-img" id="battleBossImg" alt="">
+                <div class="sba-body"><img class="fighter-sprite js-boss-img" id="battleBossImg" alt=""></div>
+                <span class="sba-dust" aria-hidden="true"></span>
                 <span class="sba-shadow"></span>
                 <div class="sba-plate"><em class="js-boss-name" id="battleMonsterName">課題モンスター</em><div class="hp"><span class="js-boss-hp" id="battleMonsterHp"></span></div></div>
               </div>
             </div>
+            <span class="sba-clock" id="battleClock">8:00</span>
             <span class="battle-combo sba-combo" id="battleCombo" hidden>0 COMBO</span>
             <div class="fs-ko" id="fightKo" hidden>K.O.</div>
           </div>
@@ -2173,7 +2197,7 @@
                   </select>
                 </label>
               </div>
-              <textarea id="studyAnswer" rows="12" placeholder="ここにコード／解答を書く（途中保存OK）" autocomplete="off" spellcheck="false"></textarea>
+              <textarea id="studyAnswer" rows="6" placeholder="ここにコード／解答を書く（途中保存OK）" autocomplete="off" spellcheck="false"></textarea>
               <div class="study-judge" id="studyJudge"><b id="studyJudgeKws">用語 0 / 0</b><p id="studyJudgeMsg" style="margin:.2rem 0 0">用語を書くと、上の自分が攻撃する。</p></div>
               <p class="hint" id="studyAnswerHint" style="margin:.35rem 0">課題の下のこの枠に直接書いて提出できます。</p>
               <button type="button" class="ghost" id="studyLoadStarterBtn" style="width:100%;margin-bottom:.35rem;border:none;border-radius:999px;padding:.45rem .8rem;font-weight:800;cursor:pointer;background:#eef0ff;color:var(--lilac-deep)">スターターコードを入れる</button>
@@ -2211,7 +2235,8 @@
           <div class="sba-shake">
             <div class="sba-stage">
               <div class="sba-side player">
-                <img class="fighter-sprite js-player-img" id="examPlayerImg" alt="">
+                <div class="sba-body"><img class="fighter-sprite js-player-img" id="examPlayerImg" alt=""></div>
+                <span class="sba-dust" aria-hidden="true"></span>
                 <span class="sba-shadow"></span>
                 <div class="sba-plate"><em class="js-player-name">YOU</em><div class="hp"><span class="js-player-hp" id="examPlayerHp"></span></div></div>
               </div>
@@ -2220,11 +2245,13 @@
               <div class="sba-runes" aria-hidden="true"></div>
               <span class="sba-mindbeam" aria-hidden="true"></span>
               <div class="sba-side monster">
-                <img class="fighter-sprite js-boss-img" id="examBossImg" alt="">
+                <div class="sba-body"><img class="fighter-sprite js-boss-img" id="examBossImg" alt=""></div>
+                <span class="sba-dust" aria-hidden="true"></span>
                 <span class="sba-shadow"></span>
                 <div class="sba-plate"><em class="js-boss-name" id="examBossName">試験の番人</em><div class="hp"><span class="js-boss-hp" id="examBossHp"></span></div></div>
               </div>
             </div>
+            <span class="sba-clock">8:00</span>
             <span class="battle-combo sba-combo" hidden>0 COMBO</span>
             <div class="fs-ko" hidden>K.O.</div>
           </div>
@@ -2336,10 +2363,10 @@
   </div>
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js?v=20260914e"></script>
-  <script src="/static/live-hud.js?v=20260914d"></script>
-  <script src="/static/world.js?v=20260914d"></script>
+  <script src="/static/live-hud.js?v=20260914e"></script>
+  <script src="/static/world.js?v=20260914e"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20260914h"></script>
+  <script src="/static/app.js?v=20260914i"></script>
 </body>
 </html>

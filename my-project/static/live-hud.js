@@ -8,7 +8,7 @@
   const IDLE_MS = 20000;
   const AFK_MS = 8000;
   const REST_MS = 18 * 60 * 1000;
-  let root, sprite, bubble;
+  let root, sprite, bubble, homeParent;
   let lastInput = Date.now();
   let hiddenAt = 0;
   let studyOpenedAt = 0;
@@ -39,11 +39,29 @@
     return !!(document.querySelector(".study-modal.open") || document.querySelector(".exam-modal.open"));
   }
 
+  function dockHost() {
+    return (
+      document.querySelector(".study-modal.open .study-workspace") ||
+      document.querySelector(".exam-modal.open .exam-sheet")
+    );
+  }
+
   function park() {
     if (!root) return;
+    root.style.left = "";
+    root.style.top = "";
+    root.style.bottom = "";
+    root.style.right = "";
     root.style.transform = "none";
     root.classList.add("inward");
-    root.classList.toggle("study-watch", studying());
+    const host = dockHost();
+    if (studying() && host) {
+      if (root.parentElement !== host) host.appendChild(root);
+      root.classList.add("sheet-docked", "study-watch");
+    } else {
+      if (homeParent && root.parentElement !== homeParent) homeParent.appendChild(root);
+      root.classList.remove("sheet-docked", "study-watch");
+    }
   }
 
   function say(text, emotion, ms) {
@@ -141,7 +159,10 @@
 
   function leaveStudy() {
     studyOpenedAt = 0;
-    root && root.classList.remove("idle", "suspect", "study-watch");
+    if (root) {
+      root.classList.remove("idle", "suspect", "study-watch", "sheet-docked");
+      if (homeParent && root.parentElement !== homeParent) homeParent.appendChild(root);
+    }
     setFace("happy");
   }
 
@@ -166,6 +187,7 @@
     sprite = document.getElementById("liveHudSprite");
     bubble = document.getElementById("liveHudBubble");
     if (!root) return;
+    homeParent = root.parentElement;
     document.addEventListener("visibilitychange", onVis);
     document.addEventListener(
       "keydown",

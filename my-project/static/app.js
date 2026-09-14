@@ -1596,6 +1596,7 @@
 
   async function submitStudyLesson() {
     if (!currentStudyLessonId) return;
+    if (window.FsqWorld && FsqWorld.isTimedOut && FsqWorld.isTimedOut()) return;
     const ta = document.getElementById("studyAnswer");
     const answer = ta ? ta.value || "" : "";
     try {
@@ -1744,6 +1745,7 @@
 
   async function submitBossExamAnswers() {
     if (!currentExamBossId) return;
+    if (window.FsqWorld && FsqWorld.isTimedOut && FsqWorld.isTimedOut()) return;
     const answers = {};
     document.querySelectorAll("#examQuestions textarea[data-qid]").forEach((ta) => {
       answers[ta.getAttribute("data-qid")] = ta.value || "";
@@ -5163,6 +5165,23 @@
     if (window.FsqWorld) {
       FsqWorld.init();
       FsqWorld.setMapDepartHandler((lessonId) => openStudyLesson(lessonId));
+      if (FsqWorld.setTimeUpHandler) {
+        FsqWorld.setTimeUpHandler(() => {
+          const jm = document.getElementById("studyJudgeMsg");
+          const judge = document.getElementById("studyJudge");
+          if (jm) jm.textContent = "時間切れ。ヒーローのHPが尽きた。";
+          if (judge) {
+            judge.classList.add("bad");
+            judge.classList.remove("ok");
+          }
+          const done = document.getElementById("studyCompleteBtn");
+          if (done) done.disabled = true;
+          const examBtn = document.getElementById("examSubmitBtn");
+          if (examBtn) examBtn.disabled = true;
+          const examMsg = document.getElementById("examMsg");
+          if (examMsg) examMsg.textContent = "時間切れ。ヒーローのHPが尽きた。再挑戦できる。";
+        });
+      }
     }
     const examSubmit = document.getElementById("examSubmitBtn");
     if (examSubmit) examSubmit.onclick = () => submitBossExamAnswers();
