@@ -41,8 +41,8 @@
 
   function dockHost() {
     return (
-      document.querySelector(".study-modal.open .study-workspace") ||
-      document.querySelector(".exam-modal.open .exam-sheet")
+      document.querySelector(".study-modal.open .study-battle-arena") ||
+      document.querySelector(".exam-modal.open .study-battle-arena")
     );
   }
 
