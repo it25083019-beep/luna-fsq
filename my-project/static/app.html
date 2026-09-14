@@ -419,8 +419,20 @@
     @keyframes emberDrift{0%{transform:translateY(8px);opacity:.4}100%{transform:translateY(-18px);opacity:.9}}
     .sba-stage{position:absolute;left:0;right:0;bottom:10%;display:flex;align-items:flex-end;justify-content:space-between;padding:0 4%;z-index:2;max-width:440px;margin:0 auto}
     .sba-side{text-align:center;width:36%;position:relative;z-index:3;will-change:transform}
-    .sba-body{display:inline-block;transform-origin:50% 88%;will-change:transform}
+    .sba-body{display:inline-block;position:relative;transform-origin:50% 88%;will-change:transform}
     .sba-side.player .sba-body{transform:scaleX(-1)}
+    .fighter-ghost{position:absolute;left:0;top:0;height:8.4rem;opacity:.4;filter:brightness(2.2) blur(1px);pointer-events:none;animation:ghostFade .36s linear forwards}
+    .sba-side.player .fighter-ghost{transform:scaleX(-1)}
+    @keyframes ghostFade{0%{opacity:.5;transform:scaleX(-1) translateX(0)}100%{opacity:0;transform:scaleX(-1) translateX(-18px)}}
+    .sba-side.monster .fighter-ghost{animation:ghostFadeBoss .36s linear forwards}
+    @keyframes ghostFadeBoss{0%{opacity:.5;transform:translateX(0)}100%{opacity:0;transform:translateX(18px)}}
+    .sba-side.dodge{animation:dodgeHop .48s cubic-bezier(.15,.8,.25,1)}
+    @keyframes dodgeHop{0%{transform:translate(0,0)}28%{transform:translate(42px,-34px) rotate(8deg)}100%{transform:translate(0,0)}}
+    .sba-side.player.dodge{animation:dodgeHopL .48s cubic-bezier(.15,.8,.25,1)}
+    @keyframes dodgeHopL{0%{transform:translate(0,0)}28%{transform:translate(-42px,-34px) rotate(-8deg)}100%{transform:translate(0,0)}}
+    .study-battle-arena.freeze .sba-side,.study-battle-arena.freeze .sba-body,.study-battle-arena.freeze .fighter-sprite{animation-play-state:paused !important}
+    .study-battle-arena.blank-page{box-shadow:inset 0 0 70px rgba(180,30,20,.28)}
+    .study-battle-arena.armed{box-shadow:inset 0 0 55px color-mix(in srgb, var(--skill) 22%, transparent)}
     .sba-side .fighter-sprite{height:8.4rem;width:auto;max-width:9rem;object-fit:contain;background:transparent;filter:drop-shadow(0 8px 10px rgba(0,0,0,.6));transform-origin:50% 90%;display:block}
     .sba-side.player .fighter-sprite{animation:qBreathe 1.45s ease-in-out infinite}
     .sba-side.monster .fighter-sprite{animation:qBreatheBoss 1.55s ease-in-out infinite}
@@ -480,9 +492,9 @@
     .sba-shot.boss.go{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle,#fff,#ff6b4a);box-shadow:0 0 18px #ff6b4a;animation:qShotBack .4s linear forwards}
     @keyframes qShot{0%{left:22%;opacity:1;transform:scale(.7)}100%{left:62%;opacity:0;transform:scale(1.2)}}
     @keyframes qShotBack{0%{left:62%;opacity:1;transform:scale(.7)}100%{left:22%;opacity:0;transform:scale(1.2)}}
-    .sba-skill-name{position:absolute;left:10%;top:12%;z-index:7;margin:0;font-family:Cinzel,"Shippori Mincho",serif;font-size:.78rem;font-weight:900;letter-spacing:.18em;color:#ffe9b0;text-shadow:0 0 12px #c45c3a,0 2px 6px #000;opacity:0;pointer-events:none}
-    .sba-skill-name.from-boss{left:auto;right:10%;color:#ffb09a}
-    .sba-skill-name.go{animation:skillName .7s ease forwards}
+    .sba-skill-name{position:absolute;left:8%;top:10%;z-index:7;margin:0;font-family:"Shippori Mincho",Cinzel,serif;font-size:1.05rem;font-weight:900;letter-spacing:.2em;color:#ffe9b0;text-shadow:0 0 14px #c45c3a,0 2px 6px #000;opacity:0;pointer-events:none;padding:.12rem .55rem;border:1px solid rgba(255,210,122,.45);background:rgba(0,0,0,.4);border-radius:4px}
+    .sba-skill-name.from-boss{left:auto;right:8%;color:#ffb09a;border-color:rgba(255,120,90,.5)}
+    .sba-skill-name.go{animation:skillName .85s ease forwards}
     @keyframes skillName{0%{opacity:0;transform:translateY(8px) scale(.9)}25%{opacity:1;transform:translateY(0) scale(1.08)}100%{opacity:0;transform:translateY(-10px)}}
     .sba-runes{position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden}
     .sba-rune{position:absolute;left:var(--x,28%);bottom:10%;font-size:.7rem;font-weight:900;color:var(--skill);text-shadow:0 0 10px var(--skill),0 2px 6px #000;animation:runeUp .95s ease-out forwards;white-space:nowrap}
@@ -2375,10 +2387,10 @@
   </div>
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js?v=20260914e"></script>
-  <script src="/static/live-hud.js?v=20260914f"></script>
-  <script src="/static/world.js?v=20260914f"></script>
+  <script src="/static/live-hud.js?v=20260914g"></script>
+  <script src="/static/world.js?v=20260914g"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20260914j"></script>
+  <script src="/static/app.js?v=20260914k"></script>
 </body>
 </html>

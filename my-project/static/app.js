@@ -1497,6 +1497,9 @@
       renderStudySamples(study.samples || []);
 
       const ta = document.getElementById("studyAnswer");
+      const lang = (document.getElementById("studyLang") || {}).value || "python";
+      const starter = (study.starter_code && study.starter_code[lang]) || "";
+      studyStarterSnapshot = starter;
       if (ta) {
         ta.value = (attempt && attempt.answer) || "";
         ta.classList.toggle("code-mode", study.workspace_type === "code");
@@ -1504,11 +1507,7 @@
           study.workspace_type === "code"
             ? "解答コードを書く（標準入力想定・実行ジャッジなし）"
             : "考えた手順・メモを書いて提出しよう";
-        if (!ta.value && study.workspace_type === "code") {
-          const lang = (document.getElementById("studyLang") || {}).value || "python";
-          const starter = (study.starter_code && study.starter_code[lang]) || "";
-          if (starter) ta.value = starter;
-        }
+        if (!ta.value && study.workspace_type === "code" && starter) ta.value = starter;
       }
       lastStudyKwCount = countMatchedKeywords(
         (document.getElementById("studyAnswer") || {}).value || "",
@@ -1853,6 +1852,7 @@
 
   let lastStudyKwCount = 0;
   let lastExamKwCount = 0;
+  let studyStarterSnapshot = "";
 
   function countMatchedKeywords(text, keywords) {
     const kws = (keywords || []).filter(Boolean);
@@ -1866,6 +1866,10 @@
     const kws = currentStudyMeta.check_keywords || [];
     const matched = countMatchedKeywords(text, kws);
     const need = kws.length <= 2 ? kws.length : Math.max(2, Math.ceil(kws.length / 2));
+    const trimmed = String(text || "").trim();
+    const starter = String(studyStarterSnapshot || "").trim();
+    const blank = !trimmed || (!!starter && trimmed === starter);
+    const armed = !blank && matched.length > 0;
     const pct = kws.length ? 10 + Math.round((matched.length / kws.length) * 86) : 12;
     const hit = !silent && matched.length > lastStudyKwCount;
     lastStudyKwCount = matched.length;
@@ -1876,15 +1880,18 @@
     if (jm) {
       jm.textContent = hit
         ? "届いた！上の自分が攻撃した。"
-        : matched.length >= need
-          ? "用語は足りている。提出できる。"
-          : "まだ攻撃できない。課題の用語を自分の解答に書け。";
+        : blank
+          ? "白紙だ。番人は避け、時間＝HPが削られる。書け。"
+          : matched.length >= need
+            ? "用語は足りている。提出できる。"
+            : "まだ攻撃できない。課題の用語を自分の解答に書け。";
     }
     if (judge) {
       judge.classList.toggle("ok", matched.length >= need && need > 0);
-      judge.classList.toggle("bad", matched.length < need);
+      judge.classList.toggle("bad", matched.length < need || blank);
     }
     if (window.FsqWorld) {
+      if (FsqWorld.setFightState) FsqWorld.setFightState({ blank: blank, armed: armed });
       FsqWorld.onQuestProgress(pct, hit, matched[matched.length - 1] || "");
       if (!silent && FsqWorld.noteTyping) FsqWorld.noteTyping(hit);
     }
@@ -1907,7 +1914,14 @@
     const hit = !silent && matched.length > lastExamKwCount;
     lastExamKwCount = matched.length;
     const pct = total ? 10 + Math.round((matched.length / Math.max(1, total)) * 86) : 12;
+    let written = "";
+    tas.forEach((ta) => {
+      written += ta.value || "";
+    });
+    const blank = String(written).trim().length < 16;
+    const armed = !blank && matched.length > 0;
     if (window.FsqWorld) {
+      if (FsqWorld.setFightState) FsqWorld.setFightState({ blank: blank, armed: armed });
       FsqWorld.onQuestProgress(pct, hit, matched[matched.length - 1] || "");
       if (!silent && FsqWorld.noteTyping) FsqWorld.noteTyping(hit);
     }
