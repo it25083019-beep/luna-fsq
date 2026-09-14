@@ -156,7 +156,7 @@
       boss.innerHTML =
         '<div class="bi-vignette"></div><div class="bi-inner">' +
         '<p class="bi-warn">⚠ BOSS APPEARS</p>' +
-        '<div class="bi-face" id="biFace">👹</div>' +
+        '<div class="bi-face" id="biFace"><img id="biFaceImg" alt=""></div>' +
         '<h3 id="biName">試験の番人</h3>' +
         '<p id="biHint">これまでの学習が武器になる</p>' +
         '<button type="button" id="biFightBtn">⚔ 戦闘開始</button></div>';
@@ -437,15 +437,95 @@
     }, 950);
   }
 
+  const BOSS_ART = {
+    lesson: "/static/rpg/bosses/quest-slime.png",
+    weekly: "/static/rpg/bosses/boss-weekly.png",
+    monthly: "/static/rpg/bosses/boss-monthly.png",
+    career_final: "/static/rpg/bosses/boss-final.png",
+  };
+
+  function heroSprite() {
+    return (window.FsqHeroSprite || "/static/rpg/characters/swordsman_novice_stand.png") + "";
+  }
+
+  function buddySprite(expr) {
+    if (window.LiveHud && LiveHud.exprUrl) return LiveHud.exprUrl(expr || "cheer");
+    return "/static/live2d/luna-expressions/luna-cheer.png";
+  }
+
+  function bossArt(kind) {
+    return BOSS_ART[kind] || BOSS_ART.lesson;
+  }
+
+  function activeArena() {
+    const exam = $("examModal");
+    if (exam && exam.classList.contains("open")) return $("examBattleArena") || $("studyBattleArena");
+    return $("studyBattleArena");
+  }
+
+  function paintFighters(kind, monsterName) {
+    const arena = activeArena();
+    if (!arena) return;
+    arena.hidden = false;
+    const pImg = arena.querySelector(".js-player-img") || $("battlePlayerImg");
+    const bImg = arena.querySelector(".js-boss-img") || $("battleBossImg");
+    const buddy = arena.querySelector(".js-buddy-img") || $("battleBuddyImg");
+    const pName = arena.querySelector(".js-player-name");
+    const bName = arena.querySelector(".js-boss-name") || $("battleMonsterName");
+    if (pImg) pImg.src = heroSprite();
+    if (bImg) bImg.src = bossArt(kind || "lesson");
+    if (buddy) buddy.src = buddySprite("cheer");
+    if (pName) pName.textContent = window.FsqHeroName || "YOU";
+    if (bName) bName.textContent = monsterName || "課題モンスター";
+    arena.classList.remove("ko-boss", "ko-player", "striking");
+    const ko = arena.querySelector(".fs-ko");
+    if (ko) ko.hidden = true;
+    const bossWrap = arena.querySelector(".sba-side.monster");
+    const heroWrap = arena.querySelector(".sba-side.player");
+    if (bossWrap) bossWrap.classList.remove("ko");
+    if (heroWrap) heroWrap.classList.remove("ko");
+  }
+
+  function playStrike() {
+    const arena = activeArena();
+    if (!arena) return;
+    arena.classList.remove("striking");
+    void arena.offsetWidth;
+    arena.classList.add("striking");
+    const boss = arena.querySelector(".sba-side.monster");
+    if (boss) {
+      boss.classList.remove("hit");
+      void boss.offsetWidth;
+      boss.classList.add("hit");
+      setTimeout(() => boss.classList.remove("hit"), 280);
+    }
+  }
+
+  function playKo(who) {
+    const arena = activeArena();
+    if (!arena) return;
+    const side = who === "player" ? arena.querySelector(".sba-side.player") : arena.querySelector(".sba-side.monster");
+    if (side) side.classList.add("ko");
+    arena.classList.add(who === "player" ? "ko-player" : "ko-boss");
+    const ko = arena.querySelector(".fs-ko") || $("fightKo");
+    if (ko) {
+      ko.hidden = false;
+      ko.textContent = who === "player" ? "YOU LOSE" : "K.O.";
+    }
+    flash(who === "player" ? "red" : "gold");
+    Sfx.questClear();
+  }
+
   function spawnHitFloater(text, kind) {
-    const modal = $("studyModal");
-    if (!modal || !modal.classList.contains("open")) return;
+    const arena = activeArena();
+    const host = arena || $("studyModal") || $("examModal");
+    if (!host) return;
     const f = document.createElement("span");
     f.className = "hit-floater " + (kind || "dmg");
     f.textContent = text;
-    f.style.left = 30 + Math.random() * 40 + "%";
-    f.style.top = 28 + Math.random() * 20 + "%";
-    modal.appendChild(f);
+    f.style.left = 22 + Math.random() * 50 + "%";
+    f.style.top = 18 + Math.random() * 28 + "%";
+    host.appendChild(f);
     setTimeout(() => f.remove(), 900);
   }
 
@@ -453,8 +533,9 @@
     battlePct = Math.min(98, Math.max(8, pct));
     const bar = $("studyBattleProgress");
     if (bar) bar.style.width = battlePct + "%";
-    const monsterHp = $("battleMonsterHp");
-    const playerMp = $("battlePlayerMp");
+    const arena = activeArena();
+    const monsterHp = (arena && arena.querySelector(".js-boss-hp")) || $("battleMonsterHp");
+    const playerMp = (arena && arena.querySelector(".js-player-hp")) || $("battlePlayerMp");
     if (monsterHp) monsterHp.style.width = Math.max(4, 100 - battlePct) + "%";
     if (playerMp) playerMp.style.width = battlePct + "%";
     const combo = $("battleCombo");
@@ -468,29 +549,40 @@
     }
   }
 
-  function onOpenQuest(lesson) {
+  function onOpenQuest(lesson, opts) {
     Sfx.questStart();
     typingCombo = 0;
     battlePct = 12;
+    opts = opts || {};
     const rank = $("studyBattleRank");
     if (rank) {
       const mins = lesson.estimated_minutes || 30;
       rank.textContent = "難易度 " + (mins >= 45 ? "★★★" : mins >= 25 ? "★★" : "★");
     }
-    const name = $("battleMonsterName");
-    if (name) {
-      const idx = Math.min(4, Math.floor((lesson.estimated_minutes || 20) / 15));
-      name.textContent = (REGION_LORE[idx] || REGION_LORE[0]).monster;
-    }
+    const kind = opts.bossType || (opts.isBoss ? "weekly" : "lesson");
+    const idx = Math.min(4, Math.floor((lesson.estimated_minutes || 20) / 15));
+    const monsterName =
+      opts.monsterName ||
+      (kind === "career_final"
+        ? "キャリアドラゴン"
+        : kind === "monthly"
+          ? "学期の梟"
+          : kind === "weekly"
+            ? "試験の番人"
+            : (REGION_LORE[idx] || REGION_LORE[0]).monster);
+    paintFighters(kind, monsterName);
     const title = $("battleQuestTitle");
     if (title) title.textContent = lesson.title_ja || "QUEST";
     updateBattleBars(12);
     const modal = $("studyModal");
-    if (modal) modal.classList.add("battle-mode");
-    const arena = $("studyBattleArena");
+    if (modal && modal.classList.contains("open")) modal.classList.add("battle-mode");
+    const exam = $("examModal");
+    if (exam && exam.classList.contains("open")) exam.classList.add("battle-mode");
+    const arena = activeArena();
     if (arena) arena.hidden = false;
     flash("teal");
     toast("QUEST START — " + (lesson.title_ja || "課題"), "teal");
+    if (window.LiveHud) LiveHud.enterStudy();
   }
 
   function onQuestProgress(pct) {
@@ -501,11 +593,16 @@
       lastHitAt = now;
       typingCombo += 1;
       Sfx.hit();
+      playStrike();
       spawnHitFloater("-" + (8 + Math.floor(Math.random() * 12)), "dmg");
-      if (typingCombo === 5) toast("コンボ！ 解答が刺さっている", "gold");
+      if (typingCombo === 5) {
+        toast("コンボ！ 解答が刺さっている", "gold");
+        if (window.LiveHud) LiveHud.emit("cheer");
+      }
       if (typingCombo === 10) {
         toast("CRITICAL HIT!", "gold");
         flash("gold");
+        spawnHitFloater("CRITICAL", "crit");
       }
     }
   }
@@ -517,10 +614,15 @@
   function closeQuest() {
     const modal = $("studyModal");
     if (modal) modal.classList.remove("battle-mode");
+    const exam = $("examModal");
+    if (exam) exam.classList.remove("battle-mode");
     typingCombo = 0;
+    if (window.LiveHud) LiveHud.leaveStudy();
   }
 
   function showVictory(title, lines, chips) {
+    playKo("boss");
+    if (window.LiveHud) LiveHud.emit("win");
     Sfx.questClear();
     flash("gold");
     confetti(32);
@@ -568,7 +670,17 @@
       $("biHint").textContent =
         (meta && meta.hint_ja) || "これまでの学習が武器になる。負けても進捗は消えない。";
     }
-    if ($("biFace")) $("biFace").textContent = "👹";
+    if ($("biFace")) {
+      const img = $("biFaceImg");
+      const kind = (meta && meta.bossType) || "weekly";
+      if (img) {
+        img.src = bossArt(kind);
+        img.hidden = false;
+        $("biFace").textContent = "";
+      } else {
+        $("biFace").innerHTML = '<img src="' + bossArt(kind) + '" alt="">';
+      }
+    }
     el.classList.add("open");
     Sfx.boss();
     flash("red");
@@ -645,6 +757,10 @@
     showVictory: showVictory,
     onSubSwitch: onSubSwitch,
     showBossIntro: showBossIntro,
+    paintFighters: paintFighters,
+    playStrike: playStrike,
+    playKo: playKo,
+    bossArt: bossArt,
     showRegionTitle: showRegionTitle,
     animateMapTravel: animateMapTravel,
     decorateMapWorld: decorateMapWorld,

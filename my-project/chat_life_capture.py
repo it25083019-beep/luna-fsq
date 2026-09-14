@@ -475,6 +475,7 @@ def compose_companion_dialogue(
     """
     from luna_service import _honorific
     from companions import companion_spoken_name
+    from companion_presence import feel_user_text
 
     who = _honorific(user) or "あなた"
     cname = companion_spoken_name(user)
@@ -503,8 +504,20 @@ def compose_companion_dialogue(
     if ack:
         ack = ack + "。"
 
+    felt = feel_user_text(msg)
+    if felt["emotion"] == "sad":
+        emotion = "sad"
+    elif felt["emotion"] == "cheer":
+        emotion = "cheer"
+    elif felt["emotion"] == "surprised":
+        emotion = "surprised"
+    elif felt["emotion"] == "wave":
+        emotion = "wave"
+    elif felt["emotion"] == "think":
+        emotion = "think"
+
     # Empathy + suggestion by topic
-    if re.search(r"疲れ|つらい|しんど|眠い|疲れた|落ち込み|不安|mệt|tired|buồn", msg, re.I):
+    if felt["care"] == "hold" or re.search(r"疲れ|つらい|しんど|眠い|疲れた|落ち込み|不安|mệt|tired|buồn", msg, re.I):
         body = (
             f"{who}、話してくれてありがとう。無理しないでね。"
             f"今は深呼吸を1回、水を一口。少し横になれるなら10分だけ休もう。{cname}がそばにいるよ。"

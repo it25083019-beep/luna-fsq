@@ -462,12 +462,15 @@
       setErr("");
       loadHomeSummary();
       if (!chatStarted) startChat();
+      if (window.LiveHud) LiveHud.hide();
     }
     if (name === "fsq") {
       scrollFsqTop();
       loadFsqTab();
+      if (window.LiveHud) LiveHud.show();
     } else {
       scrollScreenTop();
+      if (name !== "luna" && window.LiveHud) LiveHud.hide();
     }
   }
 
@@ -556,6 +559,8 @@
     updateFsqCompactMode();
     if (!needOnboard) scrollFsqTop();
     if (window.FsqWorld) {
+      window.FsqHeroSprite = evolutionSpritePath(journeyStatus.class_id, journeyStatus.rank_id);
+      window.FsqHeroName = classLabel(journeyStatus.class_id);
       FsqWorld.renderHud(journeyStatus, journeyMap, expProgress);
       FsqWorld.renderNarrator(journeyStatus, journeyMap);
       FsqWorld.checkLevelUp(journeyStatus.level || stateData.level || 1);
@@ -1512,6 +1517,12 @@
       setStudyTab("solve");
       document.getElementById("studyModal").classList.add("open");
       if (window.FsqWorld) FsqWorld.onOpenQuest(les);
+      if (window.LiveHud) LiveHud.enterStudy();
+      const buddyLine = document.getElementById("battleBuddyLine");
+      if (buddyLine) {
+        buddyLine.hidden = false;
+        buddyLine.textContent = "その打ち込みが、攻撃になる。";
+      }
       const taFocus = document.getElementById("studyAnswer");
       if (taFocus && !les.completed) {
         taFocus.disabled = false;
@@ -1663,7 +1674,10 @@
         const examModal = document.getElementById("examModal");
         examModal.classList.add("open", "boss-mode");
         if (window.FsqWorld && FsqWorld.onOpenQuest) {
-          FsqWorld.onOpenQuest({ estimated_minutes: 45, title_ja: exam.title_ja || "ボス戦" });
+          FsqWorld.onOpenQuest(
+            { estimated_minutes: 45, title_ja: exam.title_ja || "ボス戦" },
+            { isBoss: true, bossType: exam.boss_type || "weekly" }
+          );
         }
       };
       if (window.FsqWorld && FsqWorld.showBossIntro) {
@@ -1671,6 +1685,7 @@
           {
             title_ja: exam.exam_label_ja || exam.title_ja || "試験の番人",
             hint_ja: "これまでの学習が武器になる。負けても進捗は消えない。",
+            bossType: exam.boss_type || "weekly",
           },
           openExamUi
         );
@@ -1684,7 +1699,8 @@
 
   function closeExamModal() {
     const examModal = document.getElementById("examModal");
-    if (examModal) examModal.classList.remove("open", "boss-mode");
+    if (examModal) examModal.classList.remove("open", "boss-mode", "battle-mode");
+    if (window.FsqWorld) FsqWorld.closeQuest();
     currentExamBossId = null;
   }
 
@@ -1700,7 +1716,16 @@
         body: JSON.stringify({ answers: answers }),
       });
       if (!res.success) {
-        document.getElementById("examMsg").textContent = res.message_ja || "もう少し書き足して再挑戦しよう。";
+        const coach = (res.coach && res.coach.line_ja) || res.message_ja || "もう少し書き足して再挑戦しよう。";
+        document.getElementById("examMsg").textContent = coach;
+        if (window.FsqWorld && FsqWorld.playKo) FsqWorld.playKo("player");
+        if (window.LiveHud) LiveHud.emit("lose");
+        const d = document.getElementById("dialogue");
+        if (d) d.textContent = coach;
+        try {
+          if (luna) luna.applyEmotion("sad", 1800);
+        } catch (_) {}
+        speakJa(coach).catch(() => {});
         return;
       }
       if (res.status) journeyStatus = res.status;
@@ -1714,7 +1739,8 @@
         chips
       );
       if (luna) luna.applyEmotion("cheer", 1500);
-      closeExamModal();
+      if (window.LiveHud) LiveHud.emit("win");
+      setTimeout(() => closeExamModal(), 700);
       applyJourneyUi();
       await refreshCore();
     } catch (e) {
@@ -2810,6 +2836,9 @@
     } catch (_) {}
     firstChat = false;
     if (line) speakJa(line).catch(() => {});
+    if (data && data.game_state && data.game_state.open_rescue) {
+      startCrisisSwitch();
+    }
     // Defer heavy refresh so chat feels instant
     setTimeout(() => {
       refreshCore().catch(() => {});
@@ -2839,6 +2868,9 @@
     if (!msg || busy) return false;
     busy = true;
     unlockAudio();
+    try {
+      if (luna) luna.reactToText(msg, { force: true, fallback: "think" });
+    } catch (_) {}
     const skipThink = !!(opts && opts.skipThink);
     if (!skipThink) {
       try {
@@ -4151,20 +4183,31 @@
       const lead = document.getElementById("crisisLead");
       const stepEl = document.getElementById("crisisStepLabel");
       const bar = document.getElementById("crisisBar");
+      const sprite = document.getElementById("crisisSprite");
       if (!ov) return;
       ov.classList.add("open");
       ov.setAttribute("aria-hidden", "false");
       const steps = proto.steps || [];
+      const sprites = proto.sprites || {};
+      if (sprite) sprite.src = sprites.sad || sprite.src;
       if (title) title.textContent = proto.title_ja || "60秒レスキュー";
       const hotline = document.getElementById("crisisHotline");
       if (hotline) hotline.textContent = proto.hotline_ja || hotline.textContent;
+      try {
+        if (luna) luna.applyEmotion("sad", 2000);
+      } catch (_) {}
       let elapsed = 0;
       const paint = () => {
         const idx = elapsed < 20 ? 0 : elapsed < 40 ? 1 : 2;
         const st = steps[idx] || {};
+        ov.classList.toggle("step-breathe", st.id === "breathe");
         if (stepEl) stepEl.textContent = (idx + 1) + " / 3 ・ " + (st.title_ja || "");
         if (lead) lead.textContent = st.line_ja || proto.lead_ja || "";
         if (bar) bar.style.width = Math.min(100, (elapsed / 60) * 100) + "%";
+        if (sprite && st.emotion && sprites[st.emotion]) sprite.src = sprites[st.emotion];
+        try {
+          if (luna && st.emotion) luna.applyEmotion(st.emotion, 800);
+        } catch (_) {}
       };
       paint();
       if (crisisTimer) clearInterval(crisisTimer);
@@ -4174,13 +4217,19 @@
         if (elapsed >= 60) {
           clearInterval(crisisTimer);
           crisisTimer = null;
+          let done = proto.done_ja || "戻ってきたね。";
           try {
-            await api("/crisis/complete", { method: "POST", body: "{}" });
+            const fin = await api("/crisis/complete", { method: "POST", body: "{}" });
+            if (fin && fin.done_ja) done = fin.done_ja;
           } catch (_) {}
           ov.classList.remove("open");
           ov.setAttribute("aria-hidden", "true");
           const d = document.getElementById("dialogue");
-          if (d) d.textContent = "戻ってきたね。いのちの電話 0570-783-556 もあるよ。";
+          if (d) d.textContent = done;
+          try {
+            if (luna) luna.applyEmotion("cheer", 1800);
+          } catch (_) {}
+          speakJa(done).catch(() => {});
         }
       }, 250);
     } catch (err) {
@@ -4414,6 +4463,8 @@
       renderCouncil(s.council || null);
       applyMoodRuntime(s.mood_runtime || null);
       renderLifePulse(s.life_pulse || null);
+      const fab = document.getElementById("crisisBtn");
+      if (fab) fab.classList.toggle("pulse", !!(s.mood_runtime && s.mood_runtime.crisis_ready));
       if (s.day_fit) {
         journeyStatus.day_fit = s.day_fit;
         renderDayPaceBanner();
@@ -4649,6 +4700,11 @@
   }
 
   function bindEvents() {
+    window.lunaApi = api;
+    window.companionByIdPublic = function () {
+      return companionById(selectedCompanionId || (stateData && stateData.companion_id) || "luna") || {};
+    };
+    if (window.LiveHud) LiveHud.bind();
     document.querySelectorAll(".nav-item").forEach((btn) => {
       btn.onclick = () => switchTab(btn.dataset.nav);
     });
@@ -5046,6 +5102,19 @@
       LunaAuth.clearToken();
       LunaAuth.goLogin("/app");
     };
+    const examBox = document.getElementById("examQuestions");
+    if (examBox) {
+      examBox.addEventListener("input", () => {
+        if (!window.FsqWorld || !FsqWorld.onQuestProgress) return;
+        let len = 0;
+        examBox.querySelectorAll("textarea").forEach((t) => {
+          len += (t.value || "").trim().length;
+        });
+        const pct = Math.min(94, 10 + Math.round(len / 28));
+        FsqWorld.onQuestProgress(pct);
+        if (FsqWorld.onTypingTick) FsqWorld.onTypingTick();
+      });
+    }
     const mini = document.getElementById("lunaStage");
     if (mini) mini.onclick = () => luna && luna.onTap && luna.onTap();
   }

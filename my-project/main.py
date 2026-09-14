@@ -618,9 +618,14 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
         if not (dialogue or "").strip():
             dialogue = "うん、聞こえてるよ。もう少し詳しく教えてくれる？"
         state = get_user_state(uid)
-        if isinstance(ai_state, dict) and ai_state.get("emotion"):
+        if isinstance(ai_state, dict):
             state = dict(state)
-            state["emotion"] = ai_state["emotion"]
+            if ai_state.get("emotion"):
+                state["emotion"] = ai_state["emotion"]
+            if ai_state.get("open_rescue"):
+                state["open_rescue"] = True
+            if ai_state.get("crisis"):
+                state["crisis"] = True
         try:
             chips = get_suggested_replies(uid, state)
         except Exception:
@@ -955,6 +960,20 @@ def crisis_switch_done(current: User = Depends(get_current_user)):
     result = complete_crisis_switch(brain)
     save_user_brain(current.public_id, brain)
     return result
+
+
+@app.get("/companion/presence")
+def companion_presence_get(
+    event: str = "follow",
+    extra: str = "",
+    current: User = Depends(get_current_user),
+):
+    from companion_presence import hud_line
+
+    brain = load_user_brain(current.public_id)
+    allowed = {"follow", "suspect", "cheer", "win", "rest", "idle", "lose"}
+    ev = event if event in allowed else "follow"
+    return hud_line(brain, ev, extra or "")
 
 
 @app.get("/portfolio/export")

@@ -50,12 +50,12 @@
     if (opts.fallback === "sad") return "sad";
     if (opts.fallback === "happy") return "happy";
     const rules = [
-      { expr: "cheer", patterns: [/やった|すごい|がんば|応援|クリア|成功|おめでとう/] },
-      { expr: "wave", patterns: [/こんにちは|おはよう|こんばんは|はじめまして|よろしく/] },
-      { expr: "sad", patterns: [/つらい|悲しい|落ち込|疲れ|ごめん|大丈夫？/] },
-      { expr: "surprised", patterns: [/えっ|まさか|びっくり|すごい！|！{2,}/] },
-      { expr: "think", patterns: [/どうして|なぜ|考え|教えて|どうすれば|？|\?/] },
-      { expr: "happy", patterns: [/嬉しい|楽しい|いいね|大好き|ありがとう/] },
+      { expr: "cheer", patterns: [/やった|すごい|がんば|応援|クリア|成功|おめでとう|vui|giỏi|xong/] },
+      { expr: "wave", patterns: [/こんにちは|おはよう|こんばんは|はじめまして|よろしく|hello|hi\b/i] },
+      { expr: "sad", patterns: [/つらい|悲しい|落ち込|疲れ|ごめん|大丈夫？|mệt|buồn|chán|tired|sad/i] },
+      { expr: "surprised", patterns: [/えっ|まさか|びっくり|すごい！|！{2,}|tức|怒/] },
+      { expr: "think", patterns: [/どうして|なぜ|考え|教えて|どうすれば|？|\?|làm sao/] },
+      { expr: "happy", patterns: [/嬉しい|楽しい|いいね|大好き|ありがとう|happy/i] },
     ];
     for (const r of rules) {
       if (r.patterns.some((p) => p.test(t))) return r.expr;

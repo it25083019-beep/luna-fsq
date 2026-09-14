@@ -493,6 +493,7 @@ def _build_user_system_prompt(
     policy: Dict[str, Any],
     core: Dict[str, Any],
     user: Dict[str, Any],
+    user_text: str = "",
 ) -> str:
     from companions import companion_spoken_name, get_companion
 
@@ -577,6 +578,13 @@ Output Format: ONLY <dialogue>...</dialogue> and <game_state_json>...</game_stat
     except Exception:
         mood_block, drama_block = "", ""
     privacy_block = privacy_prompt_rules()
+    feel_block = ""
+    try:
+        from companion_presence import feel_prompt_block
+
+        feel_block = feel_prompt_block(user_text or "")
+    except Exception:
+        feel_block = ""
     companion = companion_spoken_name(user)
     who = _honorific(user) or (display or "あなた")
     row = get_companion(user.get("companion_id"))
@@ -619,12 +627,15 @@ THREE LIFE MODULES (first-meeting questions are only a baseline; user can add mo
 
 {mood_block}
 
+{feel_block}
+
 {drama_block}
 
 FIVE PILLARS always: 1 health 2 study/future 3 money 4 time 5 goal direction.
 
-EMOTION TAGS (like VTuber emotionMap — put ONE tag right after <dialogue> when fitting):
+        EMOTION TAGS (like VTuber emotionMap — put ONE tag right after <dialogue> when fitting):
 [neutral] [joy] [sadness] [surprise] [think] [cheer] [wave] [happy]
+Match the user's feeling first. If they sound tired or sad, use [sadness] then still do the job.
 
 USER PROFILE:
 {profile}
@@ -1159,16 +1170,13 @@ def _secret_keep_reply(user: Dict[str, Any]) -> str:
 
 def _crisis_reply(user: Dict[str, Any]) -> str:
     """Local safety path — never wait on the model for a crisis line."""
-    who = _honorific(user)
-    prefix = f"{who}、" if who else ""
-    from companions import companion_spoken_name
+    from companion_presence import crisis_script
 
-    cname = companion_spoken_name(user)
-    dialogue = (
-        f"{prefix}いまの気持ち、受け取ったよ。{cname}はそばにいる。"
-        f"いのちの電話（0570-783-556）にもつながれるよ。"
+    script = crisis_script(user)
+    return _pack_reply(
+        script["lead_ja"],
+        {"emotion": "sad", "crisis": True, "open_rescue": True},
     )
-    return _pack_reply(dialogue, {"emotion": "sad", "crisis": True})
 
 
 CONSULT_MAX_TURNS = 4
@@ -1360,7 +1368,12 @@ def _local_companion_reply(user: Dict[str, Any], user_text: str) -> str:
         applied = capture_life_from_chat(user, user_text or "", None)
     except Exception:
         applied = []
+    from companion_presence import feel_user_text
+
     composed = compose_companion_dialogue(user, user_text or "", applied)
+    felt = feel_user_text(user_text or "")
+    if felt.get("emotion") and felt["emotion"] != "talk":
+        composed["emotion"] = felt["emotion"]
     dialogue = _avoid_repeat_dialogue(user, _stamp_companion_identity(user, composed["dialogue"]))
     from companions import companion_spoken_name
 
@@ -1604,7 +1617,7 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
                 maybe_daily_care_notification(user)
 
     # Home chat always uses the selected companion — Guild Master stays on /admin.
-    system_prompt = _build_user_system_prompt(blueprint, policy, core, user)
+    system_prompt = _build_user_system_prompt(blueprint, policy, core, user, text_in)
     history = user.get("chat_history", [])
 
     chat_session = None  # legacy var unused; routed via llm_client

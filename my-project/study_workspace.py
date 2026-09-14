@@ -614,6 +614,16 @@ def submit_boss_exam(
     }
 
     if not passed:
+        weak: List[str] = []
+        for q, d in zip(questions, details):
+            sc = float(((d.get("soft_check") or {}).get("score") or 0))
+            if sc < pass_ratio:
+                title = q.get("source_title_ja") or q.get("prompt_ja") or q.get("id")
+                if title and title not in weak:
+                    weak.append(str(title))
+        from companion_presence import exam_fail_advice
+
+        advice = exam_fail_advice(state, weak, avg)
         return {
             "ok": False,
             "success": False,
@@ -622,7 +632,10 @@ def submit_boss_exam(
             "details": details,
             "need_match": need_match,
             "matched_questions": matched_n,
-            "message_ja": (
+            "weak_titles": weak,
+            "coach": advice,
+            "message_ja": advice.get("line_ja")
+            or (
                 "不合格。各問を"
                 + str(min_chars)
                 + "文字以上、単元の用語を入れて書き直そう（進捗は消えません）。合格ライン "
@@ -650,5 +663,11 @@ def submit_boss_exam(
     result["passed"] = True
     result["score"] = round(avg, 2)
     result["details"] = details
-    result["message_ja"] = (exam.get("exam_label_ja") or "確認テスト") + "合格！記録がポートフォリオに残ったよ。"
+    from companion_presence import exam_win_line
+
+    win = exam_win_line(state, exam.get("exam_label_ja") or "")
+    result["coach"] = win
+    result["message_ja"] = win.get("line_ja") or (
+        (exam.get("exam_label_ja") or "確認テスト") + "合格！記録がポートフォリオに残ったよ。"
+    )
     return result
