@@ -486,6 +486,23 @@
     const bImg = arena.querySelector(".js-boss-img") || $("battleBossImg");
     const pName = arena.querySelector(".js-player-name");
     const bName = arena.querySelector(".js-boss-name") || $("battleMonsterName");
+    if (pName) pName.textContent = window.FsqHeroName || "YOU";
+    if (bName) bName.textContent = monsterName || "課題モンスター";
+    const cls = window.FsqHeroClass || "swordsman";
+    const heroWrap = arena.querySelector(".sba-side.player");
+    const bossWrap = arena.querySelector(".sba-side.monster");
+    if (heroWrap) {
+      heroWrap.dataset.pack = cls;
+      heroWrap.dataset.busy = "0";
+      heroWrap.classList.remove("show-pose");
+      ensurePoseLayer(heroWrap);
+    }
+    if (bossWrap) {
+      bossWrap.dataset.pack = kind === "lesson" ? "slime" : "knight";
+      bossWrap.dataset.busy = "0";
+      bossWrap.classList.remove("show-pose");
+      ensurePoseLayer(bossWrap);
+    }
     if (pImg) {
       if (pImg.parentElement && !pImg.parentElement.classList.contains("sba-body")) {
         const wrap = document.createElement("div");
@@ -493,7 +510,8 @@
         pImg.parentElement.insertBefore(wrap, pImg);
         wrap.appendChild(pImg);
       }
-      pImg.src = heroSprite();
+      pImg.classList.add("idle-layer", "fighter-sprite");
+      pImg.src = idleSrc(heroWrap, heroSprite());
       pImg.dataset.baseSrc = pImg.src;
     }
     if (bImg) {
@@ -503,24 +521,12 @@
         bImg.parentElement.insertBefore(wrap, bImg);
         wrap.appendChild(bImg);
       }
-      bImg.src = bossArt(kind || "lesson");
+      bImg.classList.add("idle-layer", "fighter-sprite");
+      bImg.src = idleSrc(bossWrap, bossArt(kind || "lesson"));
       bImg.dataset.baseSrc = bImg.src;
     }
-    if (pName) pName.textContent = window.FsqHeroName || "YOU";
-    if (bName) bName.textContent = monsterName || "課題モンスター";
-    const cls = window.FsqHeroClass || "swordsman";
     arena.dataset.heroClass = cls;
     arena.dataset.bossKind = kind || "lesson";
-    const heroWrap = arena.querySelector(".sba-side.player");
-    const bossWrap = arena.querySelector(".sba-side.monster");
-    if (heroWrap) {
-      heroWrap.dataset.pack = cls;
-      heroWrap.dataset.busy = "0";
-    }
-    if (bossWrap) {
-      bossWrap.dataset.pack = kind === "lesson" ? "slime" : "knight";
-      bossWrap.dataset.busy = "0";
-    }
     arena.classList.remove("hero-swordsman", "hero-mage", "hero-archer", "combo-hot", "mind-cast");
     arena.classList.add("hero-" + cls);
     const tension = arena.querySelector(".sba-tension") || $("battleTension");
@@ -544,31 +550,28 @@
 
   const FIGHT_POSES = {
     swordsman: {
-      idle: "/static/rpg/fight/swordsman_idle.png",
-      atk: "/static/rpg/fight/swordsman_atk.png",
-      hit: "/static/rpg/fight/swordsman_hit.png",
+      idle: "/static/rpg/fight/swordsman_idle.png?v=20260914t",
+      atk: "/static/rpg/fight/swordsman_atk.png?v=20260914t",
+      hit: "/static/rpg/fight/swordsman_hit.png?v=20260914t",
     },
     mage: {
-      idle: "/static/rpg/fight/mage_idle.png",
-      atk: "/static/rpg/fight/mage_atk.png",
+      idle: "/static/rpg/fight/mage_idle.png?v=20260914t",
+      atk: "/static/rpg/fight/mage_atk.png?v=20260914t",
     },
     archer: {
-      idle: "/static/rpg/fight/archer_idle.png",
-      atk: "/static/rpg/fight/archer_atk.png",
+      idle: "/static/rpg/fight/archer_idle.png?v=20260914t",
+      atk: "/static/rpg/fight/archer_atk.png?v=20260914t",
     },
     slime: {
-      idle: "/static/rpg/fight/slime_idle.png",
-      atk: "/static/rpg/fight/slime_atk.png",
-      dodge: "/static/rpg/fight/slime_dodge.png",
-      hit: "/static/rpg/fight/slime_hit.png",
+      idle: "/static/rpg/fight/slime_idle.png?v=20260914t",
+      atk: "/static/rpg/fight/slime_atk.png?v=20260914t",
+      dodge: "/static/rpg/fight/slime_dodge.png?v=20260914t",
+      hit: "/static/rpg/fight/slime_hit.png?v=20260914t",
     },
     knight: {
-      atk: "/static/rpg/fight/knight_atk.png",
+      atk: "/static/rpg/fight/knight_atk.png?v=20260914t",
     },
   };
-
-  let idleTimer = 0;
-  let idleFlip = 0;
 
   function poseUrl(side, pose) {
     const pack = (side && side.dataset.pack) || "";
@@ -576,17 +579,62 @@
     return map && map[pose];
   }
 
+  function idleSrc(side, fallback) {
+    return poseUrl(side, "idle") || fallback || "";
+  }
+
+  function ensurePoseLayer(side) {
+    if (!side) return null;
+    const body = side.querySelector(".sba-body");
+    if (!body) return null;
+    let idle = body.querySelector(".idle-layer") || body.querySelector(".js-player-img, .js-boss-img, .fighter-sprite");
+    if (idle) idle.classList.add("idle-layer", "fighter-sprite");
+    let layer = body.querySelector(".pose-layer");
+    if (!layer) {
+      layer = document.createElement("img");
+      layer.className = "fighter-sprite pose-layer";
+      layer.alt = "";
+      layer.setAttribute("aria-hidden", "true");
+      body.appendChild(layer);
+    }
+    return layer;
+  }
+
+  function sameSrc(img, url) {
+    if (!img || !url) return false;
+    try {
+      const a = new URL(img.src, location.href);
+      const b = new URL(url, location.href);
+      return a.pathname === b.pathname && a.search === b.search;
+    } catch (e) {
+      return img.getAttribute("src") === url;
+    }
+  }
+
   function setPose(side, pose) {
     if (!side) return;
-    const img = side.querySelector(".fighter-sprite");
-    if (!img) return;
-    const base = img.dataset.baseSrc;
-    if (pose === "base") {
-      if (base) img.src = base;
+    const layer = ensurePoseLayer(side);
+    if (!pose || pose === "base" || pose === "idle") {
+      side.classList.remove("show-pose");
       return;
     }
     const url = poseUrl(side, pose);
-    img.src = url || base || img.src;
+    if (!url || !layer) {
+      side.classList.remove("show-pose");
+      return;
+    }
+    const show = () => {
+      side.classList.remove("show-pose");
+      void side.offsetWidth;
+      side.classList.add("show-pose");
+    };
+    if (sameSrc(layer, url) && layer.complete) {
+      show();
+      return;
+    }
+    layer.onload = show;
+    layer.src = url;
+    if (layer.complete) show();
   }
 
   function busy(side, on) {
@@ -596,7 +644,7 @@
   function releaseBusy(side, ms) {
     setTimeout(() => {
       busy(side, false);
-      setPose(side, idleFlip ? "idle" : "base");
+      setPose(side, "idle");
     }, ms || 640);
   }
 
@@ -609,26 +657,9 @@
     });
   }
 
-  function startIdleLoop() {
-    if (idleTimer) clearInterval(idleTimer);
-    idleFlip = 0;
-    idleTimer = setInterval(() => {
-      idleFlip ^= 1;
-      const arena = activeArena();
-      if (!arena || timedOut) return;
-      arena.querySelectorAll(".sba-side").forEach((side) => {
-        if (side.dataset.busy === "1") return;
-        setPose(side, idleFlip ? "idle" : "base");
-      });
-    }, 460);
-  }
+  function startIdleLoop() {}
 
-  function stopIdleLoop() {
-    if (idleTimer) {
-      clearInterval(idleTimer);
-      idleTimer = 0;
-    }
-  }
+  function stopIdleLoop() {}
 
   const SKILL_NAME = {
     swordsman: ["斬撃", "一閃", "剣技"],
@@ -718,7 +749,9 @@
   function spawnGhost(side) {
     if (!side) return;
     const body = side.querySelector(".sba-body");
-    const img = side.querySelector(".fighter-sprite");
+    const img = side.classList.contains("show-pose")
+      ? side.querySelector(".pose-layer") || side.querySelector(".fighter-sprite")
+      : side.querySelector(".idle-layer") || side.querySelector(".fighter-sprite");
     if (!body || !img) return;
     const g = img.cloneNode(true);
     g.className = "fighter-ghost";
