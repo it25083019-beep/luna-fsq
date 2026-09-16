@@ -28,10 +28,24 @@ def test_empty_then_evidence():
     pf = build_career_portfolio(state)
     assert pf["career_title_ja"]
     assert pf["evidence"][0]["id"] == "se_l1"
+    assert "input" in (pf["evidence"][0]["snippet"] or "")
     assert any("学習" in b or "スキル" in b or "input" in b or "土台" in b for b in pf["self_pr"])
     print("OK portfolio")
 
 
+def test_code_evidence_becomes_blurb():
+    from career_portfolio import evidence_blurb
+
+    raw = "n = int(input()) text = '\\n'.join(input() for _ in range(n)) # TODO import sys def count_href()"
+    out = evidence_blurb("小さな静的ページを完成させる", raw)
+    assert "def " not in out
+    assert "小さな静的ページ" in out
+    prose = evidence_blurb("自己紹介", "家族の店を楽にするためにアプリを作りました。")
+    assert "アプリ" in prose
+    print("OK evidence blurb")
+
+
 if __name__ == "__main__":
     test_empty_then_evidence()
+    test_code_evidence_becomes_blurb()
     print("ALL career_portfolio tests passed")

@@ -985,8 +985,13 @@ def portfolio_export_me(current: User = Depends(get_current_user)):
 
 @app.get("/portfolio/export.html")
 def portfolio_export_html(current: User = Depends(get_current_user)):
+    from luna_service import is_admin as luna_is_admin
     from portfolio_export_service import render_export_html
 
+    if current.is_admin or luna_is_admin(current.public_id):
+        owner_index = _STATIC_DIR / "owner-portfolio" / "index.html"
+        if owner_index.is_file():
+            return RedirectResponse(url="/static/owner-portfolio/index.html")
     return Response(
         content=render_export_html(load_user_brain(current.public_id)),
         media_type="text/html; charset=utf-8",

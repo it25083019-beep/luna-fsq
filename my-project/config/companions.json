@@ -89,9 +89,9 @@
       "persona_ja": "ズートピアの犬。人の言葉ではっきり、鼻が効いて弾む。長くしゃべらない。",
       "voice": {
         "gemini_name": "Fenrir",
-        "style_ja": "ズートピアのいぬキャラ。人の言葉ではっきり話すが、鼻が効いて弾む元気な中高音。語尾に軽い「わん」を一度だけ。ヘリウム声や人間の先生ナレーションには絶対にしない",
-        "browser_rate": 1.08,
-        "browser_pitch": 1.18,
+        "style_ja": "ズートピアのジュディみたいなかわいい犬。人語ではっきり、鼻が効いて弾む。語尾に「わんっ」を一度。先生ナレーションにはしない。明るく可愛く",
+        "browser_rate": 1.16,
+        "browser_pitch": 1.42,
         "browser_prefer": ["Nanami", "Kyoko"],
         "sample_ja": "おかえり！ハチだよ、わんっ。いっしょにいこう。"
       },
@@ -113,9 +113,9 @@
       "persona_ja": "ズートピアの猫。人語でゆっくり、鼻にかかって甘える。急がない。",
       "voice": {
         "gemini_name": "Enceladus",
-        "style_ja": "ズートピアのねこキャラ。人語でゆっくり、鼻にかかった甘えと喉の低い振動。語尾に軽い「にゃあ」を一度。高い女の子声や人間の先生の声には絶対にしない",
-        "browser_rate": 0.9,
-        "browser_pitch": 1.12,
+        "style_ja": "ズートピアの猫。かわいく鼻にかかって甘える人語。語尾に「にゃあ」。先生の声にはしない",
+        "browser_rate": 0.88,
+        "browser_pitch": 1.38,
         "browser_prefer": ["Kyoko", "Nanami"],
         "sample_ja": "おかえり…モモだよ。急がなくていい、にゃあ。"
       },
@@ -137,9 +137,9 @@
       "persona_ja": "ズートピアの大型動物。丸く低い人の声。ゆっくり、長くしゃべらない。",
       "voice": {
         "gemini_name": "Umbriel",
-        "style_ja": "ズートピアの大型動物。丸く低い人の声。ゆっくり間を置く。稀に「もぐ」と息を混ぜる。高い声や女教師には絶対にしない。大きくて優しいパンダ",
-        "browser_rate": 0.74,
-        "browser_pitch": 0.48,
+        "style_ja": "ズートピアの大型で丸いパンダ。低くて柔らかいが怖くない。ゆっくり可愛く。語尾に軽い「もぐ」。女教師の声にはしない",
+        "browser_rate": 0.8,
+        "browser_pitch": 0.72,
         "browser_prefer": ["Ichiro", "Haruka", "Nanami"],
         "sample_ja": "おかえり…タロだよ。いっしょに、やすもう。"
       },
@@ -161,9 +161,9 @@
       "persona_ja": "ズートピアのいたずら好き。人語で軽く、短く明るい。",
       "voice": {
         "gemini_name": "Puck",
-        "style_ja": "ズートピアのニックのような小動物。人語で軽くいたずらっぽい中高音。語尾に軽い「ぽん」を一度。真面目な教師ナレーションやヘリウム声にはしない",
-        "browser_rate": 1.1,
-        "browser_pitch": 1.18,
+        "style_ja": "ズートピアのニックみたいないたずらタヌキ。人語で軽く可愛く。語尾に「ぽんっ」。先生ナレーションにはしない",
+        "browser_rate": 1.18,
+        "browser_pitch": 1.4,
         "browser_prefer": ["Kyoko", "Nanami"],
         "sample_ja": "おかえり！ポンタだよ。遊ぼう、ぽんっ。"
       },

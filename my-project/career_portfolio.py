@@ -25,7 +25,7 @@ def record_study_evidence(
         "kind": kind,
         "id": item_id,
         "title_ja": title_ja,
-        "snippet": text[:280],
+        "snippet": text[:1200],
         "score": round(float(score), 2),
         "at": _utcnow(),
     }
@@ -61,6 +61,46 @@ def _self_pr_bullets(j: Dict[str, Any], career_title: str, evidence: List[Dict[s
     if not bullets:
         bullets.append("レッスンを提出すると、就活用の自己PRの種がここに増えていきます。")
     return bullets[:5]
+
+
+def _looks_like_code(text: str) -> bool:
+    t = text or ""
+    keys = (
+        "def ",
+        "import ",
+        "for _ in",
+        "sys.stdin",
+        "try:",
+        "except",
+        "n = int",
+        "function ",
+        "console.",
+        "class ",
+        "return ",
+        "=>",
+        "#include",
+        "public static",
+        "input()",
+    )
+    hits = sum(1 for k in keys if k in t)
+    if hits >= 2:
+        return True
+    if t.count("=") >= 3 and ("(" in t or "{" in t):
+        return True
+    return False
+
+
+def evidence_blurb(title: str, snippet: str) -> str:
+    """Human-readable card text — never dump raw source into the CV."""
+    text = " ".join((snippet or "").replace("\n", " ").split())
+    label = (title or "課題").strip() or "課題"
+    if not text:
+        return f"「{label}」に取り組んだ記録。"
+    if _looks_like_code(text):
+        return f"「{label}」の課題を、自分の解答で提出した。"
+    if len(text) > 88:
+        return text[:88] + "…"
+    return text
 
 
 def build_career_portfolio(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -113,6 +153,12 @@ def build_career_portfolio(state: Dict[str, Any]) -> Dict[str, Any]:
             + (" 認定試験相当を突破済み。応募書類に使える段階です。" if final_cleared else "")
         )
 
+    cards = []
+    for row in evidence_sorted[:16]:
+        item = dict(row)
+        item["snippet"] = evidence_blurb(str(item.get("title_ja") or item.get("id") or ""), str(item.get("snippet") or ""))
+        cards.append(item)
+
     return {
         "ok": True,
         "generated_at": _utcnow(),
@@ -123,7 +169,7 @@ def build_career_portfolio(state: Dict[str, Any]) -> Dict[str, Any]:
         "completed_count": len(completed),
         "boss_clears": len(cleared),
         "skills": j.get("skills") or [],
-        "evidence": evidence_sorted[:16],
+        "evidence": cards,
         "exams": exams[:12],
         "self_pr": _self_pr_bullets(j, career_title, evidence_sorted),
         "job_ready": job_ready,

@@ -25,9 +25,9 @@ def test_catalog_has_luna_and_animals():
     assert (get_companion("luna").get("voice") or {}).get("sample_audio", "").endswith("luna.m4a")
     assert (get_companion("luno").get("voice") or {}).get("sample_audio", "").endswith("luno.m4a")
     assert (get_companion("ren").get("voice") or {}).get("browser_pitch", 1) < 0.7
-    assert (get_companion("hachi").get("voice") or {}).get("browser_pitch", 1) >= 1.05
-    assert (get_companion("momo").get("voice") or {}).get("browser_pitch", 1) >= 1.05
-    assert (get_companion("taro").get("voice") or {}).get("browser_pitch", 1) <= 0.55
+    assert (get_companion("hachi").get("voice") or {}).get("browser_pitch", 1) >= 1.3
+    assert (get_companion("momo").get("voice") or {}).get("browser_pitch", 1) >= 1.25
+    assert (get_companion("taro").get("voice") or {}).get("browser_pitch", 1) <= 0.85
     assert get_companion("hachi").get("talk", {}).get("hello")
     assert normalize_companion_id("nope") == "luna"
     assert normalize_companion_id("REN") == "ren"
@@ -36,6 +36,8 @@ def test_catalog_has_luna_and_animals():
     audio = Path(__file__).resolve().parent / "static" / "audio"
     assert (audio / "luna.m4a").is_file()
     assert (audio / "luno.m4a").is_file()
+    owner = Path(__file__).resolve().parent / "static" / "owner-portfolio" / "index.html"
+    assert owner.is_file()
     print("OK companions catalog", len(rows))
 
 

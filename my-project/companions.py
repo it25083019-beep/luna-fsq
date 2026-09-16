@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 
 _EXPRS = ("neutral", "happy", "sad", "surprised", "talk", "blink", "wave", "cheer", "think")
 _CACHE: Optional[Dict[str, Any]] = None
+_CACHE_MTIME: float = 0.0
 
 
 def _path() -> Path:
@@ -15,10 +16,16 @@ def _path() -> Path:
 
 
 def load_companions() -> Dict[str, Any]:
-    global _CACHE
-    if _CACHE is None:
-        with open(_path(), "r", encoding="utf-8") as f:
+    global _CACHE, _CACHE_MTIME
+    path = _path()
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        mtime = 0.0
+    if _CACHE is None or mtime != _CACHE_MTIME:
+        with open(path, "r", encoding="utf-8") as f:
             _CACHE = json.load(f)
+        _CACHE_MTIME = mtime
     return _CACHE
 
 

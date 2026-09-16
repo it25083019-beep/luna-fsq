@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LUNA / Future Skill Quest | TRAN XUAN HOANG Portfolio</title>
+  <meta name="description" content="AIコンパニオン LUNA と RPG形式の学習支援アプリ Future Skill Quest の詳細ページ" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="logo" href="../index.html"><span class="logo-mark">H</span><span>HOANG</span></a>
+      <nav class="nav-links">
+        <a href="../index.html#about">About</a>
+        <a href="../index.html#skills">Skills</a>
+        <a href="../index.html#projects">Projects</a>
+        <a href="../index.html#learning">Learning</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <a class="nav-cta" href="../index.html#projects">制作物一覧へ</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero">
+      <div class="container reveal">
+        <span class="eyebrow">🌙 Project Detail</span>
+        <h1>LUNA / Future Skill Quest</h1>
+        <p>学習や生活の計画が続きにくい課題に対して、AIコンパニオン「LUNA」とRPG形式の成長体験で、目標を一緒に整理できるWebアプリを開発しました。</p>
+      </div>
+    </section>
+
+    <section class="section compact">
+      <div class="container detail-layout">
+        <aside class="side-card glass card card-outline reveal">
+          <h2>Project Summary</h2>
+          <p>Python / FastAPI でバックエンドを実装し、チャット、生活記録、キャリア探索を一つのアプリにまとめました。Render上で公開しています。</p>
+          <div class="tag-list">
+            <span class="tag">Python</span>
+            <span class="tag">FastAPI</span>
+            <span class="tag">PostgreSQL</span>
+            <span class="tag">Gemini</span>
+            <span class="tag">JavaScript</span>
+            <span class="tag">Render</span>
+          </div>
+          <a class="project-link" href="https://github.com/it25083019-beep/luna-fsq" target="_blank" rel="noopener">GitHub を見る →</a>
+          <a class="project-link" href="https://luna-fsq.onrender.com" target="_blank" rel="noopener">Demo を見る →</a>
+        </aside>
+
+        <div>
+          <article class="detail-card glass card card-outline reveal">
+            <h2>画面イメージ</h2>
+            <div class="shot-gallery shot-gallery-3">
+              <figure>
+                <img src="../assets/img/projects/luna-home.png" alt="LUNAのホーム画面" />
+                <figcaption>ホーム：今日のステータスとクイック操作</figcaption>
+              </figure>
+              <figure>
+                <img src="../assets/img/projects/luna-portal.png" alt="LUNAのログイン後ポータル画面" />
+                <figcaption>ログイン後：アプリと管理画面の入口</figcaption>
+              </figure>
+              <figure>
+                <img src="../assets/img/projects/luna-health.png" alt="LUNAのヘルスケア画面" />
+                <figcaption>ヘルスケア：スコアと今日の評価</figcaption>
+              </figure>
+            </div>
+          </article>
+
+          <article class="detail-card glass card card-outline reveal">
+            <h2>目的</h2>
+            <p>勉強や生活の中で「今日何をすればよいか分からない」「計画が続かない」という課題を、会話できるAIコンパニオンと、RPG形式の成長体験で支えるアプリを作りたいと考えました。学校で学んだWeb開発に加え、API設計、データベース、クラウド公開まで一気通貫で実装することを意識しています。</p>
+          </article>
+
+          <article class="detail-card glass card card-outline reveal">
+            <h2>主な機能・学習内容</h2>
+            <ul>
+              <li>ログイン・会員登録、管理画面</li>
+              <li>LUNAとのチャット（Gemini API連携）</li>
+              <li>健康・お金・スケジュールなどの生活モジュール</li>
+              <li>Future Skill Quest：職業クラスタ提案、クエスト、EXP / レベル</li>
+              <li>PostgreSQLへのデータ保存と Render へのデプロイ</li>
+              <li>同じAPIを使う Flutter アプリの着手</li>
+            </ul>
+          </article>
+
+          <article class="detail-card glass card card-outline reveal">
+            <h2>工夫した点</h2>
+            <ul>
+              <li>会話だけで終わらせず、チャット内容から生活メモや予定を残せるようにしました。</li>
+              <li>興味や性格の自由記述を、あらかじめ整理したキャリアクラスタへ対応づけ、RPGのクラスやクエストにつなげました。</li>
+              <li>エラーやAPI制限が起きても原因を切り分けられるよう、ログ確認と再試行を意識して実装しました。</li>
+              <li>ローカル開発とクラウド公開の違い（環境変数、データベース接続）を整理しながらデプロイしました。</li>
+            </ul>
+          </article>
+
+          <article class="detail-card glass card card-outline reveal">
+            <h2>学んだこと</h2>
+            <p>画面を作るだけでなく、認証、API、データベース、外部AIサービスの連携、公開環境まで含めて考える必要があると学びました。特に、利用者が続きやすい体験にするために、機能を増やす前に「会話 → 記録 → 次の行動」の流れを整えることの大切さを実感しました。</p>
+          </article>
+
+          <article class="detail-card glass card card-outline reveal">
+            <h2>今後の改善</h2>
+            <p>Flutterアプリの完成、通知機能、パスワード再設定メール、キャラクター表現（Live2D / 3D）の追加など、実際に毎日使ってもらえる体験へ近づけたいと考えています。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>© <span data-year></span> TRAN XUAN HOANG | IT Student Portfolio</span>
+      <a href="../index.html">Back to Home</a>
+    </div>
+  </footer>
+
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>
