@@ -17,10 +17,6 @@
     purple: "linear-gradient(135deg,#7a5cff,#b47aff)",
     orange: "linear-gradient(135deg,#ff7a38,#ffbf42)",
   };
-    const VOICE_SAMPLES = {
-    luna: "/static/audio/luna.m4a?v=2",
-    luno: "/static/audio/luno.m4a?v=2",
-  };
   const QUICK = {
     health: ["睡眠7時間目標", "水を意識する", "少し疲れた", "調子いい"],
     money: ["時給を記録", "欲しいものメモ", "今月の支出", "貯金目標"],
@@ -373,9 +369,7 @@
     applyCompanionVisual(row);
     if (luna && luna.applyEmotion) luna.applyEmotion("wave", 1800);
     const line = paintCompanionHello(row);
-    const rec = companionSampleUrl(row.id);
-    if (rec && voiceOn) playVoiceFile(rec).catch(() => speakJa(line).catch(() => {}));
-    else speakJa(line).catch(() => {});
+    speakJa(line).catch(() => {});
     try {
       await api("/companion/sprite", { method: "POST", body: JSON.stringify({ companion_id: row.id }) });
     } catch (_) {}
@@ -2440,9 +2434,10 @@
 
   let moodRuntime = null;
 
-  function companionSampleUrl(id) {
+  function usesClonedVoice(id) {
     const row = companionById(id) || {};
-    return (row.voice && (row.voice.sample_audio || row.voice.reference_audio)) || VOICE_SAMPLES[id] || "";
+    const v = row.voice || {};
+    return !!(v.clone_wav || v.reference_audio);
   }
 
   function currentVoiceProfile() {
@@ -2505,32 +2500,6 @@
     window.speechSynthesis.speak(u);
   }
 
-  async function playVoiceFile(src) {
-    stopLunaSpeech();
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-    lunaAudio = new Audio(src);
-    lunaAudio.onplay = () => {
-      if (luna) luna.startLipSync();
-    };
-    lunaAudio.onended = () => {
-      if (luna) luna.stopLipSync();
-    };
-    lunaAudio.onerror = () => {
-      if (luna) luna.stopLipSync();
-    };
-    await lunaAudio.play();
-  }
-
-  function isRecordedGreeting(line, row) {
-    const hello = ((row && row.talk && row.talk.hello) || "").trim();
-    const sample = ((row && row.voice && row.voice.sample_ja) || "").trim();
-    const t = (line || "").trim();
-    if (!t) return false;
-    if (hello && (t === hello || t.indexOf(hello) >= 0 || hello.indexOf(t) >= 0)) return true;
-    if (sample && (t === sample || t.indexOf(sample.slice(0, 10)) >= 0)) return true;
-    return false;
-  }
-
   async function speakJa(text) {
     const line = (text || "").trim();
     if (!voiceOn || !line) return;
@@ -2538,24 +2507,16 @@
     unlockAudio();
     stopLunaSpeech();
     const cid = selectedCompanionId || "luna";
-    const row = companionById(cid) || {};
-    const sampleUrl = companionSampleUrl(cid);
-    if (sampleUrl && isRecordedGreeting(line, row)) {
-      try {
-        await playVoiceFile(sampleUrl);
-        return;
-      } catch (_) {}
-    }
-    const hasRec = !!sampleUrl;
+    const cloned = usesClonedVoice(cid);
     const wantGemini =
-      ttsFailStreak < 3 &&
-      (hasRec || localStorage.getItem("luna_gemini_voice") === "1");
+      ttsFailStreak < 3 && (cloned || localStorage.getItem("luna_gemini_voice") === "1");
     if (!wantGemini) {
       await speakJaBrowserFallback(line);
       return;
     }
     const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timer = ctrl ? setTimeout(() => ctrl.abort(), 18000) : null;
+    const waitMs = cloned ? 28000 : 18000;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), waitMs) : null;
     try {
       const headers = { "Content-Type": "application/json" };
       if (token) headers.Authorization = "Bearer " + token;
@@ -5206,14 +5167,6 @@
         voiceOn = true;
         syncVoiceBtn();
         const row = companionById(selectedCompanionId) || {};
-        const sampleFile = companionSampleUrl(selectedCompanionId);
-        if (sampleFile) {
-          playVoiceFile(sampleFile).catch(() => {
-            const sample = (row.voice && row.voice.sample_ja) || "こんにちは。";
-            speakJa(sample).catch(() => {});
-          });
-          return;
-        }
         const sample = (row.voice && row.voice.sample_ja) || "こんにちは。";
         speakJa(sample).catch(() => {});
       };

@@ -1,5 +1,5 @@
 {
-  "reference_audio": "/static/audio/luna.m4a",
+  "reference_audio": "/static/audio/luna-ref.wav",
   "model": "gemini-2.5-flash-preview-tts",
   "voice_name": "Gacrux",
   "style_ja": "30歳前後の女性教師。落ち着いて丁寧で温かく、少し指導的",

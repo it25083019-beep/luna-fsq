@@ -36,6 +36,11 @@ def test_voice_profiles_differ():
     hachi = resolve_voice_profile("hachi")
     assert luna["gemini_name"] != luno["gemini_name"]
     assert luna["gemini_name"] != ren["gemini_name"]
+    assert luna["clone"] is True
+    assert luno["clone"] is True
+    assert not ren["clone"]
+    assert str(luna["reference_audio"]).endswith("luna-ref.wav")
+    assert str(luno["reference_audio"]).endswith("luno-ref.wav")
     assert "教師" in luna["style_ja"]
     assert "可愛" in luno["style_ja"] or "女の子" in luno["style_ja"]
     assert "男性" in ren["style_ja"]

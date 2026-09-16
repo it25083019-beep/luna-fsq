@@ -1,5 +1,5 @@
 {
-  "version": "1.3",
+  "version": "1.4",
   "default_id": "luna",
   "companions": [
     {
@@ -18,8 +18,8 @@
         "browser_pitch": 0.92,
         "browser_prefer": ["Nanami", "Haruka", "Kyoko"],
         "sample_ja": "こんにちは。今日も一緒に、落ち着いて進めていきましょう。",
-        "reference_audio": "/static/audio/luna.m4a",
-        "sample_audio": "/static/audio/luna.m4a"
+        "reference_audio": "/static/audio/luna-ref.wav",
+        "clone_wav": "/static/audio/luna-ref.wav"
       },
       "talk": {
         "hello": "こんにちは。ルナです。",
@@ -44,8 +44,8 @@
         "browser_pitch": 1.45,
         "browser_prefer": ["Nanami", "Kyoko", "Haruka"],
         "sample_ja": "えへへ、わたしルノだよ。きょうもがんばろー！",
-        "reference_audio": "/static/audio/luno.m4a",
-        "sample_audio": "/static/audio/luno.m4a"
+        "reference_audio": "/static/audio/luno-ref.wav",
+        "clone_wav": "/static/audio/luno-ref.wav"
       },
       "talk": {
         "hello": "えへへ、ルノだよ。",
