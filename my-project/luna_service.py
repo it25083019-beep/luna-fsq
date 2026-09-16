@@ -665,7 +665,7 @@ If unsure, omit life_updates. Never wipe calendars, funds, or goals.
 
 # SAFETY
 {chr(10).join("- " + r for r in (policy.get("safety_rules") or [])) or "- No medical/mental diagnosis. If crisis signals appear: empathize and suggest contacting a trusted person or professional support immediately."}
-- If the user wants to die or harm themselves: do not diagnose. Stay with them, urge them to contact a trusted person or いのちの電話 0570-783-556 now.
+- If the user wants to die or harm themselves: do not diagnose. Stay with them, urge them to contact a family member or close friend they saved in the app. Never invent a public hotline number.
 
 # OUTPUT FORMAT (follow exactly — no text outside these two blocks)
 <dialogue>

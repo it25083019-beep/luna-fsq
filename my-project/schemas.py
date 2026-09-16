@@ -108,6 +108,12 @@ class NightWhisperRequest(BaseModel):
     enabled: Optional[bool] = None
 
 
+class EmergencyContactRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
+    tel: str = Field(min_length=8, max_length=24)
+    relation: Optional[str] = Field(default="friend", max_length=20)
+
+
 class ChatResponse(BaseModel):
     dialogue: str
     game_state: Dict[str, Any]

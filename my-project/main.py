@@ -106,6 +106,7 @@ from schemas import (
     RescueQuestCompleteRequest,
     LunaModeRequest,
     NightWhisperRequest,
+    EmergencyContactRequest,
 )
 from study_workspace import (
     build_boss_exam,
@@ -960,6 +961,49 @@ def crisis_switch_done(current: User = Depends(get_current_user)):
     result = complete_crisis_switch(brain)
     save_user_brain(current.public_id, brain)
     return result
+
+
+@app.get("/care/contacts")
+def care_contacts_list(current: User = Depends(get_current_user)):
+    from emergency_contacts import crisis_contact_payload
+
+    return crisis_contact_payload(load_user_brain(current.public_id))
+
+
+@app.post("/care/contacts")
+def care_contacts_add(req: EmergencyContactRequest, current: User = Depends(get_current_user)):
+    from emergency_contacts import add_emergency_contact, public_contact, ranked_emergency_contacts
+
+    brain = load_user_brain(current.public_id)
+    try:
+        row = add_emergency_contact(brain, name=req.name, tel=req.tel, relation=req.relation or "friend")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "contact": public_contact(row), "contacts": [public_contact(r) for r in ranked_emergency_contacts(brain)]}
+
+
+@app.delete("/care/contacts/{contact_id}")
+def care_contacts_delete(contact_id: str, current: User = Depends(get_current_user)):
+    from emergency_contacts import delete_emergency_contact, ranked_emergency_contacts, public_contact
+
+    brain = load_user_brain(current.public_id)
+    if not delete_emergency_contact(brain, contact_id):
+        raise HTTPException(status_code=404, detail="not found")
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "contacts": [public_contact(r) for r in ranked_emergency_contacts(brain)]}
+
+
+@app.post("/care/contacts/{contact_id}/called")
+def care_contacts_called(contact_id: str, current: User = Depends(get_current_user)):
+    from emergency_contacts import mark_emergency_called, public_contact, ranked_emergency_contacts
+
+    brain = load_user_brain(current.public_id)
+    row = mark_emergency_called(brain, contact_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="not found")
+    save_user_brain(current.public_id, brain)
+    return {"ok": True, "contact": public_contact(row), "contacts": [public_contact(r) for r in ranked_emergency_contacts(brain)]}
 
 
 @app.get("/companion/presence")

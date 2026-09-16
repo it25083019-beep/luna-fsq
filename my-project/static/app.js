@@ -4296,6 +4296,128 @@
     });
   }
 
+  function paintCrisisPeople(proto) {
+    const box = document.getElementById("crisisPeople");
+    if (!box) return;
+    const people = (proto && proto.contacts) || [];
+    if (!people.length) {
+      box.innerHTML = "<p class=\"cr-empty\">" + ((proto && proto.hint_ja) || "設定で家族や親友の番号を入れてね。") + "</p>";
+      return;
+    }
+    box.innerHTML = people
+      .slice(0, 3)
+      .map((p) => {
+        const label = (p.relation_ja || "") + "の" + (p.name || "大切な人") + "に電話";
+        const href = String(p.call_href || ("tel:" + (p.tel || ""))).replace(/"/g, "");
+        const id = String(p.id || "").replace(/"/g, "");
+        return "<a href=\"" + href + "\" data-contact-id=\"" + id + "\">" + label.replace(/</g, "") + "</a>";
+      })
+      .join("");
+    box.querySelectorAll("a[data-contact-id]").forEach((a) => {
+      a.addEventListener("click", () => {
+        const id = a.getAttribute("data-contact-id");
+        if (id) api("/care/contacts/" + encodeURIComponent(id) + "/called", { method: "POST", body: "{}" }).catch(() => {});
+      });
+    });
+  }
+
+  async function renderEmergencyList() {
+    const el = document.getElementById("emergencyList");
+    if (!el) return;
+    try {
+      const res = await api("/care/contacts");
+      const people = (res && res.contacts) || [];
+      if (!people.length) {
+        el.innerHTML = "<p class=\"hint\">まだ誰もいないよ。家族か親友を1人入れてね。</p>";
+        return;
+      }
+      el.innerHTML = people
+        .map((p) => {
+          const id = String(p.id || "").replace(/"/g, "");
+          const name = String(p.name || "").replace(/</g, "");
+          const rel = String(p.relation_ja || "").replace(/</g, "");
+          const href = String(p.call_href || "").replace(/"/g, "");
+          return (
+            "<div class=\"emergency-row\" data-id=\"" +
+            id +
+            "\"><span>" +
+            rel +
+            " · " +
+            name +
+            "</span><span><a href=\"" +
+            href +
+            "\">電話</a> <button type=\"button\" data-del=\"" +
+            id +
+            "\">削除</button></span></div>"
+          );
+        })
+        .join("");
+      el.querySelectorAll("button[data-del]").forEach((b) => {
+        b.onclick = async () => {
+          try {
+            await api("/care/contacts/" + encodeURIComponent(b.getAttribute("data-del")), { method: "DELETE" });
+            renderEmergencyList();
+          } catch (e) {
+            setErr(e.message);
+          }
+        };
+      });
+    } catch (_) {}
+  }
+
+  async function addEmergencyFromForm() {
+    const name = ((document.getElementById("emergencyName") || {}).value || "").trim();
+    const tel = ((document.getElementById("emergencyTel") || {}).value || "").trim();
+    const rel = ((document.getElementById("emergencyRel") || {}).value || "friend").trim();
+    const msg = document.getElementById("emergencyMsg");
+    if (!name || !tel) {
+      if (msg) msg.textContent = "名前と番号を入れてね。";
+      return;
+    }
+    try {
+      await api("/care/contacts", { method: "POST", body: JSON.stringify({ name: name, tel: tel, relation: rel }) });
+      const n = document.getElementById("emergencyName");
+      const t = document.getElementById("emergencyTel");
+      if (n) n.value = "";
+      if (t) t.value = "";
+      if (msg) msg.textContent = "登録したよ。つらいときにここからかけられる。";
+      renderEmergencyList();
+    } catch (e) {
+      if (msg) msg.textContent = "番号を確認してね。";
+    }
+  }
+
+  async function pickEmergencyFromPhonebook() {
+    const msg = document.getElementById("emergencyMsg");
+    const picker = navigator.contacts && navigator.contacts.select;
+    if (!picker) {
+      if (msg) msg.textContent = "このブラウザは電話帳を開けないよ。下に名前と番号を入れてね。";
+      const nameEl = document.getElementById("emergencyName");
+      if (nameEl) nameEl.focus();
+      return;
+    }
+    try {
+      const picked = await navigator.contacts.select(["name", "tel"], { multiple: true });
+      let saved = 0;
+      for (const c of picked || []) {
+        const name = ((c.name && c.name[0]) || "大切な人").toString();
+        const tel = ((c.tel && c.tel[0]) || "").toString();
+        if (!tel) continue;
+        try {
+          await api("/care/contacts", {
+            method: "POST",
+            body: JSON.stringify({ name: name, tel: tel, relation: "friend" }),
+          });
+          saved += 1;
+        } catch (_) {}
+      }
+      if (msg) msg.textContent = saved ? saved + "人を登録したよ。家族なら関係を選び直してね。" : "選べなかったよ。";
+      renderEmergencyList();
+    } catch (_) {
+      if (msg) msg.textContent = "キャンセルしたよ。";
+    }
+  }
+
   async function startCrisisSwitch() {
     try {
       const proto = await api("/crisis/switch");
@@ -4312,8 +4434,7 @@
       const sprites = proto.sprites || {};
       if (sprite) sprite.src = sprites.sad || sprite.src;
       if (title) title.textContent = proto.title_ja || "60秒レスキュー";
-      const hotline = document.getElementById("crisisHotline");
-      if (hotline) hotline.textContent = proto.hotline_ja || hotline.textContent;
+      paintCrisisPeople(proto);
       try {
         if (luna) luna.applyEmotion("sad", 2000);
       } catch (_) {}
@@ -4880,6 +5001,10 @@
     if (crisisBtn) crisisBtn.onclick = () => startCrisisSwitch();
     const crisisSkip = document.getElementById("crisisSkipBtn");
     if (crisisSkip) crisisSkip.onclick = () => closeCrisisSwitch();
+    const emergencyAdd = document.getElementById("emergencyAddBtn");
+    if (emergencyAdd) emergencyAdd.onclick = () => addEmergencyFromForm();
+    const emergencyPick = document.getElementById("emergencyPickBtn");
+    if (emergencyPick) emergencyPick.onclick = () => pickEmergencyFromPhonebook();
     const modeRow = document.getElementById("lunaModeRow");
     if (modeRow) {
       modeRow.querySelectorAll("button[data-mode]").forEach((b) => {
@@ -4964,6 +5089,7 @@
       renderCompanionPickers();
       setLunaView("settings");
       loadMailStatus();
+      renderEmergencyList();
     };
     document.getElementById("settingsBack").onclick = () => setLunaView("main");
     const menuThemeBtn = document.getElementById("menuThemeBtn");

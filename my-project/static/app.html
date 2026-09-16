@@ -129,7 +129,10 @@
     .crisis-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;margin:.45rem 0 .7rem}
     .crisis-bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#9b7ed9,#e07a8a);transition:width .2s linear}
     .crisis-card button{border:none;border-radius:999px;padding:.55rem .9rem;font-weight:800;cursor:pointer;background:#fff;color:#3a2a58}
-    .crisis-card .cr-hotline{margin:.2rem 0 .7rem;font-size:.68rem;color:#d7c4ef}
+    .crisis-card .cr-hotline{margin:.2rem 0 .55rem;font-size:.68rem;color:#d7c4ef}
+    .crisis-people{display:flex;flex-direction:column;gap:.35rem;margin:.15rem 0 .65rem}
+    .crisis-people a{display:block;text-align:center;text-decoration:none;border-radius:999px;padding:.5rem .8rem;font-weight:800;font-size:.78rem;background:#fff;color:#3a2a58}
+    .crisis-people .cr-empty{margin:0;font-size:.72rem;color:#d7c4ef}
     .luna-header{display:flex;align-items:flex-start;justify-content:space-between;padding:1rem 1.1rem .35rem}
     .brand{font-family:"Zen Maru Gothic",sans-serif;font-size:1.55rem;font-weight:700;color:var(--lilac-deep);letter-spacing:.04em}
     .brand span{display:block;font-size:.78rem;font-weight:400;color:var(--muted);margin-top:.15rem}
@@ -1099,7 +1102,9 @@
     .notify-row button,#voicePreviewBtn{border:none;border-radius:999px;padding:.4rem .9rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
     .mail-box{margin-top:.55rem;padding:.7rem .75rem;background:#fff;border-radius:14px}
     .mail-box label{display:block;font-size:.72rem;color:var(--muted);margin:.35rem 0 .15rem}
-    .mail-box input{width:100%;padding:.55rem .65rem;border:none;background:var(--input-bg);border-radius:12px;margin-bottom:.2rem}
+    .mail-box select{width:100%;padding:.55rem .65rem;border:none;background:var(--input-bg);border-radius:12px;margin-bottom:.2rem;font:inherit;color:var(--text)}
+    .emergency-row{display:flex;align-items:center;justify-content:space-between;gap:.4rem;padding:.4rem 0;border-bottom:1px solid var(--line, #eee);font-size:.82rem}
+    .emergency-row button,.emergency-row a{flex:0 0 auto}
     .mail-box .row{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
     .mail-box button{border:none;border-radius:999px;padding:.4rem .75rem;font-weight:800;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep)}
     .mail-box button.primary{background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff}
@@ -1624,6 +1629,28 @@
           <p class="hint">設定で見た目と声を切り替えます。ルナ／ルノは収録した声、レンは低く温かい男性。動物はズートピアのように人の言葉で、生き物らしい響きです。</p>
           <div class="companion-grid" id="settingsCompanionGrid"></div>
           <button type="button" id="voicePreviewBtn">このコンパニオンの声を聞く</button>
+          <h3 style="margin-top:1rem">緊急の連絡先</h3>
+          <p class="hint">つらいときに呼ぶ家族・親友。電話帳から選ぶか、番号を自分で入れる。発信履歴は読めないので、ここでかけた回数と「家族／親友」で優先するよ。</p>
+          <div class="mail-box" id="emergencyBox">
+            <div id="emergencyList"></div>
+            <div class="row">
+              <button type="button" class="primary" id="emergencyPickBtn">電話帳から選ぶ</button>
+            </div>
+            <label for="emergencyName">名前</label>
+            <input id="emergencyName" type="text" maxlength="40" placeholder="例：お母さん" autocomplete="name" />
+            <label for="emergencyTel">電話番号</label>
+            <input id="emergencyTel" type="tel" maxlength="20" placeholder="09012345678" autocomplete="tel" />
+            <label for="emergencyRel">関係</label>
+            <select id="emergencyRel" aria-label="関係">
+              <option value="family">家族</option>
+              <option value="friend" selected>親友</option>
+              <option value="other">大切な人</option>
+            </select>
+            <div class="row">
+              <button type="button" class="primary" id="emergencyAddBtn">登録する</button>
+            </div>
+            <p class="hint" id="emergencyMsg"></p>
+          </div>
           <h3 style="margin-top:1rem">デュアルモード</h3>
           <p class="hint">ジェントルは抱きしめる。コマンドはきびしく導く。オートは今日の気分で選ぶ。</p>
           <div class="mode-row" id="lunaModeRow">
@@ -2382,7 +2409,7 @@
           <h3 id="crisisTitle">60秒レスキュー</h3>
           <p id="crisisLead">いまは助ける番。呼吸から。</p>
           <div class="crisis-bar"><span id="crisisBar"></span></div>
-          <p class="cr-hotline" id="crisisHotline">つらいときは いのちの電話 0570-783-556</p>
+          <div class="crisis-people" id="crisisPeople"></div>
           <button type="button" id="crisisSkipBtn">閉じる</button>
         </div>
       </div>
@@ -2415,6 +2442,6 @@
   <script src="/static/world.js?v=20260916b"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20260916e"></script>
+  <script src="/static/app.js?v=20260916f"></script>
 </body>
 </html>

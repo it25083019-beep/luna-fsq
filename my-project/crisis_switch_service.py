@@ -9,6 +9,7 @@ from uuid import uuid4
 from care_timeline import append_care_event
 from companion_presence import crisis_script
 from companions import get_companion
+from emergency_contacts import crisis_contact_payload
 
 
 def build_crisis_protocol(user: Dict[str, Any]) -> Dict[str, Any]:
@@ -16,6 +17,7 @@ def build_crisis_protocol(user: Dict[str, Any]) -> Dict[str, Any]:
     row = get_companion(script.get("companion_id"))
     prefix = row.get("prefix") or row.get("id") or "luna"
     base = (row.get("base") or f"/static/live2d/{prefix}-expressions").rstrip("/")
+    people = crisis_contact_payload(user)
     return {
         "ok": True,
         "id": "cs_" + uuid4().hex[:8],
@@ -23,7 +25,8 @@ def build_crisis_protocol(user: Dict[str, Any]) -> Dict[str, Any]:
         "title_ja": "60秒レスキュー",
         "lead_ja": script["lead_ja"],
         "done_ja": script["done_ja"],
-        "hotline_ja": "つらいときは いのちの電話 0570-783-556",
+        "hint_ja": people["hint_ja"],
+        "contacts": people["contacts"],
         "companion_id": script["companion_id"],
         "companion_name": script["companion_name"],
         "sprites": {

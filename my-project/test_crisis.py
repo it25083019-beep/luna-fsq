@@ -18,17 +18,18 @@ def test_ordinary_distress_is_not_crisis():
         assert _is_crisis_message(text) is False, text
 
 
-def test_crisis_reply_points_to_real_help():
+def test_crisis_reply_opens_rescue_without_public_hotline():
     user = {"user_display_name": "ユウ", "gender": "female", "companion_name": "ルナ"}
     dialogue, state = parse_ai_reply(_crisis_reply(user))
-    assert "いのちの電話" in dialogue
-    assert "0570-783-556" in dialogue
+    assert "0570" not in dialogue
+    assert "いのちの電話" not in dialogue
     assert state.get("crisis") is True
+    assert state.get("open_rescue") is True
     assert "<dialogue>" not in dialogue
 
 
 if __name__ == "__main__":
     test_crisis_phrases_are_detected()
     test_ordinary_distress_is_not_crisis()
-    test_crisis_reply_points_to_real_help()
+    test_crisis_reply_opens_rescue_without_public_hotline()
     print("ALL crisis tests OK")
