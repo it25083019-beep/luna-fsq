@@ -13,7 +13,7 @@
       --bg0:#e8dff7; --bg1:#d4e8f8; --bg2:#f7e6f0;
       --card:rgba(255,255,255,.88); --text:#4a3b6b; --muted:#8a7aa8;
       --lilac:#9b7ed9; --lilac-deep:#7b5eb8; --pink:#f0a8c8; --mint:#6ec9b8; --amber:#e8b86d; --danger:#e07a8a;
-      --shadow:0 12px 32px rgba(120,90,180,.14);
+      --shadow:0 14px 36px rgba(90,60,150,.16);
       --input-bg:#f6f1fc; --ghost-bg:#efe8f8; --composer-bg:#fff;
       --glow-a:rgba(240,168,200,.35); --glow-b:rgba(155,126,217,.28);
       --st1:linear-gradient(160deg,#efe6ff,#fff); --st2:linear-gradient(160deg,#e4f4ff,#fff); --st3:linear-gradient(160deg,#ffe8f2,#fff);
@@ -40,7 +40,9 @@
       --hue:258;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;min-height:100%;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text)}
+    html,body{margin:0;min-height:100%;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text);
+      -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+    img{image-rendering:auto;-webkit-backface-visibility:hidden;backface-visibility:hidden}
     button,input,textarea{font:inherit}
     .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
     .screen{flex:1;overflow-y:auto;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
@@ -143,7 +145,7 @@
       background:radial-gradient(ellipse at 50% 58%, var(--sprite-glow) 0%, rgba(255,255,255,.12) 46%, transparent 72%);
     }
     #lunaSprite{height:min(52vh,360px);width:auto;max-width:100%;object-fit:contain;position:relative;z-index:1;background:transparent;
-      filter:drop-shadow(0 0 0.7px var(--sprite-outline)) drop-shadow(0 0 10px var(--sprite-glow)) drop-shadow(0 12px 18px rgba(20,16,48,.28))}
+      filter:drop-shadow(0 0 0.6px var(--sprite-outline)) drop-shadow(0 0 12px var(--sprite-glow)) drop-shadow(0 14px 22px rgba(20,16,48,.32)) contrast(1.06) saturate(1.08)}
     .luna-idle{animation:lunaIdle 3.8s ease-in-out infinite}
     @keyframes lunaIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
     .luna-bob{animation:lunaBob .9s ease}
@@ -158,21 +160,22 @@
     @keyframes lunaThink{0%,100%{transform:translateY(0) rotate(-3deg) scale(1)}50%{transform:translateY(-7px) rotate(3deg) scale(1.03)}}
     .luna-tap-bounce{animation:lunaTap .45s ease}
     @keyframes lunaTap{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
-    .bubble{margin:-.4rem 1rem .7rem;background:var(--card);border-radius:20px;padding:.85rem 1rem;box-shadow:var(--shadow);line-height:1.7;white-space:pre-wrap;min-height:4rem;position:relative;z-index:2;overflow:visible}
+    .bubble{margin:-.4rem 1rem .7rem;background:var(--card);border-radius:20px;padding:.85rem 1rem;box-shadow:var(--shadow);line-height:1.7;white-space:pre-wrap;min-height:4rem;position:relative;z-index:2;overflow:visible;border:1px solid rgba(255,255,255,.6);backdrop-filter:blur(16px)}
     .bubble::before{content:"";position:absolute;top:42%;left:-8px;width:16px;height:16px;background:var(--card);transform:rotate(45deg);border-radius:3px}
     .bubble .who{display:inline-block;font-size:.68rem;background:var(--lilac);color:#fff;padding:.12rem .5rem;border-radius:999px;margin-bottom:.4rem}
     .status-row{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;padding:0 1rem .75rem}
     @media (min-width:380px){
       .status-row{grid-template-columns:repeat(4,1fr)}
     }
-    .status-card{background:var(--card);border-radius:16px;padding:.55rem .4rem .7rem;text-align:center;box-shadow:var(--shadow);border:none;cursor:pointer;color:var(--text);transition:transform .2s ease, box-shadow .2s ease}
+    .status-card{background:var(--card);border-radius:16px;padding:.55rem .4rem .7rem;text-align:center;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.55);cursor:pointer;color:var(--text);transition:transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease;backdrop-filter:blur(12px)}
     .status-card:hover,.status-card:focus-visible{transform:translateY(-3px);box-shadow:0 12px 28px rgba(120,90,180,.22)}
     .status-card:nth-child(1){background:var(--st1)} .status-card:nth-child(2){background:var(--st2)} .status-card:nth-child(3){background:var(--st3)} .status-card:nth-child(4){background:var(--st1)}
     .status-card .ico{font-size:1.15rem;margin-bottom:.15rem}
     .status-card .label{font-size:.72rem;color:var(--muted)}
     .status-card .val{font-size:.88rem;font-weight:700;color:var(--lilac-deep);margin-top:.15rem}
     .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .55rem;flex-shrink:0}
-    .chip{border:none;background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;font-size:.82rem;cursor:pointer;border-radius:999px;box-shadow:var(--shadow)}
+    .chip{border:1px solid rgba(255,255,255,.55);background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;font-size:.82rem;cursor:pointer;border-radius:999px;box-shadow:var(--shadow);transition:transform .18s ease,box-shadow .18s ease}
+    .chip:active{transform:scale(.97)}
     .composer-wrap{padding:.35rem 1rem .5rem}
     .composer{display:flex;align-items:center;gap:.45rem;background:var(--composer-bg);border-radius:999px;padding:.35rem .4rem .35rem .9rem;box-shadow:var(--shadow)}
     .composer input{flex:1;border:none;background:transparent;color:var(--text);outline:none;padding:.45rem 0}
@@ -610,10 +613,11 @@
     .final-form-strip strong{font-size:.72rem;display:block;margin-bottom:.15rem}
     .final-form-strip span{font-size:.58rem;color:var(--fsq-muted);font-weight:700;line-height:1.35}
     .final-form-strip .arrow{color:var(--fsq-teal);font-size:1.2rem;font-weight:900}
-    .portfolio-teaser{background:linear-gradient(135deg,#161d53,#4e2eb4);color:#fff;border-radius:18px;padding:.85rem .9rem}
-    .portfolio-teaser strong{display:block;font-size:.82rem;margin-bottom:.35rem}
-    .portfolio-teaser p{margin:0 0 .55rem;font-size:.68rem;line-height:1.55;color:rgba(255,255,255,.85)}
-    .portfolio-teaser button{border:none;border-radius:999px;padding:.45rem .85rem;font-size:.68rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#77f1ff,#fff38d);color:#1a1204}
+    .portfolio-teaser{background:linear-gradient(160deg,#070b18 0%,#12183a 42%,#2a1f6b 100%);color:#fff;border-radius:22px;padding:1rem .95rem;border:1px solid rgba(53,227,255,.22);box-shadow:0 18px 40px rgba(8,12,28,.35);position:relative;overflow:hidden}
+    .portfolio-teaser::before{content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(53,227,255,.28),transparent 70%);pointer-events:none}
+    .portfolio-teaser strong{display:block;font-size:.92rem;margin-bottom:.4rem;letter-spacing:.02em}
+    .portfolio-teaser p{margin:0 0 .7rem;font-size:.7rem;line-height:1.6;color:rgba(255,255,255,.86);position:relative}
+    .portfolio-teaser button{border:none;border-radius:999px;padding:.5rem .95rem;font-size:.72rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#35e3ff,#a78bfa);color:#061020}
     #tab-fsq .skill em{font-style:normal;color:var(--fsq-muted);font-size:.58rem;font-weight:800;display:block;margin-top:.1rem}
     #tab-fsq .skill.locked{opacity:.48;filter:grayscale(.15)}
     .fsq-subnav{display:flex;gap:.4rem;padding:.75rem 1rem .15rem;overflow-x:auto}
@@ -1059,7 +1063,7 @@
     @media (prefers-reduced-motion:reduce){.map-avatar{animation:none}}
     .map-quest-panel{margin-top:.65rem;border-radius:18px;background:rgba(255,255,255,.92);padding:.65rem .75rem;border:1px solid rgba(255,255,255,.6)}
     .map-quest-panel h4{margin:0 0 .35rem;font-size:.72rem;color:#5a4a20}
-    .portfolio-hero{border-radius:22px;padding:1rem;margin-bottom:.65rem;background:linear-gradient(165deg,#12183a 0%,#1e2858 45%,#2a1f6b 100%);color:#fff;box-shadow:0 16px 40px rgba(18,24,58,.45)}
+    .portfolio-hero{border-radius:24px;padding:1.05rem;margin-bottom:.65rem;background:linear-gradient(165deg,#070b18 0%,#12183a 42%,#2a1f6b 100%);color:#fff;box-shadow:0 18px 44px rgba(8,12,28,.45);border:1px solid rgba(53,227,255,.2);cursor:pointer}
     .portfolio-hero .ph-top{display:flex;gap:.65rem;align-items:center}
     .portfolio-hero .ph-avatar{width:72px;height:86px;border-radius:16px;overflow:hidden;border:2px solid rgba(255,255,255,.35);flex-shrink:0;background:radial-gradient(ellipse at 50% 80%,rgba(255,210,122,.2),rgba(255,255,255,.06))}
     .portfolio-hero .ph-avatar img{width:100%;height:100%;object-fit:contain;object-position:center bottom}
@@ -1104,6 +1108,14 @@
     .mail-steps{margin:.35rem 0 .55rem;padding-left:1.2rem;font-size:.72rem;color:var(--muted);line-height:1.55}
     .mail-steps a{color:var(--lilac-deep);font-weight:700}
     .mail-box code{display:inline-block;background:var(--input-bg);border-radius:8px;padding:.05rem .35rem;font-size:.68rem}
+    .support-box{margin-top:.55rem;padding:.7rem .75rem;background:#fff;border-radius:14px}
+    .support-box label{display:block;font-size:.72rem;color:var(--muted);margin:.35rem 0 .15rem}
+    .support-box input,.support-box textarea{width:100%;padding:.55rem .65rem;border:none;background:var(--input-bg);border-radius:12px;margin-bottom:.2rem;resize:vertical}
+    .support-box textarea{min-height:5.2rem}
+    .support-box .row{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
+    .support-box button,.support-box a.btn-mail{border:none;border-radius:999px;padding:.45rem .85rem;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;font-size:.78rem}
+    .support-box a.ghost{background:var(--ghost-bg);color:var(--lilac-deep)}
+    .support-box .mail-addr{font-weight:800;color:var(--lilac-deep);word-break:break-all}
     .digest-card{max-height:78vh;overflow:auto}
     .digest-list{display:flex;flex-direction:column;gap:.55rem;margin:0 0 .75rem}
     .digest-item{background:var(--input-bg);border-radius:14px;padding:.65rem .7rem;white-space:pre-wrap;font-size:.8rem;line-height:1.55;color:var(--text)}
@@ -1202,7 +1214,7 @@
     .row-btns button{border:none;border-radius:999px;padding:.5rem .8rem;font-size:.75rem;cursor:pointer;background:var(--ghost-bg);color:var(--lilac-deep);font-weight:700}
     .row-btns button.danger{background:rgba(224,122,138,.15);color:var(--danger)}
 
-    .bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:412px;height:62px;padding:0 .45rem;background:#f3f1f6;border:none;border-radius:999px;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;z-index:78;box-shadow:0 10px 28px rgba(80,50,120,.18)}
+    .bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:412px;height:62px;padding:0 .45rem;background:rgba(247,244,252,.86);border:1px solid rgba(255,255,255,.7);border-radius:999px;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;z-index:78;box-shadow:0 12px 32px rgba(80,50,120,.2);backdrop-filter:blur(18px)}
     .nav-item{border:none;background:transparent;height:54px;display:grid;place-items:center;cursor:pointer;color:#8a6ec8;padding:0;border-radius:50%}
     .nav-item svg{width:26px;height:26px;display:block}
     .nav-item .nav-luna{width:34px;height:34px;border-radius:50%;object-fit:cover;background:#fff;box-shadow:0 0 0 2px #fff}
@@ -1217,7 +1229,8 @@
     .home-title-row{display:flex;justify-content:space-between;align-items:flex-start;padding:1rem 1.1rem .25rem}
     .home-title-row h1{margin:0;font-family:"Zen Maru Gothic",sans-serif;font-size:1.35rem;color:var(--lilac-deep)}
     .home-title-row p{margin:.2rem 0 0;font-size:.78rem;color:var(--muted)}
-    .icon-btn{border:none;background:var(--card);width:2.2rem;height:2.2rem;border-radius:12px;box-shadow:var(--shadow);cursor:pointer;font-size:1rem}
+    .icon-btn{border:1px solid rgba(255,255,255,.55);background:var(--card);width:2.2rem;height:2.2rem;border-radius:12px;box-shadow:var(--shadow);cursor:pointer;font-size:1rem;backdrop-filter:blur(10px);transition:transform .18s ease}
+    .icon-btn:active{transform:scale(.94)}
     #lunaMainView{display:flex;flex-direction:column;height:calc(100dvh - 72px - env(safe-area-inset-bottom));max-height:calc(100dvh - 72px - env(safe-area-inset-bottom));padding-bottom:0;overflow:hidden}
     #lunaMainView .home-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
     #lunaMainView .home-dock .chips{padding:.2rem 1rem .3rem}
@@ -1225,7 +1238,7 @@
     .home-hero{display:grid;grid-template-columns:minmax(128px,38%) 1fr;gap:.7rem;padding:0 1rem .55rem;align-items:center;overflow:visible}
     .home-hero-luna{display:flex;justify-content:center;align-items:flex-end;cursor:pointer;transform-origin:50% 90%;position:relative;overflow:visible}
     .home-hero-luna #lunaSprite{height:min(42vw,200px);width:auto;max-width:100%;object-fit:contain;position:relative;z-index:1;background:transparent;
-      filter:drop-shadow(0 0 0.7px var(--sprite-outline)) drop-shadow(0 0 9px var(--sprite-glow)) drop-shadow(0 10px 16px rgba(20,16,48,.28))}
+      filter:drop-shadow(0 0 0.55px var(--sprite-outline)) drop-shadow(0 0 11px var(--sprite-glow)) drop-shadow(0 12px 18px rgba(20,16,48,.3)) contrast(1.06) saturate(1.08)}
     .companion-chip{border:2px solid transparent;background:#fff;border-radius:16px;padding:.25rem .4rem .3rem;cursor:pointer;text-align:center}
     .companion-chip img{width:52px;height:52px;object-fit:contain;display:block;margin:0 auto;background:transparent}
     .companion-chip span{display:block;font-size:.58rem;font-weight:800;color:#5a4a78;margin-top:.1rem}
@@ -1608,7 +1621,7 @@
             <p class="pw-msg hint" id="pwChangeMsg"></p>
           </div>
           <h3 style="margin-top:1rem">コンパニオン</h3>
-          <p class="hint">設定で見た目と声を切り替えます。ルナは落ち着いた先生、ルノは若くて可愛い、レンは低い男性の声。動物はそれぞれの雰囲気です。</p>
+          <p class="hint">設定で見た目と声を切り替えます。ルナ／ルノは収録した声、レンは低く温かい男性。動物はズートピアのように人の言葉で、生き物らしい響きです。</p>
           <div class="companion-grid" id="settingsCompanionGrid"></div>
           <button type="button" id="voicePreviewBtn">このコンパニオンの声を聞く</button>
           <h3 style="margin-top:1rem">デュアルモード</h3>
@@ -1675,6 +1688,20 @@
               </div>
             </div>
             <p class="hint" id="mailImportMsg"></p>
+          </div>
+          <h3 style="margin-top:1rem">お問い合わせ・不具合報告</h3>
+          <p class="hint">バグや使いにくい点は、メールで直接届けてください。アプリの画面・手順・端末を書くと直しやすいです。</p>
+          <div class="support-box" id="supportBox">
+            <p class="hint">宛先：<span class="mail-addr">it25083019@tsb-yyg.ac.jp</span></p>
+            <label for="supportSubject">件名</label>
+            <input id="supportSubject" type="text" maxlength="80" placeholder="例：戦闘アニメが止まる / ログインできない" />
+            <label for="supportBody">内容</label>
+            <textarea id="supportBody" maxlength="2000" placeholder="いつ・どこで・何をすると起きたか。できれば再現手順を。"></textarea>
+            <div class="row">
+              <button type="button" id="supportSendBtn">メールアプリで送る</button>
+              <a class="btn-mail ghost" id="supportDirectLink" href="mailto:it25083019@tsb-yyg.ac.jp?subject=LUNA%20%E4%B8%8D%E5%85%B7%E5%90%88%E5%A0%B1%E5%91%8A">メールだけ開く</a>
+            </div>
+            <p class="hint" id="supportMsg"></p>
           </div>
           <div class="settings-actions"><button type="button" id="settingsBack">戻る</button></div>
         </div>
@@ -2025,9 +2052,9 @@
             <div class="card fsq-addon-card">
               <div class="section-title"><span>📄 ポートフォリオ化</span><span class="hint">就職活動へ</span></div>
               <div class="portfolio-teaser" id="homePortfolioTeaser">
-                <strong>提出した課題が、そのまま自己PRになる</strong>
-                <p>感想だけでは経験値は増えません。レッスンと試験に自分の言葉で答え、その記録が就活のポートフォリオになります。</p>
-                <button type="button" id="homePortfolioBtn">冒険録を見る</button>
+                <strong>学習CVを、1枚のポートフォリオで</strong>
+                <p>提出した課題が作品カードになります。タップすると、就活向けのHTMLページが開きます。</p>
+                <button type="button" id="homePortfolioBtn">ポートフォリオを開く</button>
               </div>
             </div>
           </div>
@@ -2103,7 +2130,7 @@
               </div>
               <div class="ph-story" id="portfolioStory">進路を選ぶと、冒険の記録がここに表示されます。</div>
               <div class="pf-export-row">
-                <button type="button" id="portfolioExportBtn">学習CV・ボス攻略記を印刷</button>
+                <button type="button" id="portfolioExportBtn">ポートフォリオページを開く</button>
               </div>
             </div>
             <div class="stats-row" id="portfolioStats"></div>
@@ -2301,6 +2328,7 @@
           <button type="button" id="menuThemeBtn">🎨 テーマ設定</button>
           <button type="button" id="menuCompanionBtn">🐾 コンパニオンを選ぶ</button>
           <button type="button" id="menuPasswordBtn">🔑 パスワードを変更</button>
+          <button type="button" id="menuSupportBtn">✉️ 不具合を報告</button>
           <button type="button" id="morningBtn">🌅 朝チェックイン</button>
           <button type="button" id="eveningBtn">🌙 夜チェックイン</button>
           <button type="button" id="adminLink" class="hidden" onclick="location.href='/admin'">🔧 管理画面</button>
@@ -2384,9 +2412,9 @@
   <script src="/static/auth-common.js"></script>
   <script src="/static/live2d/luna-avatar.js?v=20260914e"></script>
   <script src="/static/live-hud.js?v=20260914g"></script>
-  <script src="/static/world.js?v=20260916a"></script>
+  <script src="/static/world.js?v=20260916b"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20260914k"></script>
+  <script src="/static/app.js?v=20260916c"></script>
 </body>
 </html>

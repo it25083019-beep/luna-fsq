@@ -25,7 +25,17 @@ def test_settings_has_password_change():
     print("OK settings password change")
 
 
+def test_settings_has_bug_report_mail():
+    app = (ROOT / "static" / "app.html").read_text(encoding="utf-8")
+    js = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+    assert "it25083019@tsb-yyg.ac.jp" in app
+    assert 'id="supportSendBtn"' in app
+    assert "mailto:" in js
+    print("OK settings bug report mailto")
+
+
 if __name__ == "__main__":
     test_login_forgot_keeps_reset_link()
     test_settings_has_password_change()
+    test_settings_has_bug_report_mail()
     print("ALL password tests passed")

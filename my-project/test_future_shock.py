@@ -77,6 +77,8 @@ def test_export_html_has_cv():
     html = render_export_html(_user())
     assert "学習CV" in html
     assert "ボス攻略記" in html
+    assert "IT Student Portfolio" in html
+    assert "section-title-en" in html
     print("OK export html")
 
 

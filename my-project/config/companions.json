@@ -1,5 +1,5 @@
 {
-  "version": "1.2",
+  "version": "1.3",
   "default_id": "luna",
   "companions": [
     {
@@ -13,11 +13,13 @@
       "persona_ja": "30歳前後の女性教師。短く丁寧。長く説明しない。",
       "voice": {
         "gemini_name": "Gacrux",
-        "style_ja": "30歳前後の女性教師。落ち着いて丁寧。早口にせず、はっきりと話す。先生の声であり、動物や子供の声にはしない",
+        "style_ja": "添付の参考音声と全く同じ声。30歳前後の女性教師。落ち着いて丁寧。早口にせず、はっきりと話す。先生の声であり、動物や子供の声にはしない",
         "browser_rate": 0.96,
         "browser_pitch": 0.92,
         "browser_prefer": ["Nanami", "Haruka", "Kyoko"],
-        "sample_ja": "こんにちは。今日も一緒に、落ち着いて進めていきましょう。"
+        "sample_ja": "こんにちは。今日も一緒に、落ち着いて進めていきましょう。",
+        "reference_audio": "/static/audio/luna.m4a",
+        "sample_audio": "/static/audio/luna.m4a"
       },
       "talk": {
         "hello": "こんにちは。ルナです。",
@@ -37,11 +39,13 @@
       "persona_ja": "若くて可愛い女の子。短く、親しみやすい。",
       "voice": {
         "gemini_name": "Leda",
-        "style_ja": "10代後半の可愛い女の子。高く明るい声。はしゃぎ気味。大人の先生の声にはしない",
+        "style_ja": "添付の参考音声と全く同じ声。10代後半の可愛い女の子。高く明るい声。はしゃぎ気味。大人の先生の声にはしない",
         "browser_rate": 1.14,
         "browser_pitch": 1.45,
         "browser_prefer": ["Nanami", "Kyoko", "Haruka"],
-        "sample_ja": "えへへ、わたしルノだよ。きょうもがんばろー！"
+        "sample_ja": "えへへ、わたしルノだよ。きょうもがんばろー！",
+        "reference_audio": "/static/audio/luno.m4a",
+        "sample_audio": "/static/audio/luno.m4a"
       },
       "talk": {
         "hello": "えへへ、ルノだよ。",
@@ -61,9 +65,9 @@
       "persona_ja": "落ち着いた男性の先輩。短く、低く温かい。",
       "voice": {
         "gemini_name": "Charon",
-        "style_ja": "30代の男性。低くて温かい声。女性の声には絶対にしない",
-        "browser_rate": 0.88,
-        "browser_pitch": 0.42,
+        "style_ja": "30代の日本人男性。低くて温かい、胸に響く低音。ゆっくり落ち着いて話す。女性・少年・アニメ声には絶対にしない。頼れる先輩",
+        "browser_rate": 0.84,
+        "browser_pitch": 0.36,
         "browser_prefer": ["Ichiro", "Keita", "Daichi", "Hayato"],
         "sample_ja": "お疲れ。無理しすぎないようにな。今日も俺がついてる。"
       },
@@ -82,20 +86,20 @@
       "tag_ja": "いぬ",
       "prefix": "hachi",
       "base": "/static/live2d/hachi-expressions",
-      "persona_ja": "元気な犬。わんっと短く。人間の先生の話し方は禁止。",
+      "persona_ja": "ズートピアの犬。人の言葉ではっきり、鼻が効いて弾む。長くしゃべらない。",
       "voice": {
         "gemini_name": "Fenrir",
-        "style_ja": "元気ないぬの声。高く弾む。語尾は短い。わんっと混ぜる。大人の女性教師のナレーションには絶対にしない。犬らしく可愛く",
-        "browser_rate": 1.24,
-        "browser_pitch": 1.72,
+        "style_ja": "ズートピアのいぬキャラ。人の言葉ではっきり話すが、鼻が効いて弾む元気な中高音。語尾に軽い「わん」を一度だけ。ヘリウム声や人間の先生ナレーションには絶対にしない",
+        "browser_rate": 1.08,
+        "browser_pitch": 1.18,
         "browser_prefer": ["Nanami", "Kyoko"],
-        "sample_ja": "わんっ！ハチだよ。おさんぽいこー！"
+        "sample_ja": "おかえり！ハチだよ、わんっ。いっしょにいこう。"
       },
       "talk": {
-        "hello": "わんっ！ハチだよ。",
-        "greeting": "{who}おかえり！わんっ。",
-        "consult_health": "{who}わんっ、げんき？いまの調子だけ教えて。",
-        "consult_money": "{who}わんっ、お金のこと？ひとこと聞かせて。"
+        "hello": "ハチだよ。わんっ。",
+        "greeting": "{who}おかえり！いっしょにいこう、わんっ。",
+        "consult_health": "{who}いまの調子、ひとこと聞かせて。わんっ。",
+        "consult_money": "{who}お金のこと？要点だけでいいよ、わんっ。"
       }
     },
     {
@@ -106,20 +110,20 @@
       "tag_ja": "ねこ",
       "prefix": "momo",
       "base": "/static/live2d/momo-expressions",
-      "persona_ja": "おっとりした猫。にゃあと短く。急がない。",
+      "persona_ja": "ズートピアの猫。人語でゆっくり、鼻にかかって甘える。急がない。",
       "voice": {
         "gemini_name": "Enceladus",
-        "style_ja": "ねこの声。鼻にかかって高く、ゆっくり甘える。にゃあ、を混ぜる。人間の先生の声には絶対にしない。猫らしく可愛く",
-        "browser_rate": 0.86,
-        "browser_pitch": 1.82,
+        "style_ja": "ズートピアのねこキャラ。人語でゆっくり、鼻にかかった甘えと喉の低い振動。語尾に軽い「にゃあ」を一度。高い女の子声や人間の先生の声には絶対にしない",
+        "browser_rate": 0.9,
+        "browser_pitch": 1.12,
         "browser_prefer": ["Kyoko", "Nanami"],
-        "sample_ja": "にゃあ…モモだよ。急がなくていい。"
+        "sample_ja": "おかえり…モモだよ。急がなくていい、にゃあ。"
       },
       "talk": {
-        "hello": "にゃあ。モモだよ。",
-        "greeting": "{who}おかえり。にゃあ。",
-        "consult_health": "{who}にゃあ、からだ大丈夫？短くでいいよ。",
-        "consult_money": "{who}にゃあ、お金？ひとこと聞かせて。"
+        "hello": "モモだよ。にゃあ。",
+        "greeting": "{who}おかえり。ゆっくりして、にゃあ。",
+        "consult_health": "{who}からだ、だいじょうぶ？短くでいいよ、にゃあ。",
+        "consult_money": "{who}お金？ひとこと聞かせて、にゃあ。"
       }
     },
     {
@@ -130,19 +134,19 @@
       "tag_ja": "パンダ",
       "prefix": "taro",
       "base": "/static/live2d/taro-expressions",
-      "persona_ja": "おっとりパンダ。ゆっくり、もぐもぐ。長くしゃべらない。",
+      "persona_ja": "ズートピアの大型動物。丸く低い人の声。ゆっくり、長くしゃべらない。",
       "voice": {
         "gemini_name": "Umbriel",
-        "style_ja": "パンダの声。低くてゆっくり、丸く柔らかい。もぐもぐした間を置く。高い女の先生の声には絶対にしない。大きくて優しい動物",
-        "browser_rate": 0.68,
-        "browser_pitch": 0.22,
+        "style_ja": "ズートピアの大型動物。丸く低い人の声。ゆっくり間を置く。稀に「もぐ」と息を混ぜる。高い声や女教師には絶対にしない。大きくて優しいパンダ",
+        "browser_rate": 0.74,
+        "browser_pitch": 0.48,
         "browser_prefer": ["Ichiro", "Haruka", "Nanami"],
-        "sample_ja": "もぐもぐ…タロだよ。いっしょに、やすもう。"
+        "sample_ja": "おかえり…タロだよ。いっしょに、やすもう。"
       },
       "talk": {
-        "hello": "もぐもぐ…タロだよ。",
+        "hello": "タロだよ。ゆっくりして。",
         "greeting": "{who}おかえり。ゆっくりして。",
-        "consult_health": "{who}もぐ…体調、どう？ひとことでいいよ。",
+        "consult_health": "{who}体調、どう？ひとことでいいよ。",
         "consult_money": "{who}お金のこと…ゆっくりでいいよ。"
       }
     },
@@ -154,20 +158,20 @@
       "tag_ja": "タヌキ",
       "prefix": "ponta",
       "base": "/static/live2d/ponta-expressions",
-      "persona_ja": "いたずら好きのタヌキ。ぽんっと短く明るい。",
+      "persona_ja": "ズートピアのいたずら好き。人語で軽く、短く明るい。",
       "voice": {
         "gemini_name": "Puck",
-        "style_ja": "タヌキの声。弾んで高く、いたずらっぽい。ぽんっと混ぜる。真面目な教師ナレーションにはしない。妖精みたいに軽く可愛く",
-        "browser_rate": 1.22,
-        "browser_pitch": 1.58,
+        "style_ja": "ズートピアのニックのような小動物。人語で軽くいたずらっぽい中高音。語尾に軽い「ぽん」を一度。真面目な教師ナレーションやヘリウム声にはしない",
+        "browser_rate": 1.1,
+        "browser_pitch": 1.18,
         "browser_prefer": ["Kyoko", "Nanami"],
-        "sample_ja": "ぽんっ！ポンタだよ。遊ぼう〜！"
+        "sample_ja": "おかえり！ポンタだよ。遊ぼう、ぽんっ。"
       },
       "talk": {
-        "hello": "ぽんっ！ポンタだよ。",
-        "greeting": "{who}おかえり！ぽんっ。",
-        "consult_health": "{who}ぽんっ、元気？いまの感じ教えて〜。",
-        "consult_money": "{who}ぽんっ、お金の話？ひとことでいいよ。"
+        "hello": "ポンタだよ。ぽんっ。",
+        "greeting": "{who}おかえり！遊ぼう、ぽんっ。",
+        "consult_health": "{who}元気？いまの感じ教えて、ぽんっ。",
+        "consult_money": "{who}お金の話？ひとことでいいよ、ぽんっ。"
       }
     }
   ]

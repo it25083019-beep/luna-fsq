@@ -18,6 +18,7 @@
     }
     *{box-sizing:border-box}
     body{margin:0;min-height:100vh;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text);
+      -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
       background:
         radial-gradient(800px 420px at 80% 10%, var(--glow-a), transparent 55%),
         radial-gradient(700px 400px at 10% 90%, var(--glow-b), transparent 50%),
@@ -34,7 +35,7 @@
       background:radial-gradient(ellipse at 50% 58%, var(--sprite-glow) 0%, rgba(255,255,255,.14) 48%, transparent 72%);
     }
     .hero img{height:min(46vh,320px);width:auto;max-width:100%;object-fit:contain;background:transparent;position:relative;z-index:1;
-      filter:drop-shadow(0 0 0.7px var(--sprite-outline)) drop-shadow(0 0 12px var(--sprite-glow)) drop-shadow(0 14px 26px rgba(120,90,180,.28));
+      filter:drop-shadow(0 0 0.55px var(--sprite-outline)) drop-shadow(0 0 14px var(--sprite-glow)) drop-shadow(0 16px 28px rgba(120,90,180,.3)) contrast(1.06) saturate(1.08);
       animation:loginFloat 2.8s ease-in-out infinite;transform-origin:50% 80%}
     @keyframes loginFloat{
       0%,100%{transform:translateY(0) rotate(0)}
@@ -45,7 +46,7 @@
     @media (prefers-reduced-motion:reduce){
       .hero img{animation:none}
     }
-    .panel{background:var(--card);border-radius:28px;padding:1.15rem 1.15rem 1.35rem;box-shadow:var(--shadow)}
+    .panel{background:var(--card);border-radius:28px;padding:1.15rem 1.15rem 1.35rem;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.55);backdrop-filter:blur(16px)}
     .panel h2{margin:0 0 .85rem;font-size:1.05rem;color:var(--lilac-deep);text-align:center}
     label{display:block;font-size:.75rem;color:var(--muted);margin:.55rem 0 .25rem}
     input{width:100%;padding:.75rem .9rem;border:none;background:var(--input-bg);color:var(--text);font:inherit;border-radius:14px;outline:none}

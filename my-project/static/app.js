@@ -1229,7 +1229,7 @@
     const btn = document.getElementById("homePortfolioBtn");
     if (btn && !btn.dataset.bound) {
       btn.dataset.bound = "1";
-      btn.onclick = () => switchFsqSub("career");
+      btn.onclick = () => openPortfolioExport();
     }
     const teaser = document.getElementById("homePortfolioTeaser");
     if (!teaser || !journeyStatus.selected) return;
@@ -1238,9 +1238,9 @@
       p.textContent =
         "レッスン " +
         (journeyStatus.completed_count || 0) +
-        " 完了・装備 " +
-        ((journeyStatus.inventory || []).length || 0) +
-        " 点。冒険録でスキルと成長記録を確認し、就活の自己PRに活用できます。";
+        " 完了・提出 " +
+        (((journeyStatus.career_portfolio || {}).evidence || []).length || 0) +
+        " 件。HTMLページでスキルと作品を確認できます。";
     }
   }
 
@@ -2492,7 +2492,10 @@
     stopLunaSpeech();
     // Chat path: browser voice first (instant, per-character pitch). Gemini TTS
     // is opt-in via localStorage luna_gemini_voice=1 because of quota/latency.
-    const wantGemini = localStorage.getItem("luna_gemini_voice") === "1" && ttsFailStreak < 3;
+    const voiceMeta = ((companionById(selectedCompanionId) || {}).voice) || {};
+    const wantGemini =
+      ttsFailStreak < 3 &&
+      (localStorage.getItem("luna_gemini_voice") === "1" || !!voiceMeta.reference_audio);
     await speakJaBrowserFallback(line);
     if (!wantGemini || mySeq !== speakSeq) return;
 
@@ -4529,12 +4532,13 @@
       const res = await fetch("/portfolio/export.html", {
         headers: token ? { Authorization: "Bearer " + token } : {},
       });
-      const html = await res.text();
+      let html = await res.text();
       if (!res.ok) throw new Error("export failed");
+      html = html.replace("<head>", "<head><base href=\"" + location.origin + "/\">");
       const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-      window.open(url, "_blank");
+      window.open(url, "_blank", "noopener");
     } catch (err) {
-      setErr("学習CVを開けなかったよ");
+      setErr("ポートフォリオを開けなかったよ");
     }
   }
 
@@ -4894,6 +4898,46 @@
     }
     const exportBtn = document.getElementById("portfolioExportBtn");
     if (exportBtn) exportBtn.onclick = () => openPortfolioExport();
+    const pfHero = document.getElementById("portfolioHero");
+    if (pfHero && !pfHero.dataset.bound) {
+      pfHero.dataset.bound = "1";
+      pfHero.onclick = (e) => {
+        if (e.target && e.target.closest && e.target.closest("button")) return;
+        openPortfolioExport();
+      };
+    }
+    const SUPPORT_MAIL = "it25083019@tsb-yyg.ac.jp";
+    function openSupportMail() {
+      const subj = ((document.getElementById("supportSubject") || {}).value || "").trim() || "LUNA 不具合報告";
+      const body = ((document.getElementById("supportBody") || {}).value || "").trim();
+      const extra =
+        "\n\n---\n端末: " +
+        navigator.userAgent +
+        "\n画面: " +
+        location.pathname +
+        "\n";
+      const href =
+        "mailto:" +
+        SUPPORT_MAIL +
+        "?subject=" +
+        encodeURIComponent(subj) +
+        "&body=" +
+        encodeURIComponent((body || "（内容を書いてください）") + extra);
+      const msg = document.getElementById("supportMsg");
+      if (msg) msg.textContent = "メールアプリを開きます。届かないときは " + SUPPORT_MAIL + " へ直接送ってください。";
+      location.href = href;
+    }
+    const supportSend = document.getElementById("supportSendBtn");
+    if (supportSend) supportSend.onclick = openSupportMail;
+    const menuSupportBtn = document.getElementById("menuSupportBtn");
+    if (menuSupportBtn) {
+      menuSupportBtn.onclick = () => {
+        switchTab("luna");
+        setLunaView("settings");
+        const box = document.getElementById("supportBox");
+        if (box) box.scrollIntoView({ behavior: "smooth", block: "center" });
+      };
+    }
     document.getElementById("settingsBtn").onclick = () => {
       renderThemePicker();
       renderCompanionPickers();
@@ -5102,6 +5146,22 @@
         voiceOn = true;
         syncVoiceBtn();
         const row = companionById(selectedCompanionId) || {};
+        const sampleFile = (row.voice && (row.voice.sample_audio || row.voice.reference_audio)) || "";
+        if (sampleFile) {
+          stopLunaSpeech();
+          lunaAudio = new Audio(sampleFile);
+          lunaAudio.onplay = () => {
+            if (luna) luna.startLipSync();
+          };
+          lunaAudio.onended = () => {
+            if (luna) luna.stopLipSync();
+          };
+          lunaAudio.play().catch(() => {
+            const sample = (row.voice && row.voice.sample_ja) || "こんにちは。";
+            speakJa(sample).catch(() => {});
+          });
+          return;
+        }
         const sample = (row.voice && row.voice.sample_ja) || "こんにちは。";
         speakJa(sample).catch(() => {});
       };
