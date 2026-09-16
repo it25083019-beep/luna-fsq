@@ -544,8 +544,9 @@
     if (ko) ko.hidden = true;
     const combo = arena.querySelector(".sba-combo");
     if (combo) combo.hidden = true;
-    if (bossWrap) bossWrap.classList.remove("ko", "atk-boss", "hit", "rush", "cast", "windup", "dodge");
-    if (heroWrap) heroWrap.classList.remove("ko", "hit", "struggle", "rush", "cast", "windup", "dodge", "atk-swordsman", "atk-mage", "atk-archer");
+    if (bossWrap) bossWrap.classList.remove("ko");
+    if (heroWrap) heroWrap.classList.remove("ko", "struggle");
+    resetFighters(arena);
   }
 
   const FIGHT_POSES = {
@@ -623,11 +624,7 @@
       side.classList.remove("show-pose");
       return;
     }
-    const show = () => {
-      side.classList.remove("show-pose");
-      void side.offsetWidth;
-      side.classList.add("show-pose");
-    };
+    const show = () => side.classList.add("show-pose");
     if (sameSrc(layer, url) && layer.complete) {
       show();
       return;
@@ -635,17 +632,6 @@
     layer.onload = show;
     layer.src = url;
     if (layer.complete) show();
-  }
-
-  function busy(side, on) {
-    if (side) side.dataset.busy = on ? "1" : "0";
-  }
-
-  function releaseBusy(side, ms) {
-    setTimeout(() => {
-      busy(side, false);
-      setPose(side, "idle");
-    }, ms || 640);
   }
 
   function preloadFightPoses() {
@@ -662,66 +648,620 @@
   function stopIdleLoop() {}
 
   const SKILL_NAME = {
-    swordsman: ["斬撃", "一閃", "剣技"],
-    mage: ["詠唱", "魔力弾", "術式"],
-    archer: ["連射", "狙撃", "貫矢"],
-    boss: ["強撃", "威圧", "反撃"],
+    swordsman: ["一閃・龍牙", "斬撃・双牙", "剣技・天翔"],
+    mage: ["雷鳴・天罰", "魔力弾・連", "術式・裂空"],
+    archer: ["連射・雨矢", "狙撃・貫心", "貫矢・流星"],
+    boss: ["強撃・圧潰", "威圧・咆哮", "反撃・轟震"],
   };
 
   function skillLabel(cls, i) {
     const list = SKILL_NAME[cls] || SKILL_NAME.swordsman;
-    return list[i % list.length];
+    return list[Math.abs(i) % list.length];
   }
 
-  function shotKind(cls) {
-    if (cls === "mage") return "bolt";
-    if (cls === "archer") return "arrow";
-    return "slash";
+  // ---------------------------------------------------------------
+  // 3Q-style combat director.
+  // Every action is a scripted timeline driven by the Web Animations
+  // API (no class toggling, no reflow hacks) so movement, hit-stop and
+  // VFX line up on the same clock:
+  //   basic : anticipate → lunge → strike → hit-stop → recover
+  //   dodge : target hops back with afterimages, "MISS" pops
+  //   skill : dim → portrait cut-in → charge → class VFX → multi-hit
+  // ---------------------------------------------------------------
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const CLS_COLOR = { swordsman: "#7ad7ff", mage: "#d4a0ff", archer: "#b6ff8a", boss: "#ff6b4a" };
+  let actionBusy = false;
+  let pendingSkill = null;
+  let bossTurn = 0;
+
+  function heroKind(arena) {
+    return arena.dataset.heroClass || window.FsqHeroClass || "swordsman";
   }
 
-  function showSkillName(arena, text, fromBoss) {
-    const el = arena.querySelector(".sba-skill-name");
-    if (!el) return;
-    el.textContent = text;
-    el.classList.toggle("from-boss", !!fromBoss);
-    el.classList.remove("go");
-    void el.offsetWidth;
-    el.classList.add("go");
-    setTimeout(() => el.classList.remove("go"), 1100);
+  function sideOf(arena, who) {
+    return arena.querySelector(".sba-side." + who);
   }
 
-  function fireShot(arena, kind) {
-    const shot = arena.querySelector(".sba-shot");
-    if (!shot) return;
-    shot.className = "sba-shot " + kind + " go";
-    void shot.offsetWidth;
-    setTimeout(() => shot.classList.remove("go"), 520);
+  function actorOf(side) {
+    return (side && side.querySelector(".sba-actor")) || side;
   }
 
-  function burstClash(arena, fromBoss) {
-    const clash = arena.querySelector(".sba-clash");
-    if (!clash) return;
-    clash.classList.toggle("from-boss", !!fromBoss);
-    clash.classList.remove("go");
-    void clash.offsetWidth;
-    clash.classList.add("go");
-    setTimeout(() => clash.classList.remove("go"), 480);
-  }
-
-  function clearFighterState(el) {
-    if (!el) return;
-    el.classList.remove(
-      "rush",
-      "cast",
-      "windup",
-      "hit",
-      "dodge",
-      "struggle",
-      "atk-swordsman",
-      "atk-mage",
-      "atk-archer",
-      "atk-boss"
+  function spriteOf(side) {
+    if (!side) return null;
+    return (
+      (side.classList.contains("show-pose") && side.querySelector(".pose-layer")) ||
+      side.querySelector(".idle-layer") ||
+      side.querySelector(".fighter-sprite")
     );
+  }
+
+  function boxOf(el, arena) {
+    const r = el.getBoundingClientRect();
+    const h = arena.getBoundingClientRect();
+    return {
+      x: r.left - h.left + r.width / 2,
+      y: r.top - h.top + r.height / 2,
+      left: r.left - h.left,
+      top: r.top - h.top,
+      w: r.width,
+      h: r.height,
+    };
+  }
+
+  function feetY(side, arena) {
+    const b = boxOf(spriteOf(side) || side, arena);
+    return b.top + b.h - 8;
+  }
+
+  function fxLayer(arena) {
+    let l = arena.querySelector(".sba-fxlayer");
+    if (!l) {
+      l = document.createElement("div");
+      l.className = "sba-fxlayer";
+      (arena.querySelector(".sba-shake") || arena).appendChild(l);
+    }
+    return l;
+  }
+
+  function topLayer(arena) {
+    let l = arena.querySelector(".sba-toplayer");
+    if (!l) {
+      l = document.createElement("div");
+      l.className = "sba-toplayer";
+      arena.appendChild(l);
+    }
+    return l;
+  }
+
+  // One-shot VFX. Static look lives in CSS (.fx-*), motion lives here so every
+  // effect shares the document timeline with the fighters (hit-stop pauses all).
+  const FX_ANIM = {
+    "fx-arc": (v) => [
+      [
+        { opacity: 0, transform: "scaleX(" + v.flip + ") rotate(" + (v.rot - 70) + "deg) scale(.4)" },
+        { opacity: 1, offset: 0.22 },
+        { opacity: 0.9, offset: 0.7 },
+        { opacity: 0, transform: "scaleX(" + v.flip + ") rotate(" + (v.rot + 60) + "deg) scale(1.3)" },
+      ],
+      { duration: v.big ? 400 : 340, easing: "cubic-bezier(.1,.8,.3,1)" },
+    ],
+    "fx-burst": () => [
+      [{ opacity: 0, transform: "scale(.15)" }, { opacity: 1, offset: 0.22 }, { opacity: 0, transform: "scale(1.7)" }],
+      { duration: 400, easing: "ease-out" },
+    ],
+    "fx-ring": () => [[{ opacity: 0.95, transform: "scale(.2)" }, { opacity: 0, transform: "scale(1.8)" }], { duration: 500, easing: "ease-out" }],
+    "fx-spark": (v) => [
+      [
+        { opacity: 1, transform: "rotate(" + v.a + "deg) translateX(6px) scaleX(.4)" },
+        { opacity: 1, offset: 0.55 },
+        { opacity: 0, transform: "rotate(" + v.a + "deg) translateX(96px) scaleX(1.2)" },
+      ],
+      { duration: 400, easing: "ease-out" },
+    ],
+    "fx-dust": () => [
+      [{ opacity: 0, transform: "scale(.4)" }, { opacity: 0.9, offset: 0.3 }, { opacity: 0, transform: "scale(1.8) translateY(-4px)" }],
+      { duration: 400, easing: "ease-out" },
+    ],
+    "fx-dodge-ring": () => [
+      [{ opacity: 0, transform: "scale(.4)" }, { opacity: 1, offset: 0.25 }, { opacity: 0, transform: "scale(1.6)" }],
+      { duration: 460, easing: "ease-out" },
+    ],
+    "fx-rune": (v) => [
+      [
+        { opacity: 0, transform: "translate(0,10px) scaleY(.5)" },
+        { opacity: 1, offset: 0.3 },
+        { opacity: 0, transform: "translate(" + v.dx + "px,-90px) scaleY(1.3)" },
+      ],
+      { duration: 550, easing: "ease-out" },
+    ],
+    "fx-bolt": (v) => [
+      [
+        { opacity: 0, transform: "scaleY(.15) scaleX(1.6)" },
+        { opacity: 1, transform: "scaleY(1) scaleX(1.1)", offset: 0.18 },
+        { opacity: 1, transform: "scaleY(1) scaleX(.9)", offset: 0.6 },
+        { opacity: 0, transform: "scaleY(1) scaleX(.3)" },
+      ],
+      { duration: 340, easing: "ease-out", delay: v.delay || 0 },
+    ],
+    "fx-arrow": () => [
+      [
+        { opacity: 0, transform: "rotate(62deg) translateX(-190px)" },
+        { opacity: 1, offset: 0.15 },
+        { opacity: 1, offset: 0.75 },
+        { opacity: 0, transform: "rotate(62deg) translateX(24px)" },
+      ],
+      { duration: 280, easing: "cubic-bezier(.5,0,1,.6)" },
+    ],
+    "fx-shock": () => [[{ opacity: 1, transform: "scale(.2)" }, { opacity: 0, transform: "scale(1.9)" }], { duration: 550, easing: "ease-out" }],
+    "fx-boulder": (v) => [
+      [{ opacity: 1, transform: "translate(0,0) rotate(0)" }, { opacity: 0, transform: "translate(" + v.dx + "px," + v.dy + "px) rotate(200deg)" }],
+      { duration: 600, easing: "cubic-bezier(.2,.6,.5,1)" },
+    ],
+    "fx-flood": () => [[{ opacity: 0 }, { opacity: 0.55, offset: 0.25 }, { opacity: 0 }], { duration: 700, easing: "ease-out" }],
+    "fx-shot": () => [[{ opacity: 1 }, { opacity: 1 }], { duration: 260 }],
+  };
+
+  function fx(arena, cls, x, y, vars) {
+    vars = vars || {};
+    const key = cls.split(" ")[0];
+    const el = document.createElement("span");
+    el.className = "fx " + cls;
+    if (x != null) el.style.left = x + "px";
+    if (y != null) el.style.top = y + "px";
+    if (vars.color) el.style.setProperty("--c", vars.color);
+    fxLayer(arena).appendChild(el);
+    const spec = FX_ANIM[key];
+    if (spec) {
+      const pair = spec(Object.assign({ flip: 1, rot: 0, a: 0, dx: 0, dy: 0, big: cls.indexOf("big") >= 0 }, vars));
+      const timing = Object.assign({ fill: "both" }, pair[1]);
+      const an = el.animate(pair[0], timing);
+      an.onfinish = () => el.remove();
+      setTimeout(() => el.remove(), (timing.duration + (timing.delay || 0)) * 2 + 1000);
+    } else {
+      setTimeout(() => el.remove(), 800);
+    }
+    return el;
+  }
+
+  function sparks(arena, x, y, color, n) {
+    for (let i = 0; i < (n || 6); i++) {
+      fx(arena, "fx-spark", x, y, { color: color, a: Math.round(rnd(0, 360)) });
+    }
+  }
+
+  function afterimage(arena, side) {
+    const img = spriteOf(side);
+    if (!img) return;
+    const b = boxOf(img, arena);
+    const g = img.cloneNode(false);
+    g.className = "fighter-ghost" + (side.classList.contains("player") ? " flip" : "");
+    g.removeAttribute("id");
+    g.style.cssText = "left:" + b.left + "px;top:" + b.top + "px;width:" + b.w + "px;height:" + b.h + "px";
+    fxLayer(arena).appendChild(g);
+    g.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 260, easing: "ease-out" });
+    setTimeout(() => g.remove(), 280);
+  }
+
+  function spawnDamage(arena, side, text, kind) {
+    const img = spriteOf(side);
+    const b = img ? boxOf(img, arena) : { x: arena.clientWidth / 2, top: 40 };
+    const el = document.createElement("span");
+    el.className = "dmg-num " + (kind || "dmg");
+    el.textContent = text;
+    el.style.left = b.x + rnd(-18, 18) + "px";
+    el.style.top = b.top + rnd(2, 14) + "px";
+    topLayer(arena).appendChild(el);
+    const big = kind === "crit" || kind === "time";
+    el.animate(
+      [
+        { transform: "translate(-50%,0) scale(.35)", opacity: 0 },
+        { transform: "translate(-50%,-14px) scale(" + (big ? 1.75 : 1.5) + ")", opacity: 1, offset: 0.16 },
+        { transform: "translate(-50%,-20px) scale(1)", opacity: 1, offset: 0.38 },
+        { transform: "translate(-50%,-28px) scale(1)", opacity: 1, offset: 0.7 },
+        { transform: "translate(-50%,-64px) scale(.9)", opacity: 0 },
+      ],
+      { duration: 950, easing: "cubic-bezier(.2,.7,.3,1)" }
+    );
+    setTimeout(() => el.remove(), 980);
+  }
+
+  function shake(arena, amp, ms) {
+    const el = arena.querySelector(".sba-shake");
+    if (!el) return;
+    const a = amp || 6;
+    const k = [];
+    for (let i = 0; i < 7; i++) {
+      const f = 1 - i / 6;
+      k.push({ transform: "translate(" + rnd(-a, a) * f + "px," + rnd(-a, a) * f * 0.7 + "px)" });
+    }
+    k.push({ transform: "translate(0,0)" });
+    el.animate(k, { duration: ms || 280, easing: "linear" });
+  }
+
+  function screenFlash(arena, color, peak, ms) {
+    const el = document.createElement("span");
+    el.className = "fx-flash";
+    el.style.background = color || "#fff";
+    topLayer(arena).appendChild(el);
+    el.animate([{ opacity: 0 }, { opacity: peak == null ? 0.85 : peak, offset: 0.15 }, { opacity: 0 }], {
+      duration: ms || 220,
+      easing: "ease-out",
+    });
+    setTimeout(() => el.remove(), (ms || 220) + 40);
+  }
+
+  // Freeze-frame: zero the playback rate instead of pause()/play() so the
+  // resume is synchronous and keeps the exact current time of every animation.
+  function hitStop(arena, ms) {
+    const anims = arena.getAnimations({ subtree: true }).filter((a) => a.playState === "running" && a.playbackRate !== 0);
+    const rates = anims.map((a) => a.playbackRate);
+    anims.forEach((a) => {
+      a.playbackRate = 0;
+    });
+    return wait(ms).then(() =>
+      anims.forEach((a, i) => {
+        try {
+          a.playbackRate = rates[i];
+        } catch (e) {}
+      })
+    );
+  }
+
+  function bodyBase(side) {
+    return side.classList.contains("player") ? "scaleX(-1) " : "";
+  }
+
+  function flinch(arena, side, dir, heavy) {
+    const k = heavy ? 26 : 16;
+    actorOf(side).animate(
+      [
+        { transform: "translate(0,0)" },
+        { transform: "translate(" + dir * k + "px,5px) rotate(" + dir * 3 + "deg)", offset: 0.22, easing: "cubic-bezier(.1,.9,.3,1)" },
+        { transform: "translate(" + dir * k * 0.55 + "px,2px)", offset: 0.62 },
+        { transform: "translate(0,0)" },
+      ],
+      { duration: heavy ? 520 : 400, easing: "ease-out" }
+    );
+    const body = side.querySelector(".sba-body");
+    if (body) {
+      body.animate(
+        [
+          { filter: "brightness(1)" },
+          { filter: "brightness(3.2) saturate(.3)", offset: 0.12 },
+          { filter: "brightness(1.25) sepia(.35) hue-rotate(-20deg)", offset: 0.4 },
+          { filter: "brightness(1)" },
+        ],
+        { duration: 380 }
+      );
+    }
+    setPose(side, "hit");
+    fx(arena, "fx-dust", boxOf(actorOf(side), arena).x + dir * 10, feetY(side, arena));
+    setTimeout(() => setPose(side, "idle"), heavy ? 480 : 360);
+  }
+
+  async function dodge(arena, side, dir) {
+    setPose(side, "dodge");
+    const b = boxOf(actorOf(side), arena);
+    fx(arena, "fx-dodge-ring", b.x, feetY(side, arena));
+    afterimage(arena, side);
+    setTimeout(() => afterimage(arena, side), 70);
+    actorOf(side).animate(
+      [
+        { transform: "translate(0,0)" },
+        { transform: "translate(" + dir * 40 + "px,-30px) rotate(" + dir * 6 + "deg)", offset: 0.3, easing: "cubic-bezier(.15,.85,.3,1)" },
+        { transform: "translate(" + dir * 40 + "px,-30px) rotate(" + dir * 6 + "deg)", offset: 0.5 },
+        { transform: "translate(0,0)", easing: "cubic-bezier(.4,0,.6,1)" },
+      ],
+      { duration: 560 }
+    );
+    spawnDamage(arena, side, "MISS", "miss");
+    await wait(560);
+    setPose(side, "idle");
+  }
+
+  function impact(arena, target, dir, color, text, kind, heavy) {
+    const t = boxOf(spriteOf(target) || target, arena);
+    fx(arena, "fx-burst", t.x + rnd(-8, 8), t.y + rnd(-8, 8), { color: color });
+    fx(arena, "fx-ring", t.x, t.y, { color: color });
+    sparks(arena, t.x, t.y, color, heavy ? 9 : 6);
+    flinch(arena, target, dir, heavy);
+    spawnDamage(arena, target, text, kind);
+    Sfx.hit();
+    shake(arena, heavy ? 10 : 5, 260);
+    if (kind === "time") screenFlash(arena, "rgba(255,60,40,.9)", 0.5, 260);
+  }
+
+  async function basicAttack(arena, attacker, target, o) {
+    const dir = o.fromBoss ? -1 : 1;
+    const actor = actorOf(attacker);
+    const a = boxOf(actor, arena);
+    const t = boxOf(actorOf(target), arena);
+    const gap = t.x - a.x;
+    const lunge = o.melee ? gap * 0.58 : gap * 0.12;
+    const D = 1080;
+    const t0 = performance.now();
+    let paused = 0;
+    const until = (ms) => wait(Math.max(0, t0 + paused + ms - performance.now()));
+    actor.animate(
+      [
+        { transform: "translate(0,0)" },
+        { transform: "translate(" + -dir * 10 + "px,4px)", offset: 0.11, easing: "cubic-bezier(.3,.7,.5,1)" },
+        { transform: "translate(" + lunge + "px,-8px)", offset: 0.27, easing: "cubic-bezier(.05,.85,.2,1)" },
+        { transform: "translate(" + lunge + "px,-4px)", offset: 0.56 },
+        { transform: "translate(" + lunge * 0.85 + "px,-2px)", offset: 0.7, easing: "ease-in-out" },
+        { transform: "translate(0,0)" },
+      ],
+      { duration: D, easing: "linear" }
+    );
+    const body = attacker.querySelector(".sba-body");
+    const B = bodyBase(attacker);
+    if (body) {
+      body.animate(
+        [
+          { transform: B + "scale(1)" },
+          { transform: B + "scale(.94,1.06)", offset: 0.11 },
+          { transform: B + "scale(1.08,.95) rotate(" + -dir * 6 + "deg)", offset: 0.27 },
+          { transform: B + "scale(1) rotate(0)", offset: 0.45 },
+          { transform: B + "scale(1)" },
+        ],
+        { duration: D }
+      );
+    }
+    if (o.melee) [140, 190, 240].forEach((ms) => setTimeout(() => afterimage(arena, attacker), ms));
+    await until(D * 0.2);
+    setPose(attacker, "atk");
+    await until(D * 0.27);
+    const tx = boxOf(spriteOf(target) || target, arena);
+    if (o.melee) {
+      fx(arena, "fx-arc", tx.x - dir * 8, tx.y - 6, { color: o.color, flip: dir < 0 ? -1 : 1 });
+    } else {
+      const ax = boxOf(spriteOf(attacker) || attacker, arena);
+      const shot = fx(arena, "fx-shot " + (o.cls === "archer" ? "arrow" : ""), ax.x + dir * 20, ax.y - 10, { color: o.color });
+      shot.animate(
+        [
+          { transform: "translate(0,0) scale(.6)", opacity: 0.6 },
+          { transform: "translate(" + (tx.x - ax.x - dir * 20) + "px," + (tx.y - ax.y + 6) + "px) scale(1.1)", opacity: 1 },
+        ],
+        { duration: 200, easing: "cubic-bezier(.3,0,.8,.4)", fill: "forwards" }
+      );
+      await wait(200);
+      shot.remove();
+      paused += 200;
+    }
+    if (o.miss) {
+      await dodge(arena, target, dir);
+    } else {
+      impact(arena, target, dir, o.color, o.text, o.kind, o.heavy);
+      const stop = o.heavy ? 130 : 80;
+      await hitStop(arena, stop);
+      paused += stop;
+    }
+    await until(D * 0.7);
+    setPose(attacker, "idle");
+    await until(D + 40);
+  }
+
+  async function cutIn(arena, attacker, o) {
+    const host = topLayer(arena);
+    const wrap = document.createElement("div");
+    wrap.className = "sba-cutin " + (o.fromBoss ? "boss" : "hero");
+    wrap.style.setProperty("--c", o.color);
+    const band = document.createElement("div");
+    band.className = "ci-band";
+    const lines = document.createElement("div");
+    lines.className = "ci-lines";
+    const img = document.createElement("img");
+    img.className = "ci-portrait";
+    img.alt = "";
+    const sp = spriteOf(attacker);
+    img.src = poseUrl(attacker, "atk") || (sp && sp.src) || "";
+    const name = document.createElement("div");
+    name.className = "ci-name";
+    name.textContent = o.name;
+    const sub = document.createElement("div");
+    sub.className = "ci-sub";
+    sub.textContent = o.fromBoss ? "番人の技" : "必殺技";
+    wrap.append(band, lines, img, name, sub);
+    host.appendChild(wrap);
+    const from = o.fromBoss ? "110%" : "-110%";
+    const out = o.fromBoss ? "-110%" : "110%";
+    const flip = o.fromBoss ? " scaleX(-1)" : "";
+    const px = o.fromBoss ? "60px" : "-60px";
+    const nx = o.fromBoss ? "-40px" : "40px";
+    band.animate(
+      [{ transform: "translateX(" + from + ") skewY(-5deg)" }, { transform: "translateX(0) skewY(-5deg)" }],
+      { duration: 230, easing: "cubic-bezier(.1,.9,.2,1)", fill: "forwards" }
+    );
+    lines.animate(
+      [{ transform: "translateX(" + (o.fromBoss ? "-30%" : "30%") + ") skewY(-5deg)", opacity: 0 }, { transform: "translateX(0) skewY(-5deg)", opacity: 1 }],
+      { duration: 320, fill: "forwards" }
+    );
+    img.animate(
+      [
+        { transform: "translateX(" + px + ") scale(1.15)" + flip, opacity: 0 },
+        { transform: "translateX(0) scale(1)" + flip, opacity: 1 },
+      ],
+      { duration: 320, easing: "cubic-bezier(.1,.9,.2,1)", fill: "forwards", delay: 60 }
+    );
+    [name, sub].forEach((el, i) =>
+      el.animate(
+        [
+          { transform: "translateX(" + nx + ") scale(.8)", opacity: 0 },
+          { transform: "translateX(0) scale(1.08)", opacity: 1, offset: 0.6 },
+          { transform: "translateX(0) scale(1)", opacity: 1 },
+        ],
+        { duration: 380, easing: "ease-out", fill: "forwards", delay: 120 + i * 40 }
+      )
+    );
+    await wait(780);
+    wrap.animate([{ transform: "translateX(0)", opacity: 1 }, { transform: "translateX(" + out + ")", opacity: 0.6 }], {
+      duration: 200,
+      easing: "cubic-bezier(.6,0,.9,.4)",
+      fill: "forwards",
+    });
+    await wait(200);
+    wrap.remove();
+  }
+
+  async function skillAttack(arena, attacker, target, o) {
+    const dir = o.fromBoss ? -1 : 1;
+    const color = o.color;
+    const hits = o.hits || 3;
+    const dim = document.createElement("div");
+    dim.className = "sba-dim";
+    topLayer(arena).appendChild(dim);
+    dim.animate([{ opacity: 0 }, { opacity: 0.72 }], { duration: 180, fill: "forwards" });
+    await cutIn(arena, attacker, o);
+
+    // charge
+    setPose(attacker, "atk");
+    const body = attacker.querySelector(".sba-body");
+    const aura = attacker.querySelector(".sba-aura");
+    if (body) {
+      body.animate(
+        [
+          { filter: "brightness(1) drop-shadow(0 0 0 transparent)" },
+          { filter: "brightness(1.8) drop-shadow(0 0 24px " + color + ")", offset: 0.6 },
+          { filter: "brightness(1.2) drop-shadow(0 0 10px " + color + ")" },
+        ],
+        { duration: 480, fill: "forwards" }
+      );
+    }
+    if (aura) {
+      aura.animate([{ transform: "scale(1)", opacity: 0.7 }, { transform: "scale(2.2)", opacity: 1, offset: 0.7 }, { transform: "scale(1.4)", opacity: 0.9 }], {
+        duration: 480,
+      });
+    }
+    const actor = actorOf(attacker);
+    const a = boxOf(actor, arena);
+    for (let i = 0; i < 6; i++) {
+      setTimeout(() => fx(arena, "fx-rune", a.x + rnd(-26, 26), feetY(attacker, arena), { color: color, dx: rnd(-14, 14) }), i * 50);
+    }
+    actor.animate(
+      [{ transform: "translate(0,0)" }, { transform: "translate(" + dir * 6 + "px,-14px)", offset: 0.5 }, { transform: "translate(0,0)" }],
+      { duration: 460, easing: "ease-in-out" }
+    );
+    await wait(440);
+    dim.animate([{ opacity: 0.72 }, { opacity: 0.38 }], { duration: 200, fill: "forwards" });
+
+    // VFX + hits
+    const t = boxOf(spriteOf(target) || target, arena);
+    const per = 150;
+    const beat = async (i) => {
+      const last = i === hits - 1;
+      const kind = last ? (o.heavy ? "time" : "crit") : "dmg";
+      impact(arena, target, dir, color, o.text(i, last), kind, last || o.heavy);
+      if (last) {
+        screenFlash(arena, "#fff", 0.9, 200);
+        await hitStop(arena, 150);
+      } else {
+        await wait(per);
+      }
+    };
+    if (o.cls === "swordsman") {
+      const lunge = (t.x - a.x) * 0.62;
+      const total = 240 + hits * per + 460;
+      actor.animate(
+        [
+          { transform: "translate(0,0)" },
+          { transform: "translate(" + lunge + "px,-10px)", offset: 0.14, easing: "cubic-bezier(.05,.85,.2,1)" },
+          { transform: "translate(" + lunge + "px,-6px)", offset: 0.72 },
+          { transform: "translate(0,0)" },
+        ],
+        { duration: total, easing: "linear" }
+      );
+      [40, 80, 120, 160].forEach((ms) => setTimeout(() => afterimage(arena, attacker), ms));
+      await wait(230);
+      for (let i = 0; i < hits; i++) {
+        fx(arena, "fx-arc big", t.x + (i % 2 ? 14 : -14), t.y - 10 + i * 6, { color: color, rot: i * 40 - 30, flip: dir < 0 ? -1 : 1 });
+        await beat(i);
+      }
+      await wait(420);
+    } else if (o.cls === "mage") {
+      fx(arena, "fx-flood", null, null, { color: color });
+      for (let i = 0; i < hits; i++) {
+        const x = t.x + (i - 1) * 16;
+        fx(arena, "fx-bolt", x, 0, { color: color });
+        fx(arena, "fx-bolt thin", x + 12, 0, { color: color, delay: 50 });
+        await beat(i);
+      }
+      await wait(260);
+    } else if (o.cls === "archer") {
+      for (let i = 0; i < hits; i++) {
+        for (let k = 0; k < 3; k++) {
+          setTimeout(() => fx(arena, "fx-arrow", t.x + rnd(-24, 24), t.y - 12 + rnd(-20, 20), { color: color }), k * 45);
+        }
+        await wait(170);
+        await beat(i);
+      }
+      await wait(220);
+    } else {
+      const lunge = (t.x - a.x) * 0.6;
+      const total = 380 + hits * per + 460;
+      actor.animate(
+        [
+          { transform: "translate(0,0)" },
+          { transform: "translate(" + dir * 20 + "px,-76px)", offset: 0.24, easing: "cubic-bezier(.2,.8,.4,1)" },
+          { transform: "translate(" + lunge + "px,-10px)", offset: 0.4, easing: "cubic-bezier(.7,0,1,.6)" },
+          { transform: "translate(" + lunge + "px,-4px)", offset: 0.76 },
+          { transform: "translate(0,0)" },
+        ],
+        { duration: total, easing: "linear" }
+      );
+      await wait(total * 0.4);
+      fx(arena, "fx-shock", t.x, feetY(target, arena), { color: color });
+      for (let i = 0; i < 7; i++) {
+        fx(arena, "fx-boulder", t.x + rnd(-20, 20), feetY(target, arena), { dx: rnd(-70, 70), dy: rnd(-90, -30) });
+      }
+      shake(arena, 12, 320);
+      for (let i = 0; i < hits; i++) await beat(i);
+      await wait(420);
+    }
+    dim.animate([{ opacity: 0.38 }, { opacity: 0 }], { duration: 260, fill: "forwards" });
+    if (body) body.animate([{ filter: "brightness(1.2) drop-shadow(0 0 10px " + color + ")" }, { filter: "brightness(1)" }], { duration: 260, fill: "forwards" });
+    setPose(attacker, "idle");
+    await wait(280);
+    dim.remove();
+    if (body) body.getAnimations().forEach((an) => an.cancel());
+  }
+
+  async function runAction(fn) {
+    if (actionBusy) return false;
+    actionBusy = true;
+    try {
+      await fn();
+    } catch (e) {
+      console.warn("fight action", e);
+    } finally {
+      actionBusy = false;
+    }
+    flushPending();
+    return true;
+  }
+
+  function flushPending() {
+    if (!pendingSkill || actionBusy || timedOut) return;
+    const p = pendingSkill;
+    pendingSkill = null;
+    heroSkill(p.term, p.hits);
+  }
+
+  function resetFighters(arena) {
+    if (!arena) return;
+    actionBusy = false;
+    pendingSkill = null;
+    arena.querySelectorAll(".sba-side, .sba-shake").forEach((el) => {
+      el.getAnimations({ subtree: true }).forEach((an) => {
+        const css = (window.CSSAnimation && an instanceof CSSAnimation) || (window.CSSTransition && an instanceof CSSTransition);
+        if (!css) an.cancel();
+      });
+      el.classList.remove("show-pose");
+    });
+    const top = arena.querySelector(".sba-toplayer");
+    if (top) top.innerHTML = "";
+    const fxl = arena.querySelector(".sba-fxlayer");
+    if (fxl) fxl.innerHTML = "";
   }
 
   function spawnMindRune(term) {
@@ -748,26 +1288,6 @@
     setTimeout(() => arena.classList.remove("mind-cast"), 560);
   }
 
-  function spawnGhost(side) {
-    if (!side) return;
-    const body = side.querySelector(".sba-body");
-    const img = side.classList.contains("show-pose")
-      ? side.querySelector(".pose-layer") || side.querySelector(".fighter-sprite")
-      : side.querySelector(".idle-layer") || side.querySelector(".fighter-sprite");
-    if (!body || !img) return;
-    const g = img.cloneNode(true);
-    g.className = "fighter-ghost";
-    g.removeAttribute("id");
-    body.appendChild(g);
-    setTimeout(() => g.remove(), 380);
-  }
-
-  function hitFreeze(arena, ms) {
-    if (!arena) return;
-    arena.classList.add("freeze");
-    setTimeout(() => arena.classList.remove("freeze"), ms || 90);
-  }
-
   function setFightState(st) {
     st = st || {};
     fightArmed = !!st.armed;
@@ -786,128 +1306,96 @@
     }
   }
 
-  function trailGhosts(side) {
-    if (!side) return;
-    [0, 45, 90, 135].forEach((ms) => setTimeout(() => spawnGhost(side), ms));
-  }
-
   function playStrike(term, opts) {
     const arena = activeArena();
     if (!arena || timedOut) return;
     opts = opts || {};
-    const miss = !!opts.miss || (fightBlank && !term);
     lastHitAt = Date.now();
     lastPlayerAct = lastHitAt;
-    const cls = arena.dataset.heroClass || window.FsqHeroClass || "swordsman";
-    const melee = cls === "swordsman";
-    arena.classList.remove("striking", "clashing", "boss-striking");
-    void arena.offsetWidth;
-    arena.classList.add("striking");
-    if (term && !miss) {
-      pulseMind(arena);
-      showSkillName(arena, skillLabel(cls, typingCombo), false);
-      spawnMindRune(term);
-    } else if (miss) {
-      showSkillName(arena, "空振り", false);
-    } else {
-      showSkillName(arena, skillLabel(cls, combatTurn), false);
-    }
-    const hero = arena.querySelector(".sba-side.player");
-    const boss = arena.querySelector(".sba-side.monster");
-    clearFighterState(hero);
-    if (hero) {
-      busy(hero, true);
-      hero.classList.add("windup");
-      setTimeout(() => {
-        hero.classList.remove("windup");
-        setPose(hero, "atk");
-        void hero.offsetWidth;
-        hero.classList.add(melee ? "rush" : "cast", "atk-" + cls);
-        if (melee) trailGhosts(hero);
-        else fireShot(arena, shotKind(cls));
-      }, 90);
-      setTimeout(() => {
-        hero.classList.remove("rush", "cast", "atk-swordsman", "atk-mage", "atk-archer");
-        setPose(hero, "idle");
-      }, 1120);
-      releaseBusy(hero, 1180);
-    }
-    setTimeout(() => {
-      if (miss) {
-        if (boss) {
-          busy(boss, true);
-          setPose(boss, "dodge");
-          clearFighterState(boss);
-          void boss.offsetWidth;
-          boss.classList.add("dodge");
-          setTimeout(() => boss.classList.remove("dodge"), 520);
-          releaseBusy(boss, 560);
-        }
-        spawnHitFloater("回避", "miss");
+    if (term && !opts.miss && !fightBlank) {
+      if (actionBusy) {
+        pendingSkill = pendingSkill ? { term: term, hits: Math.min(5, pendingSkill.hits + 1) } : { term: term, hits: 3 };
         return;
       }
-      arena.classList.add("clashing");
-      burstClash(arena, false);
-      hitFreeze(arena, 150);
-      if (boss) {
-        busy(boss, true);
-        setPose(boss, "hit");
-        clearFighterState(boss);
-        void boss.offsetWidth;
-        boss.classList.add("hit");
-        setTimeout(() => boss.classList.remove("hit"), 480);
-        releaseBusy(boss, 520);
+      heroSkill(term, 3);
+      return;
+    }
+    const miss = !!opts.miss || fightBlank || !fightArmed;
+    runAction(() => {
+      const hero = sideOf(arena, "player");
+      const boss = sideOf(arena, "monster");
+      if (!hero || !boss) return Promise.resolve();
+      const cls = heroKind(arena);
+      if (!miss) {
+        battlePct = Math.min(96, battlePct + 1);
+        updateBattleBars(battlePct);
       }
-      Sfx.hit();
-      setTimeout(() => arena.classList.remove("clashing"), 560);
-    }, melee ? 230 : 340);
+      return basicAttack(arena, hero, boss, {
+        cls: cls,
+        melee: cls === "swordsman",
+        color: CLS_COLOR[cls] || CLS_COLOR.swordsman,
+        miss: miss,
+        text: "-" + (18 + Math.floor(Math.random() * 20)),
+        kind: "dmg",
+        fromBoss: false,
+      });
+    });
+  }
+
+  function heroSkill(term, hits) {
+    const arena = activeArena();
+    if (!arena || timedOut) return;
+    runAction(async () => {
+      const hero = sideOf(arena, "player");
+      const boss = sideOf(arena, "monster");
+      if (!hero || !boss) return;
+      const cls = heroKind(arena);
+      pulseMind(arena);
+      spawnMindRune(term);
+      await skillAttack(arena, hero, boss, {
+        cls: cls,
+        color: CLS_COLOR[cls] || CLS_COLOR.swordsman,
+        name: skillLabel(cls, typingCombo),
+        hits: hits || 3,
+        fromBoss: false,
+        text: (i, last) => "-" + ((last ? 160 : 70) + Math.floor(Math.random() * 60)),
+      });
+    });
   }
 
   function playBossStrike(opts) {
     const arena = activeArena();
     if (!arena || timedOut) return;
     opts = opts || {};
-    arena.classList.remove("boss-striking", "clashing", "striking");
-    void arena.offsetWidth;
-    arena.classList.add("boss-striking");
-    showSkillName(arena, skillLabel("boss", Math.floor(Math.random() * 3)), true);
-    const boss = arena.querySelector(".sba-side.monster");
-    const hero = arena.querySelector(".sba-side.player");
-    clearFighterState(boss);
-    if (boss) {
-      busy(boss, true);
-      boss.classList.add("windup");
-      setTimeout(() => {
-        boss.classList.remove("windup");
-        setPose(boss, "atk");
-        void boss.offsetWidth;
-        boss.classList.add("rush", "atk-boss");
-        trailGhosts(boss);
-        fireShot(arena, "boss");
-      }, 90);
-      setTimeout(() => {
-        boss.classList.remove("rush", "atk-boss");
-        setPose(boss, "idle");
-      }, 1120);
-      releaseBusy(boss, 1180);
-    }
-    setTimeout(() => {
-      arena.classList.add("clashing");
-      burstClash(arena, true);
-      hitFreeze(arena, opts.heavy ? 180 : 150);
-      if (hero) {
-        busy(hero, true);
-        setPose(hero, "hit");
-        clearFighterState(hero);
-        void hero.offsetWidth;
-        hero.classList.add("hit");
-        setTimeout(() => hero.classList.remove("hit"), 480);
-        releaseBusy(hero, 520);
+    runAction(async () => {
+      const boss = sideOf(arena, "monster");
+      const hero = sideOf(arena, "player");
+      if (!hero || !boss) return;
+      bossTurn += 1;
+      const heavy = !!opts.heavy;
+      if (bossTurn % 3 === 0) {
+        await skillAttack(arena, boss, hero, {
+          cls: "boss",
+          color: CLS_COLOR.boss,
+          name: skillLabel("boss", bossTurn),
+          hits: 2,
+          fromBoss: true,
+          heavy: heavy,
+          text: (i, last) => (heavy && last ? "-TIME" : "-" + (8 + Math.floor(Math.random() * 10))),
+        });
+      } else {
+        await basicAttack(arena, boss, hero, {
+          cls: "boss",
+          melee: true,
+          color: CLS_COLOR.boss,
+          miss: false,
+          heavy: heavy,
+          text: heavy ? "-TIME" : "-" + (6 + Math.floor(Math.random() * 8)),
+          kind: heavy ? "time" : "dmg",
+          fromBoss: true,
+        });
       }
-      spawnHitFloater(opts.heavy ? "-TIME" : "-" + (6 + Math.floor(Math.random() * 8)), "dmg");
-      Sfx.hit();
-      setTimeout(() => arena.classList.remove("clashing"), 560);
-    }, 240);
+    });
   }
 
   function playStruggle() {
@@ -917,10 +1405,14 @@
   function startCombatLoop() {
     lastPlayerAct = Date.now();
     combatTurn = 0;
+    bossTurn = 0;
     stopCombatLoop();
     const arena = activeArena();
-    if (arena) arena.classList.add("fighting");
-    combatTimer = setInterval(combatTick, 2200);
+    if (arena) {
+      arena.classList.add("fighting");
+      resetFighters(arena);
+    }
+    combatTimer = setInterval(combatTick, 1900);
     startIdleLoop();
   }
 
@@ -940,8 +1432,8 @@
     const arena = activeArena();
     if (!arena || arena.hidden || timedOut) return;
     if (arena.classList.contains("ko-boss") || arena.classList.contains("ko-player")) return;
-    const now = Date.now();
-    if (now - lastHitAt < 1200) return;
+    if (actionBusy || pendingSkill) return;
+    if (Date.now() - lastHitAt < 700) return;
     if (fightBlank || !fightArmed) {
       if (combatTurn % 3 === 0) {
         playStrike(null, { miss: true });
@@ -950,9 +1442,6 @@
       }
     } else if (combatTurn % 2 === 0) {
       playStrike(null);
-      spawnHitFloater("-" + (5 + Math.floor(Math.random() * 7)), "dmg");
-      battlePct = Math.min(96, battlePct + 1);
-      updateBattleBars(battlePct);
     } else {
       playBossStrike();
     }
@@ -993,6 +1482,13 @@
     const arena = activeArena();
     const host = arena || $("studyModal") || $("examModal");
     if (!host) return;
+    if (arena) {
+      const side = sideOf(arena, kind === "miss" ? "player" : "monster");
+      if (side) {
+        spawnDamage(arena, side, text, kind === "crit" ? "crit" : kind || "dmg");
+        return;
+      }
+    }
     const f = document.createElement("span");
     f.className = "hit-floater " + (kind || "dmg");
     f.textContent = text;
@@ -1140,9 +1636,7 @@
     lastHitAt = now;
     lastPlayerAct = now;
     typingCombo += 1;
-    Sfx.hit();
     playStrike(term);
-    spawnHitFloater("-" + (14 + Math.floor(Math.random() * 22)), "dmg");
     const arena = activeArena();
     if (arena) arena.classList.toggle("combo-hot", typingCombo >= 3);
     if (typingCombo === 5) {
@@ -1312,6 +1806,7 @@
     showBossIntro: showBossIntro,
     paintFighters: paintFighters,
     playStrike: playStrike,
+    playBossStrike: playBossStrike,
     playKo: playKo,
     setFightState: setFightState,
     setTimeUpHandler: function (fn) {

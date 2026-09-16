@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>LUNA fight preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Shippori+Mincho:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#0c0a18;color:#eee;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px}
+  #studyModal.study-modal{position:relative!important;inset:auto!important;display:block!important;background:none!important;width:460px;padding:0!important;z-index:1!important}
+  #studyModal .study-battle-arena{height:300px!important;display:block!important;border-bottom:2px solid rgba(212,168,75,.55)!important;border-radius:14px!important}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  button{background:#2b2350;color:#ffe9b0;border:1px solid #6d5aa8;border-radius:8px;padding:.45rem .8rem;font-weight:700;cursor:pointer}
+  select{background:#2b2350;color:#ffe9b0;border:1px solid #6d5aa8;border-radius:8px;padding:.4rem}
+  #log{font:12px ui-monospace,monospace;color:#9c92c6;max-width:460px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div class="bar">
+  <select id="cls"><option value="swordsman">swordsman</option><option value="mage">mage</option><option value="archer">archer</option></select>
+  <select id="boss"><option value="lesson">slime</option><option value="weekly">knight</option></select>
+  <button id="btnPaint">paint</button>
+  <button id="btnBasic">basic</button>
+  <button id="btnMiss">miss</button>
+  <button id="btnSkill">skill</button>
+  <button id="btnBoss">boss</button>
+  <button id="btnBossHeavy">boss heavy</button>
+  <button id="btnLoop">auto loop</button>
+  <button id="btnStop">stop</button>
+  <label><input type="checkbox" id="slow"> slow-mo x<input type="number" id="slowF" value="8" style="width:3em"></label>
+</div>
+<script>
+  (function () {
+    const F = () => Number((document.getElementById("slowF") || {}).value) || 8;
+    const realNow = performance.now.bind(performance);
+    const realST = window.setTimeout;
+    window.__realST = realST;
+    const slow = () => { const c = document.getElementById("slow"); return !!(c && c.checked); };
+    performance.now = () => realNow() / (slow() ? F() : 1);
+    window.setTimeout = (fn, ms, ...a) => realST(fn, (ms || 0) * (slow() ? F() : 1), ...a);
+    const realAnimate = Element.prototype.animate;
+    Element.prototype.animate = function (k, o) { const a = realAnimate.call(this, k, o); if (slow()) a.playbackRate = 1 / F(); return a; };
+    new MutationObserver((muts) => {
+      if (!slow()) return;
+      muts.forEach((m) => m.addedNodes.forEach((n) => {
+        if (!n.getAnimations) return;
+        n.getAnimations({ subtree: true }).forEach((a) => { if (a.playbackRate === 1) a.playbackRate = 1 / F(); });
+      }));
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  })();
+</script>
+<div id="mount"></div>
+<div id="dbg" style="font:11px ui-monospace,monospace;color:#8fd"></div>
+<div id="log"></div>
+<script>
+(async function () {
+  const lines = [];
+  const log = (m) => { lines.push(m); if (lines.length > 12) lines.shift(); document.getElementById("log").textContent = lines.join("\n"); };
+  ["warn", "error"].forEach((k) => { const o = console[k].bind(console); console[k] = (...a) => { log(k + ": " + a.map((x) => (x && x.stack) || String(x)).join(" ")); o(...a); }; });
+  window.addEventListener("error", (e) => log("err: " + e.message + " @" + e.lineno));
+  window.addEventListener("unhandledrejection", (e) => log("rej: " + ((e.reason && e.reason.stack) || e.reason)));
+  const tick = () => {
+    requestAnimationFrame(tick);
+    const a = document.getElementById("studyBattleArena");
+    if (!a) return;
+    document.title = "anims=" + a.getAnimations({ subtree: true }).length;
+    const fxs = [...a.querySelectorAll(".fx")];
+    const act = a.querySelector(".sba-side.player .sba-actor");
+    let actS = "";
+    if (act) {
+      const m = getComputedStyle(act).transform.match(/-?[\d.]+/g);
+      const an = act.getAnimations()[0];
+      actS = " hero=" + (m && m.length >= 6 ? Math.round(m[4]) + "," + Math.round(m[5]) : "0,0") + (an ? "@" + Math.round(an.currentTime || 0) : "");
+    }
+    document.getElementById("dbg").textContent =
+      "t=" + Math.round(performance.now()) + actS + " fx=" + fxs.length + " " +
+      fxs.slice(0, 4).map((e) => { const cs = getComputedStyle(e); const an = e.getAnimations()[0]; return e.className.replace("fx ", "") + ":" + Number(cs.opacity).toFixed(2) + (an ? "@" + Math.round(an.currentTime || 0) + an.playState[0] : "-"); }).join(" | ");
+  };
+  tick();
+  const html = await (await fetch("/static/app.html?" + Date.now())).text();
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.querySelectorAll("style").forEach((s) => { const c = document.createElement("style"); c.textContent = s.textContent; document.head.appendChild(c); });
+  const arena = doc.getElementById("studyBattleArena");
+  const modal = document.createElement("div");
+  modal.id = "studyModal";
+  modal.className = "study-modal open battle-mode";
+  modal.appendChild(arena);
+  document.getElementById("mount").appendChild(modal);
+  arena.hidden = false;
+  window.FsqHeroName = "LUNA";
+  window.FsqHeroClass = document.getElementById("cls").value;
+  await new Promise((res) => { const s = document.createElement("script"); s.src = "/static/world.js?" + Date.now(); s.onload = res; document.body.appendChild(s); });
+  const W = window.FsqWorld;
+  W.init();
+  function paint() {
+    window.FsqHeroClass = document.getElementById("cls").value;
+    W.paintFighters(document.getElementById("boss").value, "スライム");
+    arena.hidden = false;
+    W.setFightState({ blank: false, armed: true });
+    log("painted " + window.FsqHeroClass);
+  }
+  paint();
+  document.getElementById("btnPaint").onclick = paint;
+  document.getElementById("btnBasic").onclick = () => { W.setFightState({ blank: false, armed: true }); W.playStrike(null); };
+  document.getElementById("btnMiss").onclick = () => { W.playStrike(null, { miss: true }); };
+  document.getElementById("btnSkill").onclick = () => { W.setFightState({ blank: false, armed: true }); W.playStrike("用語"); };
+  document.getElementById("btnBoss").onclick = () => { W.playBossStrike(); };
+  document.getElementById("btnBossHeavy").onclick = () => { W.playBossStrike({ heavy: true }); };
+  document.getElementById("btnLoop").onclick = () => { W.onOpenQuest({ title_ja: "PREVIEW", estimated_minutes: 20 }, {}); W.setFightState({ blank: false, armed: true }); };
+  document.getElementById("btnStop").onclick = () => { W.closeQuest(); };
+  document.getElementById("cls").onchange = paint;
+  document.getElementById("boss").onchange = paint;
+  // URL driven: ?cls=mage&boss=weekly&slow=40&act=skill|basic|miss|boss|bossheavy|fx
+  const q = new URLSearchParams(location.search);
+  if (q.get("cls")) { document.getElementById("cls").value = q.get("cls"); }
+  if (q.get("boss")) { document.getElementById("boss").value = q.get("boss"); }
+  if (q.get("cls") || q.get("boss")) paint();
+  if (q.get("slow")) { document.getElementById("slowF").value = q.get("slow"); document.getElementById("slow").checked = true; }
+  const act = q.get("act");
+  if (act) {
+    const map = { skill: "btnSkill", basic: "btnBasic", miss: "btnMiss", boss: "btnBoss", bossheavy: "btnBossHeavy", loop: "btnLoop" };
+    window.__realST(() => { const b = document.getElementById(map[act]); if (b) b.click(); }, 300);
+  }
+})();
+</script>
+</body>
+</html>
