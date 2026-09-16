@@ -242,9 +242,51 @@ def test_companion_speaks_next_event():
     assert "課題提出" in line
     assert "教室B" in line
     assert "ホアンさん" in line
+    assert "次は" not in line
     empty = companion_agenda_line(_user(), now=now)
     assert empty is None
     print("OK agenda speak", line)
+
+
+def test_companion_asks_when_opened_during_school():
+    user = _user()
+    user["companion_id"] = "luno"
+    now = datetime(2026, 9, 16, 11, 51, tzinfo=JST)
+    add_event(
+        user,
+        title="学校",
+        event_date="2026-09-16",
+        event_time="09:20",
+        event_end_time="16:30",
+        location="学校",
+    )
+    line = companion_agenda_line(user, now=now, who="Adminさん")
+    assert line
+    assert "授業" in line
+    assert "何か" in line
+    assert "大丈夫" in line
+    assert "次は" not in line
+    assert "09:20" not in line
+    assert "16:30" not in line
+    print("OK during school", line)
+
+
+def test_companion_asks_during_part_time_job():
+    user = _user()
+    user["companion_id"] = "luna"
+    now = datetime(2026, 9, 16, 18, 10, tzinfo=JST)
+    add_event(
+        user,
+        title="バイト",
+        event_date="2026-09-16",
+        event_time="17:00",
+        event_end_time="21:00",
+    )
+    line = companion_agenda_line(user, now=now, who="ホアンさん")
+    assert "バイト" in line
+    assert "次は" not in line
+    assert "何か" in line or "休んで" in line
+    print("OK during job", line)
 
 
 def test_companion_evening_recap_done():
@@ -288,6 +330,8 @@ if __name__ == "__main__":
     test_low_urgency_only_near_start()
     test_mail_catch_by_urgency()
     test_companion_speaks_next_event()
+    test_companion_asks_when_opened_during_school()
+    test_companion_asks_during_part_time_job()
     test_companion_evening_recap_done()
     test_event_minutes()
     test_schedule_checkin_remembers_mood()

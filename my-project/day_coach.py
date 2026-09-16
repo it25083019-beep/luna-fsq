@@ -118,6 +118,258 @@ def format_notify_brief(event: Dict[str, Any], *, today: Optional[date] = None) 
     return "・".join(bits)
 
 
+def event_bounds(
+    event: Dict[str, Any],
+    *,
+    today: Optional[date] = None,
+) -> tuple[Optional[datetime], Optional[datetime]]:
+    """Start/end datetimes in JST. Missing end uses the event length (min 30m)."""
+    day = today or _today_jst()
+    start_t = _parse_hhmm(event.get("time"))
+    if start_t is None:
+        return None, None
+    start = datetime.combine(day, start_t, tzinfo=JST)
+    end_t = _parse_hhmm(event.get("end_time"))
+    if end_t is not None:
+        end = datetime.combine(day, end_t, tzinfo=JST)
+        if end <= start:
+            end = start + timedelta(minutes=max(event_minutes(event), 30))
+    else:
+        end = start + timedelta(minutes=max(event_minutes(event), 30))
+    return start, end
+
+
+def event_kind(event: Optional[Dict[str, Any]]) -> str:
+    blob = " ".join(
+        str((event or {}).get(k) or "") for k in ("title", "location", "note")
+    )
+    low = blob.lower()
+    rules = (
+        ("school", ("学校", "授業", "講義", "クラス", "学園", "登校", "school", "lecture", "class")),
+        ("work", ("バイト", "シフト", "仕事", "勤務", "アルバイト", "workplace", "part-time", "job")),
+        ("study", ("勉強", "課題", "自習", "宿題", "受験", "テスト", "試験", "ドリル")),
+    )
+    for kind, keys in rules:
+        if any(k.lower() in low if k.isascii() else k in blob for k in keys):
+            return kind
+    return "event"
+
+
+def event_kind_label(event: Optional[Dict[str, Any]]) -> str:
+    kind = event_kind(event)
+    if kind == "school":
+        return "授業"
+    if kind == "work":
+        return "バイト"
+    if kind == "study":
+        title = str((event or {}).get("title") or "").strip()
+        return title[:12] if title else "勉強"
+    title = str((event or {}).get("title") or "").strip() or "予定"
+    return title[:12]
+
+
+def _companion_voice(user: Optional[Dict[str, Any]]) -> str:
+    cid = str((user or {}).get("companion_id") or "luna").strip().lower()
+    if cid in ("luno", "ren", "hachi", "momo", "taro", "ponta"):
+        return cid
+    return "luna"
+
+
+def _pick_current_event(
+    items: List[Dict[str, Any]],
+    *,
+    now: datetime,
+    today: date,
+) -> Optional[Dict[str, Any]]:
+    happening: List[tuple[datetime, Dict[str, Any]]] = []
+    for ev in items:
+        start, end = event_bounds(ev, today=today)
+        if start and end and start <= now < end:
+            happening.append((start, ev))
+    if not happening:
+        return None
+    happening.sort(key=lambda row: row[0], reverse=True)
+    return happening[0][1]
+
+
+def _pick_upcoming_event(
+    items: List[Dict[str, Any]],
+    *,
+    now: datetime,
+    today: date,
+) -> Optional[Dict[str, Any]]:
+    later: List[tuple[datetime, Dict[str, Any]]] = []
+    for ev in items:
+        start, _end = event_bounds(ev, today=today)
+        if start and start > now:
+            later.append((start, ev))
+    if not later:
+        return None
+    later.sort(key=lambda row: row[0])
+    return later[0][1]
+
+
+def _pick_just_ended_event(
+    items: List[Dict[str, Any]],
+    *,
+    now: datetime,
+    today: date,
+    within_min: int = 45,
+) -> Optional[Dict[str, Any]]:
+    ended: List[tuple[datetime, Dict[str, Any]]] = []
+    for ev in items:
+        _start, end = event_bounds(ev, today=today)
+        if end and end <= now < end + timedelta(minutes=within_min):
+            ended.append((end, ev))
+    if not ended:
+        return None
+    ended.sort(key=lambda row: row[0], reverse=True)
+    return ended[0][1]
+
+
+def _care_line(user: Dict[str, Any], situation: str, kind: str, **fmt: str) -> str:
+    voice = _companion_voice(user)
+    table = _CARE_LINES.get(voice) or _CARE_LINES["luna"]
+    bucket = table.get(situation) or _CARE_LINES["luna"][situation]
+    tpl = bucket.get(kind) or bucket.get("event") or ""
+    return tpl.format(**fmt).strip()
+
+
+_CARE_LINES: Dict[str, Dict[str, Dict[str, str]]] = {
+    "luna": {
+        "during": {
+            "school": "{prefix}いまは授業の時間ですね。アプリを開いてくれたのは、何かあったから？大丈夫？",
+            "work": "{prefix}いまはバイトの時間ですね。少し休んでるの？それとも何かあった？",
+            "study": "{prefix}いま勉強の時間ですね。詰まってる？ひとこと教えて。",
+            "event": "{prefix}いま「{label}」の時間ですね。大丈夫？何かあったら聞いてます。",
+        },
+        "soon": {
+            "school": "{prefix}もうすぐ授業だよ。準備できた？今日の調子はどう？",
+            "work": "{prefix}もうすぐバイトだよ。体の調子、大丈夫？",
+            "study": "{prefix}もうすぐ{label}だよ。準備できた？",
+            "event": "{prefix}もうすぐ「{label}」だよ。準備できた？今日の調子はどう？",
+        },
+        "later": {
+            "school": "{prefix}今日は{clock}から授業だよ。いまは空き時間だね。何か話したい？",
+            "work": "{prefix}今日は{clock}からバイトだよ。いまは空き時間だね。何かあった？",
+            "study": "{prefix}今日は{clock}から{label}だよ。{place}いまのうちに、ひとこと聞かせて。",
+            "event": "{prefix}今日は{clock}から「{label}」だよ。{place}いまは空き時間だね。何か話したい？",
+        },
+        "ended": {
+            "school": "{prefix}授業おつかれさま。いまの気分、ひとこと教えて？",
+            "work": "{prefix}バイトおつかれさま。いま、大丈夫？",
+            "study": "{prefix}{label}おつかれ。いまの感じ、教えて。",
+            "event": "{prefix}「{label}」おつかれさま。いまの気分はどう？",
+        },
+        "overdue": {
+            "school": "{prefix}授業の予定、時間は過ぎてるよ。終わった？まだ続いてる？",
+            "work": "{prefix}バイトの予定、時間は過ぎてるよ。終わった？まだ続いてる？",
+            "study": "{prefix}「{label}」の時間は過ぎてるよ。終わった？",
+            "event": "{prefix}「{label}」の時間は過ぎてるよ。終わった？まだ続いてる？",
+        },
+    },
+    "luno": {
+        "during": {
+            "school": "{prefix}いま授業の時間だよね。アプリ開いたの、何かあった？大丈夫？",
+            "work": "{prefix}いまバイトの時間だよね。ちょっと休んでる？それとも何かあった？",
+            "study": "{prefix}いま勉強の時間だよね。つまってる？ルノ、聞くよ。",
+            "event": "{prefix}いま「{label}」の時間だよ。大丈夫？何かあった？",
+        },
+        "soon": {
+            "school": "{prefix}もうすぐ授業だよ。準備できた？きょうの調子はどう？",
+            "work": "{prefix}もうすぐバイトだよ。からだ、だいじょうぶ？",
+            "study": "{prefix}もうすぐ{label}だよ。準備できた？",
+            "event": "{prefix}もうすぐ「{label}」だよ。準備できた？調子はどう？",
+        },
+        "later": {
+            "school": "{prefix}きょうは{clock}から授業だよ。いまは空き時間だね。何か話したい？",
+            "work": "{prefix}きょうは{clock}からバイトだよ。いまは空き時間だね。何かあった？",
+            "study": "{prefix}きょうは{clock}から{label}だよ。{place}いま、ひとこと聞かせて。",
+            "event": "{prefix}きょうは{clock}から「{label}」だよ。{place}いまは空き時間だね。何か話したい？",
+        },
+        "ended": {
+            "school": "{prefix}授業おつかれ。いまの気分、ひとこと教えて？",
+            "work": "{prefix}バイトおつかれ。いま、大丈夫？",
+            "study": "{prefix}{label}おつかれ。いまの感じ、教えて〜。",
+            "event": "{prefix}「{label}」おつかれ。いまの気分はどう？",
+        },
+        "overdue": {
+            "school": "{prefix}授業の予定、時間すぎてるよ。終わった？まだ続いてる？",
+            "work": "{prefix}バイトの予定、時間すぎてるよ。終わった？まだ続いてる？",
+            "study": "{prefix}「{label}」、時間すぎてるよ。終わった？",
+            "event": "{prefix}「{label}」、時間すぎてるよ。終わった？まだ続いてる？",
+        },
+    },
+    "ren": {
+        "during": {
+            "school": "{prefix}いま授業中だろ。アプリ開いたのは、何かあったのか。話せる範囲でいい。",
+            "work": "{prefix}いまシフト中だろ。少し休んでるのか。無理してないか。",
+            "study": "{prefix}いま勉強の時間だ。詰まってるなら、俺が聞く。",
+            "event": "{prefix}いま「{label}」の時間だ。大丈夫か。何かあったら言え。",
+        },
+        "soon": {
+            "school": "{prefix}もうすぐ授業だ。準備できたか。調子はどうだ。",
+            "work": "{prefix}もうすぐバイトだ。体のほうは大丈夫か。",
+            "study": "{prefix}もうすぐ{label}だ。準備はいいか。",
+            "event": "{prefix}もうすぐ「{label}」だ。準備できたか。",
+        },
+        "later": {
+            "school": "{prefix}今日は{clock}から授業だ。いまは空きだな。何かあれば言え。",
+            "work": "{prefix}今日は{clock}からバイトだ。いまは空きだな。無理するなよ。",
+            "study": "{prefix}今日は{clock}から{label}だ。{place}いまのうちにひとことくれ。",
+            "event": "{prefix}今日は{clock}から「{label}」だ。{place}いまは空きだな。何かあれば言え。",
+        },
+        "ended": {
+            "school": "{prefix}授業おつかれ。いまの気分、ひとことくれ。",
+            "work": "{prefix}バイトおつかれ。無理してないか。",
+            "study": "{prefix}{label}おつかれ。いまの感じを教えてくれ。",
+            "event": "{prefix}「{label}」おつかれ。いまの調子はどうだ。",
+        },
+        "overdue": {
+            "school": "{prefix}授業の時間は過ぎてる。終わったのか。まだ続いてるのか。",
+            "work": "{prefix}バイトの時間は過ぎてる。終わったのか。",
+            "study": "{prefix}「{label}」の時間は過ぎてる。終わったか。",
+            "event": "{prefix}「{label}」の時間は過ぎてる。終わったのか。まだ続いてるのか。",
+        },
+    },
+    "hachi": {
+        "during": {
+            "school": "{prefix}いま学校の時間だよ。わんっ、大丈夫？なにかあった？",
+            "work": "{prefix}いまバイトの時間だよ。わんっ、ちょっと休憩？大丈夫？",
+            "study": "{prefix}いま勉強の時間だよ。つまってる？ハチ、聞くよ。",
+            "event": "{prefix}いま「{label}」の時間だよ。わんっ、大丈夫？",
+        },
+        "soon": {
+            "school": "{prefix}もうすぐ学校だよ。準備できた？わんっ。",
+            "work": "{prefix}もうすぐバイトだよ。からだ、だいじょうぶ？",
+            "study": "{prefix}もうすぐ{label}だよ。準備できた？",
+            "event": "{prefix}もうすぐ「{label}」だよ。準備できた？わんっ。",
+        },
+        "later": {
+            "school": "{prefix}きょうは{clock}から学校だよ。いまは空きだね。なにか話そ？",
+            "work": "{prefix}きょうは{clock}からバイトだよ。いまは空きだね。わんっ。",
+            "study": "{prefix}きょうは{clock}から{label}だよ。{place}ひとこと聞かせて。",
+            "event": "{prefix}きょうは{clock}から「{label}」だよ。{place}いまは空きだね。",
+        },
+        "ended": {
+            "school": "{prefix}学校おつかれ。わんっ、いまの気分どう？",
+            "work": "{prefix}バイトおつかれ。だいじょうぶ？",
+            "study": "{prefix}{label}おつかれ。いまの感じ、教えて。",
+            "event": "{prefix}「{label}」おつかれ。わんっ、気分どう？",
+        },
+        "overdue": {
+            "school": "{prefix}学校の時間、すぎてるよ。終わった？まだ続いてる？",
+            "work": "{prefix}バイトの時間、すぎてるよ。終わった？",
+            "study": "{prefix}「{label}」、時間すぎてるよ。終わった？",
+            "event": "{prefix}「{label}」、時間すぎてるよ。終わった？わんっ。",
+        },
+    },
+}
+_CARE_LINES["momo"] = _CARE_LINES["luna"]
+_CARE_LINES["taro"] = _CARE_LINES["luna"]
+_CARE_LINES["ponta"] = _CARE_LINES["hachi"]
+
+
 def agenda_for_companion(
     user: Dict[str, Any],
     *,
@@ -134,19 +386,14 @@ def agenda_for_companion(
         key=lambda e: (e.get("time") or "99:99", e.get("title") or ""),
     )
     done_items = list(sched.get("today_done") or [])
-    next_ev: Optional[Dict[str, Any]] = None
-    untimed: Optional[Dict[str, Any]] = None
-    for ev in open_items:
-        start_t = _parse_hhmm(ev.get("time"))
-        if start_t is None:
-            if untimed is None:
-                untimed = ev
-            continue
-        start_at = datetime.combine(today, start_t, tzinfo=JST)
-        if start_at >= now - timedelta(minutes=5):
-            next_ev = ev
-            break
-    if next_ev is None:
+    untimed: Optional[Dict[str, Any]] = next(
+        (ev for ev in open_items if _parse_hhmm(ev.get("time")) is None),
+        None,
+    )
+    current_ev = _pick_current_event(open_items, now=now, today=today)
+    next_ev = _pick_upcoming_event(open_items, now=now, today=today)
+    just_ended = _pick_just_ended_event(open_items, now=now, today=today)
+    if next_ev is None and current_ev is None:
         next_ev = untimed or (open_items[0] if open_items else None)
     hour = now.hour
     if hour >= 20:
@@ -158,12 +405,20 @@ def agenda_for_companion(
     return {
         "date": today.isoformat(),
         "phase": phase,
+        "now": now.strftime("%H:%M"),
         "open_count": len(open_items),
         "done_count": len(done_items),
+        "current": current_ev,
+        "just_ended": just_ended,
         "next": next_ev,
         "open_items": open_items[:6],
         "done_items": done_items[:6],
     }
+
+
+def _place_bit(event: Optional[Dict[str, Any]]) -> str:
+    loc = str((event or {}).get("location") or "").strip()
+    return f"場所は{loc}。" if loc else ""
 
 
 def companion_agenda_line(
@@ -172,29 +427,65 @@ def companion_agenda_line(
     now: Optional[datetime] = None,
     who: str = "",
 ) -> Optional[str]:
-    """One spoken sentence about today's next real task. None if the calendar is empty."""
+    """Care about the clock: if they open during a saved event, ask what happened."""
     now = now or _now_jst()
     ag = agenda_for_companion(user, now=now)
     prefix = f"{who}、" if who else ""
+    current = ag.get("current")
+    just_ended = ag.get("just_ended")
     nxt = ag.get("next")
     open_n = int(ag.get("open_count") or 0)
     done_n = int(ag.get("done_count") or 0)
-    brief = format_notify_brief(nxt, today=now.date()) if nxt else ""
+    today = now.date()
+
+    if current:
+        kind = event_kind(current)
+        return _care_line(
+            user, "during", kind, prefix=prefix, label=event_kind_label(current), clock="", place=""
+        )
+
+    if just_ended:
+        kind = event_kind(just_ended)
+        end = event_bounds(just_ended, today=today)[1]
+        if end and now - end <= timedelta(minutes=45):
+            return _care_line(
+                user, "ended", kind, prefix=prefix, label=event_kind_label(just_ended), clock="", place=""
+            )
+
+    overdue = None
+    for ev in ag.get("open_items") or []:
+        _start, end = event_bounds(ev, today=today)
+        if end and now >= end + timedelta(minutes=45):
+            overdue = ev
+            break
+    if overdue:
+        kind = event_kind(overdue)
+        return _care_line(
+            user, "overdue", kind, prefix=prefix, label=event_kind_label(overdue), clock="", place=""
+        )
+
+    if nxt:
+        start, _end = event_bounds(nxt, today=today)
+        kind = event_kind(nxt)
+        label = event_kind_label(nxt)
+        place = _place_bit(nxt)
+        if start:
+            mins = int((start - now).total_seconds() // 60)
+            clock = start.strftime("%H:%M")
+            if 0 < mins <= 30:
+                return _care_line(user, "soon", kind, prefix=prefix, label=label, clock=clock, place=place)
+            if mins > 30:
+                return _care_line(user, "later", kind, prefix=prefix, label=label, clock=clock, place=place)
+
     if ag.get("phase") == "evening":
         if open_n == 0 and done_n:
             return f"{prefix}今日の用事は{done_n}件、ぜんぶおわったよ。よくがんばった。"
-        if open_n and brief:
-            return f"{prefix}今日まだ{open_n}件。次は{brief}だよ。"
         if open_n:
-            return f"{prefix}今日まだ{open_n}件残ってるよ。"
+            return f"{prefix}今日まだ{open_n}件残ってるよ。無理しないで、ひとこと聞かせて。"
         return None
     if not open_n:
         return None
-    if brief and open_n == 1:
-        return f"{prefix}次は{brief}だよ。"
-    if brief:
-        return f"{prefix}今日{open_n}件。次は{brief}だよ。"
-    return f"{prefix}今日の予定は{open_n}件だよ。"
+    return f"{prefix}今日の予定は{open_n}件だよ。いまの調子、どう？"
 
 
 def companion_evening_line(
@@ -205,45 +496,56 @@ def companion_evening_line(
 ) -> str:
     """End-of-day recap from the real calendar."""
     now = now or _now_jst()
-    ag = agenda_for_companion(user, now=now)
+    care = companion_agenda_line(user, now=now, who=who)
+    if care:
+        return care
     prefix = f"{who}、" if who else ""
+    ag = agenda_for_companion(user, now=now)
     open_n = int(ag.get("open_count") or 0)
     done_n = int(ag.get("done_count") or 0)
-    nxt = ag.get("next")
-    brief = format_notify_brief(nxt, today=now.date()) if nxt else ""
     if open_n == 0 and done_n:
         return f"{prefix}今日の用事は{done_n}件、ぜんぶおわったよ。よくがんばった。"
     if open_n == 0:
         return f"{prefix}今日は予定が空いてたよ。ゆっくり休もう。"
-    if done_n and brief:
-        return f"{prefix}今日{done_n}件おわって、まだ{open_n}件。次は{brief}だよ。"
-    if brief:
-        return f"{prefix}今日まだ{open_n}件。次は{brief}だよ。"
-    return f"{prefix}今日まだ{open_n}件残ってるよ。"
+    return f"{prefix}今日まだ{open_n}件残ってるよ。無理しないで、ひとこと聞かせて。"
 
 
 def companion_agenda_prompt(user: Dict[str, Any], *, now: Optional[datetime] = None) -> str:
     """System-prompt block so the companion talks about real events, not invented ones."""
+    now = now or _now_jst()
     ag = agenda_for_companion(user, now=now)
     lines = [
         "TODAY'S REAL CALENDAR (source of truth — do not invent events or dump mail):",
-        f"phase={ag['phase']} open={ag['open_count']} done={ag['done_count']}",
+        f"now={ag['now']} JST phase={ag['phase']} open={ag['open_count']} done={ag['done_count']}",
     ]
+    current = ag.get("current") or {}
     nxt = ag.get("next") or {}
-    nid = nxt.get("id")
     if not ag["open_count"] and not ag["done_count"]:
         lines.append("No events today. Greet normally. Do not invent a timetable.")
         return "\n".join(lines)
+    if current:
+        lines.append(f"- [NOW IN PROGRESS] {format_notify_brief(current)}")
+        lines.append(
+            "The user opened the app DURING this event. Do NOT say 「次は」. "
+            "Compare the clock: they should be in that activity. Ask gently if "
+            "something happened / if they are okay, in one short caring sentence."
+        )
+    if nxt and (not current or nxt.get("id") != current.get("id")):
+        lines.append(f"- [UPCOMING] {format_notify_brief(nxt)}")
     for ev in ag.get("open_items") or []:
-        tag = "NEXT" if nid and ev.get("id") == nid else "open"
-        lines.append(f"- [{tag}] {format_notify_brief(ev)}")
+        eid = ev.get("id")
+        if eid and eid in {current.get("id"), nxt.get("id")}:
+            continue
+        lines.append(f"- [open] {format_notify_brief(ev)}")
     for ev in ag.get("done_items") or []:
         lines.append(f"- [done] {format_notify_brief(ev)}")
-    lines.append(
-        "On greet and when the user talks about today, mention the NEXT item "
-        "(time, action, place) in one short sentence. Never list the whole inbox. "
-        "If they say 夜チェックイン or 振り返り, recap done vs left, then one next step."
-    )
+    if not current:
+        lines.append(
+            "On greet, care about the clock vs the saved timetable. "
+            "If the next event is later, say they have free time and invite a word. "
+            "Never dump the whole inbox or a raw 「9/16 09:20〜16:30・学校だよ」 line. "
+            "If they say 夜チェックイン or 振り返り, recap done vs left, then one next step."
+        )
     return "\n".join(lines)
 
 
