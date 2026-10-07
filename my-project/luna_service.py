@@ -842,23 +842,29 @@ def _honorific(user: Dict[str, Any]) -> str:
     return f"{raw}さん"
 
 
-def companion_hello_line(user: Dict[str, Any]) -> str:
-    """Home greeting: clock question first, then memory of the last talk."""
+def companion_hello_line(user: Dict[str, Any], *, now=None) -> str:
+    """Home greeting: clock, then night/health/money, then memory of the last talk."""
     from companions import companion_spoken_name, fill_talk, get_companion
     from day_coach import clock_care_now, companion_agenda_line
 
     talk = get_companion(user.get("companion_id")).get("talk") or {}
     who = _honorific(user)
-    if clock_care_now(user):
-        agenda = companion_agenda_line(user, who=who)
+    spoken = companion_spoken_name(user)
+    if clock_care_now(user, now=now):
+        agenda = companion_agenda_line(user, who=who, now=now)
         if agenda:
             return agenda
-    from care_turn import recall_greeting
+    from care_turn import linked_open_line, recall_greeting
 
-    remembered = recall_greeting(user, who=who)
+    linked = linked_open_line(user, who=who, now=now)
+    if linked:
+        if spoken and spoken not in linked:
+            linked = f"{spoken}だよ。{linked}"
+        return linked
+    remembered = recall_greeting(user, who=who, now=now)
     if remembered:
         return remembered
-    agenda = companion_agenda_line(user, who=who)
+    agenda = companion_agenda_line(user, who=who, now=now)
     if agenda:
         return agenda
     from care_memory import greeting_care_line

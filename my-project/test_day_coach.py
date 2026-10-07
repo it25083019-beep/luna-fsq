@@ -212,11 +212,15 @@ def test_mail_catch_by_urgency():
     normal = dict(high, id="e2", title="打ち合わせ", urgency="normal")
     low = dict(high, id="e3", title="予約", urgency="low")
     rows = mail_catch_reminders([high, normal, low], who_user)
-    kinds = {r["kind"] for r in rows}
-    assert "urgent" in kinds
-    assert "mail_catch" in kinds
-    assert all("教室B" in r["body"] for r in rows)
-    assert not any(r.get("event_id") == "e3" for r in rows)
+    by_id = {r["event_id"]: r for r in rows}
+    assert by_id["e1"]["kind"] == "urgent" and by_id["e1"]["require_interaction"] is True
+    assert "用事: 課題提出（急ぎ）" == by_id["e1"]["body"]
+    assert "教室B" not in by_id["e1"]["body"]
+    assert by_id["e2"]["kind"] == "mail_catch"
+    assert "用事: 打ち合わせ（今日か明日）" == by_id["e2"]["body"]
+    assert by_id["e3"]["kind"] == "mail_quiet"
+    assert "用事: 予約（あとで）" == by_id["e3"]["body"]
+    assert by_id["e3"]["require_interaction"] is False
     brief = format_notify_brief(high)
     assert "課題提出" in brief
     assert "16:00" in brief

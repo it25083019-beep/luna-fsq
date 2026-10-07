@@ -107,8 +107,20 @@
     .life-pulse .lp-ring{width:3.1rem;height:3.1rem;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.85rem;color:#fff;flex-shrink:0;
       background:conic-gradient(var(--lilac) calc(var(--lp,60)*1%), rgba(120,90,180,.15) 0)}
     .life-pulse .lp-ring span{background:var(--card);width:2.25rem;height:2.25rem;border-radius:50%;display:grid;place-items:center;color:var(--lilac-deep);font-size:.72rem}
+    .life-pulse{align-items:flex-start}
+    .life-pulse .lp-body{flex:1;min-width:0}
     .life-pulse strong{display:block;font-size:.78rem;color:var(--lilac-deep)}
-    .life-pulse em{font-style:normal;font-size:.64rem;color:var(--muted)}
+    .life-pulse em{font-style:normal;font-size:.64rem;color:var(--muted);display:block;margin-top:.15rem;line-height:1.45}
+    .lb-bars{display:flex;flex-direction:column;gap:.28rem;margin-top:.4rem}
+    .lb-row{display:flex;align-items:center;gap:.35rem;font-size:.62rem;color:var(--lilac-deep);font-weight:700}
+    .lb-row b{width:4.6rem;font-weight:700}
+    .lb-row i{width:1.6rem;text-align:right;font-style:normal;color:var(--muted)}
+    .lb-track{flex:1;height:7px;border-radius:99px;background:rgba(120,90,180,.15);overflow:hidden}
+    .lb-track span{display:block;height:100%;border-radius:99px;background:var(--lilac)}
+    .mail-brief{margin:0 1rem .45rem;padding:.55rem .75rem;border-radius:14px;background:var(--card);box-shadow:var(--shadow)}
+    .mail-brief p{margin:.2rem 0;font-size:.72rem;line-height:1.4}
+    .mail-brief p.mail-urgent{color:#c45c3a;font-weight:800}
+    .mail-brief p.mail-quiet{color:var(--muted)}
     .mode-row{display:flex;flex-wrap:wrap;gap:.35rem;margin:.35rem 0 .55rem}
     .mode-row button{border:2px solid transparent;background:var(--input-bg);border-radius:999px;padding:.35rem .7rem;font-size:.7rem;cursor:pointer;color:var(--lilac-deep);font-weight:700}
     .mode-row button.active{border-color:var(--lilac);background:var(--card)}
@@ -1551,8 +1563,13 @@
           <div class="status-head"><span>今日のステータス</span><span id="homeDate">—</span></div>
           <div id="lifePulse" class="life-pulse" hidden>
             <div class="lp-ring" id="lifePulseRing" style="--lp:60"><span id="lifePulseScore">—</span></div>
-            <div><strong id="lifePulseTitle">ライフパルス</strong><em id="lifePulseLine">健康・お金・予定のいまの拍</em></div>
+            <div class="lp-body">
+              <strong id="lifePulseTitle">バランス</strong>
+              <div class="lb-bars" id="lifeBalanceBars"></div>
+              <em id="lifePulseLine">健康・お金・予定のいまの拍</em>
+            </div>
           </div>
+          <div id="mailBrief" class="mail-brief" hidden></div>
           <div id="mentalRemindBanner" class="home-banner" role="status">
             <p id="mentalRemindText">LUNAが今日の気分を聞きたいよ</p>
             <button type="button" id="mentalRemindBtn">答える</button>
@@ -2446,6 +2463,6 @@
   <script src="/static/world.js?v=20260916b"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20261007c"></script>
+  <script src="/static/app.js?v=20261007d"></script>
 </body>
 </html>

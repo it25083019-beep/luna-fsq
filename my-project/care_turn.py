@@ -161,6 +161,110 @@ def recall_greeting(user: Dict[str, Any], *, who: str = "", now: Optional[dateti
     return f"{prefix}この前「{note}」って言ってたよね。今日はどう？"
 
 
+_NIGHT = {
+    "luna": "{prefix}夜にアプリを開いたね。眠れない？何かあった？",
+    "luno": "{prefix}夜だね。眠れないの？何かあった？",
+    "ren": "{prefix}夜に開いたな。眠れないのか。何かあったなら言え。",
+    "hachi": "{prefix}夜だよ。わんっ、眠れない？何かあった？",
+}
+_SLEEP = {
+    "luna": "{prefix}睡眠が短かったみたい。今夜は眠れそう？それとも何かあった？",
+    "luno": "{prefix}睡眠、短かったね。今夜は眠れそう？何かあった？",
+    "ren": "{prefix}睡眠が短い。今夜は眠れそうか。何かあったなら言え。",
+    "hachi": "{prefix}睡眠が短いわん。今夜は眠れそう？何かあった？",
+}
+_BOTH = {
+    "luna": "{prefix}お金とからだ、両方きついね。今日は一つだけ。何が一番つらい？",
+    "luno": "{prefix}お金もからだも、きつそう。一つだけ教えて。何がつらい？",
+    "ren": "{prefix}金と身体、両方きつい。一つだけ言え。何が一番つらいか。",
+    "hachi": "{prefix}お金とからだ、両方きついわん。一つだけ。何がつらい？",
+}
+_PACKED = {
+    "luna": "{prefix}予定が詰まって、からだも余裕がなさそう。何かあった？",
+    "luno": "{prefix}予定がいっぱいで、からだもきつそう。何かあった？",
+    "ren": "{prefix}予定が詰まって、身体も余裕がない。何かあったか。",
+    "hachi": "{prefix}予定がいっぱい。からだもきつそうわん。何かあった？",
+}
+_MONEY = {
+    "luna": "{prefix}お金が少しきついみたい。今日、使いすぎた？",
+    "luno": "{prefix}お金、少しきつそう。今日、使いすぎた？",
+    "ren": "{prefix}金がきつい。今日、使いすぎたか。",
+    "hachi": "{prefix}お金がきついわん。今日、使いすぎた？",
+}
+for _cid in ("momo", "taro"):
+    _NIGHT[_cid] = _NIGHT["luna"]
+    _SLEEP[_cid] = _SLEEP["luna"]
+    _BOTH[_cid] = _BOTH["luna"]
+    _PACKED[_cid] = _PACKED["luna"]
+    _MONEY[_cid] = _MONEY["luna"]
+_NIGHT["ponta"] = _NIGHT["hachi"]
+_SLEEP["ponta"] = _SLEEP["hachi"]
+_BOTH["ponta"] = _BOTH["hachi"]
+_PACKED["ponta"] = _PACKED["hachi"]
+_MONEY["ponta"] = _MONEY["hachi"]
+
+
+def _line(table: Dict[str, str], user: Dict[str, Any], prefix: str) -> str:
+    voice = _voice(user)
+    return table.get(voice, table["luna"]).format(prefix=prefix)
+
+
+def linked_open_line(user: Dict[str, Any], *, who: str = "", now: Optional[datetime] = None) -> Optional[str]:
+    """One caring question from night, sleep, money, and how packed the day is."""
+    from day_coach import _now_jst, assess_day_load
+
+    now = now or _now_jst()
+    prefix = f"{who}、" if who else ""
+    hour = now.hour
+    if hour >= 22 or hour < 6:
+        return _line(_NIGHT, user, prefix)
+
+    health = ((user.get("life_modules") or {}).get("health") or {}).get("structured") or {}
+    money = ((user.get("life_modules") or {}).get("money") or {}).get("structured") or {}
+    mental = str(health.get("mental_status") or "").strip()
+    sleep = health.get("sleep_hours")
+    try:
+        sleep_n = float(sleep) if sleep not in (None, "") else None
+    except (TypeError, ValueError):
+        sleep_n = None
+    if 6 <= hour < 11 and sleep_n is not None and sleep_n < 6:
+        return _line(_SLEEP, user, prefix)
+
+    from health_eval import evaluate_health
+    from money_eval import evaluate_money
+
+    he = evaluate_health(health)
+    me = evaluate_money(user, money)
+    fit = assess_day_load(user)
+    health_score = int(he.get("score") or 70)
+    money_score = int(me.get("score") or 55)
+    has_money = bool(money.get("monthly_income") or money.get("monthly_expense"))
+    packed = fit.get("load") in ("busy", "heavy", "recover")
+    worn = mental in ("疲れ", "落ち込み", "不安") or (sleep_n is not None and sleep_n < 6)
+    if has_money and money_score < 50 and (worn or health_score < 55):
+        return _line(_BOTH, user, prefix)
+    if packed and worn:
+        return _line(_PACKED, user, prefix)
+    if has_money and money_score < 45:
+        return _line(_MONEY, user, prefix)
+    return None
+
+
+def balance_advice(health: int, money: int, schedule: int) -> str:
+    """One sentence for the balance chart. High schedule score means spare time."""
+    if health >= 70 and money >= 70 and schedule >= 70:
+        return "健康・お金・予定、いまは釣り合ってる。"
+    if health < 50 and schedule < 50:
+        return "予定が詰まって、からだも追いついてない。今日は一つ休もう。"
+    if money < 50 and health < 55:
+        return "お金とからだ、両方きつい。予定を一つ減らして、今日の支出だけ控えよう。"
+    if money < 50 and health >= 60:
+        return "からだは大丈夫。お金だけ、今日の使い方を一つ見よう。"
+    if schedule < 50 and health >= 65:
+        return "予定は多いけど、からだはまだ大丈夫。終わりの時間だけ守ろう。"
+    return "少し偏ってる。いちばん低いところから、一つだけ整えよう。"
+
+
 def care_followup_reminder(user: Dict[str, Any], *, now: datetime, who: str) -> Optional[Dict[str, Any]]:
     follow = user.get("care_followup")
     if not isinstance(follow, dict) or not follow.get("fire_at"):

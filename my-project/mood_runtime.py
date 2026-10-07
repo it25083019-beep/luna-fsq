@@ -170,6 +170,20 @@ def build_life_pulse(user: Dict[str, Any]) -> Dict[str, Any]:
     )
     pulse["ok"] = True
     pulse["mental"] = mental
+    parts = pulse.get("parts") or {}
+    health_n = int(parts.get("health") or 0)
+    money_n = int(parts.get("money") or 0)
+    sched_n = int(parts.get("schedule") or 0)
+    from care_turn import balance_advice
+
+    advice = balance_advice(health_n, money_n, sched_n)
+    pulse["advice_ja"] = advice
+    pulse["line_ja"] = advice
+    pulse["bars"] = [
+        {"id": "health", "label_ja": "健康", "score": health_n},
+        {"id": "money", "label_ja": "お金", "score": money_n},
+        {"id": "schedule", "label_ja": "予定の余裕", "score": sched_n},
+    ]
     return pulse
 
 

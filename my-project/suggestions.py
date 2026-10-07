@@ -64,13 +64,16 @@ def get_suggested_replies(user_id: str, state: dict) -> list[str]:
     return _chips_with_agenda(brain_user)
 
 
-def _chips_with_agenda(user: dict) -> list[str]:
+def _chips_with_agenda(user: dict, now=None) -> list[str]:
     """Answers to the question just asked. The home chat does not offer quests."""
     try:
-        from day_coach import clock_care_now
+        from day_coach import _now_jst, clock_care_now
 
-        if clock_care_now(user):
+        now = now or _now_jst()
+        if clock_care_now(user, now=now):
             return ["大丈夫", "疲れた", "何かあった"]
+        if now.hour >= 22 or now.hour < 6:
+            return ["眠れない", "何かあった", "大丈夫"]
     except Exception:
         pass
     if isinstance(user.get("care_recall"), dict) and user["care_recall"].get("note"):

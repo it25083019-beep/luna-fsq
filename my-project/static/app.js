@@ -2712,10 +2712,13 @@
     const now = Date.now();
     const day = (payload && payload.date) || "";
     const canOs = notifyOn && notifyPermission() === "granted";
+    const mailRows = list.filter((row) => row && row.mail);
+    if (mailRows.length) renderMailBrief(mailRows);
     list.forEach((row) => {
       const at = Date.parse(row.fire_at || "") || now;
       const delay = Math.max(0, at - now);
       if (delay > 14 * 60 * 60 * 1000) return;
+      if (row.kind === "mail_quiet") return;
       if (row.kind === "digest") {
         reminderTimers.push(
           setTimeout(() => {
@@ -4286,6 +4289,22 @@
     renderWhisperRow(rt.whisper_pref);
   }
 
+  function renderMailBrief(rows) {
+    const el = document.getElementById("mailBrief");
+    if (!el) return;
+    el.replaceChildren();
+    (rows || []).forEach((row) => {
+      const text = (row && row.body) || "";
+      if (!text) return;
+      const p = document.createElement("p");
+      p.textContent = text;
+      if (row.kind === "urgent") p.className = "mail-urgent";
+      else if (row.kind === "mail_quiet") p.className = "mail-quiet";
+      el.appendChild(p);
+    });
+    el.hidden = !el.childElementCount;
+  }
+
   function renderLifePulse(pulse) {
     const box = document.getElementById("lifePulse");
     if (!box) return;
@@ -4298,10 +4317,32 @@
     const score = document.getElementById("lifePulseScore");
     const title = document.getElementById("lifePulseTitle");
     const line = document.getElementById("lifePulseLine");
+    const bars = document.getElementById("lifeBalanceBars");
     if (ring) ring.style.setProperty("--lp", String(pulse.score || 0));
     if (score) score.textContent = String(pulse.score || "—");
-    if (title) title.textContent = "ライフパルス ・ " + (pulse.label_ja || "");
-    if (line) line.textContent = pulse.line_ja || "";
+    if (title) title.textContent = "バランス ・ " + (pulse.label_ja || "");
+    if (line) line.textContent = pulse.advice_ja || pulse.line_ja || "";
+    if (bars) {
+      bars.replaceChildren();
+      (pulse.bars || []).forEach((bar) => {
+        const row = document.createElement("div");
+        row.className = "lb-row";
+        const name = document.createElement("b");
+        name.textContent = bar.label_ja || "";
+        const track = document.createElement("div");
+        track.className = "lb-track";
+        const fill = document.createElement("span");
+        const n = Math.max(0, Math.min(100, Number(bar.score) || 0));
+        fill.style.width = n + "%";
+        track.appendChild(fill);
+        const num = document.createElement("i");
+        num.textContent = String(Math.round(n));
+        row.appendChild(name);
+        row.appendChild(track);
+        row.appendChild(num);
+        bars.appendChild(row);
+      });
+    }
   }
 
   function renderLunaModeRow(mode) {
@@ -4942,10 +4983,12 @@
     try {
       const res = await api("/mail/sync", { method: "POST", body: "{}" });
       if (res.reminders) scheduleReminderPayload(res.reminders);
+      const mailRows = ((res.reminders && res.reminders.reminders) || []).filter((row) => row && row.mail);
       if (res.error === "auth" || res.error === "not_connected") {
         if (!quiet) await requestGmailAccess();
         return;
       }
+      const mailText = mailRows.map((row) => row.body || "").filter(Boolean).join("\n");
       if (!quiet && msg) {
         if (!res.ok && res.error === "oauth_not_configured") {
           msg.textContent = "先に『Gmailを許可する』からGoogleの画面を開いてね。";
@@ -4953,10 +4996,10 @@
           if (setup) setup.classList.remove("hidden");
         } else if (!res.ok && res.error === "gmail") {
           msg.textContent = "Gmail APIが有効か、もう一度確認してね。";
-        } else if (res.count) msg.textContent = res.count + "件を予定に追加したよ。";
+        } else if (mailText) msg.textContent = mailText;
         else msg.textContent = "新しい用事は見つからなかったよ。";
-      } else if (quiet && res.count && msg) {
-        msg.textContent = res.count + "件を予定に追加したよ。";
+      } else if (quiet && mailText && msg) {
+        msg.textContent = mailText;
       }
       if (res.count) {
         await loadScheduleView().catch(() => {});

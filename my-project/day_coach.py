@@ -594,6 +594,14 @@ def _leads_for_event(
     return pick([60, 30, 10]), False
 
 
+def mail_task_line(event: Dict[str, Any]) -> str:
+    """Notification copy: the task, and whether it is urgent."""
+    title = (str(event.get("title") or "用事").strip() or "用事")[:40]
+    urg = str(event.get("urgency") or "normal").lower()
+    tag = {"high": "急ぎ", "low": "あとで"}.get(urg, "今日か明日")
+    return f"用事: {title}（{tag}）"
+
+
 def mail_catch_reminders(
     events: Optional[List[Dict[str, Any]]],
     user: Dict[str, Any],
@@ -606,33 +614,51 @@ def mail_catch_reminders(
     rows: List[Dict[str, Any]] = []
     for ev in events or []:
         urgency = str(ev.get("urgency") or "normal").lower()
-        brief = format_notify_brief(ev, today=now.date())
+        line = mail_task_line(ev)
         eid = ev.get("id")
         if urgency == "high":
             rows.append(
                 {
                     "id": f"mail-catch-{eid or ev.get('title')}",
                     "kind": "urgent",
+                    "mail": True,
                     "fire_at": now.isoformat(),
-                    "title": f"{who}｜急ぎの用事",
-                    "body": f"今すぐ・{brief}",
+                    "title": f"{who}｜急ぎ",
+                    "body": line,
                     "event_id": eid,
                     "url": f"/app?checkin=1&eid={eid or ''}&lead=0",
                     "require_interaction": True,
-                    "ask_mood": True,
+                    "ask_mood": False,
                     "lead_minutes": 0,
                 }
             )
-        elif urgency == "normal":
+        elif urgency == "low":
+            rows.append(
+                {
+                    "id": f"mail-catch-{eid or ev.get('title')}",
+                    "kind": "mail_quiet",
+                    "mail": True,
+                    "fire_at": now.isoformat(),
+                    "title": f"{who}｜あとで",
+                    "body": line,
+                    "event_id": eid,
+                    "url": "/app",
+                    "require_interaction": False,
+                    "ask_mood": False,
+                    "lead_minutes": 0,
+                }
+            )
+        else:
             rows.append(
                 {
                     "id": f"mail-catch-{eid or ev.get('title')}",
                     "kind": "mail_catch",
+                    "mail": True,
                     "fire_at": now.isoformat(),
-                    "title": f"{who}｜予定を入れたよ",
-                    "body": brief,
+                    "title": f"{who}｜用事",
+                    "body": line,
                     "event_id": eid,
-                    "url": "/app?digest=1",
+                    "url": "/app",
                     "require_interaction": False,
                     "ask_mood": False,
                     "lead_minutes": 0,
