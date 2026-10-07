@@ -255,9 +255,9 @@ _CARE_LINES: Dict[str, Dict[str, Dict[str, str]]] = {
             "study": "{prefix}今日は{clock}から{label}だよ。{place}いまのうちに、ひとこと聞かせて。",
             "event": "{prefix}今日は{clock}から「{label}」だよ。{place}いまは空き時間だね。何か話したい？",
         },
-        "ended": {
+            "ended": {
             "school": "{prefix}授業おつかれさま。いまの気分、ひとこと教えて？",
-            "work": "{prefix}バイトおつかれさま。いま、大丈夫？",
+            "work": "{prefix}バイトおつかれさま。疲れてない？",
             "study": "{prefix}{label}おつかれ。いまの感じ、教えて。",
             "event": "{prefix}「{label}」おつかれさま。いまの気分はどう？",
         },
@@ -289,7 +289,7 @@ _CARE_LINES: Dict[str, Dict[str, Dict[str, str]]] = {
         },
         "ended": {
             "school": "{prefix}授業おつかれ。いまの気分、ひとこと教えて？",
-            "work": "{prefix}バイトおつかれ。いま、大丈夫？",
+            "work": "{prefix}バイトおつかれ。疲れた？",
             "study": "{prefix}{label}おつかれ。いまの感じ、教えて〜。",
             "event": "{prefix}「{label}」おつかれ。いまの気分はどう？",
         },
@@ -321,7 +321,7 @@ _CARE_LINES: Dict[str, Dict[str, Dict[str, str]]] = {
         },
         "ended": {
             "school": "{prefix}授業おつかれ。いまの気分、ひとことくれ。",
-            "work": "{prefix}バイトおつかれ。無理してないか。",
+            "work": "{prefix}バイトおつかれ。疲れてないか。",
             "study": "{prefix}{label}おつかれ。いまの感じを教えてくれ。",
             "event": "{prefix}「{label}」おつかれ。いまの調子はどうだ。",
         },
@@ -353,7 +353,7 @@ _CARE_LINES: Dict[str, Dict[str, Dict[str, str]]] = {
         },
         "ended": {
             "school": "{prefix}学校おつかれ。わんっ、いまの気分どう？",
-            "work": "{prefix}バイトおつかれ。だいじょうぶ？",
+            "work": "{prefix}バイトおつかれ。わんっ、疲れた？",
             "study": "{prefix}{label}おつかれ。いまの感じ、教えて。",
             "event": "{prefix}「{label}」おつかれ。わんっ、気分どう？",
         },
@@ -544,9 +544,24 @@ def companion_agenda_prompt(user: Dict[str, Any], *, now: Optional[datetime] = N
             "On greet, care about the clock vs the saved timetable. "
             "If the next event is later, say they have free time and invite a word. "
             "Never dump the whole inbox or a raw 「9/16 09:20〜16:30・学校だよ」 line. "
-            "If they say 夜チェックイン or 振り返り, recap done vs left, then one next step."
+            "If they say 夜チェックイン or 振り返り, recap done vs left, then one next step. "
+            "Do not mention quests, levels, EXP, or the RPG world."
         )
     return "\n".join(lines)
+
+
+def clock_care_now(user: Dict[str, Any], *, now: Optional[datetime] = None) -> bool:
+    """True when the open line should be the clock question, not a memory recap."""
+    now = now or _now_jst()
+    ag = agenda_for_companion(user, now=now)
+    if ag.get("current"):
+        return True
+    ended = ag.get("just_ended")
+    if isinstance(ended, dict):
+        end = event_bounds(ended, today=now.date())[1]
+        if end and now - end <= timedelta(minutes=45):
+            return True
+    return False
 
 
 def _leads_for_event(
@@ -895,6 +910,12 @@ def build_today_reminders(
                     "lead_minutes": lead,
                 }
             )
+
+    from care_turn import care_followup_reminder
+
+    follow = care_followup_reminder(user, now=now, who=who)
+    if follow:
+        reminders.append(follow)
 
     if fit.get("recommend") in ("rest", "micro") and fit.get("coach_ja"):
         reminders.insert(

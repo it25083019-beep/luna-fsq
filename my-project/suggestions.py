@@ -65,19 +65,14 @@ def get_suggested_replies(user_id: str, state: dict) -> list[str]:
 
 
 def _chips_with_agenda(user: dict) -> list[str]:
-    chips = list(_NANNY_DEFAULT)
+    """Answers to the question just asked. The home chat does not offer quests."""
     try:
-        from day_coach import agenda_for_companion
+        from day_coach import clock_care_now
 
-        ag = agenda_for_companion(user)
+        if clock_care_now(user):
+            return ["大丈夫", "疲れた", "何かあった"]
     except Exception:
-        return chips
-    extra: list[str] = []
-    if ag.get("next"):
-        extra.append("このあとどうする？")
-    if ag.get("phase") == "evening" or int(ag.get("done_count") or 0):
-        extra.append("今日の振り返り")
-    if not extra:
-        return chips
-    merged = extra + [c for c in chips if c not in extra]
-    return merged[:6]
+        pass
+    if isinstance(user.get("care_recall"), dict) and user["care_recall"].get("note"):
+        return ["少し楽になった", "まだ疲れてる", "大丈夫"]
+    return ["大丈夫", "疲れた", "話したいことがある"]

@@ -1257,7 +1257,10 @@
     .status-head span:last-child{color:var(--muted);font-weight:600}
     .status-card .sub{font-size:.62rem;color:var(--muted);margin-top:.1rem}
     .composer-voice{display:flex;align-items:center;gap:.45rem;background:var(--card);margin:auto 1rem .5rem;padding:.4rem .5rem;border-radius:999px;box-shadow:var(--shadow);flex-shrink:0}
-    .composer-voice .mic{width:2.2rem;height:2.2rem;border:none;border-radius:50%;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;cursor:pointer;font-size:1rem;flex-shrink:0}
+    .composer-voice .mic{width:2.2rem;height:2.2rem;border:none;border-radius:50%;background:linear-gradient(135deg,var(--lilac),var(--lilac-deep));color:#fff;cursor:pointer;font-size:1rem;flex-shrink:0;touch-action:none}
+    .composer-voice .mic.speaker{width:1.9rem;height:1.9rem;font-size:.85rem;background:var(--input-bg);color:var(--lilac-deep)}
+    .composer-voice .mic.live{background:#c45b7a;animation:micPulse 1s ease-in-out infinite}
+    @keyframes micPulse{50%{transform:scale(1.08)}}
     .composer-voice input{flex:1;border:none;background:transparent;outline:none;padding:.4rem 0;font-size:.85rem}
 
     /* Full-screen subviews (schedule / health / money) */
@@ -1532,7 +1535,7 @@
         <div id="lunaMainView">
           <div class="home-scroll">
           <div class="home-title-row">
-            <div><h1>ホーム</h1><p id="greetingSub">今日も一緒に遊ぼうね</p></div>
+            <div><h1>ホーム</h1><p id="greetingSub">いまの時間を見て、一声かけるね</p></div>
             <div style="display:flex;gap:.4rem">
               <button type="button" class="crisis-fab" id="crisisBtn" title="60秒レスキュー">救</button>
               <button type="button" class="icon-btn" data-open="history" title="会話の履歴">💬</button>
@@ -1596,8 +1599,9 @@
           <div class="home-dock">
           <div class="chips" id="chips"></div>
           <div class="composer-voice">
-            <button type="button" class="mic" id="voiceBtn" title="音声">🎤</button>
-            <input id="message" type="text" placeholder="LUNAに話しかけて…" autocomplete="off" />
+            <button type="button" class="mic" id="talkBtn" title="押して話す">🎤</button>
+            <button type="button" class="mic speaker" id="voiceBtn" title="音声">🔊</button>
+            <input id="message" type="text" placeholder="話して返すか、文字で返して…" autocomplete="off" />
             <button type="button" id="sendBtn" style="border:none;background:none;font-size:1.1rem;cursor:pointer">😊</button>
           </div>
           </div>
@@ -2442,6 +2446,6 @@
   <script src="/static/world.js?v=20260916b"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20261007a"></script>
+  <script src="/static/app.js?v=20261007c"></script>
 </body>
 </html>

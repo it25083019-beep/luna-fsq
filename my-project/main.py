@@ -658,10 +658,20 @@ def chat(req: ChatRequest, current: User = Depends(get_current_user)):
                 state["open_rescue"] = True
             if ai_state.get("crisis"):
                 state["crisis"] = True
-        try:
-            chips = get_suggested_replies(uid, state)
-        except Exception:
-            chips = ["体調を相談したい", "お金の相談", "予定を整理したい"]
+            if ai_state.get("care_action"):
+                state["care_action"] = ai_state["care_action"]
+        action = state.get("care_action") if isinstance(state, dict) else None
+        if action == "rescue":
+            chips = ["ここにいる"]
+        elif action == "close":
+            chips = ["またあとで"]
+        elif action == "follow":
+            chips = ["まだ疲れてる", "大丈夫"]
+        else:
+            try:
+                chips = get_suggested_replies(uid, state)
+            except Exception:
+                chips = ["大丈夫", "疲れた", "何かあった"]
         return ChatResponse(
             dialogue=dialogue,
             game_state=state,

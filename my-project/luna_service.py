@@ -278,6 +278,12 @@ def append_turns(store: Dict[str, Any], user_text: str, ai_reply: str) -> None:
         row = {"role": "user", "content": user_text, "at": stamp}
         if looks_secret(user_text):
             row["secret"] = True
+        else:
+            from care_turn import _snippet, care_tone
+
+            note = _snippet(user_text)
+            if note:
+                store["care_recall"] = {"note": note, "at": stamp, "tone": care_tone(user_text) or "talk"}
         history.append(row)
     history.append({"role": "model", "content": ai_reply, "at": stamp})
     from privacy_vault import cap_chat_history
@@ -607,8 +613,10 @@ Keep <dialogue> to 1–2 short sentences. Do not give long lectures. Never call 
 COMPANION REPLY SHAPE (important):
 1) If you saved any life fact, first say you noted it (例:「今日の気分、メモしたよ」「800円の支出、記録したよ」).
 2) Then react to what they said like a close companion — comfort, celebrate, or plan with them.
-3) End with ONE concrete next step / suggestion tied to their words (rest, budget tip, schedule prep, etc.).
+3) End with ONE short question about the same thing they just said.
 Never sound like a dry system log. Speak as {companion} beside {who}.
+Do not mention クエスト, レベル, EXP, スキル, マップ, クラス, or RPG.
+If their words are heavy, stop advising. Stay for 60 seconds and point them to the family or close friend they saved.
 
 ROLE SWITCH:
 - Health topics: careful like a professional clinician intake (no diagnosis/prescription).
@@ -835,12 +843,21 @@ def _honorific(user: Dict[str, Any]) -> str:
 
 
 def companion_hello_line(user: Dict[str, Any]) -> str:
-    """Home greeting that always matches the selected sprite."""
+    """Home greeting: clock question first, then memory of the last talk."""
     from companions import companion_spoken_name, fill_talk, get_companion
-    from day_coach import companion_agenda_line
+    from day_coach import clock_care_now, companion_agenda_line
 
     talk = get_companion(user.get("companion_id")).get("talk") or {}
     who = _honorific(user)
+    if clock_care_now(user):
+        agenda = companion_agenda_line(user, who=who)
+        if agenda:
+            return agenda
+    from care_turn import recall_greeting
+
+    remembered = recall_greeting(user, who=who)
+    if remembered:
+        return remembered
     agenda = companion_agenda_line(user, who=who)
     if agenda:
         return agenda
@@ -980,25 +997,9 @@ def start_user_greeting(user_id: str) -> str:
     user.setdefault("profile_complete", False)
 
     if user.get("user_display_name") and user.get("companion_name") and user.get("profile_complete"):
-        from care_memory import greeting_care_line
-        from companions import companion_spoken_name, fill_talk, get_companion
+        from companions import companion_spoken_name
 
-        lv = _relationship_level(user)
-        from day_coach import companion_agenda_line
-
-        who = _honorific(user)
-        agenda = companion_agenda_line(user, who=who)
-        care_line = greeting_care_line(user)
-        talk = get_companion(user.get("companion_id")).get("talk") or {}
-        if agenda:
-            dialogue = agenda
-        elif care_line:
-            dialogue = f"{who}、{care_line}" if who else care_line
-        else:
-            fallback = "{who}おかえり。"
-            if lv >= 3:
-                fallback = "{who}おかえり。今日の調子はどう？"
-            dialogue = fill_talk(talk.get("greeting") or fallback, _honorific(user))
+        dialogue = companion_hello_line(user)
         return _pack_reply(dialogue, {
             "user_display_name": user.get("user_display_name"),
             "companion_name": companion_spoken_name(user),
@@ -1112,8 +1113,8 @@ def _agenda_spoken_reply(user: Dict[str, Any], kind: str) -> str:
     if line:
         return line
     if who:
-        return f"{who}、今日は予定が空いてるよ。短いクエストでもする？"
-    return "今日は予定が空いてるよ。"
+        return f"{who}、今日は予定が空いてるよ。何か話したい？"
+    return "今日は予定が空いてるよ。何か話したい？"
 
 
 # Longest first so that stripping 疲れた does not leave a stray た behind.
@@ -1522,6 +1523,15 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
         if looks_secret(text_in):
             user = load_user_brain(user_id)
             return _persist_local_turn(user_id, user, text_in, _secret_keep_reply(user))
+        from care_turn import care_tone, plan_care_reply
+
+        if care_tone(text_in):
+            user = load_user_brain(user_id)
+            planned = plan_care_reply(user, text_in)
+            if planned:
+                dialogue, care_state = planned
+                _update_relationship(user, text_in)
+                return _persist_local_turn(user_id, user, text_in, _pack_reply(dialogue, care_state))
 
     onboarded = handle_user_onboarding_turn(user_id, user_text)
     if onboarded is not None:

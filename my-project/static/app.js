@@ -2554,6 +2554,7 @@
   function syncVoiceBtn() {
     const btn = document.getElementById("voiceBtn");
     if (!btn) return;
+    btn.textContent = voiceOn ? "🔊" : "🔇";
     btn.title = voiceOn ? "音声ON" : "音声OFF";
     btn.style.opacity = voiceOn ? "1" : ".55";
     try {
@@ -2753,6 +2754,21 @@
         );
         return;
       }
+      if (row.kind === "care_back") {
+        reminderTimers.push(
+          setTimeout(() => {
+            if (!markOnce("care", row.id || "")) return;
+            const line = row.body || "";
+            const dialogueEl = document.getElementById("dialogue");
+            if (dialogueEl && line) {
+              dialogueEl.textContent = line;
+              speakJa(line).catch(() => {});
+            }
+            if (notifyOn && notifyPermission() === "granted") showReminderNote(row);
+          }, delay)
+        );
+        return;
+      }
       reminderTimers.push(setTimeout(() => showReminderNote(row), delay));
     });
   }
@@ -2840,13 +2856,7 @@
     }
   }
 
-  const DEFAULT_CHIPS = [
-    "体調を相談したい",
-    "お金の相談",
-    "予定を整理したい",
-    "健康に追記したい",
-    "欲しいものがある",
-  ];
+  const DEFAULT_CHIPS = ["大丈夫", "疲れた", "何かあった"];
 
   function whoPrefix() {
     let n = String((stateData && stateData.user_display_name) || "").trim();
@@ -2947,7 +2957,10 @@
       if (luna) luna.stopThinking();
     } catch (_) {}
     if (dialogueEl && line) dialogueEl.textContent = line;
-    renderChips((data && data.suggested_replies) || DEFAULT_CHIPS);
+    const action = data && data.game_state && data.game_state.care_action;
+    const careChips =
+      action === "rescue" ? ["ここにいる"] : action === "close" ? ["またあとで"] : action === "follow" ? ["まだ疲れてる", "大丈夫"] : null;
+    renderChips(careChips || (data && data.suggested_replies) || DEFAULT_CHIPS);
     const emo = data && data.game_state && data.game_state.emotion;
     try {
       if (luna && line) {
@@ -2957,6 +2970,9 @@
     } catch (_) {}
     firstChat = false;
     if (line) speakJa(line).catch(() => {});
+    const msgEl = document.getElementById("message");
+    if (action === "close" && msgEl) msgEl.placeholder = "また何かあったら、ここに来て。";
+    if (action === "follow") refreshRemindersQuietly();
     if (data && data.game_state && data.game_state.open_rescue) {
       startCrisisSwitch();
     }
@@ -4709,10 +4725,6 @@
         health: { mental_reminder: !!bannerMsg },
         pending_notification: bannerMsg,
       });
-      if (s.care_quests && s.care_quests.length) {
-        const chipLabels = s.care_quests.map((q) => q.chip).filter(Boolean);
-        if (chipLabels.length) renderChips(chipLabels.concat(DEFAULT_CHIPS.filter((c) => !chipLabels.includes(c))).slice(0, 6));
-      }
       renderCareTimeline(s.care_timeline || []);
       renderWeeklyReview(s.weekly_review || null);
       renderRiskRadar(s.risk_radar || null);
@@ -5253,6 +5265,81 @@
         if (sample && sample !== "…" && sample !== "...") speakJa(sample).catch(() => {});
       }
     };
+    const talkBtn = document.getElementById("talkBtn");
+    if (talkBtn) {
+      let talkRecog = null;
+      let talkLive = false;
+      let talkDownAt = 0;
+      const paintTalk = (on) => {
+        talkBtn.classList.toggle("live", on);
+        talkBtn.textContent = on ? "⏹" : "🎤";
+      };
+      const ensureTalk = () => {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return null;
+        if (talkRecog) return talkRecog;
+        const recog = new SR();
+        recog.lang = "ja-JP";
+        recog.interimResults = false;
+        recog.continuous = false;
+        recog.maxAlternatives = 1;
+        recog.onresult = (ev) => {
+          const said = (((ev.results || [])[0] || [])[0] || {}).transcript || "";
+          const text = String(said).trim();
+          if (!text) return;
+          const box = document.getElementById("message");
+          if (box) box.value = text;
+          sendMessage(text);
+        };
+        recog.onerror = (ev) => {
+          const code = ev && ev.error;
+          if (code === "aborted") return;
+          setErr(code === "no-speech" ? "何も聞こえなかったよ。もう一度押して話してね。" : "聞き取れなかった。もう一度押すか、文字で返してね。");
+        };
+        recog.onend = () => {
+          talkLive = false;
+          paintTalk(false);
+        };
+        talkRecog = recog;
+        return recog;
+      };
+      const beginTalk = (ev) => {
+        if (busy || talkLive) return;
+        const recog = ensureTalk();
+        if (!recog) {
+          setErr("このブラウザは音声入力に対応していません。文字で返してね。");
+          return;
+        }
+        unlockAudio();
+        setErr("");
+        talkDownAt = Date.now();
+        talkLive = true;
+        paintTalk(true);
+        try {
+          if (ev && ev.pointerId != null) talkBtn.setPointerCapture(ev.pointerId);
+        } catch (_) {}
+        try {
+          recog.start();
+        } catch (_) {
+          talkLive = false;
+          paintTalk(false);
+        }
+      };
+      const endTalk = () => {
+        if (!talkLive || !talkRecog) return;
+        if (Date.now() - talkDownAt < 280) return;
+        try {
+          talkRecog.stop();
+        } catch (_) {}
+      };
+      talkBtn.addEventListener("pointerdown", (ev) => {
+        ev.preventDefault();
+        beginTalk(ev);
+      });
+      talkBtn.addEventListener("pointerup", endTalk);
+      talkBtn.addEventListener("pointercancel", endTalk);
+      talkBtn.addEventListener("contextmenu", (ev) => ev.preventDefault());
+    }
     const notifyToggle = document.getElementById("notifyToggleBtn");
     if (notifyToggle) notifyToggle.onclick = () => toggleScheduleNotify();
     const digestHour = document.getElementById("digestHourSelect");

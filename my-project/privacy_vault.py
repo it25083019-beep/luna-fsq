@@ -49,6 +49,7 @@ DROP_FROM_ADMIN_BRAIN = {
     "push_subscription",
     "google_oauth",
     "emergency_contacts",
+    "care_recall",
 }
 
 
