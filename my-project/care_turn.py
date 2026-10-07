@@ -209,6 +209,17 @@ def _line(table: Dict[str, str], user: Dict[str, Any], prefix: str) -> str:
     return table.get(voice, table["luna"]).format(prefix=prefix)
 
 
+def _sleep_hours(health: Dict[str, Any]) -> Optional[float]:
+    sleep = health.get("sleep_hours")
+    try:
+        hours = float(sleep) if sleep not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
+    if hours is None or hours <= 0 or hours > 14:
+        return None
+    return hours
+
+
 def linked_open_line(user: Dict[str, Any], *, who: str = "", now: Optional[datetime] = None) -> Optional[str]:
     """One caring question from night, sleep, money, and how packed the day is."""
     from day_coach import _now_jst, assess_day_load
@@ -216,19 +227,19 @@ def linked_open_line(user: Dict[str, Any], *, who: str = "", now: Optional[datet
     now = now or _now_jst()
     prefix = f"{who}、" if who else ""
     hour = now.hour
-    if hour >= 22 or hour < 6:
-        return _line(_NIGHT, user, prefix)
-
     health = ((user.get("life_modules") or {}).get("health") or {}).get("structured") or {}
     money = ((user.get("life_modules") or {}).get("money") or {}).get("structured") or {}
+    from life_graph import mood_trust, money_trust, sleep_trust
+
+    sleep_n = _sleep_hours(health)
     mental = str(health.get("mental_status") or "").strip()
-    sleep = health.get("sleep_hours")
-    try:
-        sleep_n = float(sleep) if sleep not in (None, "") else None
-    except (TypeError, ValueError):
-        sleep_n = None
+    if hour >= 22 or hour < 6:
+        line = _line(_NIGHT, user, prefix)
+        cite = sleep_trust(sleep_n) if sleep_n is not None and sleep_n < 6 else ""
+        return f"{line}{cite}"
+
     if 6 <= hour < 11 and sleep_n is not None and sleep_n < 6:
-        return _line(_SLEEP, user, prefix)
+        return f"{_line(_SLEEP, user, prefix)}{sleep_trust(sleep_n)}"
 
     from health_eval import evaluate_health
     from money_eval import evaluate_money
@@ -241,12 +252,14 @@ def linked_open_line(user: Dict[str, Any], *, who: str = "", now: Optional[datet
     has_money = bool(money.get("monthly_income") or money.get("monthly_expense"))
     packed = fit.get("load") in ("busy", "heavy", "recover")
     worn = mental in ("疲れ", "落ち込み", "不安") or (sleep_n is not None and sleep_n < 6)
+    cite_money = money_trust(money) if has_money else ""
+    cite_body = mood_trust(mental) or (sleep_trust(sleep_n) if sleep_n is not None and sleep_n < 6 else "")
     if has_money and money_score < 50 and (worn or health_score < 55):
-        return _line(_BOTH, user, prefix)
+        return f"{_line(_BOTH, user, prefix)}{cite_money}"
     if packed and worn:
-        return _line(_PACKED, user, prefix)
+        return f"{_line(_PACKED, user, prefix)}{cite_body}"
     if has_money and money_score < 45:
-        return _line(_MONEY, user, prefix)
+        return f"{_line(_MONEY, user, prefix)}{cite_money}"
     return None
 
 

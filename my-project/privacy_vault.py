@@ -50,6 +50,7 @@ DROP_FROM_ADMIN_BRAIN = {
     "google_oauth",
     "emergency_contacts",
     "care_recall",
+    "life_graph",
 }
 
 

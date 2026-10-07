@@ -912,7 +912,7 @@ def get_home_summary(current: User = Depends(get_current_user)):
     from push_service import flush_due_pushes
 
     pushed = flush_due_pushes(brain, (result.get("reminders") or {}).get("reminders"))
-    if brain.pop("_schedule_dirty", False) or brain.pop("_radar_dirty", False) or result.get("health", {}).get("mental_reminder") or pushed:
+    if brain.pop("_schedule_dirty", False) or brain.pop("_radar_dirty", False) or brain.pop("_graph_dirty", False) or result.get("health", {}).get("mental_reminder") or pushed:
         save_user_brain(current.public_id, brain)
     return result
 

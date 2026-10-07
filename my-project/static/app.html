@@ -121,6 +121,12 @@
     .mail-brief p{margin:.2rem 0;font-size:.72rem;line-height:1.4}
     .mail-brief p.mail-urgent{color:#c45c3a;font-weight:800}
     .mail-brief p.mail-quiet{color:var(--muted)}
+    .life-memory{margin:0 1rem .45rem;padding:.5rem .75rem;border-radius:14px;background:var(--card);box-shadow:var(--shadow)}
+    .life-memory strong{display:block;font-size:.68rem;color:var(--lilac-deep)}
+    .life-memory ul{margin:.28rem 0 0;padding:0}
+    .life-memory li{display:flex;gap:.4rem;align-items:baseline;font-size:.68rem;margin:.16rem 0;list-style:none}
+    .life-memory b{font-weight:800;color:var(--lilac-deep)}
+    .life-memory em{margin-left:auto;font-style:normal;font-size:.58rem;color:var(--muted)}
     .mode-row{display:flex;flex-wrap:wrap;gap:.35rem;margin:.35rem 0 .55rem}
     .mode-row button{border:2px solid transparent;background:var(--input-bg);border-radius:999px;padding:.35rem .7rem;font-size:.7rem;cursor:pointer;color:var(--lilac-deep);font-weight:700}
     .mode-row button.active{border-color:var(--lilac);background:var(--card)}
@@ -1570,6 +1576,10 @@
             </div>
           </div>
           <div id="mailBrief" class="mail-brief" hidden></div>
+          <div id="lifeMemory" class="life-memory" hidden>
+            <strong>覚えていること</strong>
+            <ul id="lifeMemoryList"></ul>
+          </div>
           <div id="mentalRemindBanner" class="home-banner" role="status">
             <p id="mentalRemindText">LUNAが今日の気分を聞きたいよ</p>
             <button type="button" id="mentalRemindBtn">答える</button>
@@ -2463,6 +2473,6 @@
   <script src="/static/world.js?v=20260916b"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20261007d"></script>
+  <script src="/static/app.js?v=20261007e"></script>
 </body>
 </html>

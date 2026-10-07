@@ -4305,6 +4305,28 @@
     el.hidden = !el.childElementCount;
   }
 
+  function renderLifeMemory(cards) {
+    const box = document.getElementById("lifeMemory");
+    const list = document.getElementById("lifeMemoryList");
+    if (!box || !list) return;
+    list.replaceChildren();
+    (cards || []).forEach((card) => {
+      if (!card || !card.value) return;
+      const li = document.createElement("li");
+      const name = document.createElement("b");
+      name.textContent = card.label || "";
+      const value = document.createElement("span");
+      value.textContent = card.value || "";
+      const source = document.createElement("em");
+      source.textContent = card.source || "";
+      li.appendChild(name);
+      li.appendChild(value);
+      li.appendChild(source);
+      list.appendChild(li);
+    });
+    box.hidden = !list.childElementCount;
+  }
+
   function renderLifePulse(pulse) {
     const box = document.getElementById("lifePulse");
     if (!box) return;
@@ -4773,6 +4795,7 @@
       renderCouncil(s.council || null);
       applyMoodRuntime(s.mood_runtime || null);
       renderLifePulse(s.life_pulse || null);
+      renderLifeMemory(s.life_memory || []);
       const fab = document.getElementById("crisisBtn");
       if (fab) fab.classList.toggle("pulse", !!(s.mood_runtime && s.mood_runtime.crisis_ready));
       if (s.day_fit) {

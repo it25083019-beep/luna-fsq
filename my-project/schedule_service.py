@@ -1332,6 +1332,13 @@ def apply_suggestions(
     return created
 
 
+def _life_memory(user: Dict[str, Any]) -> List[Dict[str, str]]:
+    from life_graph import memory_cards, sync_life_graph
+
+    sync_life_graph(user)
+    return memory_cards(user)
+
+
 def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
     # Today-only focus keeps this cheap (calendar uses its own month window).
     prune_noise_events(user)
@@ -1422,5 +1429,6 @@ def home_summary(user: Dict[str, Any]) -> Dict[str, Any]:
         "council": council,
         "mood_runtime": mood,
         "life_pulse": pulse,
+        "life_memory": _life_memory(user),
         "crisis": crisis,
     }

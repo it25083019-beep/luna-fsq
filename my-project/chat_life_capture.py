@@ -100,7 +100,7 @@ def _extract_schedule_title(text: str) -> Optional[str]:
     t = (text or "").strip()
     has_schedule_word = bool(
         re.search(
-            r"予定|スケジュール|入れて|追加|バイト|会議|テスト|授業|面接|締切|deadline|meeting|カレンダー",
+            r"予定|スケジュール|入れて|追加|バイト|会議|テスト|授業|面接|課題|提出|締切|deadline|meeting|カレンダー",
             t,
             re.I,
         )
@@ -123,7 +123,7 @@ def _extract_schedule_title(text: str) -> Optional[str]:
     cleaned = re.sub(r"([01]?\d|2[0-3])[:：]([0-5]\d)", " ", cleaned)
     cleaned = re.sub(r"[、。！？\s]+", " ", cleaned).strip(" 　。.、")
     if len(cleaned) < 2:
-        for key in ("バイト", "テスト", "会議", "授業", "面接"):
+        for key in ("課題提出", "課題", "バイト", "テスト", "会議", "授業", "面接"):
             if key in t:
                 return key
         return None
@@ -458,7 +458,12 @@ def capture_life_from_chat(
     if isinstance(game_state, dict):
         llm_updates = game_state.get("life_updates")
     merged = _merge_updates(hints, llm_updates)
-    return apply_life_updates(user, merged)
+    applied = apply_life_updates(user, merged)
+    if applied:
+        from life_graph import remember_applied
+
+        remember_applied(user, applied, user_text)
+    return applied
 
 
 def compose_companion_dialogue(

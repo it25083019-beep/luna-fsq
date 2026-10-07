@@ -1426,8 +1426,16 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
         from name_utils import is_valid_display_name
 
         if re.search(r"相談|consult|体調|お金|予定|健康に|支出", msg, re.I):
+            saved = ""
+            try:
+                from chat_life_capture import capture_life_from_chat
+                from life_graph import done_sentence
+
+                saved = done_sentence(capture_life_from_chat(user, msg, None))
+            except Exception:
+                saved = ""
             ai_reply = _pack_reply(
-                "お名前の登録の前に、まず短いお名前だけ教えてください。（例：太郎）",
+                f"{saved}お名前の登録の前に、まず短いお名前だけ教えてください。（例：太郎）",
                 {},
             )
         else:
@@ -1536,6 +1544,18 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
             planned = plan_care_reply(user, text_in)
             if planned:
                 dialogue, care_state = planned
+                try:
+                    from chat_life_capture import capture_life_from_chat
+                    from life_graph import done_sentence
+
+                    applied = capture_life_from_chat(user, text_in, None)
+                    extra = done_sentence(applied)
+                    if extra and extra not in dialogue:
+                        dialogue = dialogue + extra
+                        care_state = dict(care_state)
+                        care_state["life_saved"] = applied
+                except Exception:
+                    pass
                 _update_relationship(user, text_in)
                 return _persist_local_turn(user_id, user, text_in, _pack_reply(dialogue, care_state))
 

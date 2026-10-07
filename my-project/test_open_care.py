@@ -64,7 +64,41 @@ def test_money_and_health_share_one_question():
     line = linked_open_line(user, who="ユウさん", now=now)
     assert line
     assert "お金" in line and "からだ" in line
+    assert "記録" in line
     print("OK linked money health", line)
+
+
+def test_night_cites_sleep_only_when_recorded():
+    user = _user()
+    now = datetime(2026, 10, 7, 23, 10, tzinfo=JST)
+    plain = linked_open_line(user, who="ユウさん", now=now)
+    assert "眠れない" in plain
+    assert "時間" not in plain
+    user["life_modules"]["health"]["structured"] = {"sleep_hours": 4}
+    cited = linked_open_line(user, who="ユウさん", now=now)
+    assert "4時間" in cited
+    assert "記録" in cited
+    print("OK night cite", cited)
+
+
+def test_chat_writes_spend_and_plan():
+    from chat_life_capture import capture_life_from_chat
+    from life_graph import done_sentence, memory_cards, sync_life_graph
+
+    user = _user()
+    spent = capture_life_from_chat(user, "疲れた。ランチ800円使った")
+    assert any(tag.startswith("支出+") for tag in spent)
+    assert "800" in done_sentence(spent)
+    planned = capture_life_from_chat(user, "明日16:00に課題提出を予定に入れて")
+    assert "予定を追加" in planned
+    assert "予定に入れた" in done_sentence(planned)
+    skipped = capture_life_from_chat(user, "課題がつらい")
+    assert "予定を追加" not in skipped
+    sync_life_graph(user)
+    cards = memory_cards(user)
+    assert cards
+    assert any(card["label"] == "支出" for card in cards)
+    print("OK graph", [(c["label"], c["value"], c["source"]) for c in cards])
 
 
 def test_balance_advice_names_the_gap():
@@ -110,6 +144,8 @@ if __name__ == "__main__":
     test_after_shift_asks_if_tired()
     test_night_open_asks_if_awake()
     test_money_and_health_share_one_question()
+    test_night_cites_sleep_only_when_recorded()
+    test_chat_writes_spend_and_plan()
     test_balance_advice_names_the_gap()
     test_next_open_remembers_last_words()
     test_heavy_stops_and_opens_rescue()
