@@ -82,10 +82,22 @@ def ensure_schema() -> None:
     if "users" not in insp.get_table_names():
         return
     cols = {c["name"] for c in insp.get_columns("users")}
+    dialect = engine.dialect.name
+    ts_type = "TIMESTAMP WITH TIME ZONE" if dialect == "postgresql" else "DATETIME"
+    alters = []
     if "is_locked" not in cols:
+        alters.append("ALTER TABLE users ADD COLUMN is_locked BOOLEAN DEFAULT FALSE NOT NULL")
+    if "token_version" not in cols:
+        alters.append("ALTER TABLE users ADD COLUMN token_version INTEGER DEFAULT 0 NOT NULL")
+    if "login_fail_count" not in cols:
+        alters.append("ALTER TABLE users ADD COLUMN login_fail_count INTEGER DEFAULT 0 NOT NULL")
+    if "login_locked_until" not in cols:
+        alters.append(f"ALTER TABLE users ADD COLUMN login_locked_until {ts_type}")
+    if alters:
         with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE users ADD COLUMN is_locked BOOLEAN DEFAULT FALSE NOT NULL"))
-        print("[DB] added users.is_locked")
+            for stmt in alters:
+                conn.execute(text(stmt))
+        print("[DB] users columns:", ", ".join(alters))
 
 
 def init_db() -> None:

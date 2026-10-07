@@ -48,6 +48,7 @@ DROP_FROM_ADMIN_BRAIN = {
     "mail_link",
     "push_subscription",
     "google_oauth",
+    "emergency_contacts",
 }
 
 
@@ -95,10 +96,39 @@ def unseal_mail_link(link: Any) -> Dict[str, Any]:
     return out
 
 
+def seal_emergency_contacts(rows: Any) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        item = dict(row)
+        for key in ("tel", "name"):
+            if item.get(key):
+                item[key] = seal_text(item[key])
+        out.append(item)
+    return out
+
+
+def unseal_emergency_contacts(rows: Any) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        item = dict(row)
+        for key in ("tel", "name"):
+            if item.get(key):
+                item[key] = unseal_text(item[key])
+        out.append(item)
+    return out
+
+
 def seal_brain_for_storage(brain: Dict[str, Any]) -> None:
     link = brain.get("mail_link")
     if isinstance(link, dict):
         brain["mail_link"] = seal_mail_link(link)
+    contacts = brain.get("emergency_contacts")
+    if isinstance(contacts, list):
+        brain["emergency_contacts"] = seal_emergency_contacts(contacts)
     hist = brain.get("chat_history")
     if isinstance(hist, list):
         sealed_hist = []
@@ -119,6 +149,9 @@ def unseal_brain_after_load(brain: Dict[str, Any]) -> None:
     link = brain.get("mail_link")
     if isinstance(link, dict):
         brain["mail_link"] = unseal_mail_link(link)
+    contacts = brain.get("emergency_contacts")
+    if isinstance(contacts, list):
+        brain["emergency_contacts"] = unseal_emergency_contacts(contacts)
 
 
 def looks_secret(text: Any) -> bool:

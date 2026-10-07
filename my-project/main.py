@@ -14,12 +14,17 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from auth_security import (
+    LOGIN_LOCK_MESSAGE,
+    bump_token_version,
     create_access_token,
     generate_password_reset_token,
     get_current_user,
     hash_password,
     hash_reset_token,
+    login_throttled,
     password_reset_expiry,
+    record_login_failure,
+    record_login_success,
     require_admin,
     verify_password,
 )
@@ -319,7 +324,11 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
     if req.display_name:
         brain["user_display_name"] = req.display_name
     save_user_brain(public_id, brain)
-    token = create_access_token(user.public_id, extra={"email": user.email, "is_admin": user.is_admin})
+    token = create_access_token(
+        user.public_id,
+        extra={"email": user.email, "is_admin": user.is_admin},
+        token_version=int(user.token_version or 0),
+    )
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -333,12 +342,24 @@ def auth_register(req: RegisterRequest, db: Session = Depends(get_db)):
 def auth_login(req: LoginRequest, db: Session = Depends(get_db)):
     email = req.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
+    if login_throttled(email, user):
+        raise HTTPException(status_code=429, detail=LOGIN_LOCK_MESSAGE)
     if not user or not verify_password(req.password, user.password_hash):
+        record_login_failure(email, user)
+        db.commit()
+        if login_throttled(email, user):
+            raise HTTPException(status_code=429, detail=LOGIN_LOCK_MESSAGE)
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if getattr(user, "is_locked", False):
         raise HTTPException(status_code=403, detail="Account is locked")
+    record_login_success(email, user)
+    db.commit()
     admin_flag = bool(user.is_admin or is_admin(user.public_id))
-    token = create_access_token(user.public_id, extra={"email": user.email, "is_admin": admin_flag})
+    token = create_access_token(
+        user.public_id,
+        extra={"email": user.email, "is_admin": admin_flag},
+        token_version=int(user.token_version or 0),
+    )
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -424,6 +445,9 @@ def auth_reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)
         raise HTTPException(status_code=403, detail="Account is locked")
 
     user.password_hash = hash_password(req.new_password)
+    bump_token_version(user)
+    user.login_fail_count = 0
+    user.login_locked_until = None
     row.used_at = now
     db.commit()
     return {"message": "Password updated. You can log in now."}
@@ -443,8 +467,15 @@ def auth_change_password(
     if req.current_password == req.new_password:
         raise HTTPException(status_code=400, detail="新しいパスワードは現在と別にしてください")
     user.password_hash = hash_password(req.new_password)
+    version = bump_token_version(user)
+    record_login_success(user.email, user)
     db.commit()
-    return {"ok": True, "message": "パスワードを更新しました。"}
+    token = create_access_token(
+        user.public_id,
+        extra={"email": user.email, "is_admin": bool(user.is_admin or is_admin(user.public_id))},
+        token_version=version,
+    )
+    return {"ok": True, "message": "パスワードを更新しました。", "access_token": token}
 
 
 # ----- Me routes (token) -----
@@ -1440,6 +1471,9 @@ def admin_reset_password(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user.password_hash = hash_password(req.new_password)
+    bump_token_version(user)
+    user.login_fail_count = 0
+    user.login_locked_until = None
     db.commit()
     return {"ok": True, "user_id": user_id}
 

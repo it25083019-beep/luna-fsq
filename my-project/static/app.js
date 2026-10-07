@@ -3193,6 +3193,16 @@
     }
   }
 
+  function escHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[ch]));
+  }
+
   function renderDayEvents() {
     const title = document.getElementById("dayPanelTitle");
     if (title) title.textContent = fmtDateJa(selectedDate);
@@ -3207,13 +3217,13 @@
     items.forEach((ev) => {
       const row = document.createElement("div");
       row.className = "todo-row" + (ev.done ? " done" : "");
-      const time = ev.time || ev.end_time ? formatTimeRange(ev) + " · " : "";
-      const place = ev.location ? " · " + ev.location : "";
+      const time = ev.time || ev.end_time ? escHtml(formatTimeRange(ev)) + " · " : "";
+      const place = ev.location ? " · " + escHtml(ev.location) : "";
       const src = ev.source === "email" || ev.source === "gmail" ? '<span class="recur-tag">メール</span>' : "";
       const recur = ev.recurrence
-        ? '<span class="recur-tag">🔁同じ' + weekdayJaFromIso(ev.date || selectedDate) + "曜</span>"
+        ? '<span class="recur-tag">🔁同じ' + escHtml(weekdayJaFromIso(ev.date || selectedDate)) + "曜</span>"
         : "";
-      row.innerHTML = '<span style="flex:1">' + time + shortEventTitle(ev.title) + place + src + recur + "</span>";
+      row.innerHTML = '<span style="flex:1">' + time + escHtml(shortEventTitle(ev.title)) + place + src + recur + "</span>";
       const acts = document.createElement("div");
       acts.className = "acts";
       const doneBtn = document.createElement("button");
@@ -3376,10 +3386,10 @@
       row.className = "home-today-item" + (ev.done ? " done" : "");
       row.innerHTML =
         '<span class="t">' +
-        formatTimeRange(ev) +
+        escHtml(formatTimeRange(ev)) +
         "</span><span style='flex:1'>" +
-        shortEventTitle(ev.title) +
-        (ev.location ? "<br><span class='hint'>" + ev.location + "</span>" : "") +
+        escHtml(shortEventTitle(ev.title)) +
+        (ev.location ? "<br><span class='hint'>" + escHtml(ev.location) + "</span>" : "") +
         "</span>";
       attachSwipeDelete(row, () => deleteScheduleEvent(ev.id));
       el.appendChild(row);
@@ -4301,16 +4311,16 @@
     if (!box) return;
     const people = (proto && proto.contacts) || [];
     if (!people.length) {
-      box.innerHTML = "<p class=\"cr-empty\">" + ((proto && proto.hint_ja) || "設定で家族や親友の番号を入れてね。") + "</p>";
+      box.innerHTML = "<p class=\"cr-empty\">" + escHtml((proto && proto.hint_ja) || "設定で家族や親友の番号を入れてね。") + "</p>";
       return;
     }
     box.innerHTML = people
       .slice(0, 3)
       .map((p) => {
-        const label = (p.relation_ja || "") + "の" + (p.name || "大切な人") + "に電話";
-        const href = String(p.call_href || ("tel:" + (p.tel || ""))).replace(/"/g, "");
-        const id = String(p.id || "").replace(/"/g, "");
-        return "<a href=\"" + href + "\" data-contact-id=\"" + id + "\">" + label.replace(/</g, "") + "</a>";
+        const label = escHtml((p.relation_ja || "") + "の" + (p.name || "大切な人") + "に電話");
+        const href = escHtml(String(p.call_href || ("tel:" + (p.tel || ""))));
+        const id = escHtml(String(p.id || ""));
+        return "<a href=\"" + href + "\" data-contact-id=\"" + id + "\">" + label + "</a>";
       })
       .join("");
     box.querySelectorAll("a[data-contact-id]").forEach((a) => {
@@ -4333,10 +4343,10 @@
       }
       el.innerHTML = people
         .map((p) => {
-          const id = String(p.id || "").replace(/"/g, "");
-          const name = String(p.name || "").replace(/</g, "");
-          const rel = String(p.relation_ja || "").replace(/</g, "");
-          const href = String(p.call_href || "").replace(/"/g, "");
+          const id = escHtml(String(p.id || ""));
+          const name = escHtml(String(p.name || ""));
+          const rel = escHtml(String(p.relation_ja || ""));
+          const href = escHtml(String(p.call_href || ""));
           return (
             "<div class=\"emergency-row\" data-id=\"" +
             id +
@@ -5135,8 +5145,8 @@
           if (msg) msg.textContent = "現在と新しいパスワードを入力してください。";
           return;
         }
-        if (nw.length < 6) {
-          if (msg) msg.textContent = "新しいパスワードは6文字以上です。";
+        if (nw.length < 10) {
+          if (msg) msg.textContent = "新しいパスワードは10文字以上です。";
           return;
         }
         if (nw !== nw2) {
@@ -5149,6 +5159,7 @@
             method: "POST",
             body: JSON.stringify({ current_password: cur, new_password: nw }),
           });
+          if (res && res.access_token && window.LunaAuth) LunaAuth.setToken(res.access_token);
           if (msg) {
             msg.style.color = "#1f7a6e";
             msg.textContent = res.message || "更新しました。";

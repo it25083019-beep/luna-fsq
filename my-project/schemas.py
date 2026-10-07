@@ -14,7 +14,7 @@ def _normalize_email(v: str) -> str:
 
 class RegisterRequest(BaseModel):
     email: str
-    password: str = Field(min_length=6)
+    password: str = Field(min_length=10)
     display_name: Optional[str] = None
 
     @field_validator("email")
@@ -44,12 +44,12 @@ class ForgotPasswordRequest(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(min_length=1)
-    new_password: str = Field(min_length=6)
+    new_password: str = Field(min_length=10)
 
 
 class ResetPasswordRequest(BaseModel):
     token: str = Field(min_length=20)
-    new_password: str = Field(min_length=6)
+    new_password: str = Field(min_length=10)
 
 
 class ForgotPasswordResponse(BaseModel):
@@ -171,7 +171,7 @@ class AdminUserOut(BaseModel):
 
 
 class AdminResetPasswordRequest(BaseModel):
-    new_password: str = Field(min_length=6)
+    new_password: str = Field(min_length=10)
 
 
 class AdminLockRequest(BaseModel):

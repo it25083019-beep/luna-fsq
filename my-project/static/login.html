@@ -81,15 +81,15 @@
           <input id="email" type="email" autocomplete="username" required placeholder="you@example.com" />
         </div>
         <div id="passwordBlock">
-          <label for="password">パスワード</label>
-          <input id="password" type="password" autocomplete="current-password" required minlength="6" />
+          <label for="password" id="passwordLabel">パスワード</label>
+          <input id="password" type="password" autocomplete="current-password" required />
         </div>
         <div id="resetTokenBlock" class="hidden">
           <input id="resetToken" type="hidden" autocomplete="off" />
-          <label for="newPassword">新しいパスワード（6文字以上）</label>
-          <input id="newPassword" type="password" autocomplete="new-password" minlength="6" />
+          <label for="newPassword">新しいパスワード（10文字以上）</label>
+          <input id="newPassword" type="password" autocomplete="new-password" minlength="10" />
           <label for="newPassword2">新しいパスワード（確認）</label>
-          <input id="newPassword2" type="password" autocomplete="new-password" minlength="6" />
+          <input id="newPassword2" type="password" autocomplete="new-password" minlength="10" />
         </div>
         <div class="row">
           <button type="submit" id="authSubmit" class="primary">ログイン</button>
@@ -167,6 +167,15 @@
       document.getElementById("resetTokenBlock").classList.toggle("hidden", !resetMode);
       document.getElementById("email").required = !resetMode;
       document.getElementById("password").required = login || registerMode;
+      const pw = document.getElementById("password");
+      const pwLabel = document.getElementById("passwordLabel");
+      if (registerMode) {
+        pw.minLength = 10;
+        if (pwLabel) pwLabel.textContent = "パスワード（10文字以上）";
+      } else {
+        pw.removeAttribute("minlength");
+        if (pwLabel) pwLabel.textContent = "パスワード";
+      }
       document.getElementById("newPassword").required = resetMode;
       document.getElementById("newPassword2").required = resetMode;
       authHint.textContent = forgotMode
@@ -213,7 +222,8 @@
           authError.textContent = data.message || "送信しました";
           if (data.reset_url) {
             resetDevLink.classList.remove("hidden");
-            resetDevLink.innerHTML = '再設定リンク: <a href="' + data.reset_url + '">ここをタップして新しいパスワードを設定</a>';
+            const safeUrl = String(data.reset_url).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+            resetDevLink.innerHTML = '再設定リンク: <a href="' + safeUrl + '">ここをタップして新しいパスワードを設定</a>';
           } else {
             resetDevLink.classList.remove("hidden");
             resetDevLink.textContent = "メールの案内に従って再設定してください。届かない場合は数分待って再試行してください。";
@@ -224,7 +234,7 @@
           const tokenVal = document.getElementById("resetToken").value.trim() || new URLSearchParams(location.search).get("reset") || "";
           const np = document.getElementById("newPassword").value;
           const np2 = document.getElementById("newPassword2").value;
-          if (np.length < 6) throw new Error("パスワードは6文字以上にしてください");
+          if (np.length < 10) throw new Error("パスワードは10文字以上にしてください");
           if (np !== np2) throw new Error("確認用パスワードが一致しません");
           if (!tokenVal) throw new Error("再設定リンクが無効です。もう一度「パスワードを忘れた場合」からやり直してください。");
           await api("/auth/reset-password", { method: "POST", body: JSON.stringify({ token: tokenVal, new_password: np }) });
@@ -234,6 +244,7 @@
           authError.textContent = "パスワードを更新しました。ログインしてください。";
           return;
         }
+        if (registerMode && password.length < 10) throw new Error("パスワードは10文字以上にしてください");
         const path = registerMode ? "/auth/register" : "/auth/login";
         const data = await api(path, { method: "POST", body: JSON.stringify({ email, password }) });
         finishLogin(data);

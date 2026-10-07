@@ -109,8 +109,8 @@
         reset.type = "button";
         reset.textContent = "Reset PW";
         reset.addEventListener("click", async () => {
-          const pw = prompt("新しいパスワード（6文字以上）", "");
-          if (!pw || pw.length < 6) return;
+          const pw = prompt("新しいパスワード（10文字以上）", "");
+          if (!pw || pw.length < 10) return;
           try {
             await api("/admin/users/" + u.user_id + "/reset-password", {
               method: "POST", body: JSON.stringify({ new_password: pw })
