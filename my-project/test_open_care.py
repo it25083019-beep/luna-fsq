@@ -106,18 +106,20 @@ def test_mentioned_event_is_asked_afterward():
     )
     hello_during = companion_hello_line(user, now=during)
     assert "どうだった" not in hello_during
+    assert "話して" not in hello_during
     after = datetime(2026, 10, 8, 16, 20, tzinfo=JST)
     user["check_back"]["asked"] = False
     hello_after = companion_hello_line(user, now=after)
     assert "今日は発表" in hello_after
-    assert "どうだった" in hello_after
+    assert "何かあったら話して" in hello_after
+    assert "どうだった" not in hello_after
     assert _chips_with_agenda(user, now=after)[0] == "うまくいった"
     later = datetime(2026, 10, 9, 9, 0, tzinfo=JST)
     user["check_back"]["asked"] = False
     user["check_back"]["answered"] = False
     hello_next = companion_hello_line(user, now=later)
     assert "この前、発表" in hello_next
-    assert "どうだった" in hello_next
+    assert "何かあったら話して" in hello_next
     assert "予定を追加" not in extract_life_hints_from_text("課題がつらい", today=date(2026, 10, 7))
     print("OK check back", hello_after)
 
@@ -132,7 +134,7 @@ def test_chat_writes_spend_and_plan():
     assert "800" in done_sentence(spent)
     planned = capture_life_from_chat(user, "明日16:00に課題提出を予定に入れて")
     assert "予定を追加" in planned
-    assert "予定に入れた" in done_sentence(planned)
+    assert "予定に入れた。終わったら、ひとこと言って。" in done_sentence(planned)
     skipped = capture_life_from_chat(user, "課題がつらい")
     assert "予定を追加" not in skipped
     sync_life_graph(user)
@@ -140,6 +142,51 @@ def test_chat_writes_spend_and_plan():
     assert cards
     assert any(card["label"] == "支出" for card in cards)
     print("OK graph", [(c["label"], c["value"], c["source"]) for c in cards])
+
+
+def test_tell_line_follows_the_task():
+    from chat_life_capture import capture_life_from_chat
+    from life_graph import done_sentence
+
+    cases = (
+        ("明日、面接がある", "終わったら、何かあったら話して。", "うまくいった"),
+        ("明日、試験がある", "終わったら、きつかったら言って。", "きつかった"),
+        ("明日、受診がある", "終わったら、話したくなったら言って。", "話したい"),
+        ("明日16:00に打ち合わせを予定に入れて", "終わったら、ひとこと言って。", "終わった"),
+    )
+    for text, phrase, chip in cases:
+        person = _user()
+        applied = capture_life_from_chat(person, text)
+        assert phrase in done_sentence(applied), text
+        saved = person["check_back"]
+        saved["on"] = "2026-10-07"
+        saved["asked"] = False
+        saved["answered"] = False
+        moment = datetime(2026, 10, 7, 18, 0, tzinfo=JST)
+        line = companion_hello_line(person, now=moment)
+        assert phrase.replace("終わったら、", "") in line, text
+        assert "どうだった" not in line
+        assert _chips_with_agenda(person, now=moment)[0] == chip
+    shift = _user()
+    baito = capture_life_from_chat(shift, "明日バイトを予定に入れて")
+    said = done_sentence(baito)
+    assert said == "予定に入れた。"
+    assert "check_back" not in shift
+    school = _user()
+    now = datetime(2026, 10, 8, 10, 0, tzinfo=JST)
+    add_event(
+        school,
+        title="授業",
+        event_date="2026-10-08",
+        event_time="09:00",
+        event_end_time="12:00",
+        note="チャットから追加",
+    )
+    school["check_back"] = {"title": "発表", "on": "2026-10-08", "asked": False, "answered": False}
+    during_class = companion_hello_line(school, now=now)
+    assert "何かあった" in during_class
+    assert "話して" not in during_class
+    print("OK tell line", said)
 
 
 def test_balance_advice_names_the_gap():
@@ -187,6 +234,7 @@ if __name__ == "__main__":
     test_money_and_health_share_one_question()
     test_night_cites_sleep_only_when_recorded()
     test_mentioned_event_is_asked_afterward()
+    test_tell_line_follows_the_task()
     test_chat_writes_spend_and_plan()
     test_balance_advice_names_the_gap()
     test_next_open_remembers_last_words()

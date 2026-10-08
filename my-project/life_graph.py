@@ -92,12 +92,19 @@ def _plan_value(text: str) -> str:
 
 def done_sentence(applied: List[str]) -> str:
     """One short confirmation that the chat wrote something down."""
+    invite = ""
+    for tag in applied or []:
+        if tag.startswith("声かけ:"):
+            from care_turn import tell_save_line
+
+            invite = tell_save_line(tag.split(":", 1)[1])
+            break
     bits: List[str] = []
     for tag in applied or []:
         if tag.startswith("支出+"):
             bits.append(f"{tag.replace('支出+', '')}、記録した。")
         elif tag == "予定を追加":
-            bits.append("予定に入れた。")
+            bits.append("予定に入れた。" + invite)
         elif tag.startswith("睡眠→"):
             bits.append(f"睡眠{tag.replace('睡眠→', '')}、残した。")
         elif tag.startswith("目標「"):

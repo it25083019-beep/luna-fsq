@@ -128,7 +128,7 @@ def _extract_schedule_title(text: str) -> Optional[str]:
     t = (text or "").strip()
     has_schedule_word = bool(
         re.search(
-            r"予定|スケジュール|入れて|追加|バイト|会議|テスト|授業|面接|課題|提出|締切|deadline|meeting|カレンダー",
+            r"予定|スケジュール|入れて|追加|バイト|会議|打ち合わせ|打合せ|テスト|授業|面接|課題|提出|締切|deadline|meeting|カレンダー",
             t,
             re.I,
         )
@@ -390,7 +390,11 @@ def apply_life_updates(user: Dict[str, Any], updates: Dict[str, Any]) -> List[st
             title = str(sched.get("title")).strip()[:80]
             if looks_secret(title):
                 raise ValueError("secret title")
+            from care_turn import tell_kind
+
             note = str(sched.get("note") or "チャットから追加")[:200]
+            if tell_kind(title):
+                note = "あとで聞く"
             add_event(
                 user,
                 title=title,
@@ -401,13 +405,14 @@ def apply_life_updates(user: Dict[str, Any], updates: Dict[str, Any]) -> List[st
                 recurrence=None,
             )
             applied.append("予定を追加")
-            if note == "あとで聞く":
+            if tell_kind(title):
                 user["check_back"] = {
                     "title": title[:24],
                     "on": str(sched.get("date") or _today().isoformat())[:10],
                     "asked": False,
                     "answered": False,
                 }
+                applied.append(f"声かけ:{title[:40]}")
         except Exception:
             pass
 

@@ -209,8 +209,71 @@ def check_back_due(user: Dict[str, Any], *, now: Optional[datetime] = None) -> b
     return now.hour >= 17
 
 
+def tell_kind(title: str) -> Optional[str]:
+    """Which invitation fits this occasion. Clock questions are not in this list."""
+    t = title or ""
+    if re.search(r"発表|面接|卒論|卒研|プレゼン", t):
+        return "share"
+    if re.search(r"試験|テスト", t):
+        return "hard"
+    if re.search(r"受診|病院", t):
+        return "private"
+    if re.search(r"課題|提出|打ち合わせ|打合せ|会議", t):
+        return "word"
+    return None
+
+
+_TELL_SAVE = {
+    "share": "終わったら、何かあったら話して。",
+    "hard": "終わったら、きつかったら言って。",
+    "private": "終わったら、話したくなったら言って。",
+    "word": "終わったら、ひとこと言って。",
+}
+_TELL_DONE = {
+    "share": "何かあったら話して。",
+    "hard": "きつかったら言って。",
+    "private": "話したくなったら言って。",
+    "word": "ひとこと言って。",
+}
+_TELL_CHIPS = {
+    "share": ["うまくいった", "疲れた", "まだ終わってない"],
+    "hard": ["きつかった", "大丈夫", "まだ終わってない"],
+    "private": ["話したい", "大丈夫", "まだ終わってない"],
+    "word": ["終わった", "疲れた", "まだ終わってない"],
+}
+
+
+def tell_save_line(title: str) -> str:
+    """Said once, when the occasion is written on the calendar."""
+    kind = tell_kind(title)
+    return _TELL_SAVE.get(kind or "", "")
+
+
+def tell_done_line(title: str) -> str:
+    """Said once, after that occasion is over."""
+    kind = tell_kind(title)
+    return _TELL_DONE.get(kind or "", "ひとこと言って。")
+
+
+def tell_chips(title: str) -> list[str]:
+    kind = tell_kind(title)
+    return list(_TELL_CHIPS.get(kind or "", _TELL_CHIPS["share"]))
+
+
+def _check_back_spoken(row: Dict[str, Any], *, now: datetime, prefix: str) -> str:
+    title = str(row.get("title") or "その件")
+    invite = tell_done_line(title)
+    try:
+        day = datetime.fromisoformat(str(row.get("on") or "")).date()
+    except ValueError:
+        day = now.date()
+    if day == now.date():
+        return f"{prefix}この前、今日は{title}だって言ってたよね。{invite}"
+    return f"{prefix}この前、{title}だって言ってたよね。{invite}"
+
+
 def check_back_line(user: Dict[str, Any], *, who: str = "", now: Optional[datetime] = None) -> Optional[str]:
-    """After a mentioned occasion, ask how it went. One ask until they answer."""
+    """After a mentioned occasion, invite them to tell what happened. One ask until they answer."""
     if not check_back_due(user, now=now):
         return None
     row = _check_back_row(user)
@@ -219,17 +282,10 @@ def check_back_line(user: Dict[str, Any], *, who: str = "", now: Optional[dateti
     from day_coach import _now_jst
 
     now = now or _now_jst()
-    try:
-        day = datetime.fromisoformat(str(row.get("on") or "")).date()
-    except ValueError:
-        day = now.date()
     row["asked"] = True
     user["check_back"] = row
     prefix = f"{who}、" if who else ""
-    title = str(row.get("title") or "その件")
-    if day == now.date():
-        return f"{prefix}この前、今日は{title}だって言ってたよね。どうだった？"
-    return f"{prefix}この前、{title}だって言ってたよね。どうだった？"
+    return _check_back_spoken(row, now=now, prefix=prefix)
 
 
 def check_back_reminder(user: Dict[str, Any], *, now: datetime, who: str) -> Optional[Dict[str, Any]]:
@@ -240,7 +296,7 @@ def check_back_reminder(user: Dict[str, Any], *, now: datetime, who: str) -> Opt
     if not row:
         return None
     title = str(row.get("title") or "その件")
-    body = f"この前、{title}だって言ってたよね。どうだった？"
+    body = _check_back_spoken(row, now=now, prefix="")
     return {
         "id": f"check-back-{row.get('on')}-{title}",
         "kind": "check_back",
