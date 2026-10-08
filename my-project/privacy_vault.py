@@ -51,6 +51,7 @@ DROP_FROM_ADMIN_BRAIN = {
     "emergency_contacts",
     "care_recall",
     "life_graph",
+    "check_back",
 }
 
 

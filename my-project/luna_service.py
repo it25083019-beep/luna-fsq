@@ -284,6 +284,10 @@ def append_turns(store: Dict[str, Any], user_text: str, ai_reply: str) -> None:
             note = _snippet(user_text)
             if note:
                 store["care_recall"] = {"note": note, "at": stamp, "tone": care_tone(user_text) or "talk"}
+            back = store.get("check_back")
+            if isinstance(back, dict) and back.get("asked"):
+                back["answered"] = True
+                store["check_back"] = back
         history.append(row)
     history.append({"role": "model", "content": ai_reply, "at": stamp})
     from privacy_vault import cap_chat_history
@@ -854,8 +858,13 @@ def companion_hello_line(user: Dict[str, Any], *, now=None) -> str:
         agenda = companion_agenda_line(user, who=who, now=now)
         if agenda:
             return agenda
-    from care_turn import linked_open_line, recall_greeting
+    from care_turn import check_back_line, linked_open_line, recall_greeting
 
+    followed = check_back_line(user, who=who, now=now)
+    if followed:
+        if spoken and spoken not in followed:
+            followed = f"{spoken}だよ。{followed}"
+        return followed
     linked = linked_open_line(user, who=who, now=now)
     if linked:
         if spoken and spoken not in linked:
@@ -1425,7 +1434,7 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
     if not display:
         from name_utils import is_valid_display_name
 
-        if re.search(r"相談|consult|体調|お金|予定|健康に|支出", msg, re.I):
+        if re.search(r"相談|consult|体調|お金|予定|健康に|支出|発表|面接|試験|受診|bảo vệ|đồ án", msg, re.I):
             saved = ""
             try:
                 from chat_life_capture import capture_life_from_chat

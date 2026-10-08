@@ -2718,6 +2718,16 @@
       const at = Date.parse(row.fire_at || "") || now;
       const delay = Math.max(0, at - now);
       if (delay > 14 * 60 * 60 * 1000) return;
+      if (row.kind === "check_back") {
+        if (!canOs) return;
+        reminderTimers.push(
+          setTimeout(() => {
+            if (!markOnce("check", row.id || "")) return;
+            showReminderNote(row);
+          }, delay)
+        );
+        return;
+      }
       if (row.kind === "mail_quiet") return;
       if (row.kind === "digest") {
         reminderTimers.push(

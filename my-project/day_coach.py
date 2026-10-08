@@ -558,6 +558,9 @@ def clock_care_now(user: Dict[str, Any], *, now: Optional[datetime] = None) -> b
         return True
     ended = ag.get("just_ended")
     if isinstance(ended, dict):
+        note = str(ended.get("note") or "")
+        if note == "あとで聞く":
+            return False
         end = event_bounds(ended, today=now.date())[1]
         if end and now - end <= timedelta(minutes=45):
             return True
@@ -937,11 +940,14 @@ def build_today_reminders(
                 }
             )
 
-    from care_turn import care_followup_reminder
+    from care_turn import care_followup_reminder, check_back_reminder
 
     follow = care_followup_reminder(user, now=now, who=who)
     if follow:
         reminders.append(follow)
+    check = check_back_reminder(user, now=now, who=who)
+    if check:
+        reminders.append(check)
 
     if fit.get("recommend") in ("rest", "micro") and fit.get("coach_ja"):
         reminders.insert(

@@ -72,6 +72,11 @@ def _chips_with_agenda(user: dict, now=None) -> list[str]:
         now = now or _now_jst()
         if clock_care_now(user, now=now):
             return ["大丈夫", "疲れた", "何かあった"]
+        from care_turn import check_back_due
+
+        back = user.get("check_back") if isinstance(user.get("check_back"), dict) else {}
+        if check_back_due(user, now=now) or (back.get("asked") and not back.get("answered")):
+            return ["うまくいった", "疲れた", "まだ終わってない"]
         if now.hour >= 22 or now.hour < 6:
             return ["眠れない", "何かあった", "大丈夫"]
     except Exception:

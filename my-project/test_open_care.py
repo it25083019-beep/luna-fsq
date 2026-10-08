@@ -81,6 +81,47 @@ def test_night_cites_sleep_only_when_recorded():
     print("OK night cite", cited)
 
 
+def test_mentioned_event_is_asked_afterward():
+    from datetime import date
+
+    from chat_life_capture import apply_life_updates, extract_life_hints_from_text
+
+    user = _user()
+    hints = extract_life_hints_from_text("明日、卒論の発表がある", today=date(2026, 10, 7))
+    assert hints["schedule_add"]["title"] == "発表"
+    assert hints["schedule_add"]["date"] == "2026-10-08"
+    assert hints["schedule_add"]["note"] == "あとで聞く"
+    vi = extract_life_hints_from_text("ngày mai mình bảo vệ đồ án", today=date(2026, 10, 7))
+    assert vi["schedule_add"]["title"] == "発表"
+    apply_life_updates(user, hints)
+    assert user["check_back"]["title"] == "発表"
+    during = datetime(2026, 10, 8, 15, 10, tzinfo=JST)
+    add_event(
+        user,
+        title="発表",
+        event_date="2026-10-08",
+        event_time="15:00",
+        event_end_time="16:00",
+        note="あとで聞く",
+    )
+    hello_during = companion_hello_line(user, now=during)
+    assert "どうだった" not in hello_during
+    after = datetime(2026, 10, 8, 16, 20, tzinfo=JST)
+    user["check_back"]["asked"] = False
+    hello_after = companion_hello_line(user, now=after)
+    assert "今日は発表" in hello_after
+    assert "どうだった" in hello_after
+    assert _chips_with_agenda(user, now=after)[0] == "うまくいった"
+    later = datetime(2026, 10, 9, 9, 0, tzinfo=JST)
+    user["check_back"]["asked"] = False
+    user["check_back"]["answered"] = False
+    hello_next = companion_hello_line(user, now=later)
+    assert "この前、発表" in hello_next
+    assert "どうだった" in hello_next
+    assert "予定を追加" not in extract_life_hints_from_text("課題がつらい", today=date(2026, 10, 7))
+    print("OK check back", hello_after)
+
+
 def test_chat_writes_spend_and_plan():
     from chat_life_capture import capture_life_from_chat
     from life_graph import done_sentence, memory_cards, sync_life_graph
@@ -145,6 +186,7 @@ if __name__ == "__main__":
     test_night_open_asks_if_awake()
     test_money_and_health_share_one_question()
     test_night_cites_sleep_only_when_recorded()
+    test_mentioned_event_is_asked_afterward()
     test_chat_writes_spend_and_plan()
     test_balance_advice_names_the_gap()
     test_next_open_remembers_last_words()

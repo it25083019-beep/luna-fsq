@@ -89,11 +89,39 @@ def _resolve_date_hint(text: str, *, today: Optional[date] = None) -> Optional[s
             pass
     if re.search(r"明後日|あさって", t):
         return (today + timedelta(days=2)).isoformat()
-    if re.search(r"明日|あした|mai\b|tomorrow", t, re.I):
+    if re.search(r"明日|あした|ngày mai|ngay mai|mai\b|tomorrow", t, re.I):
         return (today + timedelta(days=1)).isoformat()
-    if re.search(r"今日|きょう|hôm nay|today", t, re.I):
+    if re.search(r"今日|きょう|hôm nay|hom nay|today", t, re.I):
         return today.isoformat()
     return None
+
+
+_MEMORABLE = (
+    (r"発表|卒論|卒研|プレゼン|bảo vệ|bao ve|đồ án|do an", "発表"),
+    (r"面接", "面接"),
+    (r"試験|テスト", "試験"),
+    (r"受診|病院", "受診"),
+)
+
+
+def _memorable_plan(text: str, *, today: date) -> Optional[Dict[str, Any]]:
+    """A real occasion they mentioned, even without saying 'add it to the calendar'."""
+    day = _resolve_date_hint(text, today=today)
+    if not day:
+        return None
+    title = ""
+    for pattern, label in _MEMORABLE:
+        if re.search(pattern, text or "", re.I):
+            title = label
+            break
+    if not title:
+        return None
+    return {
+        "title": title,
+        "date": day,
+        "time": _extract_time(text),
+        "note": "あとで聞く",
+    }
 
 
 def _extract_schedule_title(text: str) -> Optional[str]:
@@ -199,15 +227,19 @@ def extract_life_hints_from_text(user_text: str, *, today: Optional[date] = None
         if isinstance(out["notes"], dict):
             out["notes"]["money"] = t[:120]
 
-    title = _extract_schedule_title(t)
-    if title:
-        ds = _resolve_date_hint(t, today=today) or today.isoformat()
-        out["schedule_add"] = {
-            "title": title,
-            "date": ds,
-            "time": _extract_time(t),
-            "note": "チャットから追加",
-        }
+    memorable = _memorable_plan(t, today=today)
+    if memorable:
+        out["schedule_add"] = memorable
+    else:
+        title = _extract_schedule_title(t)
+        if title:
+            ds = _resolve_date_hint(t, today=today) or today.isoformat()
+            out["schedule_add"] = {
+                "title": title,
+                "date": ds,
+                "time": _extract_time(t),
+                "note": "チャットから追加",
+            }
 
     # Goal wish: 欲しい + optional amount
     if re.search(r"欲しい|ほしい|目標は|貯めたい|貯金したい", t):
@@ -358,16 +390,24 @@ def apply_life_updates(user: Dict[str, Any], updates: Dict[str, Any]) -> List[st
             title = str(sched.get("title")).strip()[:80]
             if looks_secret(title):
                 raise ValueError("secret title")
+            note = str(sched.get("note") or "チャットから追加")[:200]
             add_event(
                 user,
                 title=title,
                 event_date=str(sched.get("date") or _today().isoformat())[:10],
                 event_time=sched.get("time"),
                 event_end_time=sched.get("end_time"),
-                note=str(sched.get("note") or "チャットから追加")[:200],
+                note=note,
                 recurrence=None,
             )
             applied.append("予定を追加")
+            if note == "あとで聞く":
+                user["check_back"] = {
+                    "title": title[:24],
+                    "on": str(sched.get("date") or _today().isoformat())[:10],
+                    "asked": False,
+                    "answered": False,
+                }
         except Exception:
             pass
 

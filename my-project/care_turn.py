@@ -161,6 +161,99 @@ def recall_greeting(user: Dict[str, Any], *, who: str = "", now: Optional[dateti
     return f"{prefix}この前「{note}」って言ってたよね。今日はどう？"
 
 
+def _check_back_row(user: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    row = user.get("check_back")
+    if not isinstance(row, dict):
+        return None
+    if row.get("answered"):
+        return None
+    title = str(row.get("title") or "").strip()
+    on = str(row.get("on") or "")[:10]
+    if not title or not on:
+        return None
+    return row
+
+
+def check_back_due(user: Dict[str, Any], *, now: Optional[datetime] = None) -> bool:
+    """True once the occasion they mentioned should be over."""
+    row = _check_back_row(user)
+    if not row:
+        return False
+    from day_coach import _now_jst
+
+    now = now or _now_jst()
+    try:
+        day = datetime.fromisoformat(row["on"]).date()
+    except ValueError:
+        return False
+    if day > now.date():
+        return False
+    if (now.date() - day).days > 2:
+        return False
+    if day < now.date():
+        return True
+    from day_coach import event_bounds
+    from schedule_service import list_events
+
+    sched = list_events(user, on_date=day.isoformat())
+    items = list(sched.get("today_open") or []) + list(sched.get("today_done") or [])
+    titled = [ev for ev in items if str(ev.get("title") or "") == row["title"]]
+    timed = [ev for ev in titled if ev.get("time")]
+    target = timed[0] if timed else (titled[0] if titled else None)
+    if target:
+        _start, end = event_bounds(target, today=day)
+        if end:
+            return now >= end
+        if _start and now < _start:
+            return False
+    return now.hour >= 17
+
+
+def check_back_line(user: Dict[str, Any], *, who: str = "", now: Optional[datetime] = None) -> Optional[str]:
+    """After a mentioned occasion, ask how it went. One ask until they answer."""
+    if not check_back_due(user, now=now):
+        return None
+    row = _check_back_row(user)
+    if not row or row.get("asked"):
+        return None
+    from day_coach import _now_jst
+
+    now = now or _now_jst()
+    try:
+        day = datetime.fromisoformat(str(row.get("on") or "")).date()
+    except ValueError:
+        day = now.date()
+    row["asked"] = True
+    user["check_back"] = row
+    prefix = f"{who}、" if who else ""
+    title = str(row.get("title") or "その件")
+    if day == now.date():
+        return f"{prefix}この前、今日は{title}だって言ってたよね。どうだった？"
+    return f"{prefix}この前、{title}だって言ってたよね。どうだった？"
+
+
+def check_back_reminder(user: Dict[str, Any], *, now: datetime, who: str) -> Optional[Dict[str, Any]]:
+    """One notification after the occasion, for when the app is closed."""
+    if not check_back_due(user, now=now):
+        return None
+    row = _check_back_row(user)
+    if not row:
+        return None
+    title = str(row.get("title") or "その件")
+    body = f"この前、{title}だって言ってたよね。どうだった？"
+    return {
+        "id": f"check-back-{row.get('on')}-{title}",
+        "kind": "check_back",
+        "fire_at": now.isoformat(),
+        "title": f"{who}｜{title}",
+        "body": body,
+        "url": "/app",
+        "require_interaction": False,
+        "ask_mood": False,
+        "lead_minutes": 0,
+    }
+
+
 _NIGHT = {
     "luna": "{prefix}夜にアプリを開いたね。眠れない？何かあった？",
     "luno": "{prefix}夜だね。眠れないの？何かあった？",
