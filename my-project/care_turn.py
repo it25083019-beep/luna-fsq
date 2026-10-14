@@ -361,6 +361,73 @@ def _followup_when(user: Dict[str, Any], *, now: datetime) -> Tuple[datetime, st
     return now + timedelta(minutes=45), "少ししたら"
 
 
+def _saved_sleep_hours(user: Dict[str, Any]) -> Optional[float]:
+    health = ((user.get("life_modules") or {}).get("health") or {}).get("structured") or {}
+    hours = _sleep_hours(health if isinstance(health, dict) else {})
+    if hours is not None:
+        return hours
+    profile = user.get("life_profile") if isinstance(user.get("life_profile"), dict) else {}
+    raw = str((profile or {}).get("health_sleep") or "")
+    match = re.search(r"(\d+(?:\.\d+)?)", raw)
+    if not match:
+        return None
+    try:
+        parsed = float(match.group(1))
+    except ValueError:
+        return None
+    if parsed <= 0 or parsed > 14:
+        return None
+    return parsed
+
+
+def _fact_event(user: Dict[str, Any], now: datetime) -> Optional[Dict[str, Any]]:
+    from day_coach import agenda_for_companion
+
+    agenda = agenda_for_companion(user, now=now)
+    pool: list = []
+    for key in ("current", "just_ended", "next"):
+        ev = agenda.get(key)
+        if isinstance(ev, dict):
+            pool.append(ev)
+    for ev in agenda.get("open_items") or []:
+        if isinstance(ev, dict):
+            pool.append(ev)
+    for ev in pool:
+        if re.search(r"発表|面接|試験|課題|受診", str(ev.get("title") or "")):
+            return ev
+    for ev in pool:
+        if str(ev.get("title") or "").strip():
+            return ev
+    return None
+
+
+def _tired_facts(user: Dict[str, Any], *, now: datetime) -> str:
+    """Cite saved sleep, today's event, or the kept burden. Nothing invented."""
+    bits: list = []
+    hours = _saved_sleep_hours(user)
+    if hours is not None:
+        bits.append(f"記録だと睡眠は{hours:g}時間。")
+    ev = _fact_event(user, now)
+    if ev is not None:
+        from day_coach import event_bounds
+
+        title = str(ev.get("title") or "予定").strip()[:12] or "予定"
+        clock = str(ev.get("time") or "")[:5]
+        start, _end = event_bounds(ev, today=now.date())
+        past = bool(start and start <= now)
+        tail = "だったよね" if past else "があるよね"
+        when = f"{clock}から" if clock else ""
+        bits.append(f"今日は{when}{title}{tail}。")
+    elif _kept_word(user, now):
+        bits.append(f"{_kept_word(user, now)}が一番重い、って残してある。")
+    if len(bits) < 2:
+        word = _kept_word(user, now)
+        already = any(word and word in bit for bit in bits)
+        if word and not already:
+            bits.append(f"{word}が一番重い、って残してある。")
+    return "".join(bits[:2])
+
+
 def plan_care_reply(
     user: Dict[str, Any],
     text: str,
@@ -399,6 +466,12 @@ def plan_care_reply(
         "fire_at": fire.isoformat(),
         "note": note,
     }
+    facts = _tired_facts(user, now=now)
+    if facts:
+        line = f"{prefix}{facts}"
+        if voice in ("hachi", "ponta") and "わん" not in line:
+            line = line.rstrip("。") + "わん。"
+        return line, {"emotion": "sad", "care_action": "cite"}
     line = _ASK_LATER[voice].format(prefix=prefix, when=when)
     return line, {"emotion": "sad", "care_action": "follow"}
 

@@ -372,6 +372,38 @@ def test_a_tired_question_keeps_one_burden():
     print("OK one burden", story)
 
 
+def test_a_short_tired_line_cites_saved_facts():
+    user = _user()
+    user["life_modules"]["health"]["structured"] = {"sleep_hours": 4}
+    add_event(
+        user,
+        title="発表",
+        event_date="2026-10-07",
+        event_time="09:00",
+        event_end_time="10:30",
+    )
+    now = datetime(2026, 10, 7, 11, 0, tzinfo=JST)
+    line, state = plan_care_reply(user, "疲れた", now=now)
+    assert "4時間" in line
+    assert "09:00" in line
+    assert "発表" in line
+    assert "少ししたら" not in line
+    assert state["care_action"] == "cite"
+    bare, _bare_state = plan_care_reply(_user(), "疲れた", now=now)
+    assert "少ししたら" in bare or "また聞く" in bare
+    kept = _user()
+    kept["day_word"] = {
+        "on": "2026-10-07",
+        "note": "就活が一番重い",
+        "asked": True,
+        "answered": True,
+    }
+    named, _named_state = plan_care_reply(kept, "疲れた", now=now)
+    assert "就活" in named
+    assert "少ししたら" not in named
+    print("OK tired cites facts", line)
+
+
 def test_care_questions_stay_on_duty():
     user = _user()
     now = datetime(2026, 10, 7, 14, 55, tzinfo=JST)
@@ -437,6 +469,7 @@ if __name__ == "__main__":
     test_morning_notification_quotes_the_sentence()
     test_heavy_stops_and_opens_rescue()
     test_a_tired_question_keeps_one_burden()
+    test_a_short_tired_line_cites_saved_facts()
     test_care_questions_stay_on_duty()
     test_chips_answer_the_clock_question()
     print("ALL open-care tests passed")
