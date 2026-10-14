@@ -52,6 +52,7 @@ DROP_FROM_ADMIN_BRAIN = {
     "care_recall",
     "life_graph",
     "check_back",
+    "social",
 }
 
 

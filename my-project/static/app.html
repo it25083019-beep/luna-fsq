@@ -1347,6 +1347,15 @@
     .consult-btn.pink{background:linear-gradient(160deg,#ffe8f2,#fff);color:#6b3f5a}
     .menu-list{padding:1rem;display:flex;flex-direction:column;gap:.45rem}
     .menu-list button{border:none;background:var(--card);padding:.85rem 1rem;border-radius:16px;text-align:left;font-size:.88rem;font-weight:700;color:var(--lilac-deep);box-shadow:var(--shadow);cursor:pointer}
+    .friend-qr{display:flex;justify-content:center;margin:.4rem 0}
+    .friend-qr svg{width:168px;height:168px}
+    .friend-row{display:flex;justify-content:space-between;gap:.45rem;align-items:center;padding:.4rem 0;border-bottom:1px solid rgba(155,126,217,.12);font-size:.8rem}
+    .friend-row button,.friend-tools button{border:none;border-radius:999px;padding:.35rem .7rem;background:var(--ghost-bg);color:var(--lilac-deep);font-weight:700;cursor:pointer}
+    .friend-tools{display:flex;flex-wrap:wrap;gap:.35rem;margin:.35rem 0 .6rem}
+    .friend-log{max-height:200px;overflow:auto;background:var(--input-bg);border-radius:12px;padding:.45rem .55rem;margin:.35rem 0}
+    .friend-log p{margin:.18rem 0;font-size:.78rem}
+    .friend-log .mine{text-align:right;color:var(--lilac-deep);font-weight:700}
+    #friendScanVideo{width:100%;max-height:220px;border-radius:14px;background:#111;margin:.35rem 0}
     .dash-card{margin:0 1rem .75rem;padding:.85rem;background:var(--card);border-radius:18px;box-shadow:var(--shadow)}
     .dash-card h4{margin:0 0 .5rem;font-size:.82rem;color:var(--lilac-deep)}
     .health-hero{display:grid;grid-template-columns:96px 1fr;gap:.65rem;align-items:center;margin-bottom:.65rem}
@@ -2437,6 +2446,48 @@
         </div>
       </div>
 
+      <div id="sub-friends" class="subview hidden">
+        <div class="subview-head"><button type="button" data-back="friends">←</button><h2>友だち</h2><span style="width:2rem"></span></div>
+        <div class="edit-panel">
+          <h4>QRでつながる</h4>
+          <p class="hint">相手にこのコードを見せる。読み取った人だけが友だちになる。10分で一度きり。</p>
+          <div class="friend-tools"><button type="button" id="friendCodeBtn">コードを出す</button></div>
+          <div id="friendQr" class="friend-qr"></div>
+          <p class="hint" id="friendCodeText"></p>
+          <h4>コードを読む</h4>
+          <div class="friend-tools">
+            <button type="button" id="friendScanBtn">カメラで読む</button>
+            <button type="button" id="friendScanStop" hidden>カメラを止める</button>
+          </div>
+          <video id="friendScanVideo" hidden playsinline></video>
+          <label>コード</label>
+          <input id="friendCodeInput" type="text" maxlength="32" placeholder="LUNA: のあとに続くコード" autocomplete="off" />
+          <div class="friend-tools"><button type="button" id="friendRedeemBtn">つながる</button></div>
+          <h4>このあたりの人</h4>
+          <p class="hint">使うときだけ端末に位置を聞く。残すのは約1kmの区画で、20分で消える。緯度経度は保存しない。相手にも管理画面にも出さない。両方オンの人だけ名前が出る。</p>
+          <div class="friend-tools">
+            <button type="button" id="friendNearBtn">このあたりを見る</button>
+            <button type="button" id="friendNearOffBtn">位置を消す</button>
+          </div>
+          <div id="friendNearList"></div>
+          <h4>届いたお願い</h4>
+          <div id="friendInbox"></div>
+          <h4>見せるもの</h4>
+          <label><input id="showRpg" type="checkbox" checked /> RPGのレベルと進路</label>
+          <label><input id="showPf" type="checkbox" checked /> 提出した作品の数</label>
+          <h4>友だち</h4>
+          <div id="friendList"></div>
+          <div id="friendChat" hidden>
+            <h4 id="friendChatName">チャット</h4>
+            <div id="friendCard"></div>
+            <div id="friendChatLog" class="friend-log"></div>
+            <input id="friendChatInput" type="text" maxlength="200" placeholder="ひとこと" />
+            <div class="friend-tools"><button type="button" id="friendChatSend">送る</button></div>
+          </div>
+          <p class="hint" id="friendMsg"></p>
+        </div>
+      </div>
+
       <!-- MENU -->
       <section id="tab-mypage" class="tab-panel">
         <div class="home-title-row"><div><h1>メニュー</h1><p id="myName">—</p></div></div>
@@ -2446,6 +2497,7 @@
           <button type="button" data-open="money">👛 お金・家計</button>
           <button type="button" data-open="goals">🎯 目標</button>
           <button type="button" data-open="history">💬 会話の履歴</button>
+          <button type="button" data-open="friends">友だち</button>
           <button type="button" id="menuThemeBtn">🎨 テーマ設定</button>
           <button type="button" id="menuCompanionBtn">🐾 コンパニオンを選ぶ</button>
           <button type="button" id="menuPasswordBtn">🔑 パスワードを変更</button>
@@ -2536,6 +2588,6 @@
   <script src="/static/world.js?v=20260916b"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20261014a"></script>
+  <script src="/static/app.js?v=20261014b"></script>
 </body>
 </html>

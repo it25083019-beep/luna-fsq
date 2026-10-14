@@ -1911,6 +1911,185 @@ def rpg_activity_complete(req: RpgActivityRequest, current: User = Depends(get_c
     return {"ok": True, **result, "rpg": ensure_rpg(state)}
 
 
+def _friend_id(raw: str) -> str:
+    token = str(raw or "").strip().lower()
+    if len(token) != 32 or any(ch not in "0123456789abcdef" for ch in token):
+        raise HTTPException(status_code=400, detail="相手が見つかりません")
+    return token
+
+
+def _friend_io():
+    from brain_repo import list_public_ids
+    from luna_service import load_user_brain, save_user_brain
+
+    return load_user_brain, save_user_brain, list_public_ids()
+
+
+@app.get("/friends")
+def friends_home(current: User = Depends(get_current_user)):
+    from friends_service import summary
+    from luna_service import load_user_brain
+
+    return summary(load_user_brain(current.public_id))
+
+
+@app.post("/friends/code")
+def friends_code(current: User = Depends(get_current_user)):
+    from friends_service import issue_code, qr_svg
+    from luna_service import load_user_brain, save_user_brain
+
+    state = load_user_brain(current.public_id)
+    issued = issue_code(state)
+    save_user_brain(current.public_id, state)
+    return {**issued, "svg": qr_svg(issued["payload"])}
+
+
+@app.post("/friends/redeem")
+def friends_redeem(body: dict, current: User = Depends(get_current_user)):
+    from friends_service import redeem_code
+
+    load, save, ids = _friend_io()
+    me = load(current.public_id)
+    try:
+        friend = redeem_code(
+            current.public_id,
+            me,
+            str((body or {}).get("token") or ""),
+            load=load,
+            save=save,
+            ids=ids,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"ok": True, "friend": friend}
+
+
+@app.post("/friends/presence")
+def friends_presence(body: dict, current: User = Depends(get_current_user)):
+    from friends_service import nearby_people, set_presence
+
+    load, save, ids = _friend_io()
+    me = load(current.public_id)
+    try:
+        set_presence(me, float((body or {}).get("lat")), float((body or {}).get("lng")))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="位置を読み取れませんでした")
+    save(current.public_id, me)
+    return {"ok": True, "people": nearby_people(current.public_id, me, load=load, ids=ids)}
+
+
+@app.delete("/friends/presence")
+def friends_presence_off(current: User = Depends(get_current_user)):
+    from friends_service import clear_presence
+    from luna_service import load_user_brain, save_user_brain
+
+    state = load_user_brain(current.public_id)
+    clear_presence(state)
+    save_user_brain(current.public_id, state)
+    return {"ok": True}
+
+
+@app.post("/friends/request")
+def friends_request(body: dict, current: User = Depends(get_current_user)):
+    from friends_service import request_friend
+
+    other_id = _friend_id(str((body or {}).get("id") or ""))
+    load, save, ids = _friend_io()
+    me = load(current.public_id)
+    try:
+        request_friend(current.public_id, me, other_id, load=load, save=save, ids=ids)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"ok": True}
+
+
+@app.post("/friends/accept")
+def friends_accept(body: dict, current: User = Depends(get_current_user)):
+    from friends_service import accept_friend
+
+    other_id = _friend_id(str((body or {}).get("id") or ""))
+    load, save, _ids = _friend_io()
+    me = load(current.public_id)
+    try:
+        friend = accept_friend(current.public_id, me, other_id, load=load, save=save)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"ok": True, "friend": friend}
+
+
+@app.delete("/friends/{friend_id}")
+def friends_remove(friend_id: str, current: User = Depends(get_current_user)):
+    from friends_service import remove_friend
+
+    other_id = _friend_id(friend_id)
+    load, save, _ids = _friend_io()
+    me = load(current.public_id)
+    remove_friend(current.public_id, me, other_id, load=load, save=save)
+    return {"ok": True}
+
+
+@app.get("/friends/{friend_id}/card")
+def friends_card(friend_id: str, current: User = Depends(get_current_user)):
+    from friends_service import public_card
+
+    other_id = _friend_id(friend_id)
+    load, _save, _ids = _friend_io()
+    me = load(current.public_id)
+    try:
+        return public_card(me, other_id, load(other_id))
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc))
+
+
+@app.get("/friends/{friend_id}/chat")
+def friends_chat_read(friend_id: str, current: User = Depends(get_current_user)):
+    from friends_service import read_chat
+
+    other_id = _friend_id(friend_id)
+    load, _save, _ids = _friend_io()
+    try:
+        return {"messages": read_chat(load(current.public_id), other_id)}
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc))
+
+
+@app.post("/friends/{friend_id}/chat")
+def friends_chat_send(friend_id: str, body: dict, current: User = Depends(get_current_user)):
+    from friends_service import send_chat
+
+    other_id = _friend_id(friend_id)
+    load, save, _ids = _friend_io()
+    me = load(current.public_id)
+    try:
+        sent = send_chat(
+            current.public_id,
+            me,
+            other_id,
+            str((body or {}).get("text") or ""),
+            load=load,
+            save=save,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"ok": True, "message": sent}
+
+
+@app.post("/friends/showcase")
+def friends_showcase(body: dict, current: User = Depends(get_current_user)):
+    from friends_service import set_showcase
+    from luna_service import load_user_brain, save_user_brain
+
+    state = load_user_brain(current.public_id)
+    payload = body or {}
+    set_showcase(
+        state,
+        show_rpg=bool(payload.get("show_rpg")),
+        show_portfolio=bool(payload.get("show_portfolio")),
+    )
+    save_user_brain(current.public_id, state)
+    return {"ok": True}
+
+
 @app.get("/rpg/portfolio")
 def rpg_portfolio(current: User = Depends(get_current_user)):
     state = load_user_brain(current.public_id)

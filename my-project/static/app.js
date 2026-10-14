@@ -209,7 +209,7 @@
     );
   }
 
-  const SUBVIEWS = ["schedule", "health", "money", "goals", "history"];
+  const SUBVIEWS = ["schedule", "health", "money", "goals", "history", "friends"];
 
   function openSubview(name) {
     closeAllSubviews();
@@ -226,6 +226,7 @@
     if (name === "money") loadMoneyView();
     if (name === "goals") loadGoalsView();
     if (name === "history") loadHistoryView();
+    if (name === "friends") loadFriendsView();
   }
 
   function closeSubview(name) {
@@ -234,6 +235,7 @@
   }
 
   function closeAllSubviews() {
+    if (typeof stopFriendScan === "function") stopFriendScan();
     SUBVIEWS.forEach(closeSubview);
     document.body.classList.remove("subview-open");
   }
@@ -5075,6 +5077,186 @@
     }
   }
 
+  let friendScanTimer = null;
+  let friendScanStream = null;
+  let friendChatId = "";
+
+  function friendNote(text) {
+    const el = document.getElementById("friendMsg");
+    if (el) el.textContent = text || "";
+  }
+
+  function stopFriendScan() {
+    if (friendScanTimer) clearInterval(friendScanTimer);
+    friendScanTimer = null;
+    if (friendScanStream) friendScanStream.getTracks().forEach((track) => track.stop());
+    friendScanStream = null;
+    const video = document.getElementById("friendScanVideo");
+    if (video) {
+      video.pause();
+      video.hidden = true;
+      video.srcObject = null;
+    }
+    const stop = document.getElementById("friendScanStop");
+    if (stop) stop.hidden = true;
+  }
+
+  function renderFriendRows(el, rows, actionLabel, onClick) {
+    if (!el) return;
+    el.replaceChildren();
+    if (!rows || !rows.length) {
+      const empty = document.createElement("p");
+      empty.className = "hint";
+      empty.textContent = "まだいません";
+      el.appendChild(empty);
+      return;
+    }
+    rows.forEach((row) => {
+      const line = document.createElement("div");
+      line.className = "friend-row";
+      const name = document.createElement("span");
+      name.textContent = row.name || "なまえ未設定";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = actionLabel;
+      btn.onclick = () => onClick(row);
+      line.appendChild(name);
+      line.appendChild(btn);
+      el.appendChild(line);
+    });
+  }
+
+  async function loadFriendsView() {
+    stopFriendScan();
+    try {
+      const data = await api("/friends");
+      const showRpg = document.getElementById("showRpg");
+      const showPf = document.getElementById("showPf");
+      if (showRpg) showRpg.checked = !!data.show_rpg;
+      if (showPf) showPf.checked = !!data.show_portfolio;
+      renderFriendRows(document.getElementById("friendInbox"), data.inbox, "受け入れる", (row) => acceptFriend(row.id));
+      renderFriendRows(document.getElementById("friendList"), data.friends, "見る", (row) => openFriendChat(row));
+      const near = document.getElementById("friendNearList");
+      if (near && !data.nearby_on) near.replaceChildren();
+    } catch (err) {
+      friendNote(err.message || "友だちを読めませんでした");
+    }
+  }
+
+  async function makeFriendCode() {
+    friendNote("");
+    const data = await api("/friends/code", { method: "POST", body: "{}" });
+    const box = document.getElementById("friendQr");
+    const label = document.getElementById("friendCodeText");
+    if (box) box.innerHTML = data.svg || "";
+    if (label) label.textContent = data.token ? "コード: " + data.token : "";
+  }
+
+  async function redeemFriend(raw) {
+    const token = String(raw || "").trim();
+    if (!token) return;
+    friendNote("");
+    const data = await api("/friends/redeem", { method: "POST", body: JSON.stringify({ token }) });
+    friendNote((data.friend && data.friend.name ? data.friend.name + "さんと" : "") + "つながった");
+    await loadFriendsView();
+  }
+
+  async function lookNearby() {
+    friendNote("");
+    if (!navigator.geolocation) {
+      friendNote("この端末は位置を読めません");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const data = await api("/friends/presence", {
+          method: "POST",
+          body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        });
+        renderFriendRows(document.getElementById("friendNearList"), data.people, "頼む", (row) => askFriend(row.id));
+        if (!data.people || !data.people.length) friendNote("このあたりには、まだオンの人がいない");
+      } catch (err) {
+        friendNote(err.message || "位置を送れませんでした");
+      }
+    }, () => friendNote("位置の許可が必要です"), { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 });
+  }
+
+  async function askFriend(id) {
+    await api("/friends/request", { method: "POST", body: JSON.stringify({ id }) });
+    friendNote("お願いを送った");
+  }
+
+  async function acceptFriend(id) {
+    await api("/friends/accept", { method: "POST", body: JSON.stringify({ id }) });
+    await loadFriendsView();
+  }
+
+  async function openFriendChat(row) {
+    friendChatId = row.id;
+    const box = document.getElementById("friendChat");
+    const title = document.getElementById("friendChatName");
+    if (box) box.hidden = false;
+    if (title) title.textContent = row.name || "チャット";
+    const card = await api("/friends/" + row.id + "/card");
+    const cardEl = document.getElementById("friendCard");
+    if (cardEl) {
+      const bits = [card.name || ""];
+      if (card.level) bits.push("Lv." + card.level);
+      if (card.path) bits.push(card.path);
+      if (card.rank) bits.push(card.rank);
+      if (card.works != null) bits.push("作品 " + card.works);
+      if (card.lessons != null) bits.push("レッスン " + card.lessons);
+      cardEl.textContent = bits.filter(Boolean).join(" ・ ");
+    }
+    const log = await api("/friends/" + row.id + "/chat");
+    const list = document.getElementById("friendChatLog");
+    if (list) {
+      list.replaceChildren();
+      (log.messages || []).forEach((msg) => {
+        const p = document.createElement("p");
+        p.className = msg.mine ? "mine" : "";
+        p.textContent = msg.text || "";
+        list.appendChild(p);
+      });
+      list.scrollTop = list.scrollHeight;
+    }
+  }
+
+  async function sendFriendChat() {
+    const input = document.getElementById("friendChatInput");
+    const text = input ? input.value : "";
+    if (!friendChatId || !text.trim()) return;
+    await api("/friends/" + friendChatId + "/chat", { method: "POST", body: JSON.stringify({ text }) });
+    if (input) input.value = "";
+    await openFriendChat({ id: friendChatId, name: (document.getElementById("friendChatName") || {}).textContent });
+  }
+
+  async function startFriendScan() {
+    stopFriendScan();
+    if (!("BarcodeDetector" in window) || !navigator.mediaDevices) {
+      friendNote("このブラウザはカメラ読み取りに未対応です。コードを貼ってください");
+      return;
+    }
+    const video = document.getElementById("friendScanVideo");
+    const stop = document.getElementById("friendScanStop");
+    friendScanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+    video.srcObject = friendScanStream;
+    video.hidden = false;
+    if (stop) stop.hidden = false;
+    await video.play();
+    const detector = new BarcodeDetector({ formats: ["qr_code"] });
+    friendScanTimer = setInterval(async () => {
+      try {
+        const codes = await detector.detect(video);
+        if (codes && codes[0] && codes[0].rawValue) {
+          const value = codes[0].rawValue;
+          stopFriendScan();
+          await redeemFriend(value);
+        }
+      } catch (_) {}
+    }, 500);
+  }
+
   function bindEvents() {
     window.lunaApi = api;
     window.companionByIdPublic = function () {
@@ -5100,11 +5282,30 @@
     document.querySelectorAll("[data-back]").forEach((el) => {
       el.onclick = () => {
         setErr("");
-        switchTab(el.dataset.back === "history" ? "mypage" : "luna");
+        switchTab(el.dataset.back === "history" || el.dataset.back === "friends" ? "mypage" : "luna");
       };
     });
     const histMore = document.getElementById("histMoreBtn");
     if (histMore) histMore.onclick = () => loadHistoryView(true);
+    const friendCodeBtn = document.getElementById("friendCodeBtn");
+    if (friendCodeBtn) friendCodeBtn.onclick = () => makeFriendCode().catch((err) => friendNote(err.message));
+    const friendRedeemBtn = document.getElementById("friendRedeemBtn");
+    if (friendRedeemBtn) friendRedeemBtn.onclick = () => redeemFriend((document.getElementById("friendCodeInput") || {}).value).catch((err) => friendNote(err.message));
+    const friendScanBtn = document.getElementById("friendScanBtn");
+    if (friendScanBtn) friendScanBtn.onclick = () => startFriendScan().catch((err) => friendNote(err.message));
+    const friendScanStop = document.getElementById("friendScanStop");
+    if (friendScanStop) friendScanStop.onclick = stopFriendScan;
+    const friendNearBtn = document.getElementById("friendNearBtn");
+    if (friendNearBtn) friendNearBtn.onclick = () => lookNearby();
+    const friendNearOffBtn = document.getElementById("friendNearOffBtn");
+    if (friendNearOffBtn) friendNearOffBtn.onclick = () => api("/friends/presence", { method: "DELETE" }).then(() => { friendNote("位置を消した"); return loadFriendsView(); }).catch((err) => friendNote(err.message));
+    const friendChatSend = document.getElementById("friendChatSend");
+    if (friendChatSend) friendChatSend.onclick = () => sendFriendChat().catch((err) => friendNote(err.message));
+    const showRpg = document.getElementById("showRpg");
+    const showPf = document.getElementById("showPf");
+    const saveShowcase = () => api("/friends/showcase", { method: "POST", body: JSON.stringify({ show_rpg: !!(showRpg && showRpg.checked), show_portfolio: !!(showPf && showPf.checked) }) }).catch((err) => friendNote(err.message));
+    if (showRpg) showRpg.onchange = saveShowcase;
+    if (showPf) showPf.onchange = saveShowcase;
     document.querySelectorAll("[data-ask]").forEach((el) => {
       el.onclick = async () => {
         const ask = el.dataset.ask || "";
