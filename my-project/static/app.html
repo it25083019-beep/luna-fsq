@@ -191,9 +191,9 @@
     .status-card{background:var(--card);border-radius:16px;padding:.55rem .4rem .7rem;text-align:center;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.55);cursor:pointer;color:var(--text);transition:transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease;backdrop-filter:blur(12px)}
     .status-card:hover,.status-card:focus-visible{transform:translateY(-3px);box-shadow:0 12px 28px rgba(120,90,180,.22)}
     .status-card:nth-child(1){background:var(--st1)} .status-card:nth-child(2){background:var(--st2)} .status-card:nth-child(3){background:var(--st3)} .status-card:nth-child(4){background:var(--st1)}
-    .status-card .ico{font-size:1.15rem;margin-bottom:.15rem}
-    .status-card .label{font-size:.72rem;color:var(--muted)}
-    .status-card .val{font-size:.88rem;font-weight:700;color:var(--lilac-deep);margin-top:.15rem}
+    .status-card{position:relative;display:grid;place-items:center;min-height:4.6rem;padding:.7rem .35rem}
+    .status-card .ico{width:1.85rem;height:1.85rem;margin:0;color:var(--lilac-deep)}
+    .status-card .label,.status-card .val{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
     .chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1rem .55rem;flex-shrink:0}
     .chip{border:1px solid rgba(255,255,255,.55);background:var(--card);color:var(--lilac-deep);padding:.5rem .75rem;font-size:.82rem;cursor:pointer;border-radius:999px;box-shadow:var(--shadow);transition:transform .18s ease,box-shadow .18s ease}
     .chip:active{transform:scale(.97)}
@@ -1540,6 +1540,39 @@
     .glamour-item span{font-size:.6rem;color:var(--fsq-muted)}
     .glamour-close{margin-top:.65rem;width:100%;border:none;border-radius:12px;padding:.6rem;background:rgba(255,255,255,.1);color:#f7efe0;font-weight:700;cursor:pointer}
     .btn-glamour-open{margin:.45rem .85rem 0;border:none;border-radius:12px;padding:.5rem .75rem;background:linear-gradient(135deg,#1f7a6e,#145a52);color:#f7efe0;font-size:.72rem;font-weight:700;cursor:pointer;width:calc(100% - 1.7rem)}
+    .settings-panel .council-strip{margin:.35rem 0 .85rem}
+    .subview .life-memory,.subview .risk-radar,.subview .weekly-review,.subview .twin-card,.subview .home-banner{margin-left:1rem;margin-right:1rem}
+    @media (min-width:1024px){
+      body{background:
+        radial-gradient(900px 500px at 8% -10%, var(--glow-a), transparent 55%),
+        radial-gradient(800px 480px at 100% 0%, var(--glow-b), transparent 50%),
+        linear-gradient(165deg, var(--bg0), var(--bg1) 42%, var(--bg2));
+        min-height:100vh}
+      .app{max-width:1180px;margin:12px auto;min-height:calc(100vh - 24px);display:flex;flex-direction:row;align-items:stretch;background:transparent}
+      .screen{flex:1;min-width:0;padding-bottom:12px;min-height:calc(100vh - 24px)}
+      .bottom-nav{order:-1;flex:0 0 76px}
+      #tab-luna{background:transparent;min-height:calc(100vh - 24px)}
+      .bottom-nav{position:sticky;top:20px;left:auto;transform:none;width:68px;max-width:none;height:auto;margin:16px 0 0 10px;padding:8px 6px;display:flex;flex-direction:column;gap:4px;border-radius:28px;align-self:start}
+      .nav-item{height:52px;width:52px;margin:0 auto}
+      #tab-luna,#lunaMainView{width:100%}
+      #lunaMainView{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;height:calc(100vh - 36px);max-height:none;gap:0 10px;padding:4px 12px 4px 0}
+      #lunaMainView .home-scroll{display:contents}
+      .home-stage{grid-column:1;grid-row:1;min-height:0;min-width:0;display:flex;flex-direction:column;justify-content:center;margin:8px;padding:.4rem 0 .6rem;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);border-radius:28px;box-shadow:var(--shadow);overflow-x:hidden;overflow-y:auto}
+      #lunaMainView .home-dock{min-width:0}
+      #lunaMainView .home-dock .composer-voice{margin-left:.6rem;margin-right:.6rem}
+      .home-stage .home-hero{display:flex;flex-direction:column;align-items:stretch;padding:.2rem .85rem .4rem}
+      .home-stage .home-hero-luna #lunaSprite{height:min(38vh,280px)}
+      .home-stage .bubble.compact{margin:0 .2rem .2rem}
+      .home-stage .bubble.compact::before{display:none}
+      #lunaMainView .home-dock{grid-column:1;grid-row:2}
+      .home-board{grid-column:2;grid-row:1 / span 2;min-height:0;overflow:auto;padding:8px 4px 8px 0}
+      .home-board .status-row{grid-template-columns:repeat(4,minmax(0,1fr));padding-top:.35rem}
+      .home-board .status-card{min-height:5.4rem;border-radius:22px}
+      .home-board .status-card .ico{width:2.15rem;height:2.15rem}
+      .home-board .home-split{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:start}
+      .subview{top:12px;bottom:12px;left:calc((100vw - min(100vw, 1180px)) / 2 + 88px);right:calc((100vw - min(100vw, 1180px)) / 2 + 12px);width:auto;max-width:none;margin:0;border-radius:28px;box-shadow:0 22px 50px rgba(80,50,120,.16)}
+      .subview .module-hero,.subview .edit-panel,.subview .cal-wrap,.subview .day-panel,.subview .consult-row,.subview .hist-wrap{max-width:860px;margin-left:auto;margin-right:auto}
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/static/theme.js?v=20260910a"></script>
@@ -1552,6 +1585,7 @@
       <section id="tab-luna" class="tab-panel active">
         <div id="lunaMainView">
           <div class="home-scroll">
+          <div class="home-stage">
           <div class="home-title-row">
             <div><h1>ホーム</h1><p id="greetingSub">いまの時間を見て、一声かけるね</p></div>
             <div style="display:flex;gap:.4rem">
@@ -1566,6 +1600,8 @@
             </div>
             <div class="bubble compact"><span class="who" id="companionWho">LUNA</span><div id="dialogue">…</div></div>
           </div>
+          </div>
+          <div class="home-board">
           <div class="status-head"><span>今日のステータス</span><span id="homeDate">—</span></div>
           <div id="lifePulse" class="life-pulse" hidden>
             <div class="lp-ring" id="lifePulseRing" style="--lp:60"><span id="lifePulseScore">—</span></div>
@@ -1576,42 +1612,25 @@
             </div>
           </div>
           <div id="mailBrief" class="mail-brief" hidden></div>
-          <div id="lifeMemory" class="life-memory" hidden>
-            <strong>覚えていること</strong>
-            <ul id="lifeMemoryList"></ul>
-          </div>
-          <div id="mentalRemindBanner" class="home-banner" role="status">
-            <p id="mentalRemindText">LUNAが今日の気分を聞きたいよ</p>
-            <button type="button" id="mentalRemindBtn">答える</button>
-          </div>
-          <div id="weeklyReview" class="weekly-review" role="region" aria-label="週間レビュー">
-            <h4 id="weeklyReviewTitle">今週のふりかえり</h4>
-            <ul id="weeklyReviewList"></ul>
-            <p id="weeklyReviewGoal"></p>
-          </div>
-          <div id="riskRadar" class="risk-radar" role="status" hidden>
-            <h4 id="riskRadarTitle">リスクレーダー</h4>
-            <div id="riskRadarList"></div>
-          </div>
-          <div id="futureTwinCard" class="twin-card" hidden>
-            <h4>フューチャーセルフ</h4>
-            <p class="tagline" id="twinTagline">他のアプリは行動を追う。LUNAは起きる前の結果を見せる。</p>
-            <div class="twin-cols">
-              <div class="twin-col" id="twinColA"></div>
-              <div class="twin-col plan" id="twinColB"></div>
-            </div>
-            <p class="twin-shock" id="twinShock"></p>
-          </div>
-          <div id="councilStrip" class="council-strip" hidden>
-            <h4>今日の評議会</h4>
-            <div class="council-voices" id="councilVoices"></div>
-          </div>
           <div class="status-row">
-            <button type="button" class="status-card" data-open="schedule"><div class="ico">📅</div><div class="label">スケジュール</div><div class="val" id="stSchedule">—</div></button>
-            <button type="button" class="status-card" data-open="health"><div class="ico">💚</div><div class="label">ヘルス</div><div class="val" id="stHealth">—</div></button>
-            <button type="button" class="status-card" data-open="money"><div class="ico">👛</div><div class="label">お金</div><div class="val" id="stMoney">—</div></button>
-            <button type="button" class="status-card" data-open="goals"><div class="ico">🎯</div><div class="label">目標</div><div class="val" id="stGoals">—</div></button>
+            <button type="button" class="status-card" data-open="schedule" title="スケジュール" aria-label="スケジュール">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <span class="label">スケジュール</span><span class="val" id="stSchedule">—</span>
+            </button>
+            <button type="button" class="status-card" data-open="health" title="ヘルス" aria-label="ヘルス">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>
+              <span class="label">ヘルス</span><span class="val" id="stHealth">—</span>
+            </button>
+            <button type="button" class="status-card" data-open="money" title="お金" aria-label="お金">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15v-4"/></svg>
+              <span class="label">お金</span><span class="val" id="stMoney">—</span>
+            </button>
+            <button type="button" class="status-card" data-open="goals" title="目標" aria-label="目標">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              <span class="label">目標</span><span class="val" id="stGoals">—</span>
+            </button>
           </div>
+          <div class="home-split">
           <div class="home-today">
             <h3>今日の予定 <button type="button" data-open="schedule">カレンダー</button></h3>
             <div id="homeTodayList"><p class="hint">まだ予定はありません。カレンダーから追加できます。</p></div>
@@ -1621,6 +1640,8 @@
             <p class="hint">まだ記録はありません。相談や学習をするとここに残ります。</p>
             <ul id="careTimelineList" hidden></ul>
             <button type="button" class="ct-more" id="careTimelineMore" hidden>もっと見る</button>
+          </div>
+          </div>
           </div>
           </div>
           <div class="home-dock">
@@ -1698,6 +1719,10 @@
           </div>
           <h3 style="margin-top:1rem">評議会の声</h3>
           <p class="hint">見た目はそのまま。アドバイスの角度だけ変えるよ。オートは今日の状態で選ぶ。</p>
+          <div id="councilStrip" class="council-strip" hidden>
+            <h4>今日の評議会</h4>
+            <div class="council-voices" id="councilVoices"></div>
+          </div>
           <div class="advisor-style-row" id="advisorStyleRow">
             <button type="button" data-advisor="auto">オート</button>
             <button type="button" data-advisor="strategist">戦略・ルナ</button>
@@ -1775,6 +1800,10 @@
         <div class="module-banner">
           <img id="scheduleBannerImg" src="/static/ui/schedule-luna.png?v=3" alt="スケジュール" />
         </div>
+        <div id="lifeMemorySchedule" class="life-memory" hidden>
+          <strong>覚えていること</strong>
+          <ul></ul>
+        </div>
         <div class="cal-wrap">
           <div class="cal-nav">
             <button type="button" id="calPrev">‹</button>
@@ -1818,6 +1847,23 @@
       <!-- Health subview -->
       <div id="sub-health" class="subview hidden">
         <div class="subview-head"><button type="button" data-back="health">←</button><h2>ヘルスケア</h2><span style="width:2rem"></span></div>
+        <div id="mentalRemindBanner" class="home-banner" role="status">
+          <p id="mentalRemindText">LUNAが今日の気分を聞きたいよ</p>
+          <button type="button" id="mentalRemindBtn">答える</button>
+        </div>
+        <div id="lifeMemoryHealth" class="life-memory" hidden>
+          <strong>覚えていること</strong>
+          <ul></ul>
+        </div>
+        <div id="weeklyReview" class="weekly-review" role="region" aria-label="週間レビュー">
+          <h4 id="weeklyReviewTitle">今週のふりかえり</h4>
+          <ul id="weeklyReviewList"></ul>
+          <p id="weeklyReviewGoal"></p>
+        </div>
+        <div id="riskRadar" class="risk-radar" role="status" hidden>
+          <h4 id="riskRadarTitle">リスクレーダー</h4>
+          <div id="riskRadarList"></div>
+        </div>
         <div class="module-hero">
           <div class="dash-card">
             <div class="health-hero wide">
@@ -1877,6 +1923,10 @@
       <!-- Money subview -->
       <div id="sub-money" class="subview hidden">
         <div class="subview-head"><button type="button" data-back="money">←</button><h2>お金・ゆとり</h2><span style="width:2rem"></span></div>
+        <div id="lifeMemoryMoney" class="life-memory" hidden>
+          <strong>覚えていること</strong>
+          <ul></ul>
+        </div>
         <div class="module-hero">
           <div class="dash-card">
             <div class="health-hero wide">
@@ -1939,6 +1989,19 @@
       <!-- Goals subview -->
       <div id="sub-goals" class="subview hidden">
         <div class="subview-head"><button type="button" data-back="goals">←</button><h2>目標</h2><span style="width:2rem"></span></div>
+        <div id="futureTwinCard" class="twin-card" hidden>
+          <h4>フューチャーセルフ</h4>
+          <p class="tagline" id="twinTagline">他のアプリは行動を追う。LUNAは起きる前の結果を見せる。</p>
+          <div class="twin-cols">
+            <div class="twin-col" id="twinColA"></div>
+            <div class="twin-col plan" id="twinColB"></div>
+          </div>
+          <p class="twin-shock" id="twinShock"></p>
+        </div>
+        <div id="lifeMemoryGoals" class="life-memory" hidden>
+          <strong>覚えていること</strong>
+          <ul></ul>
+        </div>
         <div class="module-hero">
           <div class="dash-card">
             <p class="hint" id="goalsSummaryLine" style="margin:0">いくつでも追加できます。進捗を記録しよう。</p>
@@ -2473,6 +2536,6 @@
   <script src="/static/world.js?v=20260916b"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20261008a"></script>
+  <script src="/static/app.js?v=20261014a"></script>
 </body>
 </html>

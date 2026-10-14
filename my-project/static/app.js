@@ -4316,25 +4316,44 @@
   }
 
   function renderLifeMemory(cards) {
-    const box = document.getElementById("lifeMemory");
-    const list = document.getElementById("lifeMemoryList");
-    if (!box || !list) return;
-    list.replaceChildren();
+    const buckets = {
+      lifeMemorySchedule: ["予定"],
+      lifeMemoryHealth: ["気分", "睡眠", "夜"],
+      lifeMemoryMoney: ["お金", "支出"],
+      lifeMemoryGoals: ["目標"],
+    };
+    const grouped = {
+      lifeMemorySchedule: [],
+      lifeMemoryHealth: [],
+      lifeMemoryMoney: [],
+      lifeMemoryGoals: [],
+    };
     (cards || []).forEach((card) => {
       if (!card || !card.value) return;
-      const li = document.createElement("li");
-      const name = document.createElement("b");
-      name.textContent = card.label || "";
-      const value = document.createElement("span");
-      value.textContent = card.value || "";
-      const source = document.createElement("em");
-      source.textContent = card.source || "";
-      li.appendChild(name);
-      li.appendChild(value);
-      li.appendChild(source);
-      list.appendChild(li);
+      const label = card.label || "";
+      const id = Object.keys(buckets).find((key) => buckets[key].indexOf(label) >= 0) || "lifeMemoryHealth";
+      grouped[id].push(card);
     });
-    box.hidden = !list.childElementCount;
+    Object.keys(grouped).forEach((id) => {
+      const box = document.getElementById(id);
+      const list = box && box.querySelector("ul");
+      if (!box || !list) return;
+      list.replaceChildren();
+      grouped[id].forEach((card) => {
+        const li = document.createElement("li");
+        const name = document.createElement("b");
+        name.textContent = card.label || "";
+        const value = document.createElement("span");
+        value.textContent = card.value || "";
+        const source = document.createElement("em");
+        source.textContent = card.source || "";
+        li.appendChild(name);
+        li.appendChild(value);
+        li.appendChild(source);
+        list.appendChild(li);
+      });
+      box.hidden = !list.childElementCount;
+    });
   }
 
   function renderLifePulse(pulse) {
@@ -4787,11 +4806,23 @@
     try {
       const s = await api("/home/summary");
       document.getElementById("homeDate").textContent = s.date_ja || "";
-      document.getElementById("stSchedule").textContent = s.schedule?.label || "予定なし";
-      document.getElementById("stHealth").textContent = s.health?.label || "良好";
+      const scheduleLabel = s.schedule?.label || "予定なし";
+      const healthLabel = s.health?.label || "良好";
+      const moneyLabel = s.money?.label || "—";
+      const goalsLabel = s.goals?.label || "—";
+      document.getElementById("stSchedule").textContent = scheduleLabel;
+      document.getElementById("stHealth").textContent = healthLabel;
       const stMoney = document.getElementById("stMoney");
-      if (stMoney) stMoney.textContent = s.money?.label || "—";
-      document.getElementById("stGoals").textContent = s.goals?.label || "—";
+      if (stMoney) stMoney.textContent = moneyLabel;
+      document.getElementById("stGoals").textContent = goalsLabel;
+      const scheduleCard = document.querySelector('.status-card[data-open="schedule"]');
+      const healthCard = document.querySelector('.status-card[data-open="health"]');
+      const moneyCard = document.querySelector('.status-card[data-open="money"]');
+      const goalsCard = document.querySelector('.status-card[data-open="goals"]');
+      if (scheduleCard) scheduleCard.setAttribute("aria-label", "スケジュール " + scheduleLabel);
+      if (healthCard) healthCard.setAttribute("aria-label", "ヘルス " + healthLabel);
+      if (moneyCard) moneyCard.setAttribute("aria-label", "お金 " + moneyLabel);
+      if (goalsCard) goalsCard.setAttribute("aria-label", "目標 " + goalsLabel);
       renderHomeToday(s.schedule?.today_items || []);
       const bannerMsg = s.care_prompt || notifText(s.pending_notification);
       updateMentalReminderBanner({
