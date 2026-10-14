@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#c9b6e8" />
   <title>LUNA — ログイン</title>
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bg0:#e8dff7; --bg1:#d4e8f8; --bg2:#f7e6f0;
@@ -17,16 +17,17 @@
       --sprite-glow:rgba(255,252,248,.55); --sprite-outline:rgba(255,255,255,.75);
     }
     *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;font-family:"M PLUS Rounded 1c","Zen Maru Gothic",sans-serif;color:var(--text);
+    body{margin:0;min-height:100vh;font-family:"Noto Sans JP", sans-serif;color:var(--text);
       -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
       background:
         radial-gradient(800px 420px at 80% 10%, var(--glow-a), transparent 55%),
         radial-gradient(700px 400px at 10% 90%, var(--glow-b), transparent 50%),
         linear-gradient(165deg, var(--bg0), var(--bg1) 50%, var(--bg2));
     }
+    button,input,textarea,select{font-family:inherit}
     .shell{max-width:420px;margin:0 auto;padding:1.25rem 1rem 2rem}
     .top{text-align:center;margin-bottom:.25rem}
-    .top h1{margin:0;font-family:"Zen Maru Gothic",sans-serif;font-size:1.15rem;color:var(--lilac-deep);font-weight:700}
+    .top h1{margin:0;font-family:"Noto Sans JP", sans-serif;font-size:1.15rem;color:var(--lilac-deep);font-weight:700}
     .hero{display:flex;justify-content:center;margin:.4rem 0 .2rem;position:relative}
     .hero::before{
       content:"";position:absolute;z-index:0;pointer-events:none;

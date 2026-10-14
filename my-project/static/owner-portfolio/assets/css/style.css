@@ -49,14 +49,7 @@ body{
     radial-gradient(circle at 60% 85%, rgba(255,159,67,.12), transparent 32%),
     linear-gradient(180deg,#080b19 0%,#10132a 42%,#070b18 100%);
 
-  font-family:
-    "Noto Sans JP",
-    "Inter",
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: "Noto Sans JP", sans-serif;
 
   line-height:1.72;
   overflow-x:hidden;
