@@ -50,6 +50,12 @@ def get_suggested_replies(user_id: str, state: dict) -> list[str]:
         return ["ルナ", "ミカ", "CorJJ", "その他（自分で入力）"]
 
     if mode == "profile_intake":
+        if (
+            not brain_user.get("first_class_saved")
+            and int(brain_user.get("profile_intake_step") or 0) == 0
+            and not (brain_user.get("life_profile") or {})
+        ):
+            return ["9:00", "10:30", "13:00"]
         step = int(brain.get("profile_intake_step") or state.get("profile_intake_step") or 0)
         if 0 <= step < len(PROFILE_QUESTIONS):
             key = PROFILE_QUESTIONS[step][0]
@@ -72,13 +78,33 @@ def _chips_with_agenda(user: dict, now=None) -> list[str]:
         now = now or _now_jst()
         if clock_care_now(user, now=now):
             return ["大丈夫", "疲れた", "何かあった"]
-        from care_turn import check_back_due
+        from care_turn import (
+            before_first_class,
+            check_back_due,
+            day_word_ask_due,
+            day_word_morning_due,
+            day_word_waiting,
+        )
 
         back = user.get("check_back") if isinstance(user.get("check_back"), dict) else {}
         if check_back_due(user, now=now) or (back.get("asked") and not back.get("answered")):
             from care_turn import tell_chips
 
             return tell_chips(str(back.get("title") or ""))
+        quoted_on = str((user.get("day_word") or {}).get("quoted_on") or "")[:10]
+        if day_word_morning_due(user, now) or (
+            quoted_on == now.date().isoformat() and before_first_class(user, now)
+        ):
+            return ["大丈夫", "まだ残ってる", "話したい"]
+        if day_word_waiting(user, now) or day_word_ask_due(user, now):
+            return ["今日はここまで", "疲れた", "話したい"]
+        ask_key = str(user.get("daily_ask_key") or "")
+        if (
+            ask_key
+            and str(user.get("daily_ask_on") or "")[:10] == now.date().isoformat()
+            and str(user.get("daily_answered_on") or "")[:10] != now.date().isoformat()
+        ):
+            return list(_PROFILE_CHIPS.get(ask_key) or ["あとで言う", "普通", "特になし"])
         if now.hour >= 22 or now.hour < 6:
             return ["眠れない", "何かあった", "大丈夫"]
     except Exception:

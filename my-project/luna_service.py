@@ -281,9 +281,10 @@ def append_turns(store: Dict[str, Any], user_text: str, ai_reply: str) -> None:
         else:
             from care_turn import _snippet, care_tone
 
-            note = _snippet(user_text)
-            if note:
-                store["care_recall"] = {"note": note, "at": stamp, "tone": care_tone(user_text) or "talk"}
+            if not store.pop("hold_recall", None):
+                note = _snippet(user_text)
+                if note:
+                    store["care_recall"] = {"note": note, "at": stamp, "tone": care_tone(user_text) or "talk"}
             back = store.get("check_back")
             if isinstance(back, dict) and back.get("asked"):
                 back["answered"] = True
@@ -847,30 +848,60 @@ def _honorific(user: Dict[str, Any]) -> str:
 
 
 def companion_hello_line(user: Dict[str, Any], *, now=None) -> str:
-    """Home greeting: clock, then night/health/money, then memory of the last talk."""
+    """Home greeting: clock, then a kept sentence, then night/health/money, then memory."""
     from companions import companion_spoken_name, fill_talk, get_companion
-    from day_coach import clock_care_now, companion_agenda_line
+    from day_coach import _now_jst, clock_care_now, companion_agenda_line
 
+    now = now or _now_jst()
     talk = get_companion(user.get("companion_id")).get("talk") or {}
     who = _honorific(user)
     spoken = companion_spoken_name(user)
+    if user.get("profile_complete") and not user.get("cared_once"):
+        user["cared_once"] = True
+        user["cared_on"] = now.date().isoformat()
     if clock_care_now(user, now=now):
         agenda = companion_agenda_line(user, who=who, now=now)
         if agenda:
             return agenda
-    from care_turn import check_back_line, linked_open_line, recall_greeting
+    from care_turn import (
+        check_back_line,
+        daily_intake_line,
+        day_word_ask_line,
+        day_word_morning_line,
+        linked_open_line,
+        recall_greeting,
+    )
 
     followed = check_back_line(user, who=who, now=now)
     if followed:
         if spoken and spoken not in followed:
             followed = f"{spoken}だよ。{followed}"
         return followed
+    morning = day_word_morning_line(user, who=who, now=now)
+    if morning:
+        if spoken and spoken not in morning:
+            morning = f"{spoken}だよ。{morning}"
+        return morning
+    ask_word = day_word_ask_line(user, who=who, now=now)
+    if ask_word:
+        if spoken and spoken not in ask_word:
+            ask_word = f"{spoken}だよ。{ask_word}"
+        return ask_word
     linked = linked_open_line(user, who=who, now=now)
     if linked:
         if spoken and spoken not in linked:
             linked = f"{spoken}だよ。{linked}"
         return linked
+    daily = daily_intake_line(user, who=who, now=now)
+    if daily:
+        if spoken and spoken not in daily:
+            daily = f"{spoken}だよ。{daily}"
+        return daily
     remembered = recall_greeting(user, who=who, now=now)
+    row = user.get("day_word") if isinstance(user.get("day_word"), dict) else {}
+    quoted_today = str(row.get("quoted_on") or "")[:10] == now.date().isoformat()
+    if remembered and quoted_today and row.get("note") and str(row.get("note")) in remembered:
+        remembered = None
     if remembered:
         return remembered
     agenda = companion_agenda_line(user, who=who, now=now)
@@ -987,10 +1018,121 @@ def _activity_notification(user_text: str) -> Optional[str]:
     return None
 
 
+def _awaiting_first_class(user: Dict[str, Any]) -> bool:
+    """New people get one class time before any other profile question."""
+    if user.get("profile_complete") or user.get("first_class_saved"):
+        return False
+    if int(user.get("profile_intake_step") or 0) > 0:
+        return False
+    profile = user.get("life_profile") or {}
+    return not profile
+
+
+def parse_class_time(text: str) -> Optional[str]:
+    """A clock time from a short answer such as 9:00 or 10時半."""
+    t = (text or "").strip().translate(str.maketrans("０１２３４５６７８９：", "0123456789:"))
+    m = re.search(r"([01]?\d|2[0-3])[:：]([0-5]\d)", t)
+    if m:
+        return f"{int(m.group(1)):02d}:{m.group(2)}"
+    m = re.search(r"(午前|午後|朝|夜)?\s*([0-9]{1,2})\s*時\s*(半|([0-5]\d)\s*分)?", t)
+    if not m:
+        return None
+    hour = int(m.group(2))
+    if m.group(1) in ("午後", "夜") and hour < 12:
+        hour += 12
+    minute = 30 if m.group(3) == "半" else (int(m.group(4)) if m.group(4) else 0)
+    if hour > 23 or minute > 59:
+        return None
+    return f"{hour:02d}:{minute:02d}"
+
+
+def accept_first_class(user: Dict[str, Any], text: str, *, today=None) -> Optional[str]:
+    """Write today's first class and open the care chat. None when no time was said."""
+    from datetime import datetime, timedelta
+
+    from day_coach import JST, _today_jst
+    from schedule_service import add_event
+
+    clock = parse_class_time(text)
+    if not clock:
+        return None
+    day = today or _today_jst()
+    hour, minute = (int(part) for part in clock.split(":"))
+    start = datetime.combine(day, datetime.min.time().replace(hour=hour, minute=minute), tzinfo=JST)
+    end = start + timedelta(minutes=90)
+    if end.date() != start.date():
+        end = start.replace(hour=23, minute=59)
+    add_event(
+        user,
+        title="授業",
+        event_date=day.isoformat(),
+        event_time=clock,
+        event_end_time=end.strftime("%H:%M"),
+        note="最初の授業",
+    )
+    user["first_class_saved"] = True
+    user["profile_complete"] = True
+    user["profile_intake_step"] = len(PROFILE_QUESTIONS)
+    keys = [key for key, _q in PROFILE_QUESTIONS]
+    if "health_sleep" in keys:
+        keys = ["health_sleep"] + [key for key in keys if key != "health_sleep"]
+    user["daily_questions_left"] = keys
+    return "予定に入れた。その時間に開いたら、何かあったか聞くね。"
+
+
+def _take_daily_answer(user: Dict[str, Any], text: str, now) -> str:
+    """Store the one profile answer asked today. Empty when this message is not that answer."""
+    key = str(user.get("daily_ask_key") or "")
+    if not key:
+        return ""
+    today = now.date().isoformat()
+    if str(user.get("daily_ask_on") or "")[:10] != today:
+        return ""
+    if str(user.get("daily_answered_on") or "")[:10] == today:
+        return ""
+    from privacy_vault import looks_secret
+
+    raw = (text or "").strip()
+    if not raw or looks_secret(raw) or _is_crisis_message(raw):
+        return ""
+    from care_turn import care_tone
+
+    if care_tone(raw) == "heavy":
+        return ""
+    value = _normalize_gender(raw) if key == "gender" else raw
+    user.setdefault("life_profile", {})[key] = value
+    if key == "time_weekday":
+        user["schedule_reminders"] = _build_schedule_reminders(raw)
+    user["daily_questions_left"] = [
+        item for item in (user.get("daily_questions_left") or []) if item != key
+    ]
+    user["daily_answered_on"] = today
+    user["daily_ask_key"] = ""
+    user["hold_recall"] = True
+    return "それ、残した。"
+
+
+def _stamp_keep(user: Dict[str, Any], text: str, dialogue: str, now=None) -> str:
+    """Attach a saved profile answer or the one sentence kept for tomorrow morning."""
+    from day_coach import _now_jst
+
+    now = now or _now_jst()
+    extra = _take_daily_answer(user, text, now)
+    if not extra and "予定に入れた" not in (dialogue or ""):
+        from care_turn import keep_day_word
+
+        extra = keep_day_word(user, text, now)
+    if extra and extra not in (dialogue or ""):
+        return extra + (dialogue or "")
+    return dialogue or ""
+
+
 def _profile_question_dialogue(user: Dict[str, Any]) -> str:
     step = int(user.get("profile_intake_step") or 0)
     who = _honorific(user)
     prefix = f"{who}、" if who else ""
+    if _awaiting_first_class(user):
+        return f"{prefix}今日、最初の授業は何時？"
     if step >= len(PROFILE_QUESTIONS):
         return f"{prefix}プロフィール、ありがとう。これから一緒にいこう。"
     key, q = PROFILE_QUESTIONS[step]
@@ -1015,6 +1157,7 @@ def start_user_greeting(user_id: str) -> str:
         from companions import companion_spoken_name
 
         dialogue = companion_hello_line(user)
+        save_user_brain(user_id, user)
         return _pack_reply(dialogue, {
             "user_display_name": user.get("user_display_name"),
             "companion_name": companion_spoken_name(user),
@@ -1391,6 +1534,7 @@ def _local_companion_reply(user: Dict[str, Any], user_text: str) -> str:
     if felt.get("emotion") and felt["emotion"] != "talk":
         composed["emotion"] = felt["emotion"]
     dialogue = _avoid_repeat_dialogue(user, _stamp_companion_identity(user, composed["dialogue"]))
+    dialogue = _stamp_keep(user, user_text or "", dialogue)
     from companions import companion_spoken_name
 
     return _pack_reply(
@@ -1474,9 +1618,9 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
             user["companion_name"] = cname
             user["profile_intake_step"] = 0
             user["profile_complete"] = False
+            nxt = "今日、最初の授業は何時？" if _awaiting_first_class(user) else PROFILE_QUESTIONS[0][1]
             dialogue = (
-                f"ありがとうございます。私は「{cname}」と名乗らせていただきます。"
-                f"{PROFILE_QUESTIONS[0][1]}"
+                f"ありがとうございます。私は「{cname}」と名乗らせていただきます。{nxt}"
             )
             ai_reply = _pack_reply(dialogue, {
                 "user_display_name": display,
@@ -1488,6 +1632,24 @@ def handle_user_onboarding_turn(user_id: str, user_text: str) -> str | None:
         return ai_reply
 
     if not user.get("profile_complete"):
+        if _awaiting_first_class(user):
+            saved_class = accept_first_class(user, msg)
+            who = _honorific(user)
+            if saved_class:
+                dialogue = saved_class
+            else:
+                dialogue = f"{who}、今日、最初の授業は何時？ 9時、みたいに教えて。"
+            ai_reply = _pack_reply(dialogue, {
+                "user_display_name": display,
+                "companion_name": companion,
+                "profile_complete": bool(user.get("profile_complete")),
+                "first_class_saved": bool(user.get("first_class_saved")),
+            })
+            if saved_class:
+                user["hold_recall"] = True
+            append_turns(user, user_text, ai_reply)
+            save_user_brain(user_id, user)
+            return ai_reply
         step = int(user.get("profile_intake_step") or 0)
         if step < len(PROFILE_QUESTIONS):
             key, _q = PROFILE_QUESTIONS[step]
@@ -1565,6 +1727,7 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
                         care_state["life_saved"] = applied
                 except Exception:
                     pass
+                dialogue = _stamp_keep(user, text_in, dialogue)
                 _update_relationship(user, text_in)
                 return _persist_local_turn(user_id, user, text_in, _pack_reply(dialogue, care_state))
 
@@ -1699,6 +1862,7 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
                     dialogue = enrich_dialogue_with_capture(
                         dialogue, user, user_text or "", applied
                     )
+                    dialogue = _stamp_keep(user, user_text or "", dialogue)
                     dialogue = _avoid_repeat_dialogue(user, dialogue)
                     dialogue = _stamp_companion_identity(user, dialogue)
                     gs = dict(gs or {})
@@ -1710,6 +1874,7 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
                 pass
             try:
                 dialogue, gs = parse_ai_reply(ai_reply)
+                dialogue = _stamp_keep(user, user_text or "", dialogue)
                 dialogue = _avoid_repeat_dialogue(user, dialogue)
                 dialogue = _stamp_companion_identity(user, dialogue)
                 gs = dict(gs or {})

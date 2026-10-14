@@ -93,6 +93,12 @@ def _resolve_date_hint(text: str, *, today: Optional[date] = None) -> Optional[s
         return (today + timedelta(days=1)).isoformat()
     if re.search(r"今日|きょう|hôm nay|hom nay|today", t, re.I):
         return today.isoformat()
+    weekday = re.search(r"(月|火|水|木|金|土|日)曜", t)
+    if weekday:
+        names = "月火水木金土日"
+        target = names.index(weekday.group(1))
+        delta = (target - today.weekday()) % 7
+        return (today + timedelta(days=delta)).isoformat()
     return None
 
 
@@ -133,7 +139,9 @@ def _extract_schedule_title(text: str) -> Optional[str]:
             re.I,
         )
     )
-    has_day = bool(re.search(r"明日|あした|明後日|あさって|今日|きょう|tomorrow", t, re.I))
+    has_day = bool(
+        re.search(r"明日|あした|明後日|あさって|今日|きょう|tomorrow|(月|火|水|木|金|土|日)曜", t, re.I)
+    )
     # Need a clear schedule cue — day alone + spend/mood is NOT a schedule
     if not has_schedule_word:
         return None
@@ -541,7 +549,7 @@ def compose_companion_dialogue(
         elif tag.startswith("支出+"):
             ack_bits.append(f"{tag.replace('支出+', '')}の支出を記録したよ")
         elif tag == "予定を追加":
-            ack_bits.append("予定に追加したよ")
+            continue
         elif tag.startswith("目標「"):
             ack_bits.append(f"{tag}を目標リストに入れたよ")
         elif tag == "目標の進捗":
@@ -553,6 +561,14 @@ def compose_companion_dialogue(
     ack = "。".join(ack_bits[:2])
     if ack:
         ack = ack + "。"
+    if any(tag == "予定を追加" for tag in applied):
+        from life_graph import done_sentence
+
+        plan_ack = done_sentence(
+            [tag for tag in applied if tag == "予定を追加" or str(tag).startswith("声かけ:")]
+        )
+        if plan_ack:
+            ack = plan_ack + ack
 
     felt = feel_user_text(msg)
     if felt["emotion"] == "sad":
@@ -648,6 +664,14 @@ def enrich_dialogue_with_capture(
     text = (dialogue or "").strip()
     if not applied:
         return text
+    if "予定を追加" in applied and "予定に入れた" not in text:
+        from life_graph import done_sentence
+
+        plan_ack = done_sentence(
+            [tag for tag in applied if tag == "予定を追加" or str(tag).startswith("声かけ:")]
+        )
+        if plan_ack:
+            text = plan_ack + text
     if re.search(r"記録|メモ|残した|入れた|更新した|わかったよ|ノート", text):
         return text
     ack_bits: List[str] = []
@@ -657,7 +681,7 @@ def enrich_dialogue_with_capture(
         elif tag.startswith("支出+"):
             ack_bits.append(f"{tag.replace('支出+', '')}の支出、記録したよ。")
         elif tag == "予定を追加":
-            ack_bits.append("予定に追加したよ。")
+            continue
         elif tag.startswith("目標「"):
             ack_bits.append(f"{tag}を目標に入れたよ。")
     if not ack_bits:

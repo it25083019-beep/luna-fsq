@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Tuple
 
 _HEAVY = re.compile(
@@ -457,3 +457,184 @@ def care_followup_reminder(user: Dict[str, Any], *, now: datetime, who: str) -> 
         "url": "/app",
         "require_interaction": True,
     }
+
+
+DAY_WORD_ASK = "今日、一言だけ残す？"
+DAY_WORD_KEPT = "今日の一言、残した。明日の朝、これで聞くね。"
+
+DAILY_ASK = {
+    "gender": "性別を、男性か女性で教えて。",
+    "health_sleep": "平均の睡眠、何時間くらい？",
+    "health_body": "からだで気になることはある？",
+    "health_lifestyle": "食事と運動、いまどんな感じ？",
+    "mental_mood": "最近の気分を、10点中で一つ。",
+    "mental_stress": "いま一番気になっていることは？",
+    "mental_support": "しんどいとき、どうすると楽？",
+    "study_future": "いま学んでいること、一言で。",
+    "money_income": "収入は、仕送りかバイトか、ある？",
+    "money_expense": "毎月気になっている支出は？",
+    "money_goal": "1か月で、お金の目標はある？",
+    "time_weekday": "平日の流れを、一言で。",
+    "time_weekend": "休日は、だいたい何してる？",
+    "goals": "この1か月で一番大事なことを一つ。",
+}
+
+
+def _day_note(text: str) -> str:
+    raw = re.sub(r"\s+", " ", (text or "").strip())
+    raw = raw.replace("「", "").replace("」", "").replace("<", "").replace(">", "")
+    if len(raw) > 24:
+        return raw[:24] + "…"
+    return raw
+
+
+def _school_bounds(user: Dict[str, Any], now: datetime) -> list:
+    from day_coach import event_bounds, event_kind
+    from schedule_service import list_events
+
+    sched = list_events(user, on_date=now.date().isoformat())
+    items = list(sched.get("today_open") or []) + list(sched.get("today_done") or [])
+    rows = []
+    for ev in items:
+        if event_kind(ev) != "school":
+            continue
+        start, end = event_bounds(ev, today=now.date())
+        if start and end:
+            rows.append((start, end))
+    return rows
+
+
+def before_first_class(user: Dict[str, Any], now: datetime) -> bool:
+    """Morning window before today's first class. With no class, the early morning."""
+    rows = _school_bounds(user, now)
+    if not rows:
+        return 6 <= now.hour < 11
+    return now < min(start for start, _end in rows)
+
+
+def _day_row(user: Dict[str, Any]) -> Dict[str, Any]:
+    row = user.get("day_word")
+    return row if isinstance(row, dict) else {}
+
+
+def day_word_ask_due(user: Dict[str, Any], now: datetime) -> bool:
+    """After the last class, once the clock question has had its 45 minutes."""
+    from day_coach import clock_care_now
+
+    if clock_care_now(user, now=now):
+        return False
+    row = _day_row(user)
+    today = now.date().isoformat()
+    if str(row.get("on") or "")[:10] == today and (row.get("note") or row.get("asked")):
+        return False
+    rows = _school_bounds(user, now)
+    if not rows:
+        return False
+    last_end = max(end for _start, end in rows)
+    return now >= last_end + timedelta(minutes=45)
+
+
+def day_word_waiting(user: Dict[str, Any], now: datetime) -> bool:
+    row = _day_row(user)
+    today = now.date().isoformat()
+    return str(row.get("on") or "")[:10] == today and bool(row.get("asked")) and not row.get("note")
+
+
+def day_word_morning_due(user: Dict[str, Any], now: datetime) -> bool:
+    row = _day_row(user)
+    note = str(row.get("note") or "").strip()
+    if not note or not row.get("answered"):
+        return False
+    if str(row.get("quoted_on") or "")[:10] == now.date().isoformat():
+        return False
+    try:
+        saved = date.fromisoformat(str(row.get("on") or "")[:10])
+    except ValueError:
+        return False
+    if saved != now.date() - timedelta(days=1):
+        return False
+    from privacy_vault import looks_secret
+
+    if looks_secret(note):
+        return False
+    return before_first_class(user, now)
+
+
+def day_word_morning_line(user: Dict[str, Any], *, who: str = "", now: Optional[datetime] = None) -> Optional[str]:
+    """Next morning, before class, quote the one sentence they left."""
+    from day_coach import _now_jst
+
+    now = now or _now_jst()
+    if not day_word_morning_due(user, now):
+        return None
+    row = _day_row(user)
+    row["quoted_on"] = now.date().isoformat()
+    user["day_word"] = row
+    prefix = f"{who}、" if who else ""
+    return f"{prefix}この前「{row.get('note')}」って言ってたよね。"
+
+
+def day_word_ask_line(user: Dict[str, Any], *, who: str = "", now: Optional[datetime] = None) -> Optional[str]:
+    from day_coach import _now_jst
+
+    now = now or _now_jst()
+    if not day_word_ask_due(user, now):
+        return None
+    user["day_word"] = {
+        "on": now.date().isoformat(),
+        "note": "",
+        "asked": True,
+        "answered": False,
+    }
+    prefix = f"{who}、" if who else ""
+    return f"{prefix}{DAY_WORD_ASK}"
+
+
+def keep_day_word(user: Dict[str, Any], text: str, now: Optional[datetime] = None) -> str:
+    """A sentence said in free time becomes the one line quoted tomorrow morning."""
+    from day_coach import _now_jst, clock_care_now
+    from privacy_vault import looks_secret
+
+    now = now or _now_jst()
+    raw = (text or "").strip()
+    if not raw or looks_secret(raw) or care_tone(raw) == "heavy":
+        return ""
+    if clock_care_now(user, now=now):
+        return ""
+    back = user.get("check_back")
+    if isinstance(back, dict) and back.get("asked") and not back.get("answered"):
+        return ""
+    today = now.date().isoformat()
+    row = _day_row(user)
+    if str(row.get("on") or "")[:10] == today and row.get("note"):
+        return ""
+    note = _day_note(raw)
+    if not note:
+        return ""
+    user["day_word"] = {"on": today, "note": note, "asked": True, "answered": True}
+    return DAY_WORD_KEPT
+
+
+def daily_intake_line(user: Dict[str, Any], *, who: str = "", now: Optional[datetime] = None) -> Optional[str]:
+    """One profile question a day, starting the day after the first care greeting."""
+    from day_coach import _now_jst
+
+    now = now or _now_jst()
+    if not user.get("cared_once"):
+        return None
+    today = now.date().isoformat()
+    if str(user.get("cared_on") or "")[:10] == today:
+        return None
+    left = user.get("daily_questions_left") or []
+    if not left:
+        return None
+    if str(user.get("daily_ask_on") or "")[:10] == today:
+        return None
+    key = str(left[0])
+    line = DAILY_ASK.get(key)
+    if not line:
+        return None
+    user["daily_ask_on"] = today
+    user["daily_ask_key"] = key
+    prefix = f"{who}、" if who else ""
+    return f"{prefix}{line}"

@@ -208,6 +208,72 @@ def test_next_open_remembers_last_words():
     print("OK remember", line)
 
 
+def test_weekday_plan_is_spoken():
+    from chat_life_capture import capture_life_from_chat, compose_companion_dialogue
+    from life_graph import done_sentence
+
+    user = _user()
+    applied = capture_life_from_chat(user, "金曜、課題出す")
+    said = done_sentence(applied)
+    assert said == "予定に入れた。終わったら、ひとこと言って。", said
+    spoken = compose_companion_dialogue(user, "金曜、課題出す", applied)["dialogue"]
+    assert spoken.startswith("予定に入れた。終わったら、ひとこと言って。")
+    print("OK weekday plan", said)
+
+
+def test_one_word_after_the_last_class():
+    user = _user()
+    add_event(
+        user,
+        title="授業",
+        event_date="2026-10-08",
+        event_time="09:00",
+        event_end_time="10:30",
+    )
+    during = datetime(2026, 10, 8, 9, 30, tzinfo=JST)
+    assert "何かあった" in companion_hello_line(user, now=during)
+    assert "一言" not in companion_hello_line(user, now=during)
+    after = datetime(2026, 10, 8, 12, 0, tzinfo=JST)
+    asked = companion_hello_line(user, now=after)
+    assert "今日、一言だけ残す？" in asked
+    from care_turn import keep_day_word
+
+    kept = keep_day_word(user, "プログラミングが難しかった", after)
+    assert "明日の朝" in kept
+    morning = datetime(2026, 10, 9, 8, 0, tzinfo=JST)
+    add_event(
+        user,
+        title="授業",
+        event_date="2026-10-09",
+        event_time="09:00",
+        event_end_time="10:30",
+    )
+    quoted = companion_hello_line(user, now=morning)
+    assert "プログラミングが難しかった" in quoted
+    assert "一言だけ残す" not in quoted
+    in_class = companion_hello_line(user, now=datetime(2026, 10, 9, 9, 20, tzinfo=JST))
+    assert "何かあった" in in_class
+    assert "プログラミング" not in in_class
+    print("OK one word", quoted)
+
+
+def test_first_class_then_one_question_a_day():
+    from luna_service import accept_first_class
+
+    user = _user()
+    line = accept_first_class(user, "9時", today=datetime(2026, 10, 8, tzinfo=JST).date())
+    assert line == "予定に入れた。その時間に開いたら、何かあったか聞くね。"
+    assert user["profile_complete"] is True
+    during = companion_hello_line(user, now=datetime(2026, 10, 8, 9, 30, tzinfo=JST))
+    assert "何かあった" in during
+    user["cared_once"] = True
+    user["cared_on"] = "2026-10-08"
+    nxt = companion_hello_line(user, now=datetime(2026, 10, 9, 15, 0, tzinfo=JST))
+    assert "睡眠" in nxt
+    assert _chips_with_agenda(user, now=datetime(2026, 10, 9, 15, 0, tzinfo=JST))[0] == "6時間"
+    print("OK first class", line, nxt)
+
+
 def test_heavy_stops_and_opens_rescue():
     user = _user()
     line, state = plan_care_reply(user, "つらい", now=datetime(2026, 10, 7, 12, 0, tzinfo=JST))
@@ -238,6 +304,9 @@ if __name__ == "__main__":
     test_chat_writes_spend_and_plan()
     test_balance_advice_names_the_gap()
     test_next_open_remembers_last_words()
+    test_weekday_plan_is_spoken()
+    test_one_word_after_the_last_class()
+    test_first_class_then_one_question_a_day()
     test_heavy_stops_and_opens_rescue()
     test_chips_answer_the_clock_question()
     print("ALL open-care tests passed")
