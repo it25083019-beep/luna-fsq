@@ -274,6 +274,47 @@ def test_first_class_then_one_question_a_day():
     print("OK first class", line, nxt)
 
 
+def test_morning_notification_quotes_the_sentence():
+    from care_turn import day_word_morning_reminder, keep_day_word
+    from day_coach import build_today_reminders
+
+    user = _user()
+    add_event(
+        user,
+        title="授業",
+        event_date="2026-10-09",
+        event_time="09:00",
+        event_end_time="10:30",
+    )
+    user["day_word"] = {
+        "on": "2026-10-08",
+        "note": "プログラミングが難しかった",
+        "asked": True,
+        "answered": True,
+    }
+    morning = datetime(2026, 10, 9, 7, 0, tzinfo=JST)
+    row = day_word_morning_reminder(user, now=morning, who="ユウ")
+    assert row["kind"] == "day_word"
+    assert row["body"] == "この前「プログラミングが難しかった」って言ってたよね。"
+    assert "2026-10-09T08:20" in row["fire_at"]
+    assert day_word_morning_reminder(user, now=datetime(2026, 10, 9, 9, 20, tzinfo=JST), who="ユウ") is None
+    assert day_word_morning_reminder(user, now=datetime(2026, 10, 9, 15, 0, tzinfo=JST), who="ユウ") is None
+    payload = build_today_reminders(user, now=morning)
+    assert any(item.get("kind") == "day_word" for item in payload["reminders"])
+    speaker = _user()
+    add_event(
+        speaker,
+        title="授業",
+        event_date="2026-10-08",
+        event_time="09:00",
+        event_end_time="10:30",
+    )
+    during = datetime(2026, 10, 8, 9, 30, tzinfo=JST)
+    assert keep_day_word(speaker, "大丈夫", during) == ""
+    assert "明日の朝" in keep_day_word(speaker, "プログラミングが難しかった", during)
+    print("OK morning note", row["fire_at"])
+
+
 def test_heavy_stops_and_opens_rescue():
     user = _user()
     line, state = plan_care_reply(user, "つらい", now=datetime(2026, 10, 7, 12, 0, tzinfo=JST))
@@ -307,6 +348,7 @@ if __name__ == "__main__":
     test_weekday_plan_is_spoken()
     test_one_word_after_the_last_class()
     test_first_class_then_one_question_a_day()
+    test_morning_notification_quotes_the_sentence()
     test_heavy_stops_and_opens_rescue()
     test_chips_answer_the_clock_question()
     print("ALL open-care tests passed")

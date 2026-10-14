@@ -461,6 +461,18 @@ def care_followup_reminder(user: Dict[str, Any], *, now: datetime, who: str) -> 
 
 DAY_WORD_ASK = "今日、一言だけ残す？"
 DAY_WORD_KEPT = "今日の一言、残した。明日の朝、これで聞くね。"
+_NOT_A_WORD = {
+    "大丈夫",
+    "疲れた",
+    "何かあった",
+    "眠れない",
+    "話したい",
+    "話したいことがある",
+    "今日はここまで",
+    "まだ残ってる",
+    "少し楽になった",
+    "まだ疲れてる",
+}
 
 DAILY_ASK = {
     "gender": "性別を、男性か女性で教えて。",
@@ -574,6 +586,60 @@ def day_word_morning_line(user: Dict[str, Any], *, who: str = "", now: Optional[
     return f"{prefix}この前「{row.get('note')}」って言ってたよね。"
 
 
+def _morning_fire(user: Dict[str, Any], now: datetime) -> datetime:
+    """One moment before the first class. With no class, eight in the morning."""
+    from datetime import time as clock
+
+    rows = _school_bounds(user, now)
+    if rows:
+        first = min(start for start, _end in rows)
+        fire = first - timedelta(minutes=40)
+        earliest = datetime.combine(now.date(), clock(6, 30), tzinfo=now.tzinfo)
+        if fire < earliest:
+            fire = earliest
+        return fire
+    return datetime.combine(now.date(), clock(8, 0), tzinfo=now.tzinfo)
+
+
+def day_word_morning_reminder(
+    user: Dict[str, Any], *, now: datetime, who: str
+) -> Optional[Dict[str, Any]]:
+    """One phone notification the next morning, before class, quoting their sentence."""
+    row = _day_row(user)
+    note = str(row.get("note") or "").strip()
+    if not note or not row.get("answered"):
+        return None
+    if str(row.get("quoted_on") or "")[:10] == now.date().isoformat():
+        return None
+    try:
+        saved = date.fromisoformat(str(row.get("on") or "")[:10])
+    except ValueError:
+        return None
+    if saved != now.date() - timedelta(days=1):
+        return None
+    from privacy_vault import looks_secret
+
+    if looks_secret(note):
+        return None
+    fire = _morning_fire(user, now)
+    if now > fire + timedelta(minutes=90):
+        return None
+    if not before_first_class(user, now) and now >= fire:
+        return None
+    when = fire if now < fire else now
+    return {
+        "id": f"day-word-{row.get('on')}",
+        "kind": "day_word",
+        "fire_at": when.isoformat(),
+        "title": f"{who}｜今朝",
+        "body": f"この前「{note}」って言ってたよね。",
+        "url": "/app",
+        "require_interaction": False,
+        "ask_mood": False,
+        "lead_minutes": 0,
+    }
+
+
 def day_word_ask_line(user: Dict[str, Any], *, who: str = "", now: Optional[datetime] = None) -> Optional[str]:
     from day_coach import _now_jst
 
@@ -597,9 +663,9 @@ def keep_day_word(user: Dict[str, Any], text: str, now: Optional[datetime] = Non
 
     now = now or _now_jst()
     raw = (text or "").strip()
-    if not raw or looks_secret(raw) or care_tone(raw) == "heavy":
+    if not raw or raw in _NOT_A_WORD or looks_secret(raw) or care_tone(raw) == "heavy":
         return ""
-    if clock_care_now(user, now=now):
+    if clock_care_now(user, now=now) and care_tone(raw) in ("ok", "tired") and len(raw) <= 8:
         return ""
     back = user.get("check_back")
     if isinstance(back, dict) and back.get("asked") and not back.get("answered"):

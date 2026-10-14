@@ -940,7 +940,7 @@ def build_today_reminders(
                 }
             )
 
-    from care_turn import care_followup_reminder, check_back_reminder
+    from care_turn import care_followup_reminder, check_back_reminder, day_word_morning_reminder
 
     follow = care_followup_reminder(user, now=now, who=who)
     if follow:
@@ -948,6 +948,9 @@ def build_today_reminders(
     check = check_back_reminder(user, now=now, who=who)
     if check:
         reminders.append(check)
+    word = day_word_morning_reminder(user, now=now, who=who)
+    if word:
+        reminders.append(word)
 
     if fit.get("recommend") in ("rest", "micro") and fit.get("coach_ja"):
         reminders.insert(
