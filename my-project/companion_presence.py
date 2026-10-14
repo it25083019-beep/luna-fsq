@@ -39,13 +39,19 @@ def feel_user_text(user_text: str) -> Dict[str, str]:
 
 
 def _who(user: Dict[str, Any]) -> str:
+    """Same name the rest of chat uses, so one thread does not flip ちゃん and くん."""
     raw = str((user or {}).get("user_display_name") or "").strip()
     raw = re.sub(r"(様|さん|くん|君|ちゃん)$", "", raw).strip()
     if raw in ("", "お客", "お客様", "お客さま", "あなた", "冒険者", "学習者"):
         return ""
+    profile = (user or {}).get("life_profile") if isinstance((user or {}).get("life_profile"), dict) else {}
+    gender = str((profile or {}).get("gender") or (user or {}).get("gender") or "")
     cid = str((user or {}).get("companion_id") or "")
     animal = cid in ("hachi", "momo", "taro", "ponta")
-    return f"{raw}ちゃん" if animal else f"{raw}さん"
+    male = gender == "male" or "男" in gender
+    if animal:
+        return f"{raw}くん" if male else f"{raw}ちゃん"
+    return f"{raw}くん" if male else f"{raw}さん"
 
 
 def _cid(user: Dict[str, Any]) -> str:

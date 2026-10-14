@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from care_turn import balance_advice, linked_open_line, plan_care_reply, recall_greeting
+from care_turn import (
+    balance_advice,
+    fulfill_duty,
+    linked_open_line,
+    plan_care_reply,
+    plan_one_move,
+    recall_greeting,
+)
 from day_coach import JST, companion_agenda_line
 from luna_service import companion_hello_line
 from schedule_service import add_event
@@ -353,7 +360,54 @@ def test_a_tired_question_keeps_one_burden():
     during, _during_state = plan_care_reply(school, "就活で疲れた", now=datetime(2026, 10, 7, 10, 0, tzinfo=JST))
     assert "就活、残した" in during
     assert "これが終わってから" in during
+    ask = "バイトと学校で疲れてるけど、就活もあるからもっと疲れるこれをなくす何をすればいい"
+    move, move_state = plan_care_reply(user, ask, now=now)
+    assert "就活が一番重い" in move
+    assert "応募を1件だけ開いて" in move
+    assert "残した" not in move
+    assert move_state["care_action"] == "move"
+    follow, _follow_state = plan_one_move(user, "何をすればいい？", now=now)
+    assert "応募を1件だけ開いて" in follow
+    assert "どんな感じ" not in follow
     print("OK one burden", story)
+
+
+def test_care_questions_stay_on_duty():
+    user = _user()
+    now = datetime(2026, 10, 7, 14, 55, tzinfo=JST)
+    long = (
+        "バイトと学校で疲れてるけど、就活もあるからもっと疲れる。"
+        "これをなくすには何をすればいいのか、本当に困っているんだ。"
+        "明日も同じなら、どこから手をつければいいか教えて。"
+    )
+    assert len(long) > 80
+    line, state = fulfill_duty(user, long, now=now)
+    assert "応募を1件だけ開いて" in line
+    assert "どんな感じ" not in line
+    assert state["care_action"] == "move"
+    for question in (
+        "何をすればいい？",
+        "どうしたらいい？",
+        "なんか方法ある？",
+        "アドバイスちょうだい",
+        "これをなくしたい",
+    ):
+        got, got_state = fulfill_duty(user, question, now=now)
+        assert "応募を1件だけ開いて" in got
+        assert "どんな感じ" not in got
+        assert got_state["care_action"] == "move"
+    fresh = _user()
+    asked, asked_state = fulfill_duty(fresh, "何をすればいい？", now=now)
+    assert "助言はしない" in asked
+    assert asked_state["care_action"] == "one"
+    named, _named_state = fulfill_duty(fresh, "親とのこと", now=now)
+    assert "親とのこと" in named
+    assert "残した" in named
+    again, _again_state = fulfill_duty(fresh, "どうしよう", now=now)
+    assert "親とのこと" in again
+    assert "一つだけ手をつけて" in again
+    assert fulfill_duty(_user(), "この数学の問題、どうすればいい？", now=now) is None
+    print("OK duty holds the question")
 
 
 def test_chips_answer_the_clock_question():
@@ -383,5 +437,6 @@ if __name__ == "__main__":
     test_morning_notification_quotes_the_sentence()
     test_heavy_stops_and_opens_rescue()
     test_a_tired_question_keeps_one_burden()
+    test_care_questions_stay_on_duty()
     test_chips_answer_the_clock_question()
     print("ALL open-care tests passed")

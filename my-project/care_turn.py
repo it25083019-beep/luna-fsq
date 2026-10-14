@@ -91,6 +91,43 @@ for _cid in ("momo", "taro"):
 _ASK_ONE["ponta"] = _ASK_ONE["hachi"]
 _KEEP_ONE["ponta"] = _KEEP_ONE["hachi"]
 ONE_BURDEN_CHIPS = ["授業", "バイト", "就活"]
+_WANTS_MOVE = re.compile(
+    r"すれば|したら|どうしよう|どうにか|なにを|何を|方法|アドバイス|助言|"
+    r"なくした|無くした|なくす|無く|楽にな|解決|教えて|どうした"
+)
+_STUDY = re.compile(r"数学|漢字|英語|コード|プログラム|公式|文法|翻訳")
+_ONE_MOVE = {
+    "就活": "応募を1件だけ開いて",
+    "バイト": "水を一杯だけ飲んで",
+    "授業": "ノートを1行だけ残して",
+    "課題": "最初の一行だけ書いて",
+    "発表": "最初の一言だけ声に出して",
+    "面接": "答えを1つだけ声に出して",
+    "試験": "1問だけ開いて",
+}
+_MOVE = {
+    "luna": "{prefix}{word}が一番重い。{when}、{move}。",
+    "luno": "{prefix}{word}が一番重いよ。{when}、{move}。",
+    "ren": "{prefix}{word}が一番重い。{when}、{move}。",
+    "hachi": "{prefix}{word}が一番重いわん。{when}、{move}。",
+}
+for _cid in ("momo", "taro"):
+    _MOVE[_cid] = _MOVE["luna"]
+_MOVE["ponta"] = _MOVE["hachi"]
+
+
+def wants_a_move(text: str) -> bool:
+    """They asked what to do. One move, not a list and not another 'I'll ask later'."""
+    return bool(_WANTS_MOVE.search(text or ""))
+
+
+def _study_question(text: str) -> bool:
+    """A schoolwork question is not the care duty, unless it is also about their day."""
+    if not _STUDY.search(text or ""):
+        return False
+    if heaviest_word(text) or _TIRED.search(text) or _HEAVY.search(text):
+        return False
+    return True
 
 
 def heaviest_word(text: str) -> str:
@@ -124,6 +161,22 @@ def _one_when(user: Dict[str, Any], now: datetime) -> Tuple[str, Optional[dateti
     return "明日の朝", None
 
 
+def _kept_word(user: Dict[str, Any], now: datetime) -> str:
+    row = user.get("day_word")
+    if not isinstance(row, dict) or not row.get("answered"):
+        return ""
+    if str(row.get("on") or "") != now.date().isoformat():
+        return ""
+    note = str(row.get("note") or "")
+    for _key, label in _BURDENS:
+        if note.startswith(label):
+            return label
+    suffix = "が一番重い"
+    if note.endswith(suffix) and len(note) > len(suffix):
+        return note[: -len(suffix)]
+    return ""
+
+
 def _store_one_burden(
     user: Dict[str, Any],
     word: str,
@@ -131,6 +184,7 @@ def _store_one_burden(
     now: datetime,
     voice: str,
     prefix: str,
+    ask: bool = False,
 ) -> Tuple[str, Dict[str, Any]]:
     when, fire = _one_when(user, now)
     user.pop("care_one", None)
@@ -149,6 +203,10 @@ def _store_one_burden(
         }
     else:
         user.pop("care_followup", None)
+    if ask:
+        move = _ONE_MOVE.get(word, "一つだけ手をつけて")
+        line = _MOVE.get(voice, _MOVE["luna"]).format(prefix=prefix, word=word, when=when, move=move)
+        return line, {"emotion": "sad", "care_action": "move"}
     line = _KEEP_ONE.get(voice, _KEEP_ONE["luna"]).format(prefix=prefix, word=word, when=when)
     return line, {"emotion": "sad", "care_action": "one"}
 
@@ -162,19 +220,103 @@ def take_named_burden(
     """They were asked for the one heavy thing. A name is enough."""
     if user.get("care_one") != "wait":
         return None
-    word = heaviest_word(text)
+    word = heaviest_word(text) or _own_word(text)
     if not word:
+        if wants_a_move(text):
+            voice = _voice(user)
+            prefix = _prefix(user)
+            line = _ASK_ONE.get(voice, _ASK_ONE["luna"]).format(prefix=prefix)
+            return line, {"emotion": "sad", "care_action": "one"}
         return None
     from day_coach import _now_jst
 
     now = now or _now_jst()
-    return _store_one_burden(user, word, now=now, voice=_voice(user), prefix=_prefix(user))
+    return _store_one_burden(
+        user, word, now=now, voice=_voice(user), prefix=_prefix(user), ask=wants_a_move(text)
+    )
+
+
+def _own_word(text: str) -> str:
+    """A burden they named that is not on the fixed list. Still one word."""
+    raw = re.sub(r"\s+", "", (text or "").strip())
+    raw = raw.strip("。！？?!、. ")
+    if not raw or len(raw) < 2 or len(raw) > 12:
+        return ""
+    if raw in _NOT_A_WORD or wants_a_move(raw) or _HEAVY.search(raw) or _TIRED.search(raw):
+        return ""
+    if re.search(r"すれば|したら|どう|何|なに|？|\?", raw):
+        return ""
+    return raw
+
+
+def fulfill_duty(
+    user: Dict[str, Any],
+    text: str,
+    *,
+    now: Optional[datetime] = None,
+) -> Optional[Tuple[str, Dict[str, Any]]]:
+    """LUNA's job for this sentence. None means the model may answer.
+
+    A care sentence always gets one burden, one clock moment, and one move
+    when they ask what to do. It must not reach the API.
+    """
+    raw = (text or "").strip()
+    if not raw or len(raw) > 400 or _study_question(raw):
+        return None
+    from day_coach import _now_jst
+
+    now = now or _now_jst()
+    if user.get("care_one") == "wait":
+        named = take_named_burden(user, raw, now=now)
+        if named:
+            return named
+        voice = _voice(user)
+        prefix = _prefix(user)
+        line = _ASK_ONE.get(voice, _ASK_ONE["luna"]).format(prefix=prefix)
+        return line, {"emotion": "sad", "care_action": "one"}
+    cared = plan_care_reply(user, raw, now=now)
+    if cared:
+        return cared
+    asking = wants_a_move(raw) or bool(re.search(r"[？?]", raw) and (heaviest_word(raw) or _kept_word(user, now)))
+    if not asking:
+        return None
+    word = heaviest_word(raw) or _kept_word(user, now)
+    if word:
+        return _store_one_burden(
+            user, word, now=now, voice=_voice(user), prefix=_prefix(user), ask=True
+        )
+    user["care_one"] = "wait"
+    voice = _voice(user)
+    prefix = _prefix(user)
+    line = _ASK_ONE.get(voice, _ASK_ONE["luna"]).format(prefix=prefix)
+    return line, {"emotion": "sad", "care_action": "one"}
+
+
+def plan_one_move(
+    user: Dict[str, Any],
+    text: str,
+    *,
+    now: Optional[datetime] = None,
+) -> Optional[Tuple[str, Dict[str, Any]]]:
+    """A what-to-do question with no tired word still gets the one kept burden."""
+    if care_tone(text) or not wants_a_move(text):
+        return None
+    from day_coach import _now_jst
+
+    now = now or _now_jst()
+    word = heaviest_word(text) or _kept_word(user, now)
+    if not word:
+        return None
+    return _store_one_burden(
+        user, word, now=now, voice=_voice(user), prefix=_prefix(user), ask=True
+    )
 
 
 def care_tone(text: str) -> Optional[str]:
     """heavy opens the 60s rescue, tired books a later ask, ok closes."""
     raw = (text or "").strip()
-    if not raw or len(raw) > 80:
+    # Long enough for a real story. A care sentence must not fall through to the API.
+    if not raw or len(raw) > 400:
         return None
     if _HEAVY.search(raw):
         return "heavy"
@@ -247,7 +389,9 @@ def plan_care_reply(
             user["care_one"] = "wait"
             line = _ASK_ONE.get(voice, _ASK_ONE["luna"]).format(prefix=prefix)
             return line, {"emotion": "sad", "care_action": "one"}
-        return _store_one_burden(user, word, now=now, voice=voice, prefix=prefix)
+        return _store_one_burden(
+            user, word, now=now, voice=voice, prefix=prefix, ask=wants_a_move(text)
+        )
     fire, when = _followup_when(user, now=now)
     note = _snippet(text)
     user["care_followup"] = {

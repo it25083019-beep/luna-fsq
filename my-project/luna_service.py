@@ -1471,6 +1471,31 @@ def _local_consult_reply(user: Dict[str, Any], user_text: str) -> Optional[str]:
     return None
 
 
+_DUTY_SAID = ("が一番重い", "助言はしない", "60秒", "、残した", "一つだけ言って", "一つだけ手をつけて")
+
+
+def _persist_care_plan(user_id: str, user: Dict[str, Any], text_in: str, planned) -> Optional[str]:
+    """Save a duty reply. The model is not called."""
+    if not planned:
+        return None
+    dialogue, care_state = planned
+    try:
+        from chat_life_capture import capture_life_from_chat
+        from life_graph import done_sentence
+
+        applied = capture_life_from_chat(user, text_in, None)
+        extra = done_sentence(applied)
+        if extra and extra not in dialogue:
+            dialogue = dialogue + extra
+            care_state = dict(care_state)
+            care_state["life_saved"] = applied
+    except Exception:
+        pass
+    dialogue = _stamp_keep(user, text_in, dialogue)
+    _update_relationship(user, text_in)
+    return _persist_local_turn(user_id, user, text_in, _pack_reply(dialogue, care_state))
+
+
 def _dialogue_similar(a: str, b: str) -> bool:
     a = re.sub(r"\s+", "", (a or "").strip())
     b = re.sub(r"\s+", "", (b or "").strip())
@@ -1503,6 +1528,9 @@ def _avoid_repeat_dialogue(user: Dict[str, Any], dialogue: str) -> str:
     """
     recent = [str(x) for x in (user.get("recent_companion_lines") or []) if x]
     text = (dialogue or "").strip()
+    if text and any(mark in text for mark in _DUTY_SAID):
+        user["recent_companion_lines"] = (recent + [text[:200]])[-RECENT_LINE_MEMORY:]
+        return text
     if text and any(_dialogue_similar(prev, text) for prev in recent):
         try:
             n = int(user.get("repeat_nudge_i") or 0)
@@ -1708,29 +1736,12 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
         if looks_secret(text_in):
             user = load_user_brain(user_id)
             return _persist_local_turn(user_id, user, text_in, _secret_keep_reply(user))
-        from care_turn import care_tone, plan_care_reply, take_named_burden
+        from care_turn import fulfill_duty
 
         user = load_user_brain(user_id)
-        planned = take_named_burden(user, text_in) if user.get("care_one") == "wait" else None
-        if planned is None and care_tone(text_in):
-            planned = plan_care_reply(user, text_in)
-        if planned:
-            dialogue, care_state = planned
-            try:
-                from chat_life_capture import capture_life_from_chat
-                from life_graph import done_sentence
-
-                applied = capture_life_from_chat(user, text_in, None)
-                extra = done_sentence(applied)
-                if extra and extra not in dialogue:
-                    dialogue = dialogue + extra
-                    care_state = dict(care_state)
-                    care_state["life_saved"] = applied
-            except Exception:
-                pass
-            dialogue = _stamp_keep(user, text_in, dialogue)
-            _update_relationship(user, text_in)
-            return _persist_local_turn(user_id, user, text_in, _pack_reply(dialogue, care_state))
+        cared = _persist_care_plan(user_id, user, text_in, fulfill_duty(user, text_in))
+        if cared:
+            return cared
 
     onboarded = handle_user_onboarding_turn(user_id, user_text)
     if onboarded is not None:
@@ -1780,6 +1791,13 @@ def generate_with_retry(user_id: str, user_text: str, max_retries: int = 1, *, s
 
     user = load_user_brain(user_id)
     admin = is_admin(user_id)
+
+    if text_in:
+        from care_turn import fulfill_duty
+
+        cared = _persist_care_plan(user_id, user, text_in, fulfill_duty(user, text_in))
+        if cared:
+            return cared
 
     if text_in:
         topic = _consult_topic_from_chip(text_in)
