@@ -55,11 +55,120 @@ _NEEDS_REPLY = re.compile(r"どう|なに|何|すれば|教えて|けど|から|
 
 
 def _tired_needs_a_real_reply(text: str) -> bool:
-    """A question or a real sentence should reach the companion, not the tired template."""
+    """A question or a real sentence should not get the short tired template."""
     raw = (text or "").strip()
     if len(raw) > 16:
         return True
     return bool(_NEEDS_REPLY.search(raw))
+
+
+_BURDENS = (
+    ("就活", "就活"),
+    ("バイト", "バイト"),
+    ("授業", "授業"),
+    ("学校", "授業"),
+    ("課題", "課題"),
+    ("発表", "発表"),
+    ("面接", "面接"),
+    ("試験", "試験"),
+    ("テスト", "試験"),
+)
+_ASK_ONE = {
+    "luna": "{prefix}助言はしない。今日いちばん重いのを、一つだけ言って。",
+    "luno": "{prefix}助言はしないよ。今日いちばん重いの、一つだけ。",
+    "ren": "{prefix}助言はしない。今日いちばん重いのを一つ言え。",
+    "hachi": "{prefix}助言はしないわん。今日いちばん重いの、一つだけ。",
+}
+_KEEP_ONE = {
+    "luna": "{prefix}{word}、残した。{when}、これで聞くね。",
+    "luno": "{prefix}{word}、残したよ。{when}、これで聞くね。",
+    "ren": "{prefix}{word}、残した。{when}、それで聞く。",
+    "hachi": "{prefix}{word}、残したわん。{when}、これで聞くね。",
+}
+for _cid in ("momo", "taro"):
+    _ASK_ONE[_cid] = _ASK_ONE["luna"]
+    _KEEP_ONE[_cid] = _KEEP_ONE["luna"]
+_ASK_ONE["ponta"] = _ASK_ONE["hachi"]
+_KEEP_ONE["ponta"] = _KEEP_ONE["hachi"]
+ONE_BURDEN_CHIPS = ["授業", "バイト", "就活"]
+
+
+def heaviest_word(text: str) -> str:
+    """The burden named last. LUNA keeps one, not a list of advice."""
+    raw = text or ""
+    found = ""
+    at = -1
+    for key, label in _BURDENS:
+        pos = raw.rfind(key)
+        if pos > at:
+            at = pos
+            found = label
+    return found
+
+
+def _one_when(user: Dict[str, Any], now: datetime) -> Tuple[str, Optional[datetime]]:
+    from day_coach import agenda_for_companion, event_bounds, event_kind_label
+
+    agenda = agenda_for_companion(user, now=now)
+    current = agenda.get("current")
+    if isinstance(current, dict):
+        _start, end = event_bounds(current, today=now.date())
+        if end and end > now:
+            return "これが終わってから", end
+    nxt = agenda.get("next")
+    if isinstance(nxt, dict):
+        start, end = event_bounds(nxt, today=now.date())
+        if start and start > now:
+            label = event_kind_label(nxt)
+            return f"{label}のあと", end or start
+    return "明日の朝", None
+
+
+def _store_one_burden(
+    user: Dict[str, Any],
+    word: str,
+    *,
+    now: datetime,
+    voice: str,
+    prefix: str,
+) -> Tuple[str, Dict[str, Any]]:
+    when, fire = _one_when(user, now)
+    user.pop("care_one", None)
+    note = f"{word}が一番重い"
+    user["day_word"] = {
+        "on": now.date().isoformat(),
+        "note": note,
+        "asked": True,
+        "answered": True,
+    }
+    if fire is not None:
+        user["care_followup"] = {
+            "id": f"care-one-{fire.strftime('%Y%m%d%H%M')}",
+            "fire_at": fire.isoformat(),
+            "note": note,
+        }
+    else:
+        user.pop("care_followup", None)
+    line = _KEEP_ONE.get(voice, _KEEP_ONE["luna"]).format(prefix=prefix, word=word, when=when)
+    return line, {"emotion": "sad", "care_action": "one"}
+
+
+def take_named_burden(
+    user: Dict[str, Any],
+    text: str,
+    *,
+    now: Optional[datetime] = None,
+) -> Optional[Tuple[str, Dict[str, Any]]]:
+    """They were asked for the one heavy thing. A name is enough."""
+    if user.get("care_one") != "wait":
+        return None
+    word = heaviest_word(text)
+    if not word:
+        return None
+    from day_coach import _now_jst
+
+    now = now or _now_jst()
+    return _store_one_burden(user, word, now=now, voice=_voice(user), prefix=_prefix(user))
 
 
 def care_tone(text: str) -> Optional[str]:
@@ -133,7 +242,12 @@ def plan_care_reply(
         user.pop("care_followup", None)
         return line, {"emotion": "happy", "care_action": "close"}
     if _tired_needs_a_real_reply(text):
-        return None
+        word = heaviest_word(text)
+        if not word:
+            user["care_one"] = "wait"
+            line = _ASK_ONE.get(voice, _ASK_ONE["luna"]).format(prefix=prefix)
+            return line, {"emotion": "sad", "care_action": "one"}
+        return _store_one_burden(user, word, now=now, voice=voice, prefix=prefix)
     fire, when = _followup_when(user, now=now)
     note = _snippet(text)
     user["care_followup"] = {

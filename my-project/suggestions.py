@@ -76,6 +76,10 @@ def _chips_with_agenda(user: dict, now=None) -> list[str]:
         from day_coach import _now_jst, clock_care_now
 
         now = now or _now_jst()
+        if user.get("care_one") == "wait":
+            from care_turn import ONE_BURDEN_CHIPS
+
+            return list(ONE_BURDEN_CHIPS)
         if clock_care_now(user, now=now):
             return ["大丈夫", "疲れた", "何かあった"]
         from care_turn import (

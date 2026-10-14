@@ -324,15 +324,36 @@ def test_heavy_stops_and_opens_rescue():
     print("OK heavy handoff")
 
 
-def test_a_tired_question_is_not_the_same_line():
+def test_a_tired_question_keeps_one_burden():
     user = _user()
     now = datetime(2026, 10, 7, 14, 24, tzinfo=JST)
     ping, _state = plan_care_reply(user, "疲れた", now=now)
     assert "少ししたら" in ping or "また聞く" in ping
-    assert plan_care_reply(user, "疲れるとなにすればいい", now=now) is None
-    story = plan_care_reply(user, "バイトと学校で疲れてるけど、就活もあるからもっと疲れる", now=now)
-    assert story is None
-    print("OK tired question reaches the companion")
+    asked, asked_state = plan_care_reply(user, "疲れるとなにすればいい", now=now)
+    assert "助言はしない" in asked
+    assert asked_state["care_action"] == "one"
+    assert "すれば" not in asked
+    story, _story_state = plan_care_reply(
+        user,
+        "バイトと学校で疲れてるけど、就活もあるからもっと疲れる",
+        now=now,
+    )
+    assert story.startswith("就活、残した") or "就活、残した" in story
+    assert "明日の朝" in story
+    assert "助言" not in story
+    assert user["day_word"]["note"] == "就活が一番重い"
+    school = _user()
+    add_event(
+        school,
+        title="授業",
+        event_date="2026-10-07",
+        event_time="09:00",
+        event_end_time="12:00",
+    )
+    during, _during_state = plan_care_reply(school, "就活で疲れた", now=datetime(2026, 10, 7, 10, 0, tzinfo=JST))
+    assert "就活、残した" in during
+    assert "これが終わってから" in during
+    print("OK one burden", story)
 
 
 def test_chips_answer_the_clock_question():
@@ -361,6 +382,6 @@ if __name__ == "__main__":
     test_first_class_then_one_question_a_day()
     test_morning_notification_quotes_the_sentence()
     test_heavy_stops_and_opens_rescue()
-    test_a_tired_question_is_not_the_same_line()
+    test_a_tired_question_keeps_one_burden()
     test_chips_answer_the_clock_question()
     print("ALL open-care tests passed")

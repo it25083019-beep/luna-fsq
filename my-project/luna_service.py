@@ -1708,28 +1708,29 @@ def handle_chat_message(user_id: str, user_text: str) -> str:
         if looks_secret(text_in):
             user = load_user_brain(user_id)
             return _persist_local_turn(user_id, user, text_in, _secret_keep_reply(user))
-        from care_turn import care_tone, plan_care_reply
+        from care_turn import care_tone, plan_care_reply, take_named_burden
 
-        if care_tone(text_in):
-            user = load_user_brain(user_id)
+        user = load_user_brain(user_id)
+        planned = take_named_burden(user, text_in) if user.get("care_one") == "wait" else None
+        if planned is None and care_tone(text_in):
             planned = plan_care_reply(user, text_in)
-            if planned:
-                dialogue, care_state = planned
-                try:
-                    from chat_life_capture import capture_life_from_chat
-                    from life_graph import done_sentence
+        if planned:
+            dialogue, care_state = planned
+            try:
+                from chat_life_capture import capture_life_from_chat
+                from life_graph import done_sentence
 
-                    applied = capture_life_from_chat(user, text_in, None)
-                    extra = done_sentence(applied)
-                    if extra and extra not in dialogue:
-                        dialogue = dialogue + extra
-                        care_state = dict(care_state)
-                        care_state["life_saved"] = applied
-                except Exception:
-                    pass
-                dialogue = _stamp_keep(user, text_in, dialogue)
-                _update_relationship(user, text_in)
-                return _persist_local_turn(user_id, user, text_in, _pack_reply(dialogue, care_state))
+                applied = capture_life_from_chat(user, text_in, None)
+                extra = done_sentence(applied)
+                if extra and extra not in dialogue:
+                    dialogue = dialogue + extra
+                    care_state = dict(care_state)
+                    care_state["life_saved"] = applied
+            except Exception:
+                pass
+            dialogue = _stamp_keep(user, text_in, dialogue)
+            _update_relationship(user, text_in)
+            return _persist_local_turn(user_id, user, text_in, _pack_reply(dialogue, care_state))
 
     onboarded = handle_user_onboarding_turn(user_id, user_text)
     if onboarded is not None:
