@@ -51,6 +51,17 @@ _HOLD["taro"] = _HOLD["luna"]
 _HOLD["ponta"] = _HOLD["hachi"]
 
 
+_NEEDS_REPLY = re.compile(r"どう|なに|何|すれば|教えて|けど|から|バイト|就活|学校|課題")
+
+
+def _tired_needs_a_real_reply(text: str) -> bool:
+    """A question or a real sentence should reach the companion, not the tired template."""
+    raw = (text or "").strip()
+    if len(raw) > 16:
+        return True
+    return bool(_NEEDS_REPLY.search(raw))
+
+
 def care_tone(text: str) -> Optional[str]:
     """heavy opens the 60s rescue, tired books a later ask, ok closes."""
     raw = (text or "").strip()
@@ -121,6 +132,8 @@ def plan_care_reply(
         line = _CLOSE[voice].format(prefix=prefix)
         user.pop("care_followup", None)
         return line, {"emotion": "happy", "care_action": "close"}
+    if _tired_needs_a_real_reply(text):
+        return None
     fire, when = _followup_when(user, now=now)
     note = _snippet(text)
     user["care_followup"] = {
@@ -664,6 +677,8 @@ def keep_day_word(user: Dict[str, Any], text: str, now: Optional[datetime] = Non
     now = now or _now_jst()
     raw = (text or "").strip()
     if not raw or raw in _NOT_A_WORD or looks_secret(raw) or care_tone(raw) == "heavy":
+        return ""
+    if re.search(r"どう|なに|何|すれば|教えて", raw):
         return ""
     if clock_care_now(user, now=now) and care_tone(raw) in ("ok", "tired") and len(raw) <= 8:
         return ""

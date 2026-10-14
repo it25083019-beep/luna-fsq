@@ -5231,30 +5231,111 @@
     await openFriendChat({ id: friendChatId, name: (document.getElementById("friendChatName") || {}).textContent });
   }
 
+  function readQrFromCanvas(canvas) {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx || !canvas.width || !canvas.height) return "";
+    if (window.jsQR) {
+      try {
+        const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const found = window.jsQR(image.data, image.width, image.height, { inversionAttempts: "dontInvert" });
+        if (found && found.data) return found.data;
+      } catch (_) {}
+    }
+    return "";
+  }
+
+  async function readQrFromVideo(video) {
+    if (!video || !video.videoWidth) return "";
+    if ("BarcodeDetector" in window) {
+      try {
+        if (!window.__lunaQrDetector) {
+          window.__lunaQrDetector = new BarcodeDetector({ formats: ["qr_code"] });
+        }
+        const codes = await window.__lunaQrDetector.detect(video);
+        if (codes && codes[0] && codes[0].rawValue) return codes[0].rawValue;
+      } catch (_) {}
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return "";
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return readQrFromCanvas(canvas);
+  }
+
+  async function redeemQrImage(file) {
+    if (!file) return;
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    const maxSide = 960;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    let value = "";
+    if ("BarcodeDetector" in window) {
+      try {
+        if (!window.__lunaQrDetector) {
+          window.__lunaQrDetector = new BarcodeDetector({ formats: ["qr_code"] });
+        }
+        const codes = await window.__lunaQrDetector.detect(canvas);
+        if (codes && codes[0] && codes[0].rawValue) value = codes[0].rawValue;
+      } catch (_) {}
+    }
+    if (!value) value = readQrFromCanvas(canvas);
+    if (!value) {
+      friendNote("コードが見つかりません。明るいところで、もう一度。");
+      return;
+    }
+    await redeemFriend(value);
+  }
+
   async function startFriendScan() {
     stopFriendScan();
-    if (!("BarcodeDetector" in window) || !navigator.mediaDevices) {
-      friendNote("このブラウザはカメラ読み取りに未対応です。コードを貼ってください");
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      friendNote("この端末はカメラを開けません。写真で読むか、コードを貼ってください。");
       return;
     }
     const video = document.getElementById("friendScanVideo");
     const stop = document.getElementById("friendScanStop");
-    friendScanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+    if (!video) return;
+    const tries = [
+      { video: { facingMode: { ideal: "environment" } }, audio: false },
+      { video: true, audio: false },
+    ];
+    let lastError = null;
+    for (const constraints of tries) {
+      try {
+        friendScanStream = await navigator.mediaDevices.getUserMedia(constraints);
+        lastError = null;
+        break;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    if (!friendScanStream) {
+      const denied = lastError && (lastError.name === "NotAllowedError" || lastError.name === "SecurityError");
+      friendNote(denied
+        ? "カメラが許可されていません。写真で読むか、コードを貼ってください。"
+        : "カメラを開けませんでした。写真で読むか、コードを貼ってください。");
+      return;
+    }
+    video.muted = true;
+    video.setAttribute("playsinline", "true");
     video.srcObject = friendScanStream;
     video.hidden = false;
     if (stop) stop.hidden = false;
     await video.play();
-    const detector = new BarcodeDetector({ formats: ["qr_code"] });
+    friendNote("コードを枠の中に。");
     friendScanTimer = setInterval(async () => {
-      try {
-        const codes = await detector.detect(video);
-        if (codes && codes[0] && codes[0].rawValue) {
-          const value = codes[0].rawValue;
-          stopFriendScan();
-          await redeemFriend(value);
-        }
-      } catch (_) {}
-    }, 500);
+      const value = await readQrFromVideo(video);
+      if (!value) return;
+      stopFriendScan();
+      friendNote("");
+      await redeemFriend(value);
+    }, 450);
   }
 
   function bindEvents() {
@@ -5292,7 +5373,17 @@
     const friendRedeemBtn = document.getElementById("friendRedeemBtn");
     if (friendRedeemBtn) friendRedeemBtn.onclick = () => redeemFriend((document.getElementById("friendCodeInput") || {}).value).catch((err) => friendNote(err.message));
     const friendScanBtn = document.getElementById("friendScanBtn");
-    if (friendScanBtn) friendScanBtn.onclick = () => startFriendScan().catch((err) => friendNote(err.message));
+    if (friendScanBtn) friendScanBtn.onclick = () => startFriendScan().catch((err) => friendNote(err.message || "カメラを開けませんでした"));
+    const friendPhotoBtn = document.getElementById("friendPhotoBtn");
+    const friendScanFile = document.getElementById("friendScanFile");
+    if (friendPhotoBtn && friendScanFile) {
+      friendPhotoBtn.onclick = () => friendScanFile.click();
+      friendScanFile.onchange = () => {
+        const file = friendScanFile.files && friendScanFile.files[0];
+        friendScanFile.value = "";
+        redeemQrImage(file).catch((err) => friendNote(err.message || "読み取りに失敗しました"));
+      };
+    }
     const friendScanStop = document.getElementById("friendScanStop");
     if (friendScanStop) friendScanStop.onclick = stopFriendScan;
     const friendNearBtn = document.getElementById("friendNearBtn");

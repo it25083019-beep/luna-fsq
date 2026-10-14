@@ -324,6 +324,17 @@ def test_heavy_stops_and_opens_rescue():
     print("OK heavy handoff")
 
 
+def test_a_tired_question_is_not_the_same_line():
+    user = _user()
+    now = datetime(2026, 10, 7, 14, 24, tzinfo=JST)
+    ping, _state = plan_care_reply(user, "疲れた", now=now)
+    assert "少ししたら" in ping or "また聞く" in ping
+    assert plan_care_reply(user, "疲れるとなにすればいい", now=now) is None
+    story = plan_care_reply(user, "バイトと学校で疲れてるけど、就活もあるからもっと疲れる", now=now)
+    assert story is None
+    print("OK tired question reaches the companion")
+
+
 def test_chips_answer_the_clock_question():
     user = _user()
     now = datetime.now(JST)
@@ -350,5 +361,6 @@ if __name__ == "__main__":
     test_first_class_then_one_question_a_day()
     test_morning_notification_quotes_the_sentence()
     test_heavy_stops_and_opens_rescue()
+    test_a_tired_question_is_not_the_same_line()
     test_chips_answer_the_clock_question()
     print("ALL open-care tests passed")

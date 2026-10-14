@@ -2458,8 +2458,10 @@
           <div class="friend-tools">
             <button type="button" id="friendScanBtn">カメラで読む</button>
             <button type="button" id="friendScanStop" hidden>カメラを止める</button>
+            <button type="button" id="friendPhotoBtn">写真で読む</button>
           </div>
-          <video id="friendScanVideo" hidden playsinline></video>
+          <input id="friendScanFile" type="file" accept="image/*" capture="environment" hidden>
+          <video id="friendScanVideo" hidden playsinline muted></video>
           <label>コード</label>
           <input id="friendCodeInput" type="text" maxlength="32" placeholder="LUNA: のあとに続くコード" autocomplete="off" />
           <div class="friend-tools"><button type="button" id="friendRedeemBtn">つながる</button></div>
@@ -2588,6 +2590,7 @@
   <script src="/static/world.js?v=20260916b"></script>
   <script src="/static/character_doll.js?v=20260903b"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="/static/app.js?v=20261014c"></script>
+  <script src="/static/jsQR.js?v=20261014d"></script>
+  <script src="/static/app.js?v=20261014d"></script>
 </body>
 </html>
